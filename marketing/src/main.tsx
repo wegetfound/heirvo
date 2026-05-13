@@ -13,6 +13,8 @@ import RecoverH from "./pages/RecoverH";
 import LandingMin1 from "./pages/LandingMin1";
 import Refund from "./pages/Refund";
 import AcceptableUse from "./pages/AcceptableUse";
+import GuideIndex from "./pages/GuideIndex";
+import GuidePost from "./pages/GuidePost";
 import NotFound from "./pages/NotFound";
 import "./index.css";
 
@@ -56,6 +58,8 @@ function AppRoot() {
           <Route path="/acceptable-use" element={<AcceptableUse />} />
           <Route path="/recover" element={<RecoverH />} />
           <Route path="/recover-h" element={<RecoverH />} />
+          <Route path="/guides" element={<GuideIndex />} />
+          <Route path="/guides/:slug" element={<GuidePost />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Suspense>
