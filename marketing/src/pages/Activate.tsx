@@ -4,6 +4,7 @@ import gsap from "gsap";
 import { Nav } from "../components/Nav";
 import { Footer } from "../components/Footer";
 import { BrandMark } from "../components/BrandMark";
+import { useMeta } from "../lib/useMeta";
 
 const SUPPORT_EMAIL = "support@heirvo.com";
 
@@ -26,6 +27,11 @@ const STEPS: { n: string; title: string; body: string }[] = [
 ];
 
 export default function Activate() {
+  useMeta(
+    "Activate Heirvo Pro — Enter Your License Key",
+    "Enter your Heirvo Pro license key to unlock file saving. Find your key in your purchase confirmation email from Lemon Squeezy.",
+    "https://heirvo.com/activate"
+  );
   const rootRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {

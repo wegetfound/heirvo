@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Nav } from "../components/Nav";
 import { Footer } from "../components/Footer";
@@ -13,6 +14,21 @@ const C = {
 } as const;
 
 export default function NotFound() {
+  useEffect(() => {
+    const prev = document.title;
+    document.title = "Page Not Found — Heirvo";
+    let noindex = document.querySelector<HTMLMetaElement>('meta[name="robots"]');
+    if (!noindex) {
+      noindex = document.createElement("meta");
+      noindex.name = "robots";
+      document.head.appendChild(noindex);
+    }
+    noindex.content = "noindex";
+    return () => {
+      document.title = prev;
+      noindex!.content = "index";
+    };
+  }, []);
   return (
     <div style={{ background: C.page, color: C.text, fontFamily: SORA, minHeight: "100vh", display: "flex", flexDirection: "column" }}>
       <Nav />

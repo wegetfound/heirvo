@@ -4,8 +4,14 @@ import gsap from "gsap";
 import { Nav } from "../components/Nav";
 import { Footer } from "../components/Footer";
 import { BrandMark } from "../components/BrandMark";
+import { useMeta } from "../lib/useMeta";
 
 export default function Support() {
+  useMeta(
+    "Heirvo Support — Help & Contact",
+    "Get help with Heirvo disc recovery software. Find answers to common questions or email us at support@heirvo.com. We reply within one business day.",
+    "https://heirvo.com/support"
+  );
   const markRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {

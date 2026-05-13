@@ -1,8 +1,14 @@
 import { Link } from "react-router-dom";
 import { Nav } from "../components/Nav";
 import { Footer } from "../components/Footer";
+import { useMeta } from "../lib/useMeta";
 
 export default function Privacy() {
+  useMeta(
+    "Privacy Policy — Heirvo",
+    "Heirvo runs entirely on your computer. Your videos, photos, and recovered files never leave your machine. No analytics, no telemetry, no tracking.",
+    "https://heirvo.com/privacy"
+  );
   return (
     <div className="relative min-h-screen flex flex-col">
       <Nav />

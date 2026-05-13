@@ -1,7 +1,13 @@
 import { Nav } from "../components/Nav";
 import { Footer } from "../components/Footer";
+import { useMeta } from "../lib/useMeta";
 
 export default function Refund() {
+  useMeta(
+    "Refund Policy — Heirvo",
+    "Heirvo offers a 30-day money-back guarantee on Pro licenses. Mail-in disc recovery: no recovery, no charge — guaranteed.",
+    "https://heirvo.com/refund"
+  );
   return (
     <div className="relative min-h-screen flex flex-col">
       <Nav />

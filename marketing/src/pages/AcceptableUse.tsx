@@ -1,7 +1,13 @@
 import { Nav } from "../components/Nav";
 import { Footer } from "../components/Footer";
+import { useMeta } from "../lib/useMeta";
 
 export default function AcceptableUse() {
+  useMeta(
+    "Acceptable Use Policy — Heirvo",
+    "Guidelines for acceptable use of Heirvo disc recovery software and mail-in service. Heirvo is for personal media recovery only.",
+    "https://heirvo.com/acceptable-use"
+  );
   return (
     <div className="relative min-h-screen flex flex-col">
       <Nav />

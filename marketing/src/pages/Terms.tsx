@@ -1,8 +1,14 @@
 import { Link } from "react-router-dom";
 import { Nav } from "../components/Nav";
 import { Footer } from "../components/Footer";
+import { useMeta } from "../lib/useMeta";
 
 export default function Terms() {
+  useMeta(
+    "Terms of Service — Heirvo",
+    "Read Heirvo's terms of service covering the software license, mail-in disc recovery service, payments, and 30-day refund policy.",
+    "https://heirvo.com/terms"
+  );
   return (
     <div className="relative min-h-screen flex flex-col">
       <Nav />

@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { gsap } from "gsap";
 import { Nav } from "../components/Nav";
 import { Footer } from "../components/Footer";
+import { useMeta } from "../lib/useMeta";
 import {
   isLemonSqueezyConfigured,
   openLemonCheckout,
@@ -25,6 +26,11 @@ const LS_CHECKOUT_URL = import.meta.env.VITE_LS_CHECKOUT_URL || "";
  * single, unambiguous primary action.
  */
 export default function Download() {
+  useMeta(
+    "Download Heirvo Free — DVD & CD Recovery Software for Windows",
+    "Download Heirvo and scan your damaged DVDs, CDs, and Blu-ray discs for free. Pay $39 once to save recovered files. Works on Windows 10 & 11.",
+    "https://heirvo.com/download"
+  );
   const scopeRef = useRef<HTMLDivElement>(null);
   const lsConfigured = isLemonSqueezyConfigured(LS_CHECKOUT_URL);
 
