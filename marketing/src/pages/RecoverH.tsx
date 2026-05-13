@@ -9,7 +9,6 @@ import { Footer } from "../components/Footer";
 import {
   staggerReveal,
   magneticHover,
-  splitReveal,
 } from "../lib/gsap-fx";
 
 gsap.registerPlugin(ScrollTrigger, SplitText, CustomEase);
@@ -1065,7 +1064,7 @@ export default function RecoverH() {
                 { size: "5 discs",   per: "$72 each", total: "$360",        save: "Save $85",   highlight: true  },
                 { size: "10 discs",  per: "$65 each", total: "$650",        save: "Save $240",  highlight: false },
                 { size: "20+ discs", per: "$59 each", total: "from $1,180", save: "Save $600+", highlight: false },
-              ].map((row, i) => (
+              ].map((row) => (
                 <div
                   key={row.size}
                   className="price-row"
