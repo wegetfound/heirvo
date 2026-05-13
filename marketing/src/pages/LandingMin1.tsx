@@ -251,6 +251,14 @@ export default function LandingMin1() {
       typeof window !== "undefined" &&
       window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+    // Delay hero animations until the LoadSequence wipe reveals the page.
+    // The wipe starts at ~2.1s on first visit. On repeat visits the intro is
+    // skipped, so no delay is needed.
+    const introPlayed = (() => {
+      try { return sessionStorage.getItem("heirvo-intro") === "1"; } catch { return false; }
+    })();
+    const heroDelay = introPlayed ? 0 : 2.1;
+
     const ctx = gsap.context(() => {
       CustomEase.create("editorial", "M0,0 C0.22,1 0.36,1 1,1");
       CustomEase.create("reveal", "M0,0 C0.76,0 0.24,1 1,1");
@@ -265,7 +273,7 @@ export default function LandingMin1() {
 
       // ── Hero entrance ────────────────────────────────────────────────────
 
-      const heroTl = gsap.timeline({ defaults: { ease: "editorial" } });
+      const heroTl = gsap.timeline({ defaults: { ease: "editorial" }, delay: heroDelay });
 
       if (heroHeadRef.current) {
         try {
