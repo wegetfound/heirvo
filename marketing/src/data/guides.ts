@@ -1835,6 +1835,266 @@ const GUIDES: Guide[] = [
       secondaryHref: "/guides/best-dvd-recovery-software",
     },
   },
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 16. Recover files from water damaged DVD
+  // ─────────────────────────────────────────────────────────────────────────────
+  {
+    slug: "recover-water-damaged-dvd",
+    title: "How to Recover Files from a Water Damaged DVD",
+    metaTitle: "How to Recover Files from a Water Damaged DVD (2026 Guide)",
+    metaDescription:
+      "DVD got wet? Here's what to do in the first 30 minutes, what water actually does to disc data, and when software recovery works vs when you need professional help.",
+    datePublished: "2026-05-14",
+    dateModified: "2026-05-14",
+    readTime: "6 min read",
+    category: "DVD Recovery",
+    intro:
+      "Water itself doesn't destroy DVD data — the polycarbonate disc and aluminium reflective layer are both waterproof. What causes permanent damage is what happens next: mineral deposits from tap water etching the disc surface as it dries, mould growing in humid conditions, and label paper delaminating and pulling the reflective layer with it. If you act within the first hour, your chances of full recovery are very high.",
+    related: ["recover-files-scratched-dvd", "recover-home-videos-dvd"],
+    sections: [
+      {
+        id: "first-30-minutes",
+        heading: "What to do in the first 30 minutes",
+        level: 2,
+        paragraphs: [
+          "Speed matters. The disc itself is fine underwater — the problem is drying. If tap water or floodwater dries on the disc surface, dissolved minerals crystallise and etch microscopic scratches into the polycarbonate. Act before this happens.",
+        ],
+        numbered: true,
+        items: [
+          "Do not wipe the disc dry. Wiping a wet disc drags any particles across the surface and scratches it.",
+          "Rinse the disc gently under cold distilled water (or bottled water if distilled isn't available). This removes minerals and debris before they can dry onto the surface.",
+          "If the disc has a paper label, handle it extremely carefully — wet labels tear easily and can pull the reflective aluminium layer away from the polycarbonate as they delaminate.",
+          "Stand the disc upright and let it air-dry in a clean, dry location. Do not use heat, hairdryers, or direct sunlight. Give it 20–30 minutes.",
+          "Once dry, inspect the reflective side under good light. If it looks uniform and shiny, the disc is likely physically intact. If you see pitting, white haze, or areas where the reflective layer has lifted, proceed to professional recovery.",
+        ],
+        callout: {
+          label: "Tap water vs distilled",
+          text: "Tap water contains dissolved minerals — calcium, magnesium, chlorine — that etch the disc surface when they dry. If you have bottled or distilled water available, always rinse with that instead. If not, tap water is still far better than letting the disc air-dry without rinsing.",
+          color: "amber",
+        },
+      },
+      {
+        id: "what-water-does",
+        heading: "What water actually damages on a DVD",
+        level: 2,
+        paragraphs: [
+          "A DVD is a sandwich: two layers of polycarbonate plastic, a thin aluminium (or gold, on archival discs) reflective layer, and a dye layer on burned discs. The data itself — the microscopic pits pressed or burned into the polycarbonate — is sealed inside this sandwich and is completely waterproof.",
+          "Water damage occurs at the edges and surfaces, not inside the disc. The most common failure modes are: mineral deposits on the surface (causing read scatter), label paper absorbing water and delaminating (potentially tearing the reflective layer), and mould growing on organic residue on the disc surface in humid conditions.",
+          "What this means practically: a disc submerged in clean water and rinsed promptly is very likely fully recoverable. A disc that sat in floodwater for days, or one whose label has partially peeled and taken the reflective coating with it, is a more serious recovery job.",
+        ],
+      },
+      {
+        id: "when-software-works",
+        heading: "When software recovery works",
+        level: 2,
+        paragraphs: [
+          "If the disc dried with mineral deposits but the reflective layer is intact, a sector-level recovery tool can often read through the surface contamination. The disc may show read errors that a normal DVD player gives up on, but software that retries each sector at variable speeds and makes multiple passes will recover most or all of the data.",
+          "Download Heirvo, insert the disc in a full-size USB DVD drive (not a slim laptop drive), and run a scan. The free scan will show you exactly what percentage of sectors are readable before you pay anything. Light mineral contamination typically yields 85–98% recovery.",
+        ],
+        callout: {
+          label: "Try a second drive",
+          text: "If the first drive reports the disc as unreadable, try a different USB drive before concluding the disc is unrecoverable. Different drives have different laser power and error-correction capability. A full-size external drive almost always outperforms a slim laptop drive on marginal discs.",
+          color: "green",
+        },
+      },
+      {
+        id: "when-software-fails",
+        heading: "When software recovery isn't enough",
+        level: 2,
+        paragraphs: [
+          "If the reflective layer has physically separated from the polycarbonate — visible as a silvery peel, cloudy patches, or areas where the disc looks 'milky' when held to light — software recovery will fail. The laser has nothing to reflect off in those areas.",
+          "At this stage the data may still be physically present in the polycarbonate substrate, but reading it requires lab-grade equipment: a modified optical reader with a stronger laser, finer focus control, and the ability to read partially delaminated discs without destroying what remains.",
+          "This is what Heirvo's mail-in service does. Post the disc and we'll assess it and tell you exactly what's recoverable before you pay anything. For discs containing irreplaceable footage — home video, a wedding, family photos — professional recovery is absolutely worth attempting.",
+        ],
+        callout: {
+          label: "Don't delay",
+          text: "If the disc has any mould growth (visible as fuzzy spots or a musty smell), keep it in a sealed bag and send it for professional recovery as soon as possible. Mould spreads and continues damaging the disc surface.",
+          color: "amber",
+        },
+      },
+      {
+        id: "mould-damage",
+        heading: "Mould and flood damage: special considerations",
+        level: 2,
+        paragraphs: [
+          "Discs exposed to floodwater often have organic contamination — dirt, sewage, bacteria — that promotes mould growth. Mould feeds on the disc's organic dye layer and the gelatin in paper labels, physically destroying the data it grows over.",
+          "Rinse flood-exposed discs with distilled water and a tiny drop of isopropyl alcohol (70%) to kill mould spores, then air-dry completely. Do not stack wet or damp discs — mould spreads between discs in contact.",
+          "Even with mould damage, recovery is often possible if caught early. The key is stopping the mould growth immediately. Once the disc has dried and been cleaned, run a recovery scan — the areas the mould reached may be unrecoverable, but the rest of the disc typically is fine.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "My DVD fell in the pool / toilet / sink. Is it ruined?",
+        a: "Probably not — the data on a DVD is sealed inside waterproof polycarbonate and isn't harmed by water itself. Rinse it immediately with distilled or bottled water, let it air-dry completely, and then run a recovery scan. The most important thing is to act quickly before minerals in the water dry onto the surface.",
+      },
+      {
+        q: "The disc was in a flooded basement for several days. Is it still recoverable?",
+        a: "Possibly. It depends on whether the reflective layer has delaminated. If the disc still looks shiny and uniform on the reflective side, a recovery scan is worth trying. If there are cloudy patches or peeling, professional lab recovery is the right path — the data may still be readable with the right equipment even if the disc looks damaged.",
+      },
+      {
+        q: "The paper label got wet and is peeling. Should I remove it?",
+        a: "Very carefully, yes — but only if it is already peeling. A label that is actively delaminating can pull the aluminium reflective layer away as it separates. If the label is still firmly attached, leave it. If it's already peeling at the edges, gently peel it away from the edge rather than pulling it across the data area.",
+      },
+      {
+        q: "The disc smells musty. Is that mould?",
+        a: "Likely yes. Rinse the disc with distilled water and wipe very gently with a cloth dampened with 70% isopropyl alcohol. Allow it to dry completely. Then send it for professional recovery rather than attempting multiple scan passes — mould on a disc can spread to your drive's laser assembly.",
+      },
+      {
+        q: "Can I use a dishwasher or ultrasonic cleaner to clean a water-damaged disc?",
+        a: "Do not use a dishwasher — the heat and detergent will cause far more damage than water. Ultrasonic cleaners are used by some professional recovery labs and can be effective, but a consumer ultrasonic cleaner may vibrate at the wrong frequency and crack the disc. Stick to a gentle rinse with distilled water.",
+      },
+    ],
+    cta: {
+      heading: "Water damaged disc? Let's see what's recoverable.",
+      body: "Free scan shows you exactly what can be saved. For severe damage — delamination, mould, flood exposure — our mail-in service uses lab-grade equipment to read discs that software can't.",
+      primaryLabel: "Download Free — Windows",
+      primaryHref: "/download",
+      secondaryLabel: "Mail-in recovery service",
+      secondaryHref: "/recover",
+    },
+  },
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 17. Recover data from Zip disk
+  // ─────────────────────────────────────────────────────────────────────────────
+  {
+    slug: "recover-data-from-zip-disk",
+    title: "How to Recover Data from a Zip Disk in 2026",
+    metaTitle: "How to Recover Data from a Zip Disk in 2026 (Complete Guide)",
+    metaDescription:
+      "Still have old Iomega Zip disks? Here's how to recover the files in 2026 — finding a working drive, dealing with the click of death, and what to do when the disk won't read.",
+    datePublished: "2026-05-14",
+    dateModified: "2026-05-14",
+    readTime: "7 min read",
+    category: "Legacy Media Recovery",
+    intro:
+      "Iomega Zip disks — the 100MB, 250MB, and 750MB removable disks that were ubiquitous in offices and creative studios from the mid-1990s to the mid-2000s — are now an orphaned format. The drives are long discontinued, and Zip disks are notorious for the 'click of death': a head alignment failure that corrupts disks and sometimes spreads to every disk inserted afterwards. This guide covers every realistic option for getting your data off a Zip disk in 2026.",
+    related: ["recover-data-from-cd-rom-windows", "best-dvd-recovery-software"],
+    sections: [
+      {
+        id: "what-you-need",
+        heading: "The first problem: finding a working drive",
+        level: 2,
+        paragraphs: [
+          "You cannot read a Zip disk without a Zip drive — there is no software workaround for this. Zip drives connect via USB (most common for home use), SCSI (found in older Mac towers and workstations), parallel port (very old PCs), or as internal IDE drives (some desktop PCs from the era).",
+          "The most practical option in 2026 is a USB Zip drive — the Iomega Zip 250 USB or Zip 750 USB. These appear regularly on eBay and Facebook Marketplace for $10–$40. A 250MB USB drive can read 100MB and 250MB disks. A 750MB drive can read all three formats.",
+          "Before buying any used Zip drive, ask the seller if it shows any signs of the click of death — a rhythmic clicking sound when a disk is inserted. A drive with click of death will not read your disks and may damage them further.",
+        ],
+        callout: {
+          label: "Drive compatibility",
+          text: "100MB Zip disks: readable in any Zip drive. 250MB disks: require a 250MB or 750MB drive (a 100MB drive cannot read them). 750MB disks: require a 750MB drive only.",
+          color: "blue",
+        },
+      },
+      {
+        id: "click-of-death",
+        heading: "The click of death: what it is and what to do",
+        level: 2,
+        paragraphs: [
+          "The Zip click of death (COD) is a mechanical head alignment failure. When a Zip drive develops COD, it makes a rhythmic clicking sound when a disk is inserted and fails to read it. The deeper problem: a COD drive can damage the disks inserted into it, and a damaged disk can trigger COD in a previously healthy drive.",
+          "If your drive clicks when you insert a disk, stop immediately. Do not insert any other disks into that drive. The disk may still be recoverable with a healthy drive — but repeated insertion into a COD drive progressively worsens the damage.",
+          "To test whether your drive has COD before using it, insert a disk you don't care about (a blank or one with data you've already backed up) and listen carefully. Normal Zip drive sounds are a brief spin-up and a couple of quiet seeks. Rhythmic clicking — 6–10 clicks in sequence — is COD.",
+        ],
+        callout: {
+          label: "COD spread",
+          text: "A disk that has been partially damaged by a COD drive can trigger COD in a healthy drive. If you suspect a disk is damaged, try reading it in a healthy drive in a clean environment and be prepared for the drive to develop problems. Some data recovery professionals have purpose-built Zip recovery rigs specifically to avoid this.",
+          color: "amber",
+        },
+      },
+      {
+        id: "reading-the-disk",
+        heading: "Reading a healthy Zip disk on Windows 11",
+        level: 2,
+        paragraphs: [
+          "If your drive is healthy and your disk is undamaged, a USB Zip drive is plug-and-play on Windows 10 and 11. Windows recognises it as a removable drive — no drivers needed. Insert the disk, wait for Windows to detect it, open File Explorer, and copy your files normally.",
+          "Zip disks were formatted as FAT16 (100MB disks) or FAT32 (250MB and 750MB disks). Windows reads both formats natively. If File Explorer shows the drive but the disk appears empty, the file system may be corrupted — proceed to the recovery software section below.",
+        ],
+      },
+      {
+        id: "corrupted-disk",
+        heading: "Recovering data from a corrupted or unreadable Zip disk",
+        level: 2,
+        paragraphs: [
+          "If Windows can detect the drive but shows the disk as unformatted, empty, or inaccessible, the disk's file system is corrupted but the data may still be physically present on the magnetic surface.",
+          "Use a file carving tool like Recuva (free) or R-Studio to scan the raw disk surface. These tools bypass the corrupted file system and look for recognisable file signatures directly in the magnetic data. For common file types — documents, photos, audio files, InDesign or Quark files — this approach often recovers most or all of the content.",
+          "If the drive spins up but Windows doesn't assign it a drive letter at all, try these steps: open Disk Management (Win + X → Disk Management), find the Zip drive in the list, and check whether it appears without a letter assigned. Right-click and assign a drive letter. If it appears as 'Unknown' or 'Not initialized', the disk has a deeper corruption and file carving is the next step.",
+        ],
+      },
+      {
+        id: "software-tools",
+        heading: "Software tools for Zip disk recovery",
+        level: 2,
+        paragraphs: [
+          "Unlike optical disc recovery — which requires specialised sector-retry logic — Zip disk recovery uses standard hard drive recovery tools because the underlying media is magnetic, not optical.",
+        ],
+        table: {
+          caption: "Zip disk recovery tools (2026)",
+          headers: ["Tool", "Cost", "Best for", "Platform"],
+          rows: [
+            ["Recuva", "Free", "Deleted files, light corruption", "Windows"],
+            ["TestDisk / PhotoRec", "Free", "File system rebuild, file carving", "Windows / Mac / Linux"],
+            ["R-Studio", "$79.99", "Severe corruption, RAW disks", "Windows / Mac / Linux"],
+            ["GetDataBack", "$79", "NTFS/FAT recovery, user-friendly", "Windows"],
+          ],
+        },
+      },
+      {
+        id: "drive-wont-read",
+        heading: "When the drive won't read the disk at all",
+        level: 2,
+        paragraphs: [
+          "If the disk spins up and the drive immediately ejects it, or if the drive makes unusual noises and never assigns a drive letter, the disk has physical damage — a scratched magnetic surface, a seized hub, or COD damage to the disk's servo tracks.",
+          "At this point, software recovery is not possible because the drive cannot read any sectors. The options are: find a different drive in better condition and try again, or send the disk to a professional recovery service that specialises in legacy magnetic media.",
+          "Professional Zip disk recovery exists — a handful of specialist labs still have working Zip recovery equipment. The cost is typically $200–$500 depending on the severity of damage. For disks containing irreplaceable work files, client projects, or family photos from the 1990s and 2000s, it's often worth the cost.",
+        ],
+      },
+      {
+        id: "once-recovered",
+        heading: "Once the data is recovered: migrate immediately",
+        level: 2,
+        paragraphs: [
+          "Zip disks are magnetic media from 20–30 years ago. Even if your disk reads perfectly today, the magnetic signal degrades over time and the disk may become unreadable within years. Copy everything off immediately and store it in at least two modern locations — an external SSD or hard drive, plus cloud storage.",
+          "Common file formats on Zip disks from the 1990s and 2000s include Quark XPress (.qxd), older versions of Photoshop (.psd), FileMaker Pro databases (.fp3, .fp5), and various now-obsolete word processor formats. Check that you have software capable of opening these files before assuming the recovery is complete.",
+        ],
+        callout: {
+          label: "Format conversion",
+          text: "Older Quark, InDesign, and FileMaker files may need to be opened in period-correct software versions. CloudConvert and various legacy app installers can help — but this is a separate step after you've secured the raw files.",
+          color: "blue",
+        },
+      },
+    ],
+    faq: [
+      {
+        q: "Do I need a special driver to use a USB Zip drive on Windows 11?",
+        a: "No. USB Zip drives (the Iomega Zip 250 USB and Zip 750 USB) are recognised automatically by Windows 10 and 11 as standard USB mass storage devices. Plug in the drive, wait about 10 seconds, then insert your disk. No driver download is needed.",
+      },
+      {
+        q: "My Zip drive makes a clicking sound. Is that the click of death?",
+        a: "A brief 2–3 click sequence during disk insertion is normal — that's the drive seeking the disk's home position. The click of death is a rhythmic sequence of 6–10 or more clicks that repeats in a loop and is accompanied by a failure to mount the disk. If your drive loops clicking and never mounts the disk, stop and do not insert any other disks.",
+      },
+      {
+        q: "Can I recover data from a Zip disk with Heirvo?",
+        a: "Heirvo is designed for optical disc recovery (DVDs, CDs, Blu-ray) and doesn't handle Zip disks, which use a completely different magnetic recording technology. For Zip disk recovery, use a FAT recovery tool like Recuva or R-Studio after connecting the drive via USB.",
+      },
+      {
+        q: "My 250MB Zip disk doesn't work in my 100MB drive. Is it broken?",
+        a: "No — a 100MB Zip drive physically cannot read 250MB disks. The 250MB format uses a higher-density recording that requires a different read head. You need a 250MB or 750MB drive to read 250MB disks.",
+      },
+      {
+        q: "The files on my Zip disk are in old formats I can't open. What do I do?",
+        a: "First priority is getting the raw files off the disk — format compatibility is a separate problem. Once the files are safely copied to a modern drive, search for legacy software versions or conversion tools. Many 1990s file formats have open-source readers, and services like CloudConvert handle some older formats. The Internet Archive also maintains runnable versions of old software for format recovery purposes.",
+      },
+    ],
+    cta: {
+      heading: "Recovering other legacy media?",
+      body: "Heirvo specialises in optical disc recovery — scratched, rotted, and unfinalized DVDs, CDs, and Blu-ray. For Zip disks, the tools in this guide are your best path.",
+      primaryLabel: "Recover a damaged DVD or CD",
+      primaryHref: "/download",
+      secondaryLabel: "Mail-in service for severe damage",
+      secondaryHref: "/recover",
+    },
+  },
 ];
 
 export default GUIDES;
