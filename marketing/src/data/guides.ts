@@ -28,6 +28,7 @@ export interface Guide {
   readTime: string;
   category: string;
   intro: string;
+  related: string[];
   sections: GuideSection[];
   faq: GuideFAQ[];
   cta: {
@@ -56,6 +57,7 @@ const GUIDES: Guide[] = [
     category: "DVD Recovery",
     intro:
       "You can recover files from a scratched DVD using disc recovery software that reads each sector multiple times — at different speeds, forwards and backwards — instead of giving up at the first read error. Most scratched DVDs yield 80–95% of their files with a sector-level scan, even when Windows Explorer and VLC refuse to open the disc entirely.",
+    related: ["recover-home-videos-dvd", "how-long-do-dvds-last-disc-rot"],
     sections: [
       {
         id: "why-scratches-cause-problems",
@@ -171,6 +173,7 @@ const GUIDES: Guide[] = [
     category: "DVD Recovery",
     intro:
       "Home video DVDs burned between 2000 and 2015 are now reaching the end of their reliable lifespan. The organic dye in DVD-R and DVD+R discs oxidises over time, turning the reflective layer hazy and causing read errors even on undamaged discs. The good news is that the video data is usually still recoverable — you just need software that reads below the surface errors rather than giving up.",
+    related: ["recover-files-scratched-dvd", "best-dvd-recovery-software"],
     sections: [
       {
         id: "why-home-dvds-fail",
@@ -280,6 +283,7 @@ const GUIDES: Guide[] = [
     category: "Photo Recovery",
     intro:
       "Kodak Photo CDs store images in the .PCD format — a proprietary multi-resolution format that Windows 10 and 11 cannot open natively. Adobe Photoshop dropped PCD support entirely in 2023. If you have a box of these discs from the 1990s or 2000s, Heirvo is one of the few modern tools that reads them directly and converts the images to standard JPEG or TIFF files you can view on any device.",
+    related: ["recover-data-from-cd-rom-windows", "best-dvd-recovery-software"],
     sections: [
       {
         id: "what-is-photo-cd",
@@ -396,6 +400,7 @@ const GUIDES: Guide[] = [
     category: "Software Guide",
     intro:
       "The best DVD recovery software for Windows reads failing discs sector by sector — not once, but in multiple passes at variable speeds, forwards and backwards — to rescue data that a standard file copy would miss entirely. In 2026 there are a handful of tools that do this well. Here is an honest comparison based on what each tool is actually good at.",
+    related: ["heirvo-vs-isobuster", "recover-files-scratched-dvd"],
     sections: [
       {
         id: "what-to-look-for",
@@ -514,6 +519,7 @@ const GUIDES: Guide[] = [
     category: "Disc Health",
     intro:
       "DVDs last between 10 and 50 years in typical home storage conditions — far less than the '100-year lifetime' manufacturers once promised. Burned DVD-R and DVD+R discs are especially vulnerable, with many failing within 10–25 years. Disc rot — the chemical breakdown of a disc's reflective or dye layer — is irreversible once it starts, making early detection and file backup critical.",
+    related: ["recover-files-scratched-dvd", "recover-home-videos-dvd"],
     sections: [
       {
         id: "how-long-dvds-last",
@@ -637,6 +643,7 @@ const GUIDES: Guide[] = [
     category: "CD Recovery",
     intro:
       "You can recover data from a scratched or damaged CD-ROM by using disc recovery software that retries each failed sector at multiple speeds instead of stopping at the first error. Most data CDs with light-to-moderate scratches yield 85–98% of their files with a proper sector-level scan — even when Windows reports the disc as unreadable.",
+    related: ["recover-files-scratched-dvd", "kodak-photo-cd-recovery"],
     sections: [
       {
         id: "why-windows-fails",
@@ -749,6 +756,7 @@ const GUIDES: Guide[] = [
     category: "Software Comparison",
     intro:
       "Heirvo and IsoBuster are both Windows disc recovery tools, but they target different users. Heirvo is built for people who just need to get files off a damaged disc quickly, with a free-scan-then-pay model. IsoBuster is a deep forensic tool with more technical controls, a steeper learning curve, and a subscription pricing model. The right choice depends on whether you need simplicity or maximum control.",
+    related: ["best-dvd-recovery-software", "recover-files-scratched-dvd"],
     sections: [
       {
         id: "quick-comparison",

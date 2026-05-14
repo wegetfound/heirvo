@@ -213,7 +213,7 @@ function GuideContent({ guide }: { guide: Guide }) {
           <div className="mt-16 pt-10 border-t border-ink-100">
             <p className="text-[12px] uppercase tracking-[0.14em] text-ink-400 font-semibold mb-5">More guides</p>
             <div className="grid sm:grid-cols-2 gap-4">
-              {GUIDES.filter((g) => g.slug !== guide.slug).slice(0, 2).map((g) => (
+              {(guide.related.map((slug) => GUIDES.find((g) => g.slug === slug)).filter(Boolean) as typeof GUIDES).map((g) => (
                 <Link
                   key={g.slug}
                   to={`/guides/${g.slug}`}
