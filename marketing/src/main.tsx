@@ -1,22 +1,23 @@
-import React, { useState, Suspense } from "react";
+import React, { useState, Suspense, lazy } from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { useLenis } from "./lib/useLenis";
 import { Cursor } from "./components/Cursor";
 import { LoadSequence } from "./components/LoadSequence";
-import Activate from "./pages/Activate";
-import Download from "./pages/Download";
-import Privacy from "./pages/Privacy";
-import Terms from "./pages/Terms";
-import Support from "./pages/Support";
-import RecoverH from "./pages/RecoverH";
-import LandingMin1 from "./pages/LandingMin1";
-import Refund from "./pages/Refund";
-import AcceptableUse from "./pages/AcceptableUse";
-import GuideIndex from "./pages/GuideIndex";
-import GuidePost from "./pages/GuidePost";
-import About from "./pages/About";
-import NotFound from "./pages/NotFound";
+
+const LandingMin1  = lazy(() => import("./pages/LandingMin1"));
+const Download     = lazy(() => import("./pages/Download"));
+const Activate     = lazy(() => import("./pages/Activate"));
+const RecoverH     = lazy(() => import("./pages/RecoverH"));
+const About        = lazy(() => import("./pages/About"));
+const GuideIndex   = lazy(() => import("./pages/GuideIndex"));
+const GuidePost    = lazy(() => import("./pages/GuidePost"));
+const Support      = lazy(() => import("./pages/Support"));
+const Privacy      = lazy(() => import("./pages/Privacy"));
+const Terms        = lazy(() => import("./pages/Terms"));
+const Refund       = lazy(() => import("./pages/Refund"));
+const AcceptableUse = lazy(() => import("./pages/AcceptableUse"));
+const NotFound     = lazy(() => import("./pages/NotFound"));
 import "./index.css";
 
 function safeSessionGet(key: string): string | null {
