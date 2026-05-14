@@ -1190,6 +1190,223 @@ const GUIDES: Guide[] = [
       secondaryHref: "/recover",
     },
   },
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 11. Recover music from scratched audio CD
+  // ─────────────────────────────────────────────────────────────────────────────
+  {
+    slug: "recover-music-from-scratched-cd",
+    title: "How to Recover Music from a Scratched CD on Windows",
+    metaTitle: "How to Recover Music from a Scratched CD on Windows (2026 Guide)",
+    metaDescription: "Scratched audio CD skipping or won't rip? This guide explains why normal ripping software fails and how to recover every track using sector-level recovery on Windows 10 and 11.",
+    datePublished: "2026-05-14",
+    dateModified: "2026-05-14",
+    readTime: "6 min read",
+    category: "CD Recovery",
+    intro:
+      "A scratched audio CD that skips or won't rip is one of the most common disc problems — and one of the most fixable. Standard CD ripping software like Windows Media Player or iTunes gives up at the first read error and either skips the track entirely or fills the gap with silence. Sector-level recovery software retries each failing sector dozens of times and reconstructs the audio data with far fewer gaps. Most scratched audio CDs yield 90–100% of their music with the right tool.",
+    related: ["recover-data-from-cd-rom-windows", "recover-files-scratched-dvd"],
+    sections: [
+      {
+        id: "why-ripping-fails",
+        heading: "Why normal ripping software fails on scratched CDs",
+        level: 2,
+        paragraphs: [
+          "Standard CD rippers send one read command per sector and move on if it fails. On a scratched disc, this means every bad sector becomes either silence, a click, or a skipped chunk of audio. The ripped file plays but sounds wrong.",
+          "Audio CDs store data as 2,352-byte sectors with built-in error correction (CIRC). For minor scratches, the drive's own error correction handles it invisibly. For deeper scratches, the error correction is overwhelmed — and that's where standard rippers give up but recovery tools keep going, retrying at different speeds and directions.",
+        ],
+      },
+      {
+        id: "what-you-need",
+        heading: "What you need",
+        level: 2,
+        items: [
+          "Windows 10 or 11 PC (64-bit)",
+          "A CD or DVD optical drive — internal or USB external",
+          "Heirvo disc recovery software — free to scan",
+          "About 700 MB of free space per CD (lossless output)",
+        ],
+      },
+      {
+        id: "step-by-step",
+        heading: "Step-by-step: recover music from a scratched CD",
+        level: 2,
+        items: [
+          "Clean the disc with a microfibre cloth — wipe from centre to edge in straight lines. Even light cleaning dramatically improves read success on audio CDs.",
+          "Insert the disc and open Heirvo.",
+          "Click Start Recovery. Heirvo detects the audio CD format automatically and switches to sector-level audio extraction mode.",
+          "The engine scans the disc, retrying each failing sector multiple times at variable speeds. A typical audio CD (74 minutes) takes 15–45 minutes to scan depending on the level of damage.",
+          "Click Save — Heirvo outputs each track as a lossless WAV file. You can then convert to MP3 or FLAC with any audio software.",
+        ],
+        numbered: true,
+      },
+      {
+        id: "what-to-expect",
+        heading: "What to expect from the recovery",
+        level: 2,
+        paragraphs: [
+          "Light to moderate scratches: 95–100% recovery. The recovered tracks will be audibly identical to the originals.",
+          "Heavy scratches or disc rot: 70–90% recovery. Some tracks may have brief clicks or gaps where sectors were genuinely unreadable. These are typically isolated to the most damaged areas of the disc.",
+          "Deep gouges through the disc surface: these sectors are physically destroyed and cannot be recovered by any software. The rest of the disc is usually fine.",
+        ],
+        table: {
+          caption: "Expected recovery by damage level",
+          headers: ["Damage level", "Typical recovery rate", "Audible artefacts"],
+          rows: [
+            ["Light scratches", "95–100%", "None"],
+            ["Moderate scratches", "85–95%", "Rare clicks in worst areas"],
+            ["Heavy scratches / disc rot", "70–85%", "Brief gaps in damaged sections"],
+            ["Deep gouges", "Variable", "Missing audio in gouge area"],
+          ],
+        },
+      },
+      {
+        id: "cdparanoia-comparison",
+        heading: "How this compares to EAC and dBpoweramp",
+        level: 2,
+        paragraphs: [
+          "Exact Audio Copy (EAC) and dBpoweramp are the gold standard for ripping undamaged or lightly scratched CDs — they use AccurateRip verification and C2 error pointers. For moderately to heavily scratched discs, their retry logic is still limited by what the drive's firmware reports.",
+          "Heirvo's approach is sector-map-based — it builds a persistent record of every sector's read status and retries failed sectors independently of what the drive firmware reports. On heavily damaged discs, this recovers sectors that EAC and dBpoweramp consistently miss.",
+          "For a disc with only light scratches, EAC or dBpoweramp is perfectly fine. For a disc that those tools give up on, Heirvo is the next step before professional recovery.",
+        ],
+      },
+      {
+        id: "after-recovery",
+        heading: "What to do with the recovered files",
+        level: 2,
+        paragraphs: [
+          "Heirvo outputs WAV files — lossless, fully compatible with every audio player and converter. Use fre:ac, Audacity, or VLC to convert to MP3 or FLAC if you prefer a compressed format.",
+          "Once recovered, back the files up immediately — to an external drive and a cloud service. Don't put them back on the scratched disc.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "Can I recover a CD that skips in a CD player but rips fine on a computer?",
+        a: "Yes — a disc that skips in a player but rips fine on a computer is being handled by the drive's error correction during ripping. The ripped file may have subtle artefacts in the damaged areas. Run a sector-level scan to confirm the ripped version is complete.",
+      },
+      {
+        q: "Will the recovered audio sound different from the original?",
+        a: "For all fully-recovered sectors, the audio is bit-for-bit identical to the original — there is no quality loss. Only sectors that couldn't be read will have artefacts. Heirvo fills unrecoverable sectors with interpolated audio rather than silence, which sounds less jarring.",
+      },
+      {
+        q: "My CD won't even mount in Windows. Can it be recovered?",
+        a: "Usually yes — a disc that won't mount often has a damaged lead-in area (the innermost ring). Try a different optical drive; some drives read damaged lead-in areas better than others. If no drive can mount it, Heirvo's mail-in service uses equipment with better read sensitivity.",
+      },
+      {
+        q: "Is there a free way to recover audio CDs?",
+        a: "cdparanoia (Linux) and Exact Audio Copy (Windows, free) are good for lightly scratched discs. For heavily damaged discs, these tools hit their limits quickly. Heirvo offers a free scan so you can see how much is recoverable before paying.",
+      },
+    ],
+    cta: {
+      heading: "Recover your scratched CDs free",
+      body: "Scan your disc at no cost. See exactly which tracks are recoverable — then decide whether to pay.",
+      primaryLabel: "Download Free — Windows",
+      primaryHref: "/download",
+      secondaryLabel: "Mail-in recovery service",
+      secondaryHref: "/recover",
+    },
+  },
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 12. Recover video from camcorder DVD
+  // ─────────────────────────────────────────────────────────────────────────────
+  {
+    slug: "recover-video-from-camcorder-dvd",
+    title: "How to Recover Video from a Camcorder DVD",
+    metaTitle: "How to Recover Video from a Camcorder DVD on Windows (2026 Guide)",
+    metaDescription: "Mini DVD camcorder discs are some of the most failure-prone media ever made. This guide covers the three most common problems — unfinalized, cracked spindle, and format issues — and how to recover your footage on Windows.",
+    datePublished: "2026-05-14",
+    dateModified: "2026-05-14",
+    readTime: "7 min read",
+    category: "DVD Recovery",
+    intro:
+      "Camcorder DVDs — the small 8cm discs used in Sony, Canon, and Panasonic DVD camcorders from 2003 to 2012 — are some of the most failure-prone optical media ever made. The combination of small size, frequent handling, and the fact that most were never finalized properly means a huge proportion simply won't play or import on a computer. The good news: the video is almost always still there.",
+    related: ["recover-unfinalized-dvd", "recover-home-videos-dvd"],
+    sections: [
+      {
+        id: "why-camcorder-dvds-fail",
+        heading: "Why camcorder DVDs fail so often",
+        level: 2,
+        paragraphs: [
+          "Three problems are specific to camcorder DVDs that don't affect standard full-size DVDs:",
+        ],
+        items: [
+          "Unfinalized discs — DVD camcorders record in VR (Video Recording) mode, not Video mode, and require finalisation before a standard player can read them. Many people never ran the finalisation step on their camcorder, leaving the disc unreadable everywhere except in the original camera.",
+          "Cracked or warped hubs — the 8cm discs have a much smaller spindle hole than standard DVDs. Forcing them into a full-size drive using an adapter ring often cracks the hub area, causing read errors or drive damage.",
+          "VR mode incompatibility — even finalized camcorder DVDs recorded in VR mode may not play in standard DVD players or Windows, because VR mode is a different structure to the Video mode used by commercial DVDs.",
+        ],
+      },
+      {
+        id: "do-not-use-adapter",
+        heading: "Do not use a tray adapter — use a slot-load drive",
+        level: 2,
+        paragraphs: [
+          "The plastic adapter rings sold for playing 8cm discs in full-size tray drives are unreliable and often crack the disc's hub. If your disc already has hub cracks from adapter use, the situation is worse but often still recoverable.",
+          "The correct way to read an 8cm camcorder disc on a PC is with a slot-loading drive — either the slot-load drive in a MacBook (via a Windows VM or Boot Camp) or a USB slot-load drive. Sony PlayStation 3 slot-load drives also read 8cm discs and can be used with a USB enclosure. Alternatively, use a dedicated 8cm disc drive.",
+        ],
+        callout: {
+          label: "Already cracked the hub?",
+          text: "A disc with a cracked hub can sometimes still be read if the crack hasn't reached the data area. Place the disc carefully in a slot-load drive without an adapter. If the drive can spin it at all, Heirvo will extract whatever data is readable.",
+          color: "amber",
+        },
+      },
+      {
+        id: "recover-unfinalized-camcorder",
+        heading: "Recovering an unfinalized camcorder disc",
+        level: 2,
+        paragraphs: [
+          "Most camcorder DVDs that won't play on a computer are simply unfinalized. The video data is 100% intact — the disc just lacks the closing index that players need.",
+          "Insert the disc in a slot-load drive and run a Heirvo scan. Heirvo detects the VR mode structure directly and extracts the VOBS (video objects) without needing a finalized disc structure. In most cases, the complete recording is recovered intact.",
+          "If you still have the original camcorder, you can also finalize the disc directly on the camera: go to the disc management or setup menu and look for a 'Finalize' option. This is the most reliable method if the camera is still working.",
+        ],
+      },
+      {
+        id: "recover-scratched-camcorder",
+        heading: "Recovering a scratched or damaged camcorder disc",
+        level: 2,
+        paragraphs: [
+          "Camcorder discs scratch easily because they're often handled without cases. The recovery approach is the same as for full-size DVDs — sector-level scanning with multi-pass retries.",
+          "Clean the disc first with a microfibre cloth from centre to edge. Insert in a slot-load drive and run a Heirvo scan. The engine will build a sector map and extract everything readable.",
+        ],
+      },
+      {
+        id: "output-format",
+        heading: "What the recovered video looks like",
+        level: 2,
+        paragraphs: [
+          "Camcorder DVDs typically recorded at 720×480 (NTSC) or 720×576 (PAL) in MPEG-2. Heirvo converts the recovered VOB data to a standard MP4 file — compatible with every modern TV, phone, and video editor.",
+          "If chapters were recorded separately (each recording session is its own chapter), Heirvo recovers each chapter as a separate file so you don't get one long merged video.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "My camcorder says the disc is full but my computer shows it as empty. Why?",
+        a: "This is the classic unfinalized disc symptom. The camera can read its own unfinalized disc because it knows the internal structure. A computer needs the finalized index to navigate the disc. Heirvo bypasses this requirement and reads the raw recording directly.",
+      },
+      {
+        q: "Can I use a DVD adapter ring to play the disc?",
+        a: "We strongly advise against it. Adapter rings frequently crack the disc hub during insertion or removal, causing permanent physical damage. Use a slot-load drive instead.",
+      },
+      {
+        q: "The disc was recorded on a Sony camcorder. Does that matter?",
+        a: "Different manufacturers used slightly different VR mode implementations — Sony, Canon, Panasonic, and Hitachi all had minor variations. Heirvo handles all of them by reading the raw sector data rather than relying on the manufacturer-specific navigation layer.",
+      },
+      {
+        q: "How do I know if my disc is VR mode or Video mode?",
+        a: "If the disc was recorded directly in a camcorder, it's almost certainly VR mode. Video mode was used by some DVD recorders (set-top boxes), not camcorders. Heirvo detects the format automatically — you don't need to know in advance.",
+      },
+    ],
+    cta: {
+      heading: "Recover your camcorder footage today",
+      body: "Free scan shows you what's recoverable. Supports unfinalized discs, VR mode, and damaged 8cm camcorder DVDs.",
+      primaryLabel: "Download Free — Windows",
+      primaryHref: "/download",
+      secondaryLabel: "Mail-in recovery service",
+      secondaryHref: "/recover",
+    },
+  },
 ];
 
 export default GUIDES;
