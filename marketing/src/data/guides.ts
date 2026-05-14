@@ -173,7 +173,7 @@ const GUIDES: Guide[] = [
     category: "DVD Recovery",
     intro:
       "Home video DVDs burned between 2000 and 2015 are now reaching the end of their reliable lifespan. The organic dye in DVD-R and DVD+R discs oxidises over time, turning the reflective layer hazy and causing read errors even on undamaged discs. The good news is that the video data is usually still recoverable — you just need software that reads below the surface errors rather than giving up.",
-    related: ["recover-files-scratched-dvd", "best-dvd-recovery-software"],
+    related: ["recover-files-scratched-dvd", "recover-vhs-converted-dvd"],
     sections: [
       {
         id: "why-home-dvds-fail",
@@ -400,7 +400,7 @@ const GUIDES: Guide[] = [
     category: "Software Guide",
     intro:
       "The best DVD recovery software for Windows reads failing discs sector by sector — not once, but in multiple passes at variable speeds, forwards and backwards — to rescue data that a standard file copy would miss entirely. In 2026 there are a handful of tools that do this well. Here is an honest comparison based on what each tool is actually good at.",
-    related: ["heirvo-vs-isobuster", "recover-files-scratched-dvd"],
+    related: ["heirvo-vs-isobuster", "free-dvd-recovery-software"],
     sections: [
       {
         id: "what-to-look-for",
@@ -1405,6 +1405,434 @@ const GUIDES: Guide[] = [
       primaryHref: "/download",
       secondaryLabel: "Mail-in recovery service",
       secondaryHref: "/recover",
+    },
+  },
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 13. Recover VHS-to-DVD transfer
+  // ─────────────────────────────────────────────────────────────────────────────
+  {
+    slug: "recover-vhs-converted-dvd",
+    title: "How to Recover a VHS-to-DVD Transfer That Won't Play or Is Damaged",
+    metaTitle: "Recover a VHS-to-DVD Transfer That Won't Play or Is Damaged (2026)",
+    metaDescription:
+      "Your VHS-to-DVD conversion is damaged or won't play — here's how to recover the footage before it's gone for good. Works on scratched, rotted, and unfinalized transfer DVDs.",
+    datePublished: "2026-05-14",
+    dateModified: "2026-05-14",
+    readTime: "6 min read",
+    category: "DVD Recovery",
+    intro:
+      "A VHS-to-DVD transfer that won't play is one of the most heartbreaking disc problems — those tapes often no longer exist, making the DVD the only copy of irreplaceable footage. The good news is that most damaged transfer DVDs are recoverable. Because the footage was professionally encoded and pressed (or burned) in a single session, the data is usually intact even when the disc surface has degraded.",
+    related: ["recover-home-videos-dvd", "recover-files-scratched-dvd"],
+    sections: [
+      {
+        id: "why-transfer-dvds-fail",
+        heading: "Why VHS-to-DVD transfers fail",
+        level: 2,
+        paragraphs: [
+          "Between roughly 1998 and 2012, millions of families had their VHS, Betamax, and 8mm tapes converted to DVD — either at a shop like Costco or Walgreens, or with a home DVD recorder. Those discs are now 15–25 years old, and DVD-R discs (the format almost all transfer services used) have a typical reliable lifespan of 10–25 years in home storage conditions.",
+          "The most common failure mode is disc rot — the organic dye layer oxidises and turns hazy, scattering the read laser. Scratches from handling and storage are a close second. Either way, Windows starts refusing to read the disc, and standard DVD players skip or freeze.",
+          "Crucially, the underlying video data is often still present. Disc rot and surface scratches degrade the optical readability of sectors, but they don't immediately destroy the data — a sector-level recovery tool can often read what a standard player cannot.",
+        ],
+      },
+      {
+        id: "before-you-start",
+        heading: "Check the original tapes first",
+        level: 2,
+        paragraphs: [
+          "Before spending time on disc recovery, ask one question: do the original VHS or 8mm tapes still exist? If they do — even in poor condition — re-converting from tape often produces better results than recovering a degraded disc. Tape can also be repaired and baked in ways that disc data cannot.",
+          "If the tapes are gone, or if you don't know where they are, disc recovery is your only option. Proceed with the steps below.",
+        ],
+        callout: {
+          label: "No tapes left?",
+          text: "If the original tapes no longer exist, your transfer DVD is the sole copy. Act now — disc rot is progressive. A disc that recovers 90% of footage today may only recover 60% in a year.",
+          color: "amber",
+        },
+      },
+      {
+        id: "step-by-step",
+        heading: "How to recover a damaged VHS-to-DVD disc",
+        level: 2,
+        numbered: true,
+        items: [
+          "Clean the disc gently with a microfibre cloth — wipe from centre to edge in straight lines, never in circles. Circular wiping can add fine scratches across data tracks.",
+          "Download and install Heirvo on Windows 10 or 11. No account needed — the scan is completely free.",
+          "Insert the disc in a full-size external USB DVD drive if possible. Slim laptop drives have weaker error correction and struggle more with marginal discs.",
+          "Open Heirvo and select your disc drive. Heirvo detects the disc type automatically — including single-layer (DVD-5) and dual-layer (DVD-9) transfer discs.",
+          "Click Scan. Heirvo reads every sector up to 16 times at variable speeds, forwards and backwards, before marking a sector as unreadable. A badly degraded disc can take 2–4 hours.",
+          "When the scan completes, Heirvo shows every recoverable file — typically the main video file and any chapter markers the transfer shop added. Review what was recovered before paying anything.",
+          "Activate Heirvo Pro ($39 one-time) to save the recovered footage as MP4 to your hard drive. Back it up to at least two locations immediately.",
+        ],
+      },
+      {
+        id: "what-to-expect",
+        heading: "What recovery rates to expect",
+        level: 2,
+        paragraphs: [
+          "Light disc rot (disc looks slightly hazy but plays partially): typically 85–98% recovery. The footage plays with occasional brief artefacts at the most degraded sectors.",
+          "Moderate disc rot (disc won't play in any player): typically 60–85% recovery. You'll get most of the footage but may lose short segments at the worst-affected areas.",
+          "Severe disc rot (disc looks bronze or has visible pinholes when held to light): sector-level software may recover 20–50%. At this stage the dye layer has physically disintegrated in places. Professional lab recovery using re-polishing and a custom optical reader is the next step — which is what Heirvo's mail-in service uses.",
+          "Scratched discs (surface scratches, not rot): typically 80–95% recovery even with significant scratching, because scratches damage a narrow band of sectors rather than the whole disc evenly.",
+        ],
+        callout: {
+          label: "Disc rot vs scratches",
+          text: "Hold the disc to a light source and look at the reflective side. A disc with even, slight haziness or a faint bronze tint has disc rot. A disc with visible lines or gouges has scratches. Both are recoverable — disc rot just tends to be more unpredictable about which sectors are affected.",
+          color: "blue",
+        },
+      },
+      {
+        id: "after-recovery",
+        heading: "After recovery: preserving the footage long-term",
+        level: 2,
+        paragraphs: [
+          "Once recovered, store the MP4 file in at least three locations: an external hard drive, a cloud service (Google Drive, iCloud, or Backblaze), and ideally a second physical drive kept in a different location. DVDs and hard drives both fail — redundancy is the only protection.",
+          "Consider also uploading the footage to a private YouTube channel. YouTube stores video at very high quality and is effectively a free, permanent backup. Set the privacy to 'Unlisted' so only people with the link can view it.",
+        ],
+      },
+      {
+        id: "mail-in-option",
+        heading: "When software recovery isn't enough",
+        level: 2,
+        paragraphs: [
+          "If Heirvo's scan recovers less than 50% of the disc, or the disc has visible delamination or severe disc rot, professional lab recovery is the next step. Heirvo's mail-in service uses lab-grade optical equipment — a modified reader with a stronger laser and finer focus control — that can read discs software tools cannot.",
+          "Post the disc to us and we'll tell you exactly what's recoverable before you pay anything. For VHS-to-DVD transfers — often the last surviving copy of irreplaceable family footage — the mail-in service is worth it.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "The DVD won't play in any player and Windows says 'insert a disc'. Is the footage gone?",
+        a: "Not necessarily. 'Insert a disc' usually means the drive can't read the disc's table of contents — this happens with disc rot, scratches, or an unfinalized burn. Sector-level recovery software bypasses the navigation layer and reads the raw video data directly. Run a free scan with Heirvo to find out what's recoverable.",
+      },
+      {
+        q: "My transfer was done at a Walgreens/Costco/CVS transfer service. Will the format work?",
+        a: "Yes. All retail transfer services in the US and UK encoded footage as standard DVD Video (VOB files in a VIDEO_TS folder) on standard DVD-R media. Heirvo handles this format natively — there is nothing proprietary about these discs.",
+      },
+      {
+        q: "Can I recover only part of the disc — like just the first hour if the end is too damaged?",
+        a: "Yes. Heirvo's scan produces a sector map showing exactly which parts of the disc are readable. You'll see which segments of footage are recoverable before you pay. Partial recovery is very common and often still saves the most important parts of the video.",
+      },
+      {
+        q: "The transfer disc is dual-layer (DVD-9, 8.5 GB). Does that change anything?",
+        a: "Dual-layer discs have a second failure point — the layer change point in the middle of the disc. Heirvo handles both layers automatically. If the layer change area is damaged, you may get a brief gap in the footage at that point, but both layers are scanned independently.",
+      },
+      {
+        q: "How do I know if the original VHS tapes still exist?",
+        a: "Check boxes in storage, attics, and garages — many families kept tapes after transfer without realising it. If you used a professional service, they sometimes returned the originals with the DVD. Even a deteriorated VHS tape is often recoverable by a tape restoration specialist, which may be a better path than disc recovery if the disc is severely damaged.",
+      },
+    ],
+    cta: {
+      heading: "Recover your VHS transfer before it's too late",
+      body: "Free scan shows exactly what's recoverable. Works on scratched, rotted, and unfinalized transfer DVDs — pay only when you save.",
+      primaryLabel: "Download Free — Windows",
+      primaryHref: "/download",
+      secondaryLabel: "Mail-in recovery service",
+      secondaryHref: "/recover",
+    },
+  },
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 14. DVD drive not reading disc Windows 11
+  // ─────────────────────────────────────────────────────────────────────────────
+  {
+    slug: "dvd-drive-not-reading-disc-windows-11",
+    title: "DVD Drive Not Reading Disc on Windows 11: How to Fix It",
+    metaTitle: "DVD Drive Not Reading Disc on Windows 11: How to Fix It (2026)",
+    metaDescription:
+      "DVD drive shows 'Please insert a disc' on Windows 11 even with a disc inside? Here are the real fixes — from driver issues to damaged discs — and when to use recovery software.",
+    datePublished: "2026-05-14",
+    dateModified: "2026-05-14",
+    readTime: "7 min read",
+    category: "DVD Recovery",
+    intro:
+      "A DVD drive that shows 'Please insert a disc' when a disc is already inside is one of the most frustrating Windows problems — and it has a handful of distinct causes, each with a different fix. This guide walks through every cause in order of likelihood, so you can find the right fix without guessing.",
+    related: ["recover-files-scratched-dvd", "best-dvd-recovery-software"],
+    sections: [
+      {
+        id: "rule-out-the-disc",
+        heading: "Step 1: Rule out the disc itself",
+        level: 2,
+        paragraphs: [
+          "Before troubleshooting the drive or Windows, test with a different disc — preferably a commercial pressed DVD (a movie, not a burned disc). If the second disc reads fine, the problem is with your original disc, not the drive. Skip to the 'Damaged disc' section below.",
+          "If no disc reads at all — pressed or burned — the problem is the drive, the driver, or Windows. Continue with the steps below.",
+        ],
+      },
+      {
+        id: "clean-the-disc",
+        heading: "Step 2: Clean the disc",
+        level: 2,
+        paragraphs: [
+          "A disc with fingerprints, dust, or a small smear will often fail to read even though the data is intact. Clean it with a microfibre cloth, wiping from the centre outward to the edge in straight lines — never in circles. Let it dry completely before reinserting.",
+          "If the disc is clearly scratched or has a hazy appearance on the reflective side (disc rot), cleaning won't help. See the damaged disc section below.",
+        ],
+      },
+      {
+        id: "try-different-drive",
+        heading: "Step 3: Try a different drive",
+        level: 2,
+        paragraphs: [
+          "Slim laptop drives — the kind built into thin laptops — have significantly weaker laser assemblies and error correction than full-size desktop or external USB drives. A disc that fails in a slim laptop drive will often read perfectly in a full-size USB external drive.",
+          "If you don't own an external drive, they cost $20–$30 on Amazon. For a once-off recovery of important footage, this is the single highest-impact step you can take.",
+        ],
+        callout: {
+          label: "Recommended",
+          text: "LG, Asus, and Pioneer make reliable full-size external USB DVD drives. Avoid no-brand slim drives — they often perform no better than the laptop drive you already have.",
+          color: "green",
+        },
+      },
+      {
+        id: "windows-driver-fix",
+        heading: "Step 4: Fix the Windows driver",
+        level: 2,
+        paragraphs: [
+          "Windows 11 can lose track of optical drives after major updates — a known issue where the drive shows up in Device Manager but fails to read discs. The fix is to delete the upper and lower filters in the registry.",
+        ],
+        numbered: true,
+        items: [
+          "Press Win + R, type regedit, and press Enter.",
+          "Navigate to: HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Control\\Class\\{4D36E965-E325-11CE-BFC1-08002BE10318}",
+          "In the right pane, look for values named UpperFilters and LowerFilters.",
+          "If they exist, right-click each one and select Delete.",
+          "Restart your computer and test the drive again.",
+        ],
+      },
+      {
+        id: "update-or-reinstall-driver",
+        heading: "Step 5: Update or reinstall the drive in Device Manager",
+        level: 2,
+        numbered: true,
+        items: [
+          "Right-click the Start button and select Device Manager.",
+          "Expand DVD/CD-ROM drives and find your drive.",
+          "Right-click the drive and select Uninstall device. Check the box to delete the driver if offered.",
+          "Restart Windows. Windows will automatically reinstall the driver on boot.",
+          "If the drive still doesn't read, right-click the drive again and select Update driver → Search automatically for drivers.",
+        ],
+      },
+      {
+        id: "autoplay-settings",
+        heading: "Step 6: Check AutoPlay and drive letter settings",
+        level: 2,
+        paragraphs: [
+          "Sometimes the drive reads the disc but Windows doesn't do anything visible with it. Open File Explorer and check whether the drive appears with a disc icon rather than a generic drive icon — if it does, the disc is being read but AutoPlay is disabled.",
+          "Right-click the drive in File Explorer and select Open — if you can see files, the disc is readable and the issue is just AutoPlay settings, not the drive.",
+        ],
+      },
+      {
+        id: "damaged-disc",
+        heading: "If the disc itself is damaged",
+        level: 2,
+        paragraphs: [
+          "If only one specific disc fails and others read fine, the problem is the disc — not the drive or Windows. A disc that Windows won't read at all (showing 'Please insert a disc' or 'Disc not accessible') may still have recoverable data.",
+          "Standard Windows tools and media players give up at the first read error. Disc recovery software like Heirvo uses a different approach: it retries each failing sector up to 16 times at variable speeds, recovering data that normal tools miss. Even discs that Windows refuses to acknowledge entirely often yield 80–95% of their data with a sector-level scan.",
+        ],
+        callout: {
+          label: "Free to try",
+          text: "Heirvo scans your disc completely free — you only pay ($39 one-time) if you choose to save the recovered files. If nothing is recoverable, you pay nothing.",
+          color: "blue",
+        },
+      },
+      {
+        id: "hardware-failure",
+        heading: "When it's a hardware failure",
+        level: 2,
+        paragraphs: [
+          "If no disc reads in your drive after following all the steps above, the drive's laser assembly has likely failed. Optical drive lasers degrade over time and eventually stop reading discs altogether. This is a hardware issue — no driver or software fix will resolve it.",
+          "Replacement USB external drives are inexpensive ($20–$30). For a laptop with an internal drive, replacement drives are available for most models for $15–$40 and can be swapped in 15 minutes with a screwdriver.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "My DVD drive worked yesterday and now reads nothing. What happened?",
+        a: "The most common cause is a Windows Update that reset driver settings or corrupted the optical drive filters in the registry. Follow Step 4 above (deleting UpperFilters and LowerFilters) — this resolves the issue in most cases without any hardware change.",
+      },
+      {
+        q: "The drive shows up in Device Manager but Windows Explorer shows it as empty even with a disc inside.",
+        a: "This is typically the registry filter issue described in Step 4. Delete the UpperFilters and LowerFilters values under the DVD/CD-ROM class key and restart. If it persists after that, uninstall and reinstall the driver (Step 5).",
+      },
+      {
+        q: "My drive spins up and then stops — it sounds like it's trying but gives up. Is that a hardware problem?",
+        a: "Not necessarily. A drive that spins up and stops is reading the disc's lead-in area and failing — this is usually a disc quality or damage issue, not hardware failure. Try a different disc first. If other discs spin up and read normally, the original disc is the problem.",
+      },
+      {
+        q: "I have a USB external drive and it also won't read the disc. Is the disc gone?",
+        a: "A disc that fails in multiple drives is either heavily damaged or has severe disc rot. It isn't necessarily unrecoverable — sector-level recovery software makes multiple passes at low read speeds that consumer drives don't attempt by default. Run a free scan with Heirvo before concluding the data is lost.",
+      },
+      {
+        q: "Does Windows 11 support older DVD formats like DVD-R and DVD+RW?",
+        a: "Yes — Windows 11 reads DVD-R, DVD+R, DVD-RW, DVD+RW, DVD-RAM (with the right driver), and dual-layer variants of all of the above. Format compatibility is rarely the issue. If a disc fails, it's almost always damage, disc rot, or a driver problem.",
+      },
+    ],
+    cta: {
+      heading: "Disc reads in the drive but the data looks damaged?",
+      body: "Heirvo scans every sector up to 16 times — recovering data that Windows and media players give up on. Free to scan, $39 to save.",
+      primaryLabel: "Download Free — Windows",
+      primaryHref: "/download",
+      secondaryLabel: "Learn about mail-in recovery",
+      secondaryHref: "/recover",
+    },
+  },
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 15. Free DVD recovery software
+  // ─────────────────────────────────────────────────────────────────────────────
+  {
+    slug: "free-dvd-recovery-software",
+    title: "Free DVD Recovery Software: What Actually Works in 2026",
+    metaTitle: "Free DVD Recovery Software: What Actually Works in 2026",
+    metaDescription:
+      "Looking for free DVD recovery software? Honest breakdown of what's free, what's freemium, and what to avoid — plus which tool works best for home video and scratched discs.",
+    datePublished: "2026-05-14",
+    dateModified: "2026-05-14",
+    readTime: "8 min read",
+    category: "Software Guide",
+    intro:
+      "Most 'free DVD recovery software' is either genuinely free with serious limitations, or a freemium trial that scans for free but locks recovery behind a paywall. Knowing which category a tool falls into before you spend two hours scanning a disc matters. This guide breaks down every realistic free option in 2026 — what each one actually does, what it can't do, and which is worth your time.",
+    related: ["best-dvd-recovery-software", "heirvo-vs-isobuster"],
+    sections: [
+      {
+        id: "what-free-means",
+        heading: "What 'free' actually means for disc recovery software",
+        level: 2,
+        paragraphs: [
+          "Disc recovery is computationally straightforward but commercially awkward. The tools that do it well are almost all commercial products with trial or freemium models. 'Completely free with no limitations' is rare — the exceptions are open-source tools that require technical setup.",
+          "The freemium model — free to scan, pay to save — is actually the most user-friendly. You find out what's recoverable before committing money. A tool that charges upfront without a scan preview is far riskier.",
+        ],
+        callout: {
+          label: "Key distinction",
+          text: "There is a meaningful difference between 'free to scan' (you see results before paying) and 'free trial' (time-limited or feature-capped). The best freemium tools are the former — you pay only if recovery succeeded.",
+          color: "blue",
+        },
+      },
+      {
+        id: "heirvo-free",
+        heading: "Heirvo — free scan, pay only to save",
+        level: 2,
+        paragraphs: [
+          "Heirvo is free to download, install, and scan. You can see exactly what files are recoverable — with previews of video and photos — before paying anything. The $39 one-time Pro licence unlocks saving the recovered files.",
+          "This model is specifically designed so you don't pay for a recovery that didn't work. If the scan recovers nothing, you owe nothing.",
+        ],
+        items: [
+          "Free: full scan, full result preview, recovery map",
+          "Pro ($39 one-time): save recovered files as MP4, ISO, or individual chapters",
+          "Works on: scratched DVDs, disc rot, unfinalized discs, camcorder DVDs, Blu-ray, CDs",
+          "Platform: Windows 10 and 11 only",
+        ],
+      },
+      {
+        id: "isobuster-free",
+        heading: "IsoBuster — partially free, complex UI",
+        level: 2,
+        paragraphs: [
+          "IsoBuster has a free tier that lets you extract certain file types without a licence — specifically user data files on standard ISO 9660 file systems. For home video DVDs (VIDEO_TS folder structure), the free tier hits a licence wall quickly.",
+          "IsoBuster is genuinely powerful and preferred by IT professionals who need forensic-level control. For non-technical users trying to recover a wedding DVD or a box of home video discs, the interface is intimidating — dozens of modes, session trees, and file system options that require understanding of optical disc internals.",
+        ],
+        items: [
+          "Free tier: limited to specific file system types; VIDEO_TS recovery requires paid licence",
+          "Paid: €39.95 one-time for personal use",
+          "Strengths: forensic-level detail, every file system supported, long track record",
+          "Weaknesses: steep learning curve, not designed for home video recovery",
+          "Platform: Windows only",
+        ],
+      },
+      {
+        id: "cdcheck-free",
+        heading: "CDCheck — free, but limited recovery",
+        level: 2,
+        paragraphs: [
+          "CDCheck is free for personal use and can verify and recover data from CDs and DVDs. It's been around since the early 2000s and hasn't been meaningfully updated since. It works, but its sector retry logic is simpler than modern tools — it makes fewer passes at a damaged sector and doesn't vary the read speed as aggressively.",
+          "For lightly damaged discs (minor scratches, a few bad sectors), CDCheck can recover files adequately. For heavily scratched discs or any sign of disc rot, its recovery rate is noticeably lower than Heirvo or IsoBuster.",
+        ],
+        items: [
+          "Price: free for personal use",
+          "Strengths: genuinely free, no paywall, simple interface",
+          "Weaknesses: last updated circa 2015, lower recovery rate on severe damage",
+          "Platform: Windows only",
+        ],
+      },
+      {
+        id: "ddrescue-free",
+        heading: "GNU ddrescue — free, but requires Linux",
+        level: 2,
+        paragraphs: [
+          "GNU ddrescue is arguably the most powerful free disc imaging tool that exists. It reads a failing disc and creates an ISO image, retrying bad sectors in multiple passes with detailed logging of which sectors failed. Data recovery professionals use it.",
+          "The catch: ddrescue runs on Linux, not Windows. To use it on Windows, you need to boot a Linux live USB (Ubuntu, for example), mount your DVD drive in Linux, and run ddrescue from the command line. This is feasible but well outside the comfort zone of most home users.",
+          "If you're comfortable with Linux: ddrescue is excellent and completely free. If you're not: use a Windows tool instead. The time spent learning Linux to run ddrescue is rarely worth it when freemium Windows tools exist.",
+        ],
+        items: [
+          "Price: free (open source)",
+          "Strengths: best-in-class sector retry logic, detailed recovery logs, no paywall",
+          "Weaknesses: Linux only, command-line interface, significant technical knowledge required",
+          "Platform: Linux (can boot from a USB on any PC)",
+        ],
+      },
+      {
+        id: "photorec-free",
+        heading: "PhotoRec — free, for file carving not disc recovery",
+        level: 2,
+        paragraphs: [
+          "PhotoRec (part of the TestDisk suite) is often recommended for disc recovery, but it's designed for file system recovery on hard drives — not optical discs with damaged sectors. It carves known file signatures from raw data rather than retrying failed sectors.",
+          "On a healthy DVD with a corrupted file system, PhotoRec can be useful. On a physically damaged DVD with unreadable sectors, it will produce whatever files happen to be in the readable sectors and ignore the rest — it won't retry or compensate for the disc damage at all.",
+        ],
+        items: [
+          "Price: free (open source)",
+          "Strengths: free, runs on Windows/Mac/Linux, good for file system corruption",
+          "Weaknesses: not designed for physical disc damage; poor recovery rate on scratched/rotted DVDs",
+          "Platform: Windows, Mac, Linux",
+        ],
+      },
+      {
+        id: "recommendation",
+        heading: "Which free option to use",
+        level: 2,
+        paragraphs: [
+          "For most people recovering a home video, wedding, or family photo DVD on Windows: start with Heirvo. The scan is completely free, you'll see exactly what's recoverable within a few hours, and you only pay $39 if the recovery succeeded and you want the files.",
+          "If you find IsoBuster's free tier covers your file type and you don't mind the interface, it's a legitimate option for specific technical use cases.",
+          "If you're comfortable with Linux and dealing with severe disc damage, ddrescue combined with Heirvo (ddrescue to image the disc, Heirvo to decode the VIDEO_TS structure from the image) is the highest-recovery-rate free approach — but it's a multi-hour technical process.",
+        ],
+        table: {
+          caption: "Free DVD recovery software comparison (2026)",
+          headers: ["Tool", "Cost to recover", "Home video support", "Windows"],
+          rows: [
+            ["Heirvo", "Free scan / $39 to save", "Excellent", "Yes"],
+            ["IsoBuster", "Free tier limited / €39.95", "Good (paid)", "Yes"],
+            ["CDCheck", "Free", "Basic", "Yes"],
+            ["GNU ddrescue", "Free", "Imaging only (no decode)", "Linux only"],
+            ["PhotoRec", "Free", "Poor on physical damage", "Yes"],
+          ],
+        },
+      },
+    ],
+    faq: [
+      {
+        q: "Is there genuinely free DVD recovery software with no paywall at all?",
+        a: "Yes — CDCheck is genuinely free for personal use with no paywall. GNU ddrescue is free and open source but requires Linux. Both have meaningful limitations compared to freemium tools: CDCheck has weaker sector retry logic, and ddrescue doesn't decode VIDEO_TS home video format. For light damage, CDCheck works fine. For severe damage or home video, Heirvo's free scan / pay-to-save model gives you better results with less risk.",
+      },
+      {
+        q: "Heirvo says 'free to scan' — what does that mean exactly?",
+        a: "The entire scan process — sector reading, recovery mapping, file reconstruction, and preview — is free. You can see every recoverable file and preview the video before paying anything. The $39 Pro licence unlocks saving those files to your hard drive. If the scan recovers nothing, you pay nothing.",
+      },
+      {
+        q: "Can I use IsoBuster free to recover a home video DVD?",
+        a: "IsoBuster's free tier covers user data files on ISO 9660 file systems (data discs). Home video DVDs use the UDF or DVD Video file system with a VIDEO_TS folder structure. You'll hit a licence prompt quickly when trying to extract VOB files from a home video disc. The paid licence is €39.95.",
+      },
+      {
+        q: "What about HandBrake — is it useful for disc recovery?",
+        a: "HandBrake is a video transcoder, not a disc recovery tool. It rips playable DVDs to video files, but it relies on the disc being fully readable. If your disc has read errors, HandBrake will either skip the bad frames or fail entirely. It is not designed to deal with damaged sectors.",
+      },
+      {
+        q: "I tried free software and it only recovered part of the disc. What now?",
+        a: "Partial recovery with free tools is common because they make fewer retry passes on bad sectors. A tool with more aggressive multi-pass sector retry logic (like Heirvo) often recovers more from the same disc. If multi-pass software still can't get the rest, the damage is severe enough to consider Heirvo's mail-in service, which uses lab-grade optical equipment.",
+      },
+    ],
+    cta: {
+      heading: "Free to scan — pay only if it works",
+      body: "Heirvo scans your disc completely free. See every recoverable file before paying anything. $39 one-time if you choose to save.",
+      primaryLabel: "Download Free — Windows",
+      primaryHref: "/download",
+      secondaryLabel: "Compare all features",
+      secondaryHref: "/guides/best-dvd-recovery-software",
     },
   },
 ];
