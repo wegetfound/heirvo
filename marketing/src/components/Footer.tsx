@@ -47,7 +47,7 @@ export function Footer() {
               <FooterLink to="/terms">Terms of service</FooterLink>
               <FooterLink to="/refund">Refund policy</FooterLink>
               <FooterLink to="/acceptable-use">Acceptable use</FooterLink>
-              <FooterLink href="mailto:hello@heirvo.com">hello@heirvo.com</FooterLink>
+              <FooterLink href="mailto:info@heirvo.com">info@heirvo.com</FooterLink>
             </ul>
           </div>
         </div>

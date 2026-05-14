@@ -9,7 +9,7 @@ import { useMeta } from "../lib/useMeta";
 export default function Support() {
   useMeta(
     "Heirvo Support — Help & Contact",
-    "Get help with Heirvo disc recovery software. Find answers to common questions or email us at support@heirvo.com. We reply within one business day.",
+    "Get help with Heirvo disc recovery software. Find answers to common questions or email us at info@heirvo.com. We reply within one business day.",
     "https://heirvo.com/support"
   );
   const markRef = useRef<HTMLDivElement>(null);
@@ -83,10 +83,10 @@ export default function Support() {
               tone="green"
               eyebrow="Email"
               title="Talk to a human"
-              body="hello@heirvo.com goes to a real inbox watched by a real person. Expect a reply within 24 hours, often much sooner."
+              body="info@heirvo.com goes to a real inbox watched by a real person. Expect a reply within 24 hours, often much sooner."
               cta={{
-                label: "Email hello@heirvo.com",
-                href: "mailto:hello@heirvo.com",
+                label: "Email info@heirvo.com",
+                href: "mailto:info@heirvo.com",
                 external: true,
               }}
               icon={
@@ -150,10 +150,10 @@ export default function Support() {
                   <>
                     Email the .zip to{" "}
                     <a
-                      href="mailto:hello@heirvo.com?subject=Diagnostic%20bundle"
+                      href="mailto:info@heirvo.com?subject=Diagnostic%20Bundle"
                       className="text-brand-600 underline hover:text-brand-700"
                     >
-                      hello@heirvo.com
+                      info@heirvo.com
                     </a>{" "}
                     with a one-line description of what went wrong. We typically
                     reply with a fix or a workaround within a day.
@@ -185,12 +185,12 @@ export default function Support() {
               is recoverable before you buy, ask first &mdash; we&rsquo;ll tell
               you honestly.
             </p>
-            <a href="mailto:hello@heirvo.com" className="btn btn-primary">
+            <a href="mailto:info@heirvo.com" className="btn btn-primary">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
                 <rect x="3" y="5" width="18" height="14" rx="2.5" stroke="currentColor" strokeWidth="1.7" />
                 <path d="M4 7l8 6 8-6" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
-              hello@heirvo.com
+              info@heirvo.com
             </a>
           </div>
 
