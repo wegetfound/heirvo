@@ -41,6 +41,7 @@ export function Footer() {
           <div>
             <div className="micro-label mb-4">Help &amp; legal</div>
             <ul className="space-y-3 text-[14px]">
+              <FooterLink to="/about">About Heirvo</FooterLink>
               <FooterLink to="/support">Support</FooterLink>
               <FooterLink to="/privacy">Privacy policy</FooterLink>
               <FooterLink to="/terms">Terms of service</FooterLink>
