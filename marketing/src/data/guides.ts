@@ -857,6 +857,339 @@ const GUIDES: Guide[] = [
       secondaryHref: "/recover",
     },
   },
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 8. Recover wedding DVD
+  // ─────────────────────────────────────────────────────────────────────────────
+  {
+    slug: "recover-wedding-dvd",
+    title: "How to Recover a Wedding DVD That Won't Play",
+    metaTitle: "How to Recover a Wedding DVD That Won't Play (2026 Guide)",
+    metaDescription: "Wedding DVDs stop playing for three reasons: scratches, disc rot, or an unfinalized burn. This guide covers all three and shows you how to recover the footage on Windows.",
+    datePublished: "2026-05-14",
+    dateModified: "2026-05-14",
+    readTime: "7 min read",
+    category: "DVD Recovery",
+    intro:
+      "A wedding DVD that won't play is one of the most emotionally urgent disc recovery situations there is. The good news is that most wedding DVDs fail for recoverable reasons — surface scratches, early-stage disc rot, or an unfinalized burn by the videographer — rather than catastrophic physical damage. This guide explains what's likely wrong and exactly how to get your footage back on Windows.",
+    related: ["recover-files-scratched-dvd", "recover-unfinalized-dvd"],
+    sections: [
+      {
+        id: "why-wedding-dvds-fail",
+        heading: "Why wedding DVDs stop playing",
+        level: 2,
+        paragraphs: [
+          "Wedding DVDs fail for a handful of distinct reasons, and the fix depends on which one applies to your disc. The three most common causes are:",
+        ],
+        items: [
+          "Surface scratches — the disc was handled, stored in a paper sleeve, or sat in a hot car. The dye layer is still intact, but the laser can't read through the scratched surface.",
+          "Disc rot — DVD-R and DVD+R discs burned between 1998 and 2010 are now 15–28 years old and many are degrading chemically. The reflective layer oxidises and turns the disc hazy or bronze-tinted.",
+          "Unfinalized disc — some videographers burned footage to a DVD-R without running the finalisation step. Unfinalized discs won't play in a standard DVD player or computer, but the data is still fully present.",
+        ],
+      },
+      {
+        id: "check-disc-condition",
+        heading: "Step 1 — Identify what's wrong",
+        level: 2,
+        paragraphs: [
+          "Hold the disc under a bright light and tilt it slowly. Look for:",
+        ],
+        items: [
+          "Visible scratches running across the data surface (the underside) — these cause read errors in specific areas.",
+          "A milky, bronze, or iridescent sheen across the whole disc instead of the usual silver or gold — this is disc rot and affects the whole disc uniformly.",
+          "A disc that Windows doesn't recognise at all, shows as blank, or plays in some drives but not others — this suggests an unfinalized disc.",
+        ],
+      },
+      {
+        id: "recover-scratched-wedding-dvd",
+        heading: "Recovering a scratched wedding DVD",
+        level: 2,
+        paragraphs: [
+          "For scratched discs, sector-level recovery software is the right tool. It retries each failing sector dozens of times at variable read speeds, recovering data that a normal file copy misses entirely.",
+          "Download Heirvo, insert the disc, and click Start Recovery. The software will scan the disc, build a map of readable and damaged sectors, and extract whatever it can — including the main feature and any bonus footage burned to the disc. Even discs with significant scratching typically yield 85–95% of the footage.",
+          "If the disc won't seat properly or spins but isn't recognised, try a different USB optical drive. Slim laptop drives are notoriously poor at reading marginal discs — a full-size external drive almost always performs better.",
+        ],
+        callout: {
+          label: "Before you scan",
+          text: "Clean the disc with a microfibre cloth, wiping from centre to edge in straight lines. Never wipe in circles — this can add fine circular scratches across data tracks. Even a light cleaning often improves the read success rate significantly.",
+          color: "blue",
+        },
+      },
+      {
+        id: "recover-disc-rot-wedding-dvd",
+        heading: "Recovering a wedding DVD with disc rot",
+        level: 2,
+        paragraphs: [
+          "Early-stage disc rot is recoverable with software. If the disc plays partially — or if Heirvo's scan recovers most but not all sectors — the dye layer has degraded but isn't gone yet. Run a full sector-level scan; you'll typically recover 60–90% of the footage depending on severity.",
+          "Advanced disc rot (the disc looks almost entirely bronze or has visible pinholes when held to light) is beyond software recovery. At that stage the reflective layer has physically separated or disintegrated. A professional recovery lab can sometimes read discs at this stage using modified optical equipment, which is what Heirvo's mail-in service uses.",
+        ],
+        callout: {
+          label: "Act now",
+          text: "Disc rot is progressive — a disc that yields 80% today may yield 40% in six months. If your disc shows any signs of rot, recover it immediately rather than waiting.",
+          color: "amber",
+        },
+      },
+      {
+        id: "recover-unfinalized-wedding-dvd",
+        heading: "Recovering an unfinalized wedding DVD",
+        level: 2,
+        paragraphs: [
+          "An unfinalized DVD-R contains all the video data — it just lacks the closing table of contents that DVD players and Windows use to navigate the disc. Heirvo handles unfinalized discs by reading the raw disc structure directly rather than relying on the missing index.",
+          "Insert the disc and run a scan. Heirvo will detect the unfinalized state, read the VOB files directly, and extract them to MP4. In most cases the complete ceremony and reception footage is fully intact.",
+        ],
+      },
+      {
+        id: "mail-in-recovery",
+        heading: "When to use professional recovery",
+        level: 2,
+        paragraphs: [
+          "If the software scan recovers less than 50% of the disc, or if the disc has visible delamination (layers peeling apart), professional recovery is the next step. Heirvo's mail-in service uses lab-grade optical equipment that can read discs software tools can't.",
+          "For wedding footage specifically, professional recovery is worth the cost — this is footage that cannot be recreated. Post the disc and we'll tell you exactly what's recoverable before you pay anything.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "Can a wedding DVD be recovered if it has never played at all?",
+        a: "Yes — a disc that has never played successfully is often an unfinalized burn, which is fully recoverable with the right software. Insert it and run a scan; Heirvo will read the raw disc structure regardless of whether the disc finalised correctly.",
+      },
+      {
+        q: "My wedding was 20 years ago — is it too late to recover the DVD?",
+        a: "It depends on how the disc was stored. DVDs kept in a cool, dark, dry environment often survive 20+ years in good condition. Discs stored in hot cars, direct sunlight, or humid environments degrade faster. Run a scan — you'll know within minutes whether the data is still there.",
+      },
+      {
+        q: "The disc plays in some DVD players but not others. Is it recoverable?",
+        a: "Yes — a disc that plays in some drives is partially readable, which is a good sign. Different drives have different error-correction capabilities. Use a full-size external USB drive rather than a slim laptop drive for the recovery scan.",
+      },
+      {
+        q: "What if only part of the wedding video recovered?",
+        a: "Partial recovery is common with heavily scratched or moderately rotted discs. Heirvo's engine produces a playable MP4 from whatever sectors it recovered, trimmed to the continuous footage available. You'll typically get the ceremony or the reception fully intact even if the other half is damaged.",
+      },
+    ],
+    cta: {
+      heading: "Recover your wedding footage today",
+      body: "Scan your disc free — see exactly what's recoverable before you pay anything. Takes about 10 minutes.",
+      primaryLabel: "Download Free — Windows",
+      primaryHref: "/download",
+      secondaryLabel: "Mail-in recovery service",
+      secondaryHref: "/recover",
+    },
+  },
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 9. Recover unfinalized DVD
+  // ─────────────────────────────────────────────────────────────────────────────
+  {
+    slug: "recover-unfinalized-dvd",
+    title: "How to Recover an Unfinalized DVD on Windows",
+    metaTitle: "How to Recover an Unfinalized DVD on Windows (2026 Guide)",
+    metaDescription: "An unfinalized DVD won't play in any player, but the video data is usually 100% intact. Here's how to extract the footage on Windows without losing a single frame.",
+    datePublished: "2026-05-14",
+    dateModified: "2026-05-14",
+    readTime: "5 min read",
+    category: "DVD Recovery",
+    intro:
+      "An unfinalized DVD-R is one of the most misunderstood disc problems — people assume the footage is lost because the disc won't play anywhere. In reality, the video data is almost always completely intact. The disc simply lacks the closing index that DVD players need to navigate it. This guide explains what an unfinalized disc is and exactly how to extract the footage on Windows.",
+    related: ["recover-wedding-dvd", "recover-home-videos-dvd"],
+    sections: [
+      {
+        id: "what-is-unfinalized",
+        heading: "What 'unfinalized' actually means",
+        level: 2,
+        paragraphs: [
+          "When you burn a DVD-R or DVD+R, the burning software writes video data to the disc in sessions. At the end of the burn, it writes a final table of contents — called the lead-out — that tells any player how to navigate the disc. If the burning process was interrupted, the software was closed prematurely, or the videographer simply forgot this step, the lead-out is missing.",
+          "Without the lead-out, a standard DVD player or Windows DVD player software returns an error or treats the disc as blank. But the video data is written first and is completely unaffected by the missing lead-out. It's still there, sector by sector, exactly as it was burned.",
+        ],
+        callout: {
+          label: "How to tell if your disc is unfinalized",
+          text: "Insert the disc into your computer. If Windows shows it as blank or with 0 bytes, but the disc clearly has data burned to it (you can see the burn ring on the underside), it is almost certainly unfinalized.",
+          color: "blue",
+        },
+      },
+      {
+        id: "how-to-recover",
+        heading: "How to recover an unfinalized DVD on Windows",
+        level: 2,
+        paragraphs: [
+          "Standard file-copy tools fail on unfinalized discs because they rely on the missing table of contents. You need software that reads the raw sector data directly, bypassing the navigation layer entirely.",
+        ],
+        items: [
+          "Download and install Heirvo on your Windows 10 or 11 PC.",
+          "Insert the unfinalized disc into your optical drive.",
+          "Click Start Recovery. Heirvo detects the unfinalized state automatically and switches to raw VOB extraction mode.",
+          "The software reads the disc sector by sector, locates the video data by signature rather than by the missing index, and extracts it.",
+          "When the scan completes, click Save — Heirvo converts the raw VOB data to a standard MP4 you can play on any device.",
+        ],
+        numbered: true,
+      },
+      {
+        id: "recovery-time",
+        heading: "How long does it take?",
+        level: 2,
+        paragraphs: [
+          "An unfinalized disc with no physical damage typically takes 15–30 minutes to scan and extract. The disc is fully readable — the only complication is the missing lead-out, which Heirvo works around automatically.",
+          "If the disc also has scratches or disc rot on top of being unfinalized, the scan will take longer as the engine retries damaged sectors. In that case, expect 1–3 hours for a heavily damaged disc.",
+        ],
+      },
+      {
+        id: "other-tools",
+        heading: "Why other tools don't work",
+        level: 2,
+        paragraphs: [
+          "IsoBuster can read unfinalized discs, but it requires you to manually navigate the session tree and identify the correct session — not obvious if you're not familiar with disc structure. CDRoller handles some unfinalized formats but struggles with multi-session burns.",
+          "Free tools like DVDisaster are designed for sector-level recovery of finalised discs and do not handle the unfinalized case. VLC and Handbrake require a readable disc structure and will simply report an error.",
+          "Heirvo detects the unfinalized state automatically and requires no manual intervention.",
+        ],
+      },
+      {
+        id: "prevention",
+        heading: "How to prevent this in future",
+        level: 2,
+        paragraphs: [
+          "If you still use a DVD burner, always let the burning software complete its full process, including the finalisation step. In Windows, if you use the built-in burn feature, choose 'Eject' rather than just opening the tray — this triggers finalisation.",
+          "More practically: stop burning to DVD-R for archiving. Copy your recovered footage to an external hard drive and a cloud backup. Optical media is a poor long-term archival format for personal use.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "Can an unfinalized DVD be finalized after the fact?",
+        a: "Technically yes — some burning software (ImgBurn, Nero) can finalise an unfinalized disc if it was burned on the same drive type. In practice this is unreliable and can make the disc worse. It's safer to extract the data with recovery software rather than attempting to finalise.",
+      },
+      {
+        q: "My unfinalized DVD is also scratched. Can I still recover it?",
+        a: "Yes — Heirvo handles both problems simultaneously. It bypasses the missing lead-out and retries scratched sectors. You'll get whatever data is physically readable on the disc, assembled into a playable output.",
+      },
+      {
+        q: "Windows shows the disc as blank but I can see the burn ring. Is the footage gone?",
+        a: "No — a disc showing as blank in Windows despite a visible burn ring is the classic unfinalized disc symptom. The data is almost certainly intact. Run a scan with Heirvo and it will find it.",
+      },
+      {
+        q: "How is an unfinalized disc different from a disc that was never burned?",
+        a: "A blank unburned disc has no visible ring on the underside and Windows reports 0% used capacity. An unfinalized disc has a clearly visible burn ring and may show a small amount of capacity used (the few bytes that were written before the burn was interrupted). Heirvo distinguishes between these automatically.",
+      },
+    ],
+    cta: {
+      heading: "Recover your unfinalized disc now",
+      body: "Heirvo reads unfinalized DVD-R and DVD+R discs directly. Free scan — see what's recoverable before you pay.",
+      primaryLabel: "Download Free — Windows",
+      primaryHref: "/download",
+      secondaryLabel: "See how it works",
+      secondaryHref: "/#how",
+    },
+  },
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 10. Recover Blu-ray disc on Windows
+  // ─────────────────────────────────────────────────────────────────────────────
+  {
+    slug: "recover-data-from-blu-ray-windows",
+    title: "How to Recover Data from a Damaged Blu-ray Disc on Windows",
+    metaTitle: "How to Recover Data from a Damaged Blu-ray Disc on Windows (2026 Guide)",
+    metaDescription: "Scratched or unreadable Blu-ray disc on Windows? This guide covers the tools and techniques that actually work for BD-R, BD-RE, and pressed Blu-ray discs in 2026.",
+    datePublished: "2026-05-14",
+    dateModified: "2026-05-14",
+    readTime: "8 min read",
+    category: "Blu-ray Recovery",
+    intro:
+      "Recovering data from a damaged Blu-ray disc on Windows is harder than DVD recovery for one main reason: Blu-ray drives have less aggressive built-in error correction than DVD drives, which means more sectors are reported as unreadable even when the data is physically present. With the right sector-level recovery software, most scratched or degraded Blu-ray discs are at least partially recoverable.",
+    related: ["recover-files-scratched-dvd", "best-dvd-recovery-software"],
+    sections: [
+      {
+        id: "blu-ray-vs-dvd-recovery",
+        heading: "Why Blu-ray recovery is different from DVD recovery",
+        level: 2,
+        paragraphs: [
+          "Blu-ray discs store data at a much higher density than DVDs — 25 GB on a single layer versus 4.7 GB. The laser spot is smaller and the tracks are closer together, which makes the format more sensitive to surface contamination and fine scratches. A scratch that a DVD drive would read through can cause a Blu-ray drive to give up entirely.",
+          "Blu-ray drives also tend to retry fewer times before reporting an error, compared to DVD drives that will hammer a bad sector for 30+ seconds. This means recovery software needs to compensate with more aggressive retry logic — which is exactly what Heirvo's engine does.",
+        ],
+        callout: {
+          label: "Drive matters more for Blu-ray",
+          text: "For Blu-ray recovery, the quality of your optical drive makes a significantly larger difference than for DVDs. A cheap USB Blu-ray drive may fail on sectors that a good drive reads successfully. If recovery fails with one drive, try another before concluding the data is unreadable.",
+          color: "blue",
+        },
+      },
+      {
+        id: "what-you-need",
+        heading: "What you need",
+        level: 2,
+        items: [
+          "A Windows 10 or 11 PC (64-bit)",
+          "A Blu-ray optical drive — internal or USB external. Avoid very cheap drives; LG and ASUS make reliable budget options.",
+          "Heirvo disc recovery software — free to download and scan",
+          "Enough free hard drive space for the recovered data (up to 50 GB for a dual-layer BD)",
+        ],
+      },
+      {
+        id: "step-by-step",
+        heading: "Step-by-step: recover data from a Blu-ray disc",
+        level: 2,
+        items: [
+          "Clean the disc gently with a microfibre cloth, wiping from centre to edge. Blu-ray discs have a hard coating that resists light scratches, but dust and fingerprints cause the same read errors as scratches.",
+          "Insert the Blu-ray disc into your drive and open Heirvo.",
+          "Click Start Recovery. Heirvo detects the disc format automatically and applies Blu-ray-specific retry parameters.",
+          "The engine builds a sector map of the disc, retrying each failing sector multiple times at variable speeds. This is slower than DVD scanning — allow 2–5 hours for a badly damaged BD.",
+          "When the scan completes, click Save. Heirvo outputs recovered files directly if the disc contains data files, or converts video content to MP4 if it's a BD video disc.",
+        ],
+        numbered: true,
+      },
+      {
+        id: "types-of-blu-ray",
+        heading: "BD-R, BD-RE, and pressed discs — what's different",
+        level: 2,
+        paragraphs: [
+          "Pressed Blu-ray discs (commercial movies, games) are the most durable format. They use a moulded polycarbonate structure rather than a dye layer, so they don't suffer disc rot. Scratches are the primary failure mode, and they recover well with sector-level tools.",
+          "BD-R discs (burned once, like DVD-R) use an organic dye layer and degrade over time, similar to DVD-R. The degradation is typically slower than DVD-R because of the hard coating, but it still happens — especially in discs burned before 2015.",
+          "BD-RE (rewritable) discs use a phase-change recording layer. They're durable but sensitive to deep scratches. Recovery success rates are similar to pressed discs.",
+        ],
+        table: {
+          caption: "Blu-ray format recovery comparison",
+          headers: ["Format", "Failure mode", "Recovery difficulty", "Disc rot risk"],
+          rows: [
+            ["Pressed BD", "Scratches only", "Low — good recovery rates", "None"],
+            ["BD-R", "Scratches + dye degradation", "Medium", "Moderate (older discs)"],
+            ["BD-RE", "Scratches", "Low–Medium", "Low"],
+          ],
+        },
+      },
+      {
+        id: "limits",
+        heading: "When software recovery won't work",
+        level: 2,
+        paragraphs: [
+          "Deep gouges through the hard coating and into the data layer are generally unrecoverable with software. Unlike DVDs, Blu-ray discs cannot be polished and re-read — the hard coating is too thin.",
+          "If your scan recovers less than 40% of a Blu-ray disc and the disc looks physically intact (no gouges, no rot), the problem is likely drive quality. Try a different, higher-quality Blu-ray drive before concluding the data is lost.",
+          "For Blu-ray discs with important data that partial software recovery can't fully retrieve, professional optical recovery is available via Heirvo's mail-in service.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "Can Heirvo recover copy-protected commercial Blu-ray movies?",
+        a: "Heirvo recovers data from physically damaged discs. It does not bypass or circumvent AACS copy protection on commercial Blu-ray movies — that would be outside the scope of data recovery and is not supported.",
+      },
+      {
+        q: "My Blu-ray drive says 'disc not found' but the disc looks fine. What's wrong?",
+        a: "This usually means the disc's lead-in area — the innermost ring — is damaged. Even a small scratch near the centre of a Blu-ray can prevent the drive from mounting it at all. Try a different drive; some drives are better at reading damaged lead-in areas than others.",
+      },
+      {
+        q: "How long does Blu-ray recovery take?",
+        a: "A lightly damaged BD typically takes 1–2 hours. A heavily damaged disc with many failing sectors can take 4–8 hours because the engine retries each bad sector multiple times. You can pause and resume the scan at any time — the sector map is saved to disk.",
+      },
+      {
+        q: "Is there free software for Blu-ray disc recovery?",
+        a: "DVDisaster supports Blu-ray discs and is free and open source. It's a good option for technical users comfortable with command-line tools. IsoBuster also supports Blu-ray recovery but requires a paid licence for full extraction. Heirvo offers a free scan with paid extraction.",
+      },
+    ],
+    cta: {
+      heading: "Try Heirvo free on your Blu-ray disc",
+      body: "Scan your disc at no cost. See exactly which sectors are recoverable before you decide to pay anything.",
+      primaryLabel: "Download Free — Windows",
+      primaryHref: "/download",
+      secondaryLabel: "Mail-in recovery service",
+      secondaryHref: "/recover",
+    },
+  },
 ];
 
 export default GUIDES;
