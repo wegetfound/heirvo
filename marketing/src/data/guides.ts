@@ -2095,6 +2095,275 @@ const GUIDES: Guide[] = [
       secondaryHref: "/recover",
     },
   },
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 18. Copy DVD to hard drive Windows 11
+  // ─────────────────────────────────────────────────────────────────────────────
+  {
+    slug: "copy-dvd-to-hard-drive-windows-11",
+    title: "How to Copy a DVD to Your Hard Drive on Windows 11",
+    metaTitle: "How to Copy a DVD to Your Hard Drive on Windows 11 (2026 Guide)",
+    metaDescription:
+      "Step-by-step guide to copying your personal DVDs to your hard drive on Windows 11 — as an ISO image or as MP4 video files. Includes what to do with damaged discs.",
+    datePublished: "2026-05-14",
+    dateModified: "2026-05-14",
+    readTime: "6 min read",
+    category: "DVD Recovery",
+    intro:
+      "Copying a DVD to your hard drive preserves the content before the disc degrades — DVD-R and DVD+R discs have a typical lifespan of 10–25 years, and many burned in the early 2000s are already showing signs of disc rot. This guide covers two approaches: copying as an ISO image (a perfect byte-for-byte copy of the disc) and copying as an MP4 video file (smaller, plays anywhere). Both work on Windows 11 with free software.",
+    related: ["how-long-do-dvds-last-disc-rot", "recover-files-scratched-dvd"],
+    sections: [
+      {
+        id: "iso-vs-mp4",
+        heading: "ISO image vs MP4 — which should you make?",
+        level: 2,
+        paragraphs: [
+          "An ISO image is an exact copy of the entire disc — every sector, every menu, every subtitle track, every audio language. It's a perfect archive. The downside: a single-layer DVD produces a 4.3 GB ISO file; dual-layer produces up to 8.5 GB. You need disc playback software (VLC, for example) to play it.",
+          "An MP4 file is the main video track re-encoded as a standard video file. It's smaller (typically 1–4 GB depending on quality settings), plays in every media player and on every device, and is easy to share. The downside: menus, alternate audio tracks, and subtitles are usually stripped out.",
+          "For archiving home video and family footage: ISO if you have storage space (preserves everything exactly), MP4 if you need something that plays anywhere without special software.",
+        ],
+        callout: {
+          label: "Personal discs only",
+          text: "This guide covers copying DVDs you burned yourself — home video, personal projects, data backups. Commercial DVDs (movies, TV shows) contain copy protection and are subject to copyright law in your country.",
+          color: "amber",
+        },
+      },
+      {
+        id: "copy-as-iso",
+        heading: "Option 1: Copy to ISO image (exact disc copy)",
+        level: 2,
+        paragraphs: [
+          "ImgBurn is the most reliable free tool for creating ISO images on Windows. It's been around since 2006, is still actively maintained, and handles every DVD format including dual-layer discs and VIDEO_TS structures.",
+        ],
+        numbered: true,
+        items: [
+          "Download ImgBurn from imgburn.com and install it. The installer includes an optional toolbar — decline it during setup.",
+          "Insert your DVD and open ImgBurn.",
+          "Click 'Create image file from disc'.",
+          "Set the Destination to a folder on your hard drive with enough free space (up to 8.5 GB for a dual-layer disc).",
+          "Click the large Read button. ImgBurn reads the disc sector by sector and creates an .ISO file. A standard single-layer disc takes about 10–20 minutes.",
+          "When complete, verify the ISO using ImgBurn's verify feature — it re-reads the disc and confirms the image matches.",
+        ],
+        callout: {
+          label: "Store the ISO safely",
+          text: "Once created, copy the ISO to at least two locations — an external drive and cloud storage. The whole point of copying the disc is redundancy. An ISO sitting on a single hard drive is one drive failure away from being lost.",
+          color: "blue",
+        },
+      },
+      {
+        id: "copy-as-mp4",
+        heading: "Option 2: Copy to MP4 video file",
+        level: 2,
+        paragraphs: [
+          "HandBrake is the standard free tool for converting DVD video to MP4 on Windows. It's open source, actively maintained, and handles VIDEO_TS folders and ISO files directly.",
+        ],
+        numbered: true,
+        items: [
+          "Download HandBrake from handbrake.fr and install it.",
+          "Open HandBrake and click 'Open Source'. Select your DVD drive from the list, or point it at a VIDEO_TS folder or ISO file if you already made one.",
+          "HandBrake scans the disc and lists all detected titles. The longest title is usually the main feature.",
+          "Select a preset from the right panel. 'Fast 1080p30' or 'HQ 1080p30 Surround' are good choices for home video — they produce high-quality MP4 files.",
+          "Set the Save As path at the bottom of the screen.",
+          "Click Start Encode. A standard 2-hour DVD takes 15–45 minutes to encode depending on your CPU.",
+        ],
+      },
+      {
+        id: "damaged-disc",
+        heading: "What to do if the disc is damaged or won't read",
+        level: 2,
+        paragraphs: [
+          "ImgBurn and HandBrake both rely on the DVD drive reading the disc successfully. If the disc has scratches, disc rot, or other damage, both tools will fail at the first read error — ImgBurn will abort the image, and HandBrake will skip or freeze at the damaged section.",
+          "For damaged discs, you need sector-level recovery software before copying. Heirvo reads each damaged sector up to 16 times at variable speeds, recovering data that standard tools skip. Once Heirvo has recovered the disc content, you can save it directly as an MP4 or ISO.",
+          "This is the most important reason to copy your DVDs sooner rather than later: a disc that reads perfectly today in ImgBurn may not read at all in two years once disc rot progresses.",
+        ],
+        callout: {
+          label: "Free to scan",
+          text: "Heirvo's scan is completely free — it shows you exactly what's recoverable before you pay anything. If the disc reads without errors, you don't need it. If it has damage, it's your best option.",
+          color: "green",
+        },
+      },
+      {
+        id: "storage-advice",
+        heading: "How much storage do you need?",
+        level: 2,
+        table: {
+          caption: "Storage estimates per disc format",
+          headers: ["Format", "ISO size", "MP4 size (HQ)", "MP4 size (compressed)"],
+          rows: [
+            ["Single-layer DVD (DVD-5)", "~4.3 GB", "~2–4 GB", "~1–2 GB"],
+            ["Dual-layer DVD (DVD-9)", "~7.9 GB", "~3–6 GB", "~1.5–3 GB"],
+            ["100-disc collection (DVD-5)", "~430 GB", "~200–400 GB", "~100–200 GB"],
+          ],
+        },
+        paragraphs: [
+          "A 2 TB external hard drive ($50–$70) holds roughly 400 single-layer ISOs or 800+ high-quality MP4 files — more than enough for a large home video collection. Pair it with a cloud backup (Backblaze B2 is $6/month for unlimited storage) for genuine redundancy.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "Does Windows 11 have a built-in way to copy a DVD to the hard drive?",
+        a: "Not really. Windows can copy individual files from a data DVD using File Explorer, but it has no built-in tool for creating an ISO image or converting VIDEO_TS home video to MP4. ImgBurn (for ISO) and HandBrake (for MP4) are the standard free tools for this.",
+      },
+      {
+        q: "Can I copy a DVD to my hard drive with VLC?",
+        a: "VLC can convert DVD video to a file via Media → Convert/Save, but it's less reliable than HandBrake for this purpose and the settings are less intuitive. HandBrake is specifically designed for this task and produces better results.",
+      },
+      {
+        q: "ImgBurn stopped partway through with a read error. What do I do?",
+        a: "A read error means the disc has a damaged sector that ImgBurn can't read. ImgBurn has a setting to retry failed sectors, but it makes fewer passes than dedicated recovery software. For a disc with read errors, use Heirvo first to recover the disc content, then copy the result.",
+      },
+      {
+        q: "Will the MP4 file look as good as the original DVD?",
+        a: "At HandBrake's HQ preset, the MP4 will be visually indistinguishable from the disc when played on a normal screen. DVDs are standard definition (720×480 NTSC or 720×576 PAL) — re-encoding at high quality settings preserves all the detail the original disc had.",
+      },
+      {
+        q: "How long does copying a DVD take?",
+        a: "Creating an ISO with ImgBurn: 10–25 minutes for a single-layer disc, 20–45 minutes for dual-layer. Converting to MP4 with HandBrake: 15–45 minutes for a 2-hour disc depending on your CPU. Running both takes under an hour total.",
+      },
+    ],
+    cta: {
+      heading: "Disc scratched or damaged? Recover it first.",
+      body: "ImgBurn and HandBrake need a readable disc. If yours has damage, Heirvo recovers the content sector by sector — then you can copy it to your hard drive. Free to scan.",
+      primaryLabel: "Download Free — Windows",
+      primaryHref: "/download",
+      secondaryLabel: "Mail-in service for severe damage",
+      secondaryHref: "/recover",
+    },
+  },
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 19. Recover corrupted ISO file
+  // ─────────────────────────────────────────────────────────────────────────────
+  {
+    slug: "recover-corrupted-iso-file",
+    title: "How to Recover a Corrupted ISO File",
+    metaTitle: "How to Recover a Corrupted ISO File (2026 Guide)",
+    metaDescription:
+      "ISO file won't mount or open? Here's how to diagnose the corruption, extract what you can with free tools, and rebuild the image from the original disc if you have it.",
+    datePublished: "2026-05-14",
+    dateModified: "2026-05-14",
+    readTime: "6 min read",
+    category: "Software Guide",
+    intro:
+      "A corrupted ISO file is a different problem from a damaged disc — the optical media is fine, but the image file on your hard drive has been corrupted by a failed download, a storage error, or file system damage. In many cases the ISO is partially intact and most of the content is recoverable. This guide covers every approach: verifying the corruption, extracting content from a partial ISO, and recreating the image from the original disc.",
+    related: ["best-dvd-recovery-software", "recover-files-scratched-dvd"],
+    sections: [
+      {
+        id: "verify-first",
+        heading: "Step 1: Verify the corruption",
+        level: 2,
+        paragraphs: [
+          "Before spending time on recovery, confirm the ISO is actually corrupted — not just mounted incorrectly or associated with the wrong application.",
+        ],
+        items: [
+          "Try mounting it with Windows' built-in ISO mounting (right-click → Mount). If it mounts and shows files, the ISO is fine — the problem is whatever application you were trying to open it with.",
+          "Try opening it with 7-Zip (free): right-click the ISO → 7-Zip → Open archive. 7-Zip can browse ISO contents without mounting. If you can see files, the ISO structure is largely intact even if it won't mount.",
+          "If you downloaded the ISO from a legitimate source, check whether the provider published an MD5 or SHA-256 checksum. Run the checksum on your file (Windows: certutil -hashfile yourfile.iso MD5) and compare. A mismatch confirms corruption.",
+          "If the ISO file size is significantly smaller than expected (check the download page), the download was interrupted and the file is incomplete — not corrupted but truncated.",
+        ],
+        callout: {
+          label: "Incomplete vs corrupted",
+          text: "An incomplete ISO (interrupted download) and a corrupted ISO (storage error or bad sectors) look the same but have different fixes. If the file is smaller than expected, re-download it. If the size is right but the content is wrong, proceed with recovery.",
+          color: "blue",
+        },
+      },
+      {
+        id: "extract-with-7zip",
+        heading: "Step 2: Extract files with 7-Zip",
+        level: 2,
+        paragraphs: [
+          "7-Zip can extract files from a partially corrupted ISO by skipping the damaged sections. This is the fastest first attempt — it takes under a minute.",
+        ],
+        numbered: true,
+        items: [
+          "Download and install 7-Zip from 7-zip.org (free, open source).",
+          "Right-click the ISO file → 7-Zip → Extract to [folder name].",
+          "7-Zip will extract everything it can read and report errors for the corrupted sections. Check what was successfully extracted — you may have most or all of the content.",
+          "If 7-Zip reports errors but extracts some files, note which files are missing or corrupted. These correspond to the damaged areas of the ISO.",
+        ],
+      },
+      {
+        id: "isobuster-recovery",
+        heading: "Step 3: Use IsoBuster for deeper recovery",
+        level: 2,
+        paragraphs: [
+          "IsoBuster can open ISO files directly and attempt to recover content from damaged areas that 7-Zip skips. It provides a file tree view showing which files are intact, which are partially readable, and which are fully unreadable.",
+        ],
+        numbered: true,
+        items: [
+          "Download IsoBuster (free tier available) and open the ISO file via File → Open Image File.",
+          "Browse the file tree. Files with a red icon have read errors; files with a green icon are intact.",
+          "Right-click the root of the disc image and select Extract Objects → Extract all objects and their properties.",
+          "IsoBuster will extract all recoverable content, skipping the damaged files and logging what it couldn't read.",
+        ],
+        callout: {
+          label: "IsoBuster free tier",
+          text: "IsoBuster's free tier can open and browse ISO files and extract standard user data files. For VIDEO_TS home video content within the ISO, a paid licence (€39.95) may be required to extract VOB files.",
+          color: "blue",
+        },
+      },
+      {
+        id: "recreate-from-disc",
+        heading: "Step 4: Recreate the ISO from the original disc",
+        level: 2,
+        paragraphs: [
+          "If you still have the original physical disc, recreating the ISO is almost always better than recovering from the corrupted file — you'll get a complete, verified image rather than a partial recovery.",
+          "Use ImgBurn (free): open it, select 'Create image file from disc', insert the original disc, and let it run. If the disc itself is undamaged, this produces a perfect ISO in 10–25 minutes.",
+          "If the original disc is damaged, use Heirvo to recover the disc content first. Heirvo can save the recovered content as an ISO file, giving you a clean image from even a scratched or partially rotted disc.",
+        ],
+      },
+      {
+        id: "prevent-future-corruption",
+        heading: "Preventing ISO corruption in future",
+        level: 2,
+        items: [
+          "Verify checksums after every download — compare the MD5 or SHA-256 hash against the value published by the source.",
+          "Store ISO files on a drive with error correction — modern NAS drives (WD Red, Seagate IronWolf) use more aggressive ECC than standard desktop drives.",
+          "Use a file integrity tool like FastSum or HashCheck to periodically verify your ISO archive hasn't silently corrupted over time.",
+          "Keep at least two copies of important ISOs in different physical locations. A single external drive is not a backup.",
+        ],
+      },
+      {
+        id: "when-its-a-disc-problem",
+        heading: "When the problem is the disc, not the ISO",
+        level: 2,
+        paragraphs: [
+          "If you're trying to create an ISO from a disc and the resulting file is corrupted or incomplete, the problem is the source disc rather than the imaging process. Standard imaging tools (ImgBurn, Windows built-in) abort at the first read error and produce an incomplete ISO.",
+          "For damaged discs, use Heirvo first. It makes up to 16 read passes per sector at variable speeds, building as complete an image as possible from the available data. The result can be saved as an ISO and used as the source for any further processing.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "My ISO won't mount in Windows 11 — does that mean it's corrupted?",
+        a: "Not necessarily. Try opening it with 7-Zip first (right-click → 7-Zip → Open archive). If 7-Zip shows the file contents, the ISO is intact but something is preventing Windows from mounting it — try the Disk Image Tools tab in File Explorer properties, or use a third-party mount tool like WinCDEmu. If 7-Zip also fails, the file is likely corrupted.",
+      },
+      {
+        q: "Can I repair a corrupted ISO without the original disc?",
+        a: "Partially — 7-Zip and IsoBuster can extract whatever content is undamaged in the ISO. What's in the corrupted sections is not recoverable from the ISO file alone without the original source. If the ISO was downloaded, re-downloading is almost always the right answer. If it was created from a disc you no longer have, extract what you can.",
+      },
+      {
+        q: "How do I check the MD5 hash of an ISO on Windows 11?",
+        a: "Open PowerShell and run: Get-FileHash yourfile.iso -Algorithm MD5. For SHA-256 (more common for modern downloads): Get-FileHash yourfile.iso -Algorithm SHA256. Compare the output to the checksum published on the download page.",
+      },
+      {
+        q: "My ISO is the right file size but still won't mount. What's wrong?",
+        a: "A file can be the right size but still have corrupted sectors — the corruption replaces good data with bad data rather than truncating the file. Open it with 7-Zip to see which specific files inside are affected. If it's only a few files, the majority of the content is likely intact and extractable.",
+      },
+      {
+        q: "Can Heirvo recover a corrupted ISO file?",
+        a: "Heirvo is designed for optical disc recovery — it reads physical DVDs, CDs, and Blu-ray discs. It doesn't process ISO files directly. If your ISO was created from a disc you still have, Heirvo can recover the disc and produce a fresh ISO. For an ISO file with no original disc, use 7-Zip or IsoBuster.",
+      },
+    ],
+    cta: {
+      heading: "ISO created from a damaged disc?",
+      body: "If the original disc is scratched or degraded, Heirvo recovers it sector by sector and saves the result as a clean ISO. Free to scan.",
+      primaryLabel: "Download Free — Windows",
+      primaryHref: "/download",
+      secondaryLabel: "View all recovery guides",
+      secondaryHref: "/guides",
+    },
+  },
 ];
 
 export default GUIDES;
