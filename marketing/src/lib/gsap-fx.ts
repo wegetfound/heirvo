@@ -5,6 +5,8 @@ import { CustomEase } from 'gsap/CustomEase';
 
 gsap.registerPlugin(ScrollTrigger, SplitText, CustomEase);
 
+type TweenWithST = gsap.core.Tween & { scrollTrigger?: { kill(): void } };
+
 CustomEase.create('snap',      'M0,0 C0.34,1.56 0.64,1 1,1');
 CustomEase.create('cinematic', 'M0,0 C0.76,0 0.24,1 1,1');
 CustomEase.create('smooth',    'M0,0 C0.25,0.1 0.25,1 1,1');
@@ -53,9 +55,8 @@ export function clipReveal(el: Element | null, opts: ClipRevealOpts = {}): () =>
   });
 
   return () => {
+    (tween as TweenWithST).scrollTrigger?.kill();
     tween.kill();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    ScrollTrigger.getById((tween as any).scrollTrigger?.vars?.id)?.kill();
   };
 }
 
@@ -233,8 +234,7 @@ export function parallaxLayer(el: Element | null, speed = 0.5): () => void {
     onComplete: () => gsap.set(el, { willChange: 'auto' }),
   });
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return () => { tween.kill(); (tween as any).scrollTrigger?.kill(); };
+  return () => { (tween as TweenWithST).scrollTrigger?.kill(); tween.kill(); };
 }
 
 // ─── 7. Counter up ───────────────────────────────────────────────────────────
@@ -266,8 +266,7 @@ export function counterUp(el: HTMLElement | null, target: number, opts: CounterU
     scrollTrigger: { trigger: el, start: 'top 80%', once: true },
   });
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return () => { tween.kill(); (tween as any).scrollTrigger?.kill(); };
+  return () => { (tween as TweenWithST).scrollTrigger?.kill(); tween.kill(); };
 }
 
 // ─── 8. Ken Burns ────────────────────────────────────────────────────────────
@@ -307,8 +306,7 @@ export function drawSVGPath(pathEl: SVGPathElement | null): () => void {
     onComplete: () => gsap.set(pathEl, { willChange: 'auto' }),
   });
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return () => { tween.kill(); (tween as any).scrollTrigger?.kill(); };
+  return () => { (tween as TweenWithST).scrollTrigger?.kill(); tween.kill(); };
 }
 
 // ─── 10. Scroll progress bar ─────────────────────────────────────────────────
@@ -329,6 +327,5 @@ export function scrollProgressBar(barEl: Element | null): () => void {
     },
   });
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return () => { tween.kill(); (tween as any).scrollTrigger?.kill(); };
+  return () => { (tween as TweenWithST).scrollTrigger?.kill(); tween.kill(); };
 }

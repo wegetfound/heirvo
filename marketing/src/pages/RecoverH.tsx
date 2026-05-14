@@ -25,8 +25,10 @@ const FORMSPREE_ENDPOINT = `https://formspree.io/f/${
 }`;
 const HAS_FORMSPREE = !!(import.meta.env.VITE_FORMSPREE_ID as string);
 const STRIPE_INTAKE_URL: string =
-  (import.meta.env.VITE_STRIPE_INTAKE_URL as string) ||
-  "https://buy.stripe.com/test_8x23cn66W4i22jc3dGdEs00";
+  (import.meta.env.VITE_STRIPE_INTAKE_URL as string) || "";
+const HAS_STRIPE =
+  STRIPE_INTAKE_URL.startsWith("https://buy.stripe.com/") &&
+  !STRIPE_INTAKE_URL.includes("test_");
 
 // ─── Design tokens — identical to LandingMin1 ──────────────────────────────
 
@@ -1335,29 +1337,45 @@ export default function RecoverH() {
                     to confirm your order. This covers our processing and return shipping.
                   </p>
 
-                  <a
-                    href={STRIPE_INTAKE_URL}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{
-                      display: "inline-flex", alignItems: "center", gap: 8,
-                      background: C.text, color: C.page,
-                      fontFamily: SORA, fontWeight: 700, fontSize: 16,
-                      padding: "15px 32px", borderRadius: 12,
-                      textDecoration: "none",
-                      transition: "opacity 0.18s",
-                      boxShadow: "0 6px 32px rgba(0,0,0,0.3)",
-                      marginBottom: 24,
-                    }}
-                    onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.opacity = "0.88"; }}
-                    onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.opacity = "1"; }}
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
-                      <rect x="1" y="4" width="22" height="16" rx="2" stroke="currentColor" strokeWidth="2" />
-                      <path d="M1 10h22" stroke="currentColor" strokeWidth="2" />
-                    </svg>
-                    Pay $19.99 intake fee →
-                  </a>
+                  {HAS_STRIPE ? (
+                    <a
+                      href={STRIPE_INTAKE_URL}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        display: "inline-flex", alignItems: "center", gap: 8,
+                        background: C.text, color: C.page,
+                        fontFamily: SORA, fontWeight: 700, fontSize: 16,
+                        padding: "15px 32px", borderRadius: 12,
+                        textDecoration: "none",
+                        transition: "opacity 0.18s",
+                        boxShadow: "0 6px 32px rgba(0,0,0,0.3)",
+                        marginBottom: 24,
+                      }}
+                      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.opacity = "0.88"; }}
+                      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.opacity = "1"; }}
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
+                        <rect x="1" y="4" width="22" height="16" rx="2" stroke="currentColor" strokeWidth="2" />
+                        <path d="M1 10h22" stroke="currentColor" strokeWidth="2" />
+                      </svg>
+                      Pay $19.99 intake fee →
+                    </a>
+                  ) : (
+                    <p style={{
+                      fontFamily: SORA, fontSize: 15, color: C.textMuted,
+                      lineHeight: 1.7, margin: "0 auto 24px", maxWidth: "40ch",
+                      background: "rgba(255,255,255,0.04)",
+                      border: `1px solid ${C.borderMed}`,
+                      borderRadius: 10, padding: "16px 20px",
+                    }}>
+                      Email{" "}
+                      <a href="mailto:info@heirvo.com" style={{ color: C.blue, textDecoration: "underline" }}>
+                        info@heirvo.com
+                      </a>{" "}
+                      to complete your order — we'll send you a payment link within 24 hours.
+                    </p>
+                  )}
 
                   <p style={{
                     fontFamily: SORA, fontSize: 12, color: C.textFaint,
@@ -1365,8 +1383,8 @@ export default function RecoverH() {
                   }}>
                     Once payment clears, we'll email you packing instructions and the closest
                     shipping address. Questions?{" "}
-                    <a href="mailto:hello@heirvo.com" style={{ color: C.textFaint, textDecoration: "underline" }}>
-                      hello@heirvo.com
+                    <a href="mailto:info@heirvo.com" style={{ color: C.textFaint, textDecoration: "underline" }}>
+                      info@heirvo.com
                     </a>
                   </p>
                 </div>
@@ -1416,7 +1434,7 @@ export default function RecoverH() {
                         id="rh-qty"
                         type="number" min={1} max={999} required
                         value={discQty}
-                        onChange={(e) => setDiscQty(Math.max(1, parseInt(e.target.value) || 1))}
+                        onChange={(e) => setDiscQty(Math.max(1, parseInt(e.target.value, 10) || 1))}
                         style={{ ...fieldBase, width: 100 }}
                       />
                       <div style={{

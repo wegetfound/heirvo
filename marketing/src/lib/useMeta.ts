@@ -28,7 +28,13 @@ export function useMeta(title: string, description: string, canonical?: string) 
     return () => {
       document.title = prevTitle;
       if (metaDesc) metaDesc.content = prevDesc;
-      if (canonicalLink && canonical) canonicalLink.href = prevCanonical;
+      if (canonicalLink) {
+        if (prevCanonical) {
+          canonicalLink.href = prevCanonical;
+        } else {
+          canonicalLink.remove();
+        }
+      }
     };
   }, [title, description, canonical]);
 }
