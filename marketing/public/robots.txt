@@ -1,4 +1,72 @@
+# Heirvo robots.txt — updated 2026-05-14
+# Strategy: Allow all retrieval/search AI bots (they send traffic back).
+# Training-only bots can be selectively blocked if bandwidth becomes an issue.
+
 User-agent: *
 Allow: /
+
+# ── Google ────────────────────────────────────────────────────────────────────
+User-agent: Googlebot
+Allow: /
+
+# Google AI Overview training — allow (builds entity recognition)
+User-agent: Google-Extended
+Allow: /
+
+# ── OpenAI ────────────────────────────────────────────────────────────────────
+# OAI-SearchBot = ChatGPT live search (sends referral traffic — high priority)
+User-agent: OAI-SearchBot
+Allow: /
+
+# GPTBot = ChatGPT training crawler (allow for brand citation in ChatGPT answers)
+User-agent: GPTBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+# ── Anthropic ─────────────────────────────────────────────────────────────────
+# ClaudeBot = Claude live web search (sends traffic — allow)
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: Claude-Web
+Allow: /
+
+# ── Perplexity ────────────────────────────────────────────────────────────────
+# PerplexityBot cites 21.87 sources/response — highest citation volume of all AI search
+User-agent: PerplexityBot
+Allow: /
+
+# ── Other AI search engines ───────────────────────────────────────────────────
+User-agent: cohere-ai
+Allow: /
+
+User-agent: YouBot
+Allow: /
+
+User-agent: Diffbot
+Allow: /
+
+User-agent: Applebot
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
+# ── Bing (powers ChatGPT's knowledge — critical) ──────────────────────────────
+User-agent: Bingbot
+Allow: /
+
+User-agent: msnbot
+Allow: /
+
+# ── Do not allow indexing of utility pages ────────────────────────────────────
+User-agent: *
+Disallow: /activate
+Disallow: /refund
 
 Sitemap: https://heirvo.com/sitemap.xml

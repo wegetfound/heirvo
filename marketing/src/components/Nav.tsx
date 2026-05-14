@@ -25,6 +25,7 @@ export function Nav() {
           <a href="/#rescue" className="hover:text-ink-900 transition">What it rescues</a>
           <a href="/#pricing" className="hover:text-ink-900 transition">Pricing</a>
           <a href="/#faq" className="hover:text-ink-900 transition">FAQ</a>
+          <Link to="/guides" className="hover:text-ink-900 transition">Guides</Link>
           <Link to="/recover" className="hover:text-ink-900 transition">Mail-in service</Link>
         </div>
         <div className="flex items-center gap-2.5">

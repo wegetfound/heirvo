@@ -251,18 +251,20 @@ export default function LandingMin1() {
       typeof window !== "undefined" &&
       window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-    // Delay hero animations until the LoadSequence wipe reveals the page.
-    // The wipe starts at ~2.1s on first visit. On repeat visits the intro is
-    // skipped, so no delay is needed.
-    const introPlayed = (() => {
-      try { return sessionStorage.getItem("heirvo-intro") === "1"; } catch { return false; }
-    })();
-    const heroDelay = introPlayed ? 0 : 2.1;
+    // Register eases at effect scope — outside any gsap.context() so they
+    // are never unregistered by ctx.revert(). CustomEase.create is idempotent.
+    CustomEase.create("editorial", "M0,0 C0.22,1 0.36,1 1,1");
+    CustomEase.create("reveal",    "M0,0 C0.76,0 0.24,1 1,1");
 
-    const ctx = gsap.context(() => {
-      CustomEase.create("editorial", "M0,0 C0.22,1 0.36,1 1,1");
-      CustomEase.create("reveal", "M0,0 C0.76,0 0.24,1 1,1");
+    // ── Animation runner ────────────────────────────────────────────────────
+    // Hero entrance lives OUTSIDE gsap.context() in its own timeline so that
+    // ctx.revert() (triggered by StrictMode or route changes) can never kill
+    // mid-flight hero tweens and strand elements at opacity:0.
+    // Scroll-triggered animations stay inside context for automatic cleanup.
+    let heroTl: ReturnType<typeof gsap.timeline> | null = null;
+    let ctx: ReturnType<typeof gsap.context> | null = null;
 
+    const runAnimations = () => {
       if (reduce) {
         gsap.set(".ed-reveal, .ed-fade, .step-item, .faq-item, .path-card, .pricing-card", {
           opacity: 1,
@@ -271,9 +273,9 @@ export default function LandingMin1() {
         return;
       }
 
-      // ── Hero entrance ────────────────────────────────────────────────────
+      // ── Hero entrance (standalone — immune to ctx.revert()) ───────────────
 
-      const heroTl = gsap.timeline({ defaults: { ease: "editorial" }, delay: heroDelay });
+      heroTl = gsap.timeline({ defaults: { ease: "editorial" } });
 
       if (heroHeadRef.current) {
         try {
@@ -286,112 +288,132 @@ export default function LandingMin1() {
             delay: 0.15,
           });
         } catch {
-          gsap.set(heroHeadRef.current, { opacity: 1 });
+          // SplitText unavailable — headline stays visible, continue timeline
         }
       }
 
       if (heroSubRef.current) {
-        heroTl.fromTo(
-          heroSubRef.current,
-          { opacity: 0, y: 18 },
-          { opacity: 1, y: 0, duration: 0.8 },
-          "-=0.55"
-        );
+        heroTl.from(heroSubRef.current, { opacity: 0, y: 18, duration: 0.8 }, "-=0.55");
       }
 
       if (heroCTAsRef.current) {
-        heroTl.fromTo(
-          heroCTAsRef.current,
-          { opacity: 0, y: 14 },
-          { opacity: 1, y: 0, duration: 0.65 },
-          "-=0.45"
-        );
+        heroTl.from(heroCTAsRef.current, { opacity: 0, y: 14, duration: 0.65 }, "-=0.45");
       }
 
       if (heroVisualRef.current) {
-        heroTl.fromTo(
+        heroTl.from(
           heroVisualRef.current,
-          { opacity: 0, scale: 0.94, y: 24 },
-          { opacity: 1, scale: 1, y: 0, duration: 1.3, ease: "power3.out" },
+          { opacity: 0, scale: 0.94, y: 24, duration: 1.3, ease: "power3.out" },
           "-=1.1"
         );
         parallaxLayer(heroVisualRef.current, 0.3);
       }
 
-      // ── Media strip ──────────────────────────────────────────────────────
+      // ── Scroll-triggered animations (inside context for auto-cleanup) ──────
 
-      if (mediaStripRef.current) {
-        gsap.fromTo(
-          mediaStripRef.current,
-          { opacity: 0 },
-          {
-            opacity: 1,
+      ctx = gsap.context(() => {
+        // ── Media strip ──────────────────────────────────────────────────
+
+        if (mediaStripRef.current) {
+          gsap.from(mediaStripRef.current, {
+            opacity: 0,
             duration: 0.9,
             scrollTrigger: { trigger: mediaStripRef.current, start: "top 90%", once: true },
-          }
-        );
-      }
+          });
+        }
 
-      // ── Testimonials stagger ─────────────────────────────────────────────
+        // ── Testimonials stagger ───────────────────────────────────────────
 
-      if (testimonialRef.current) {
-        staggerReveal(testimonialRef.current, ".testi-card", { y: 32, stagger: 0.1, duration: 0.85 });
-      }
+        if (testimonialRef.current) {
+          staggerReveal(testimonialRef.current, ".testi-card", { y: 32, stagger: 0.1, duration: 0.85 });
+        }
 
-      // ── Photo CD section clip reveal ─────────────────────────────────────
+        // ── Photo CD section clip reveal ───────────────────────────────────
 
-      if (photocdRef.current) {
-        clipReveal(photocdRef.current, {
-          direction: "up",
-          duration: 1.0,
-          scrollTrigger: { trigger: photocdRef.current, start: "top 80%", once: true },
-        });
-      }
+        if (photocdRef.current) {
+          clipReveal(photocdRef.current, {
+            direction: "up",
+            duration: 1.0,
+            scrollTrigger: { trigger: photocdRef.current, start: "top 80%", once: true },
+          });
+        }
 
-      // ── Two paths cards ───────────────────────────────────────────────────
+        // ── Two paths cards ────────────────────────────────────────────────
 
-      if (pathsRef.current) {
-        staggerReveal(pathsRef.current, ".path-card", { y: 36, stagger: 0.12, duration: 0.9 });
-      }
+        if (pathsRef.current) {
+          staggerReveal(pathsRef.current, ".path-card", { y: 36, stagger: 0.12, duration: 0.9 });
+        }
 
-      // ── Steps stagger ────────────────────────────────────────────────────
+        // ── Steps stagger ──────────────────────────────────────────────────
 
-      if (stepsRef.current) {
-        staggerReveal(stepsRef.current, ".step-item", { y: 28, stagger: 0.1, duration: 0.8 });
-      }
+        if (stepsRef.current) {
+          staggerReveal(stepsRef.current, ".step-item", { y: 28, stagger: 0.1, duration: 0.8 });
+        }
 
-      // ── Pricing cards ────────────────────────────────────────────────────
+        // ── Pricing cards ──────────────────────────────────────────────────
 
-      if (pricingRef.current) {
-        staggerReveal(pricingRef.current, ".pricing-card", { y: 28, stagger: 0.1, duration: 0.8 });
-      }
+        if (pricingRef.current) {
+          staggerReveal(pricingRef.current, ".pricing-card", { y: 28, stagger: 0.1, duration: 0.8 });
+        }
 
-      // ── FAQ accordion items ──────────────────────────────────────────────
+        // ── FAQ accordion items ────────────────────────────────────────────
 
-      if (faqRef.current) {
-        staggerReveal(faqRef.current, ".faq-item", { y: 20, stagger: 0.07, duration: 0.7 });
-      }
+        if (faqRef.current) {
+          staggerReveal(faqRef.current, ".faq-item", { y: 20, stagger: 0.07, duration: 0.7 });
+        }
 
-      // ── Final CTA ────────────────────────────────────────────────────────
+        // ── Final CTA ──────────────────────────────────────────────────────
 
-      if (finalCtaRef.current) {
-        splitReveal(finalCtaRef.current.querySelector("h2"), { duration: 1.0, stagger: 0.13 });
-        gsap.fromTo(
-          finalCtaRef.current.querySelector(".cta-actions"),
-          { opacity: 0, y: 20 },
-          {
-            opacity: 1, y: 0, duration: 0.75,
+        if (finalCtaRef.current) {
+          splitReveal(finalCtaRef.current.querySelector("h2"), { duration: 1.0, stagger: 0.13 });
+          gsap.from(finalCtaRef.current.querySelector(".cta-actions"), {
+            opacity: 0, y: 20, duration: 0.75,
             scrollTrigger: { trigger: finalCtaRef.current, start: "top 75%", once: true },
-          }
-        );
-      }
-    }, rootRef);
+          });
+        }
+      }, rootRef);
+    };
+
+    // ── Trigger strategy ────────────────────────────────────────────────────
+    // If the intro was already played this session, fire immediately.
+    // Otherwise wait for the heirvo:ready event dispatched by LoadSequence.
+    // This survives React StrictMode's double-invoke because the event fires
+    // several seconds after mount, well after the cleanup/remount cycle.
+
+    const introAlreadyPlayed = (() => {
+      try { return sessionStorage.getItem("heirvo-intro") === "1"; } catch { return false; }
+    })();
+
+    let readyHandler: (() => void) | null = null;
+    let fallbackTimer: ReturnType<typeof setTimeout> | null = null;
+
+    if (introAlreadyPlayed) {
+      runAnimations();
+    } else {
+      readyHandler = () => {
+        if (fallbackTimer) clearTimeout(fallbackTimer);
+        runAnimations();
+      };
+      window.addEventListener("heirvo:ready", readyHandler, { once: true });
+      // Safety net: if event never fires (e.g. direct URL navigation without
+      // LoadSequence), run animations after 3.5 s anyway.
+      fallbackTimer = setTimeout(() => {
+        if (readyHandler) {
+          window.removeEventListener("heirvo:ready", readyHandler);
+          readyHandler = null;
+        }
+        runAnimations();
+      }, 3500);
+    }
 
     const cleanMagnetic = magneticHover(dlBtnRef.current, 0.2);
 
     return () => {
-      ctx.revert();
+      heroTl?.kill();
+      ctx?.revert();
       cleanMagnetic();
+      if (readyHandler) window.removeEventListener("heirvo:ready", readyHandler);
+      if (fallbackTimer)  clearTimeout(fallbackTimer);
       // Restore page meta
       document.title = prevTitle;
       if (metaDesc) metaDesc.content = prevDesc;
@@ -490,7 +512,6 @@ export default function LandingMin1() {
                   lineHeight: 1.7,
                   marginBottom: 44,
                   maxWidth: 480,
-                  opacity: 0,
                 }}
               >
                 Heirvo is DVD recovery software that reads failing discs
@@ -500,7 +521,7 @@ export default function LandingMin1() {
               </p>
 
               {/* CTAs */}
-              <div ref={heroCTAsRef} style={{ opacity: 0 }}>
+              <div ref={heroCTAsRef}>
                 <div style={{ display: "flex", gap: 14, flexWrap: "wrap" as const, alignItems: "center", marginBottom: 20 }}>
                   <a
                     ref={dlBtnRef}

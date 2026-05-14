@@ -27,9 +27,25 @@ function GuideContent({ guide }: { guide: Guide }) {
       "description": guide.metaDescription,
       "datePublished": guide.datePublished,
       "dateModified": guide.dateModified,
-      "author": { "@type": "Organization", "name": "Heirvo", "url": "https://heirvo.com" },
-      "publisher": { "@type": "Organization", "name": "Heirvo", "url": "https://heirvo.com", "logo": { "@type": "ImageObject", "url": "https://heirvo.com/assets/Icon.png" } },
+      "author": {
+        "@type": "Organization",
+        "@id": "https://heirvo.com/#organization",
+        "name": "Heirvo",
+        "url": "https://heirvo.com",
+      },
+      "publisher": {
+        "@type": "Organization",
+        "@id": "https://heirvo.com/#organization",
+        "name": "Heirvo",
+        "url": "https://heirvo.com",
+        "logo": { "@type": "ImageObject", "url": "https://heirvo.com/assets/Icon.png", "width": 512, "height": 512 },
+      },
       "mainEntityOfPage": { "@type": "WebPage", "@id": `https://heirvo.com/guides/${guide.slug}` },
+      "image": "https://heirvo.com/assets/hero.png",
+      "inLanguage": "en-US",
+      "isPartOf": { "@type": "WebSite", "@id": "https://heirvo.com/#website", "name": "Heirvo" },
+      "about": { "@type": "SoftwareApplication", "@id": "https://heirvo.com/#software" },
+      "keywords": "disc recovery, DVD recovery, CD recovery, optical disc, scratched disc, data recovery",
     };
     const faqSchema = {
       "@context": "https://schema.org",

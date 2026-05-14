@@ -35,6 +35,7 @@ function AppRoot() {
   const handleIntroComplete = () => {
     safeSessionSet('heirvo-intro', '1');
     setIntroComplete(true);
+    window.dispatchEvent(new CustomEvent('heirvo:ready'));
   };
 
   return (
