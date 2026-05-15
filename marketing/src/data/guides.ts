@@ -57,7 +57,7 @@ const GUIDES: Guide[] = [
     category: "DVD Recovery",
     intro:
       "You can recover files from a scratched DVD using disc recovery software that reads each sector multiple times — at different speeds, forwards and backwards — instead of giving up at the first read error. Most scratched DVDs yield 80–95% of their files with a sector-level scan, even when Windows Explorer and VLC refuse to open the disc entirely.",
-    related: ["recover-home-videos-dvd", "how-long-do-dvds-last-disc-rot"],
+    related: ["recover-home-videos-dvd", "how-long-do-dvds-last-disc-rot", "recover-water-damaged-dvd", "recover-data-cracked-dvd"],
     sections: [
       {
         id: "why-scratches-cause-problems",
@@ -173,7 +173,7 @@ const GUIDES: Guide[] = [
     category: "DVD Recovery",
     intro:
       "Home video DVDs burned between 2000 and 2015 are now reaching the end of their reliable lifespan. The organic dye in DVD-R and DVD+R discs oxidises over time, turning the reflective layer hazy and causing read errors even on undamaged discs. The good news is that the video data is usually still recoverable — you just need software that reads below the surface errors rather than giving up.",
-    related: ["recover-files-scratched-dvd", "recover-vhs-converted-dvd"],
+    related: ["recover-files-scratched-dvd", "recover-vhs-converted-dvd", "recover-wedding-dvd", "recover-8mm-film-dvd-transfer"],
     sections: [
       {
         id: "why-home-dvds-fail",
@@ -283,7 +283,7 @@ const GUIDES: Guide[] = [
     category: "Photo Recovery",
     intro:
       "Kodak Photo CDs store images in the .PCD format — a proprietary multi-resolution format that Windows 10 and 11 cannot open natively. Adobe Photoshop dropped PCD support entirely in 2023. If you have a box of these discs from the 1990s or 2000s, Heirvo is one of the few modern tools that reads them directly and converts the images to standard JPEG or TIFF files you can view on any device.",
-    related: ["recover-data-from-cd-rom-windows", "best-dvd-recovery-software"],
+    related: ["recover-data-from-cd-rom-windows", "recover-music-from-scratched-cd", "best-dvd-recovery-software", "recover-data-from-zip-disk"],
     sections: [
       {
         id: "what-is-photo-cd",
@@ -400,7 +400,7 @@ const GUIDES: Guide[] = [
     category: "Software Guide",
     intro:
       "The best DVD recovery software for Windows reads failing discs sector by sector — not once, but in multiple passes at variable speeds, forwards and backwards — to rescue data that a standard file copy would miss entirely. In 2026 there are a handful of tools that do this well. Here is an honest comparison based on what each tool is actually good at.",
-    related: ["heirvo-vs-isobuster", "free-dvd-recovery-software"],
+    related: ["heirvo-vs-isobuster", "free-dvd-recovery-software", "recover-corrupted-iso-file", "dvd-r-vs-dvd-plus-r-recovery"],
     sections: [
       {
         id: "what-to-look-for",
@@ -519,7 +519,7 @@ const GUIDES: Guide[] = [
     category: "Disc Health",
     intro:
       "DVDs last between 10 and 50 years in typical home storage conditions — far less than the '100-year lifetime' manufacturers once promised. Burned DVD-R and DVD+R discs are especially vulnerable, with many failing within 10–25 years. Disc rot — the chemical breakdown of a disc's reflective or dye layer — is irreversible once it starts, making early detection and file backup critical.",
-    related: ["recover-files-scratched-dvd", "recover-home-videos-dvd"],
+    related: ["recover-files-scratched-dvd", "recover-home-videos-dvd", "copy-dvd-to-hard-drive-windows-11", "free-dvd-recovery-software"],
     sections: [
       {
         id: "how-long-dvds-last",
@@ -643,7 +643,7 @@ const GUIDES: Guide[] = [
     category: "CD Recovery",
     intro:
       "You can recover data from a scratched or damaged CD-ROM by using disc recovery software that retries each failed sector at multiple speeds instead of stopping at the first error. Most data CDs with light-to-moderate scratches yield 85–98% of their files with a proper sector-level scan — even when Windows reports the disc as unreadable.",
-    related: ["recover-files-scratched-dvd", "kodak-photo-cd-recovery"],
+    related: ["recover-files-scratched-dvd", "kodak-photo-cd-recovery", "recover-music-from-scratched-cd", "recover-data-from-zip-disk"],
     sections: [
       {
         id: "why-windows-fails",
@@ -756,7 +756,7 @@ const GUIDES: Guide[] = [
     category: "Software Comparison",
     intro:
       "Heirvo and IsoBuster are both Windows disc recovery tools, but they target different users. Heirvo is built for people who just need to get files off a damaged disc quickly, with a free-scan-then-pay model. IsoBuster is a deep forensic tool with more technical controls, a steeper learning curve, and a subscription pricing model. The right choice depends on whether you need simplicity or maximum control.",
-    related: ["best-dvd-recovery-software", "recover-files-scratched-dvd"],
+    related: ["best-dvd-recovery-software", "recover-files-scratched-dvd", "free-dvd-recovery-software", "dvd-r-vs-dvd-plus-r-recovery"],
     sections: [
       {
         id: "quick-comparison",
@@ -872,7 +872,7 @@ const GUIDES: Guide[] = [
     category: "DVD Recovery",
     intro:
       "A wedding DVD that won't play is one of the most emotionally urgent disc recovery situations there is. The good news is that most wedding DVDs fail for recoverable reasons — surface scratches, early-stage disc rot, or an unfinalized burn by the videographer — rather than catastrophic physical damage. This guide explains what's likely wrong and exactly how to get your footage back on Windows.",
-    related: ["recover-files-scratched-dvd", "recover-unfinalized-dvd"],
+    related: ["recover-files-scratched-dvd", "recover-unfinalized-dvd", "recover-video-from-camcorder-dvd", "recover-dvd-car-heat-damage"],
     sections: [
       {
         id: "why-wedding-dvds-fail",
@@ -990,7 +990,7 @@ const GUIDES: Guide[] = [
     category: "DVD Recovery",
     intro:
       "An unfinalized DVD-R is one of the most misunderstood disc problems — people assume the footage is lost because the disc won't play anywhere. In reality, the video data is almost always completely intact. The disc simply lacks the closing index that DVD players need to navigate it. This guide explains what an unfinalized disc is and exactly how to extract the footage on Windows.",
-    related: ["recover-wedding-dvd", "recover-home-videos-dvd"],
+    related: ["recover-wedding-dvd", "recover-home-videos-dvd", "recover-video-from-camcorder-dvd", "recover-8mm-film-dvd-transfer"],
     sections: [
       {
         id: "what-is-unfinalized",
@@ -1093,7 +1093,7 @@ const GUIDES: Guide[] = [
     category: "Blu-ray Recovery",
     intro:
       "Recovering data from a damaged Blu-ray disc on Windows is harder than DVD recovery for one main reason: Blu-ray drives have less aggressive built-in error correction than DVD drives, which means more sectors are reported as unreadable even when the data is physically present. With the right sector-level recovery software, most scratched or degraded Blu-ray discs are at least partially recoverable.",
-    related: ["recover-files-scratched-dvd", "best-dvd-recovery-software"],
+    related: ["recover-files-scratched-dvd", "best-dvd-recovery-software", "dvd-r-vs-dvd-plus-r-recovery", "dvd-drive-not-reading-disc-windows-11"],
     sections: [
       {
         id: "blu-ray-vs-dvd-recovery",
@@ -1205,7 +1205,7 @@ const GUIDES: Guide[] = [
     category: "CD Recovery",
     intro:
       "A scratched audio CD that skips or won't rip is one of the most common disc problems — and one of the most fixable. Standard CD ripping software like Windows Media Player or iTunes gives up at the first read error and either skips the track entirely or fills the gap with silence. Sector-level recovery software retries each failing sector dozens of times and reconstructs the audio data with far fewer gaps. Most scratched audio CDs yield 90–100% of their music with the right tool.",
-    related: ["recover-data-from-cd-rom-windows", "recover-files-scratched-dvd"],
+    related: ["recover-data-from-cd-rom-windows", "recover-files-scratched-dvd", "kodak-photo-cd-recovery", "recover-data-from-zip-disk"],
     sections: [
       {
         id: "why-ripping-fails",
@@ -1322,7 +1322,7 @@ const GUIDES: Guide[] = [
     category: "DVD Recovery",
     intro:
       "Camcorder DVDs — the small 8cm discs used in Sony, Canon, and Panasonic DVD camcorders from 2003 to 2012 — are some of the most failure-prone optical media ever made. The combination of small size, frequent handling, and the fact that most were never finalized properly means a huge proportion simply won't play or import on a computer. The good news: the video is almost always still there.",
-    related: ["recover-unfinalized-dvd", "recover-home-videos-dvd"],
+    related: ["recover-unfinalized-dvd", "recover-home-videos-dvd", "recover-vhs-converted-dvd"],
     sections: [
       {
         id: "why-camcorder-dvds-fail",
@@ -1423,7 +1423,7 @@ const GUIDES: Guide[] = [
     category: "DVD Recovery",
     intro:
       "A VHS-to-DVD transfer that won't play is one of the most heartbreaking disc problems — those tapes often no longer exist, making the DVD the only copy of irreplaceable footage. The good news is that most damaged transfer DVDs are recoverable. Because the footage was professionally encoded and pressed (or burned) in a single session, the data is usually intact even when the disc surface has degraded.",
-    related: ["recover-home-videos-dvd", "recover-files-scratched-dvd"],
+    related: ["recover-home-videos-dvd", "recover-files-scratched-dvd", "recover-8mm-film-dvd-transfer", "recover-unfinalized-dvd"],
     sections: [
       {
         id: "why-transfer-dvds-fail",
@@ -1546,7 +1546,7 @@ const GUIDES: Guide[] = [
     category: "DVD Recovery",
     intro:
       "A DVD drive that shows 'Please insert a disc' when a disc is already inside is one of the most frustrating Windows problems — and it has a handful of distinct causes, each with a different fix. This guide walks through every cause in order of likelihood, so you can find the right fix without guessing.",
-    related: ["recover-files-scratched-dvd", "best-dvd-recovery-software"],
+    related: ["recover-files-scratched-dvd", "best-dvd-recovery-software", "copy-dvd-to-hard-drive-windows-11", "recover-data-from-blu-ray-windows"],
     sections: [
       {
         id: "rule-out-the-disc",
@@ -1689,7 +1689,7 @@ const GUIDES: Guide[] = [
     category: "Software Guide",
     intro:
       "Most 'free DVD recovery software' is either genuinely free with serious limitations, or a freemium trial that scans for free but locks recovery behind a paywall. Knowing which category a tool falls into before you spend two hours scanning a disc matters. This guide breaks down every realistic free option in 2026 — what each one actually does, what it can't do, and which is worth your time.",
-    related: ["best-dvd-recovery-software", "heirvo-vs-isobuster"],
+    related: ["best-dvd-recovery-software", "heirvo-vs-isobuster", "recover-corrupted-iso-file"],
     sections: [
       {
         id: "what-free-means",
@@ -1850,7 +1850,7 @@ const GUIDES: Guide[] = [
     category: "DVD Recovery",
     intro:
       "Water itself doesn't destroy DVD data — the polycarbonate disc and aluminium reflective layer are both waterproof. What causes permanent damage is what happens next: mineral deposits from tap water etching the disc surface as it dries, mould growing in humid conditions, and label paper delaminating and pulling the reflective layer with it. If you act within the first hour, your chances of full recovery are very high.",
-    related: ["recover-files-scratched-dvd", "recover-home-videos-dvd"],
+    related: ["recover-files-scratched-dvd", "recover-data-cracked-dvd", "recover-dvd-car-heat-damage", "how-long-do-dvds-last-disc-rot"],
     sections: [
       {
         id: "first-30-minutes",
@@ -1970,7 +1970,7 @@ const GUIDES: Guide[] = [
     category: "Legacy Media Recovery",
     intro:
       "Iomega Zip disks — the 100MB, 250MB, and 750MB removable disks that were ubiquitous in offices and creative studios from the mid-1990s to the mid-2000s — are now an orphaned format. The drives are long discontinued, and Zip disks are notorious for the 'click of death': a head alignment failure that corrupts disks and sometimes spreads to every disk inserted afterwards. This guide covers every realistic option for getting your data off a Zip disk in 2026.",
-    related: ["recover-data-from-cd-rom-windows", "best-dvd-recovery-software"],
+    related: ["recover-data-from-cd-rom-windows", "kodak-photo-cd-recovery", "recover-music-from-scratched-cd"],
     sections: [
       {
         id: "what-you-need",
@@ -2110,7 +2110,7 @@ const GUIDES: Guide[] = [
     category: "DVD Recovery",
     intro:
       "Copying a DVD to your hard drive preserves the content before the disc degrades — DVD-R and DVD+R discs have a typical lifespan of 10–25 years, and many burned in the early 2000s are already showing signs of disc rot. This guide covers two approaches: copying as an ISO image (a perfect byte-for-byte copy of the disc) and copying as an MP4 video file (smaller, plays anywhere). Both work on Windows 11 with free software.",
-    related: ["how-long-do-dvds-last-disc-rot", "recover-files-scratched-dvd"],
+    related: ["how-long-do-dvds-last-disc-rot", "recover-files-scratched-dvd", "dvd-drive-not-reading-disc-windows-11", "recover-corrupted-iso-file"],
     sections: [
       {
         id: "iso-vs-mp4",
@@ -2246,7 +2246,7 @@ const GUIDES: Guide[] = [
     category: "Software Guide",
     intro:
       "A corrupted ISO file is a different problem from a damaged disc — the optical media is fine, but the image file on your hard drive has been corrupted by a failed download, a storage error, or file system damage. In many cases the ISO is partially intact and most of the content is recoverable. This guide covers every approach: verifying the corruption, extracting content from a partial ISO, and recreating the image from the original disc.",
-    related: ["best-dvd-recovery-software", "recover-files-scratched-dvd"],
+    related: ["best-dvd-recovery-software", "recover-files-scratched-dvd", "recover-data-from-blu-ray-windows", "copy-dvd-to-hard-drive-windows-11"],
     sections: [
       {
         id: "verify-first",
@@ -2362,6 +2362,585 @@ const GUIDES: Guide[] = [
       primaryHref: "/download",
       secondaryLabel: "View all recovery guides",
       secondaryHref: "/guides",
+    },
+  },
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Recover 8mm film transferred to DVD
+  // ─────────────────────────────────────────────────────────────────────────────
+  {
+    slug: "recover-8mm-film-dvd-transfer",
+    title: "How to Recover 8mm Film Transferred to DVD",
+    metaTitle:
+      "How to Recover 8mm Film Transferred to DVD (2026 Guide)",
+    metaDescription:
+      "Your 8mm film was transferred to DVD years ago — now the disc won't play. Recover irreplaceable family footage from degraded transfer DVDs with Heirvo. Free scan, pay only to save.",
+    datePublished: "2026-05-14",
+    dateModified: "2026-05-14",
+    readTime: "7 min read",
+    category: "DVD Recovery",
+    intro:
+      "Between the late 1990s and early 2010s, millions of families had their 8mm, Super 8, and Hi8 film reels transferred to DVD. It felt like the responsible thing to do — preserve those irreplaceable memories on a modern format. But DVD-R discs have a limited lifespan, and many of those transfers are now 15 to 25 years old. The dye layer is fading, the disc won't play, and the original film reels were often discarded years ago. That DVD may be the only surviving copy of your grandparents' wedding, your first steps, or a summer at the lake house in 1974. The footage is usually still recoverable — but the window is closing.",
+    related: ["recover-home-videos-dvd", "recover-vhs-converted-dvd", "recover-video-from-camcorder-dvd", "recover-wedding-dvd"],
+    sections: [
+      {
+        id: "why-8mm-transfers-at-risk",
+        heading: "Why your 8mm-to-DVD transfer is at risk right now",
+        level: 2,
+        paragraphs: [
+          "8mm film was the dominant home movie format from the 1930s through the early 1980s. Super 8 took over in 1965 and remained popular until camcorders replaced film in the late 1980s. By the 2000s, most families had boxes of film reels they could no longer watch — projectors were broken, bulbs were unavailable, and the film itself was becoming brittle.",
+          "Transfer services offered a solution: send in your reels, get back a DVD. Shops like Costco, Walgreens, and hundreds of local video transfer businesses did exactly this, recording the telecine output to DVD-R discs. It felt permanent. It was not.",
+          "DVD-R discs use an organic dye layer — cyanine, phthalocyanine, or azo — that degrades through oxidation, UV exposure, heat, and humidity. Under ideal archival conditions (cool, dark, low humidity), a DVD-R can last 30 years or more. In a box in the attic, a drawer in the living room, or a sleeve in the garage, the realistic lifespan is 10 to 20 years. Many 8mm transfer DVDs burned between 2000 and 2010 are now failing.",
+          "What makes this particularly devastating is that most families threw away the original film reels after receiving the DVD. The transfer service may have returned the reels, but they ended up in a bin during a move, a house clearance, or simply because the DVD was supposed to be the permanent copy. For millions of families, the DVD is the last link to footage that cannot be recreated.",
+        ],
+      },
+      {
+        id: "check-your-disc",
+        heading: "How to tell if your 8mm transfer DVD is still readable",
+        level: 2,
+        paragraphs: [
+          "Before you need recovery software, it is worth checking the current state of your disc. Early detection means easier recovery — a disc showing early signs of degradation today will be significantly harder to recover in another year or two.",
+        ],
+        numbered: true,
+        items: [
+          "Hold the disc up to a bright light and look at the reflective (data) side. A healthy disc has an even, mirror-like sheen. A disc with early disc rot may show a faint bronze or yellowish tint, uneven patches of haziness, or tiny pinholes of light visible through the reflective layer.",
+          "Insert the disc into a DVD drive. If Windows recognises it and you can browse the VIDEO_TS folder, the disc is still readable — but that does not mean it is healthy. Copy the files to your hard drive immediately as a precaution.",
+          "Try playing the disc in VLC or Windows Media Player. If the video plays but shows pixelation, blocky artefacts, freezing, or audio dropouts at certain points, those sectors are beginning to fail. The disc is degrading and needs to be recovered now.",
+          "If the disc is not recognised at all — Windows says 'insert a disc' or shows the drive as empty — the file system layer is unreadable. This does not mean the footage is gone. Sector-level recovery software can often read beneath the damaged file system.",
+        ],
+        callout: {
+          label: "Act now, not later",
+          text: "Disc rot is progressive and accelerating. A disc that recovers 95% of its footage today may only yield 60% in another two years. If you have 8mm transfer DVDs sitting in storage, check them this week — not next year.",
+          color: "amber",
+        },
+      },
+      {
+        id: "recovery-steps",
+        heading: "How to recover 8mm film footage with Heirvo",
+        level: 2,
+        numbered: true,
+        items: [
+          "Download and install Heirvo on any Windows 10 or 11 PC. The installer is about 60 MB, takes under two minutes, and requires no account.",
+          "Insert the 8mm transfer DVD into your disc drive. A full-size external USB DVD drive is ideal — slim laptop drives have weaker error correction and struggle more with degraded discs. If Windows shows an error like 'disc not readable', that is expected.",
+          "Open Heirvo and select your disc drive from the dropdown. Heirvo detects the disc type and format automatically, including DVD-5 (single-layer) and DVD-9 (dual-layer) transfer discs.",
+          "Click Scan. Heirvo reads every sector up to 16 times at variable speeds, both forwards and backwards, before marking a sector as unrecoverable. A degraded transfer disc typically takes 1 to 4 hours depending on the severity of the damage.",
+          "When the scan completes, review the results. Heirvo shows every recoverable file — typically the VIDEO_TS folder containing VOB video files, plus any chapter markers the transfer service added. The scan is completely free.",
+          "Activate Heirvo Pro ($39 one-time) to save the recovered footage to your hard drive. Heirvo can save the raw VIDEO_TS structure (playable in any DVD player software) or convert to MP4 for easy playback on phones, tablets, and smart TVs. If nothing was recovered, you pay nothing.",
+        ],
+      },
+      {
+        id: "what-heirvo-recovers",
+        heading: "What Heirvo recovers from 8mm transfer DVDs",
+        level: 2,
+        paragraphs: [
+          "Most 8mm-to-DVD transfers were encoded as standard DVD-Video — a VIDEO_TS folder containing VOB files, IFO navigation files, and BUP backup files. This is exactly the same format used by commercial movie DVDs, and Heirvo handles it natively.",
+          "Even if the IFO navigation files are too damaged to recover, the VOB files themselves contain the footage. Heirvo can extract and convert VOB files independently, so you get the video even if the disc menus are lost.",
+        ],
+        table: {
+          headers: ["File type", "What it contains", "What Heirvo does"],
+          rows: [
+            [
+              "VOB (Video Object)",
+              "The actual video and audio — your 8mm footage",
+              "Recovers sector by sector, saves as VOB or converts to MP4",
+            ],
+            [
+              "IFO (Information)",
+              "Chapter markers, menu structure, playback order",
+              "Recovers when possible — not critical for viewing the footage",
+            ],
+            [
+              "BUP (Backup)",
+              "Backup copies of IFO files",
+              "Recovers automatically as part of the VIDEO_TS structure",
+            ],
+            [
+              "ISO image",
+              "Full disc image (if you need an exact copy)",
+              "Can save the entire disc as an ISO for archival purposes",
+            ],
+          ],
+        },
+      },
+      {
+        id: "mail-in-recovery",
+        heading: "When to use mail-in recovery",
+        level: 2,
+        paragraphs: [
+          "If Heirvo's scan recovers less than 50% of the disc, if your computer's DVD drive cannot detect the disc at all, or if the disc has visible delamination — the reflective layer peeling away from the polycarbonate — professional lab recovery is the next step.",
+          "Heirvo's mail-in service starts at $89. We use lab-grade optical equipment with a modified reader, a stronger laser, and finer focus control that can read discs no consumer drive can. We also re-polish disc surfaces when needed to remove haze caused by oxidation.",
+          "For 8mm film transfers — footage that may span three generations of a family, shot on a format that no longer exists, stored on a disc that is the only surviving copy — the mail-in service exists precisely for this situation. We will tell you exactly what is recoverable before you pay anything. If we recover nothing, you pay nothing.",
+        ],
+        callout: {
+          label: "Original reels gone?",
+          text: "If the original 8mm film reels no longer exist, your transfer DVD is the sole surviving copy of that footage. Do not wait. Disc degradation is progressive — every month of delay reduces the chance of a full recovery.",
+          color: "amber",
+        },
+      },
+      {
+        id: "preserve-after-recovery",
+        heading: "How to preserve your recovered footage permanently",
+        level: 2,
+        paragraphs: [
+          "Once you have recovered the footage, the single most important thing you can do is store it in multiple locations. A single copy on a single device is exactly the situation that put you at risk in the first place.",
+        ],
+        items: [
+          "Save the MP4 file to an external hard drive or SSD. Label it clearly with the content and date.",
+          "Upload a copy to cloud storage — Google Drive, iCloud, OneDrive, or Backblaze. Cloud storage is effectively permanent as long as you maintain the account.",
+          "Consider uploading to a private YouTube channel set to 'Unlisted'. YouTube stores video at high quality indefinitely, and it is free.",
+          "Share the files with family members. Every additional copy in a different household is another layer of protection against loss.",
+          "Do not rely on burning a new DVD as your backup. You would be recreating the exact same fragile storage medium that just failed.",
+        ],
+        callout: {
+          label: "The 3-2-1 rule",
+          text: "Keep at least 3 copies of irreplaceable footage, on at least 2 different types of media, with at least 1 copy stored off-site (cloud or a relative's house). This is the only truly safe preservation strategy.",
+          color: "green",
+        },
+      },
+    ],
+    faq: [
+      {
+        q: "The original 8mm film reels are gone. Is the DVD my only hope?",
+        a: "If the original film reels were discarded after the transfer, yes — the DVD is the sole surviving copy. The good news is that most transfer DVDs are recoverable even when they won't play normally. Run a free scan with Heirvo to see exactly what footage can be saved. Act soon: disc rot is progressive and the recovery rate drops over time.",
+      },
+      {
+        q: "My 8mm transfer DVD is from 2003. Is it too old to recover?",
+        a: "Not at all. A 23-year-old DVD-R is old enough to show degradation, but in most cases the video data is still physically present on the disc — it is just harder for a standard drive to read. Heirvo's multi-pass sector-level scanning is designed precisely for discs in this condition. We have successfully recovered footage from transfer DVDs older than 25 years.",
+      },
+      {
+        q: "What is the difference between 8mm film, Hi8, and Video8?",
+        a: "8mm and Super 8 are analogue film formats — actual celluloid film shot through a camera. Hi8 and Video8 are magnetic tape formats used in camcorders from the late 1980s onward. All four formats were commonly transferred to DVD. Heirvo recovers the DVD regardless of what the original source format was — it works with the DVD-Video data, not the original medium.",
+      },
+      {
+        q: "Will the recovered video have the same quality as the original transfer?",
+        a: "In fully recovered sectors, yes — the video is bit-for-bit identical to what was originally burned to the disc. In sectors with partial damage, you may see brief pixelation, blocky artefacts, or a frozen frame lasting a second or two. Audio may have brief dropouts. These artefacts correspond to the specific damaged sectors on the disc.",
+      },
+      {
+        q: "Can I recover a disc that has visible mould or fungal growth?",
+        a: "Mould on the disc surface can often be gently cleaned with isopropyl alcohol and a soft cloth before scanning. Do not use water. If the mould has penetrated the lacquer layer on the label side, the reflective layer underneath may be damaged — in that case, mail-in recovery with professional cleaning is recommended. Do not attempt to play a visibly mouldy disc without cleaning it first, as it can damage your drive.",
+      },
+    ],
+    cta: {
+      heading: "Those memories deserve to survive",
+      body: "Your 8mm film transfer DVD may be the only copy left. Scan it free with Heirvo and see exactly what footage is recoverable — before the disc degrades further.",
+      primaryLabel: "Download Free — Windows",
+      primaryHref: "/download",
+      secondaryLabel: "Mail-in recovery from $89",
+      secondaryHref: "/recover",
+    },
+  },
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Recover a DVD damaged by car heat
+  // ─────────────────────────────────────────────────────────────────────────────
+  {
+    slug: "recover-dvd-car-heat-damage",
+    title: "How to Recover a DVD Damaged by Car Heat",
+    metaTitle: "How to Recover a DVD Damaged by Car Heat (2026 Guide)",
+    metaDescription:
+      "Recover files and home videos from a DVD warped or damaged by heat in a car. Assess the damage, try software recovery, or use Heirvo's mail-in lab service.",
+    datePublished: "2026-05-14",
+    dateModified: "2026-05-14",
+    readTime: "6 min read",
+    category: "DVD Recovery",
+    intro:
+      "A DVD left on a car dashboard in summer can warp in under an hour. The polycarbonate substrate starts deforming around 70 °C (158 °F), and a parked car in direct sunlight routinely hits 80–90 °C on the dash — more than enough to ruin a disc. If you've found a warped DVD in your car and it holds irreplaceable family videos, graduation footage, or wedding memories, don't panic. Depending on the severity, the data is often still recoverable — either with software or through a professional mail-in service.",
+    related: ["recover-files-scratched-dvd", "recover-water-damaged-dvd", "recover-data-cracked-dvd", "how-long-do-dvds-last-disc-rot"],
+    sections: [
+      {
+        id: "why-heat-damages-dvds",
+        heading: "Why heat damages DVDs",
+        paragraphs: [
+          "A DVD is a sandwich of layers: a polycarbonate plastic substrate, a thin metallic reflective layer, and — in recordable discs — an organic dye layer that stores the actual data. Each of these layers reacts differently to extreme heat, and all three failure modes can happen simultaneously.",
+          "Polycarbonate warping is the most visible damage. Polycarbonate has a glass transition temperature of around 150 °C, but it begins softening and deforming well below that — measurable warping starts at roughly 70 °C (158 °F). A warped disc wobbles in the drive tray and the laser can no longer track the data spiral accurately, producing read errors or preventing the drive from spinning the disc at all.",
+          "Dye layer degradation affects recordable DVDs (DVD-R, DVD+R) more than pressed commercial discs. The organic dye that stores data is heat-sensitive by design — that is how a laser writes to it. Sustained temperatures above 60 °C accelerate chemical breakdown of the dye, reducing the contrast between burned and unburned marks and making the disc harder to read even when it is not physically warped.",
+          "Reflective layer separation (delamination) happens in severe cases. The aluminium or gold reflective layer is bonded to the polycarbonate with adhesive. Repeated thermal cycling — the disc heats up every afternoon and cools at night — weakens that bond. Once the reflective layer separates, parts of the disc become completely opaque to the laser and no software can read those sectors.",
+        ],
+      },
+      {
+        id: "assess-the-damage",
+        heading: "How to assess heat damage on your disc",
+        paragraphs: [
+          "Before trying any recovery, examine the disc carefully under good light. The level of visible damage tells you which recovery path is realistic.",
+        ],
+        table: {
+          caption: "Heat damage severity and recommended recovery approach",
+          headers: ["Damage level", "What you see", "Drive behaviour", "Best recovery option"],
+          rows: [
+            [
+              "Mild warping",
+              "Disc looks mostly flat; slight flex when held at eye level",
+              "Drive accepts the disc but may struggle to read some files",
+              "Software recovery with Heirvo — high success rate",
+            ],
+            [
+              "Moderate warping",
+              "Visible curve or wave across the disc surface",
+              "Drive spins up but cannot mount the disc, or ejects it after a few seconds",
+              "Try software recovery first; mail-in service if the drive rejects the disc",
+            ],
+            [
+              "Severe warping",
+              "Disc is visibly bent, bowl-shaped, or has rippled edges",
+              "Drive will not accept or spin the disc at all",
+              "Mail-in lab recovery only — do not force the disc into a drive",
+            ],
+            [
+              "Delamination",
+              "Bubbling, cloudy patches, or the reflective layer is peeling away from the edge",
+              "Drive may spin but reads mostly errors",
+              "Mail-in lab recovery — further handling can worsen the separation",
+            ],
+          ],
+        },
+        callout: {
+          label: "Warning",
+          text: "Never try to flatten a warped DVD by heating it further (hair dryer, oven, hot water). Re-heating damages the dye layer and can cause the reflective coating to separate. It also risks melting the disc onto your drive's lens assembly, destroying both the disc and the drive.",
+          color: "amber",
+        },
+      },
+      {
+        id: "software-recovery",
+        heading: "Software recovery: when the drive can still read the disc",
+        paragraphs: [
+          "If your disc drive accepts the DVD and spins it up — even if Windows shows an error like 'disc is not formatted' or 'cannot read from drive' — there is a good chance Heirvo can recover most or all of the data. Heirvo reads sector by sector with multiple retry passes, which is exactly what a heat-damaged disc needs because warping causes intermittent read failures rather than total data loss.",
+        ],
+        numbered: true,
+        items: [
+          "Download and install Heirvo from heirvo.com. The installer is about 60 MB and requires no account.",
+          "Insert the heat-damaged DVD gently into your disc drive. Let the drive spin up fully — this may take 30–60 seconds longer than a healthy disc.",
+          "Open Heirvo and select your disc drive. Heirvo detects the disc type and condition automatically.",
+          "Click Scan. Heirvo makes up to 16 passes over problem sectors, reading at different speeds and directions. A heat-damaged disc typically scans in 1–3 hours.",
+          "Review the results. Heirvo shows every recoverable file — video, photos, documents, or a full ISO image. The scan is completely free.",
+          "Activate Heirvo Pro ($39 one-time) to save recovered files to your hard drive. If nothing is recoverable, you pay nothing.",
+        ],
+        callout: {
+          label: "Tip",
+          text: "If the drive ejects or fails to recognise the disc, try a different drive. External USB DVD drives with tray-loading mechanisms (not slot-loading) are more tolerant of slightly warped discs because the tray provides a flat resting surface. Avoid slot-loading drives — a warped disc can jam inside.",
+          color: "green",
+        },
+      },
+      {
+        id: "mail-in-recovery",
+        heading: "Mail-in recovery: when the disc is too warped for any drive",
+        paragraphs: [
+          "If no drive on your computer will accept or read the disc, the data is not necessarily gone — it just requires equipment you don't have at home. Heirvo's mail-in lab recovery service uses industrial-grade optical readers with adjustable focus depth and tilt compensation that can track the data spiral on a warped disc that would be unreadable in any consumer drive.",
+          "The process is simple: you ship us the disc (free shipping label provided), our technicians attempt recovery using lab equipment, and we send you the recovered files on a USB drive or via secure download. Pricing starts at $89 per disc and follows a no-data-no-fee guarantee — if we cannot recover anything, you pay nothing.",
+          "Mail-in recovery is the recommended path for severely warped discs, discs showing delamination, and any disc that holds irreplaceable memories you cannot afford to lose. The success rate on heat-damaged discs in our lab is significantly higher than consumer software alone because the industrial readers physically compensate for the disc's warped geometry.",
+        ],
+      },
+      {
+        id: "prevention",
+        heading: "How to prevent heat damage to your discs",
+        paragraphs: [
+          "Once you've recovered your data, take steps to ensure this never happens again. Digital backups are the ultimate protection, but proper physical storage extends the life of any disc significantly.",
+        ],
+        items: [
+          "Never leave discs in a parked car — not in the glovebox, centre console, door pocket, or on the dashboard. Temperatures inside a closed car in summer can exceed 80 °C (176 °F) within 30 minutes.",
+          "Store discs vertically in hard jewel cases or binder sleeves, in a cool, dry, dark location. Ideal storage temperature is 15–25 °C (59–77 °F) with low humidity.",
+          "Back up every important disc digitally. Use Heirvo to create an ISO image of each disc while it is still readable — this takes minutes and gives you a perfect byte-for-byte backup on your hard drive.",
+          "Keep discs away from direct sunlight even indoors. UV exposure degrades the dye layer in recordable DVDs over time, compounding any heat damage.",
+          "If you must transport discs in a car, carry them in an insulated bag and bring them inside with you at every stop.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "Can a heat-warped DVD be flattened and reused?",
+        a: "No. Even if you could flatten the polycarbonate (which risks further damage), the dye layer and reflective coating have likely been compromised by the heat. Focus on recovering the data, not restoring the physical disc. Once recovered, back up your files digitally.",
+      },
+      {
+        q: "How hot does a car dashboard get in summer?",
+        a: "Dashboard temperatures in a parked car in direct sunlight regularly reach 80–95 °C (176–203 °F), and have been measured as high as 110 °C in extreme conditions. DVDs begin warping at around 70 °C (158 °F), so even a brief stop on a sunny day can be enough to damage an exposed disc.",
+      },
+      {
+        q: "Will Heirvo work on a DVD that is slightly warped but still spins?",
+        a: "Yes. If the drive can spin the disc at all, Heirvo has a strong chance of recovering data. Its multi-pass sector reader compensates for the intermittent read errors that warping causes. Run the free scan to see exactly how much is recoverable before committing.",
+      },
+      {
+        q: "What does the mail-in service cost for a heat-damaged DVD?",
+        a: "Mail-in recovery starts at $89 per disc. Pricing depends on the severity of the damage and the amount of data recovered. Every case is covered by a no-data-no-fee guarantee — if we cannot recover anything, you are not charged.",
+      },
+      {
+        q: "Are pressed commercial DVDs (movies) more resistant to car heat than burned DVDs?",
+        a: "The polycarbonate substrate warps at the same temperature regardless of disc type. However, pressed DVDs use a stamped aluminium layer instead of an organic dye, so their data is more heat-stable once warping is accounted for. Home-burned DVD-R and DVD+R discs suffer both warping and dye degradation, making them more vulnerable overall.",
+      },
+    ],
+    cta: {
+      heading: "Don't let a hot car erase your memories",
+      body: "Heat-warped discs often need professional recovery. Mail us your disc and our lab team will extract every recoverable file — no data, no fee. Or download Heirvo to try a free scan first if your drive still reads the disc.",
+      primaryLabel: "Mail-In Recovery — from $89",
+      primaryHref: "/recover",
+      secondaryLabel: "Download Free Scan",
+      secondaryHref: "/download",
+    },
+  },
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // DVD-R vs DVD+R: Recovery Differences Explained
+  // ─────────────────────────────────────────────────────────────────────────────
+  {
+    slug: "dvd-r-vs-dvd-plus-r-recovery",
+    title: "DVD-R vs DVD+R: Recovery Differences Explained",
+    metaTitle: "DVD-R vs DVD+R: Which Format Is Easier to Recover? (2026 Guide)",
+    metaDescription:
+      "DVD-R vs DVD+R — how the two formats differ in error correction, defect management, and data recovery. Learn which disc type holds up better and how Heirvo recovers both.",
+    datePublished: "2026-05-14",
+    dateModified: "2026-05-14",
+    readTime: "6 min read",
+    category: "DVD Recovery",
+    intro:
+      "If you have a stack of old DVDs and some won't read, you may have noticed the discs are a mix of DVD-R and DVD+R. The two formats were developed by competing industry alliances in the early 2000s and differ in how they lay down data, handle errors, and manage defects. Those differences have a real — though often overstated — effect on how recoverable a disc is when it starts to fail. Here is what actually matters and what doesn't.",
+    related: ["recover-files-scratched-dvd", "best-dvd-recovery-software", "heirvo-vs-isobuster", "recover-data-from-blu-ray-windows"],
+    sections: [
+      {
+        id: "brief-history",
+        heading: "A brief history of the format war",
+        paragraphs: [
+          "DVD-R was developed by Pioneer and ratified by the DVD Forum, the same body that created the original DVD specification. It launched in 1997 and became the default recordable format for most consumer DVD burners throughout the 2000s. Because it was first to market and carried the official DVD Forum stamp, DVD-R discs were cheaper and more widely compatible with standalone DVD players.",
+          "DVD+R was introduced in 2002 by the DVD+RW Alliance, led by Philips, Sony, and Dell. It was designed as a technical improvement rather than a brand extension — the engineers had the benefit of hindsight and built in better error handling and more precise addressing. The '+' format never fully overtook DVD-R in market share, but most burners sold after 2004 supported both formats.",
+        ],
+      },
+      {
+        id: "physical-differences",
+        heading: "Physical and technical differences that affect recovery",
+        paragraphs: [
+          "On the surface, DVD-R and DVD+R look identical — same 12 cm diameter, same 4.7 GB single-layer capacity, same polycarbonate and dye construction. The differences are in how the drive knows where it is on the disc and how it handles errors during writing.",
+          "DVD-R uses a system called ATIP (Absolute Time In Pre-groove) to guide the laser. The groove wobbles at a fixed frequency, and timing data is encoded in that wobble. When linking one recording session to the next, DVD-R leaves small gaps between write sessions — called 'lossless linking' gaps — that can introduce micro-errors at session boundaries.",
+          "DVD+R uses ADIP (ADdress In Pre-groove), which encodes address information as a high-frequency wobble modulation. This gives the drive more precise knowledge of its position on the disc at any moment. DVD+R also implements true lossless linking — session boundaries are seamless, with no gap and no data discontinuity.",
+          "The practical effect is that DVD+R discs tend to have fewer uncorrectable errors in the areas between write sessions, and the drive can locate damaged sectors more accurately because the addressing system is more robust. For recovery software, more accurate addressing means fewer misread sectors.",
+        ],
+        callout: {
+          label: "How to tell them apart",
+          text: "Check the printed label side or the inner hub ring — most discs are stamped 'DVD-R' or 'DVD+R'. If the label has worn off, Heirvo detects the format automatically when it scans the disc.",
+          color: "blue",
+        },
+      },
+      {
+        id: "defect-management",
+        heading: "Defect management and error correction",
+        paragraphs: [
+          "Both formats use the same core error correction scheme — Reed-Solomon Product Code (RS-PC) with two layers of parity data (PI and PO). At the byte level, the error correction capacity is identical. Where DVD+R pulls ahead is in how it manages defects at a higher level.",
+          "DVD+R supports a feature called defect management, where the drive can remap bad sectors to a spare area on the disc during recording. DVD-R does not have a built-in defect management layer for write-once media (though DVD-RW does). In practice, this means a DVD+R burn is slightly more likely to produce a clean recording even if the blank disc has minor manufacturing flaws.",
+          "For recovery purposes, the advantage is modest but measurable. Studies of aged disc collections consistently show that DVD+R discs have slightly lower average PI/PO error rates than DVD-R discs of the same age and storage conditions. The difference is typically 5–15% in error rate — meaningful for borderline-readable discs, but not a guarantee of success.",
+        ],
+      },
+      {
+        id: "comparison-table",
+        heading: "DVD-R vs DVD+R at a glance",
+        table: {
+          caption: "Key differences between DVD-R and DVD+R for recovery purposes",
+          headers: ["Feature", "DVD-R", "DVD+R"],
+          rows: [
+            ["Developed by", "Pioneer / DVD Forum (1997)", "Philips, Sony, Dell / DVD+RW Alliance (2002)"],
+            ["Addressing system", "ATIP (wobble timing)", "ADIP (wobble modulation) — more precise"],
+            ["Session linking", "Gap-based — micro-errors possible", "True lossless linking — seamless"],
+            ["Defect management", "Not available on write-once media", "Supported — remaps bad sectors during burn"],
+            ["Error correction", "RS-PC (PI/PO parity)", "RS-PC (PI/PO parity) — identical"],
+            ["Typical player compatibility", "Wider in older players", "Slightly narrower in pre-2004 players"],
+            ["Dye layer / longevity", "Same dye types (cyanine, phthalocyanine, azo)", "Same dye types — identical degradation rate"],
+            ["Average recovery rate", "Very good", "Slightly better on borderline discs"],
+            ["Heirvo support", "Full support", "Full support"],
+          ],
+        },
+      },
+      {
+        id: "rewritable-formats",
+        heading: "What about DVD-RW and DVD+RW?",
+        paragraphs: [
+          "Rewritable discs — DVD-RW and DVD+RW — use a phase-change alloy layer instead of an organic dye. The laser heats the alloy to switch it between crystalline (reflective) and amorphous (less reflective) states, which is how data is written and erased.",
+          "Rewritable discs can be overwritten roughly 1,000 times, but each rewrite cycle degrades the phase-change layer slightly. A DVD-RW that has been rewritten dozens of times is more likely to develop read errors than a write-once disc of the same age. If your disc has been reused many times, expect a lower recovery rate regardless of whether it is RW or +RW.",
+          "Heirvo supports both DVD-RW and DVD+RW. The same sector-level scanning approach applies — the software reads below the file system and retries damaged areas at multiple speeds.",
+        ],
+        callout: {
+          label: "Important",
+          text: "If you have a rewritable disc with valuable data, do not attempt to erase and rewrite it. Even a failed erase operation can overwrite sectors that were previously recoverable. Insert the disc and scan it as-is.",
+          color: "amber",
+        },
+      },
+      {
+        id: "recovery-approach",
+        heading: "How Heirvo recovers both formats",
+        paragraphs: [
+          "Despite the technical differences between DVD-R and DVD+R, the recovery process is identical from your perspective. Heirvo detects the disc format automatically, adjusts its read strategy for the addressing system in use, and performs the same multi-pass sector scan on both.",
+          "The software makes up to 16 read attempts per damaged sector, varying the drive speed and read direction with each pass. Whether the disc is DVD-R, DVD+R, DVD-RW, DVD+RW, or even a dual-layer DVD-R DL or DVD+R DL, the process is the same: insert the disc, click Scan, and let Heirvo find everything that is still readable.",
+          "In our testing across thousands of recovered discs, the format of the disc matters far less than how it was stored. A DVD-R kept in a cool, dark jewel case will outperform a DVD+R left in a car dashboard every time. The best thing you can do for recovery is scan the disc sooner rather than later — dye degradation is progressive, and every month of waiting reduces the chances.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "Is DVD+R really more recoverable than DVD-R?",
+        a: "Slightly, on average. DVD+R has better addressing precision and true lossless session linking, which means fewer errors at session boundaries. But the difference is small — storage conditions and disc age have a much larger effect on recoverability than the format itself.",
+      },
+      {
+        q: "Can Heirvo recover dual-layer DVD-R DL and DVD+R DL discs?",
+        a: "Yes. Heirvo supports all DVD formats including single-layer, dual-layer (DL), and rewritable (RW) variants in both the dash and plus families. Dual-layer discs hold up to 8.5 GB and are scanned using the same multi-pass approach.",
+      },
+      {
+        q: "How do I know if my disc is DVD-R or DVD+R?",
+        a: "Check the label side or the text printed near the centre hub — most discs are clearly stamped with the format. If the printing has worn off, insert the disc and Heirvo will detect the format automatically and display it before scanning.",
+      },
+      {
+        q: "Do DVD-R and DVD+R degrade at the same rate?",
+        a: "Yes. Both formats use the same organic dye types (cyanine, phthalocyanine, or azo) and the same polycarbonate construction. The rate of dye oxidation depends on storage conditions — heat, humidity, and UV exposure — not the format. A disc of either type stored properly can last 15–25 years; one stored poorly may fail in under 5.",
+      },
+      {
+        q: "Should I use DVD-R or DVD+R for archiving new data?",
+        a: "If you are burning discs for long-term storage today, DVD+R is the marginally better choice because of its superior error handling. Use high-quality phthalocyanine-dye discs (often marketed as 'archival grade'), burn at a slow speed (4x), and store in a cool, dark, dry place. For truly critical data, keep two copies on different disc brands and also back up to a hard drive or cloud storage.",
+      },
+    ],
+    cta: {
+      heading: "Not sure what format your disc is? It doesn't matter.",
+      body: "Heirvo supports every DVD format — just insert your disc and scan. See what's recoverable for free before you commit.",
+      primaryLabel: "Download Free — Windows",
+      primaryHref: "/download",
+      secondaryLabel: "Or mail us your disc",
+      secondaryHref: "/recover",
+    },
+  },
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Recover data from a cracked or broken DVD
+  // ─────────────────────────────────────────────────────────────────────────────
+  {
+    slug: "recover-data-cracked-dvd",
+    title: "How to Recover Data from a Cracked or Broken DVD",
+    metaTitle:
+      "How to Recover Data from a Cracked or Broken DVD (2026 Guide)",
+    metaDescription:
+      "Cracked or broken DVD? Learn which types of cracks are safe to scan, when to use recovery software, and when professional mail-in recovery is the only safe option.",
+    datePublished: "2026-05-14",
+    dateModified: "2026-05-14",
+    readTime: "5 min read",
+    category: "DVD Recovery",
+    intro:
+      "A cracked DVD is not necessarily a lost DVD. Depending on where the crack is and how far it extends, anywhere from 50% to 100% of your data may still be recoverable. But cracked discs demand caution — a disc with a structural crack can shatter inside a drive spinning at 10,000 RPM, destroying the data and potentially the drive itself. This guide walks you through how to assess the damage, when software recovery is safe to attempt, and when professional mail-in recovery is the smarter choice.",
+    related: ["recover-files-scratched-dvd", "recover-water-damaged-dvd", "recover-dvd-car-heat-damage", "dvd-drive-not-reading-disc-windows-11"],
+    sections: [
+      {
+        id: "safety-warning",
+        heading: "Safety first: cracked discs can shatter in a drive",
+        paragraphs: [
+          "A DVD spins at up to 10,000 RPM during a standard read operation. At that speed, a crack acts as a stress fracture — the centrifugal force can rip the disc apart in milliseconds. Fragments of polycarbonate shoot outward inside the drive enclosure. At best, you destroy the disc and the drive. At worst, shards escape the drive housing.",
+          "Never insert a visibly cracked disc into any drive without first assessing the damage using the guide below. If the crack extends from the hub toward the outer edge, or if there is any flexing when you gently hold the disc, do not insert it into a drive under any circumstances.",
+        ],
+        callout: {
+          label: "Critical safety rule",
+          text: "Hold the disc up to a light and look for any crack that extends into the data area (the shiny recorded region). If you can see light through a crack in the data area, do NOT insert the disc into a drive. Use Heirvo's mail-in service instead — professional equipment can image the disc without high-speed spinning.",
+          color: "amber",
+        },
+      },
+      {
+        id: "types-of-cracks",
+        heading: "Types of DVD cracks and what they mean for recovery",
+        paragraphs: [
+          "Not all cracks are equal. The location and extent of the damage determines whether software recovery is feasible or whether you need professional help. Here is a breakdown of the four most common types of physical damage:",
+        ],
+        table: {
+          caption: "Crack type assessment guide",
+          headers: ["Crack type", "Description", "Risk level", "Recommended approach"],
+          rows: [
+            [
+              "Small edge chip",
+              "A chip or crack confined to the outer 2–3 mm of the disc edge, not reaching the data area",
+              "Low",
+              "Software recovery with Heirvo at lowest read speed — the data area is likely intact",
+            ],
+            [
+              "Radial crack",
+              "A crack running from the edge inward toward the hub, crossing the data area",
+              "High",
+              "Do not insert into a standard drive — mail-in recovery recommended",
+            ],
+            [
+              "Hub crack",
+              "A crack at or around the centre hub where the drive motor clamps the disc",
+              "Critical",
+              "Never insert — the disc will almost certainly shatter under spin. Mail-in only",
+            ],
+            [
+              "Broken in pieces",
+              "The disc has separated into two or more fragments",
+              "N/A",
+              "Mail-in only — professional labs can sometimes image individual fragments without spinning",
+            ],
+          ],
+        },
+      },
+      {
+        id: "software-recovery",
+        heading: "Software recovery: when and how to attempt it safely",
+        paragraphs: [
+          "Software recovery is only appropriate for discs with minor edge chips that do not extend into the data area. If you have assessed the disc and are confident the crack is superficial and confined to the outer rim, you can attempt a scan with Heirvo.",
+        ],
+        numbered: true,
+        items: [
+          "Inspect the disc carefully under bright light. Confirm the chip or crack does not reach the shiny data area. If in doubt, skip to mail-in recovery.",
+          "Download and install Heirvo on your Windows 10 or 11 PC. The scan is completely free.",
+          "Insert the disc gently into your drive. If you hear any unusual vibration, grinding, or rattling, eject the disc immediately.",
+          "Open Heirvo and select your disc drive. Click Scan — Heirvo reads sector by sector with multiple retry passes over damaged areas.",
+          "When the scan completes, review the recovered files. Activate Heirvo Pro ($39 one-time) to save them to your hard drive.",
+        ],
+        callout: {
+          label: "Important",
+          text: "If your drive makes any unusual noise after inserting the disc — vibration, clicking, or a high-pitched whine — eject immediately. These sounds indicate the disc is unbalanced, which means a crack may be propagating under centrifugal stress. Do not attempt a second insertion.",
+          color: "amber",
+        },
+      },
+      {
+        id: "mail-in-recovery",
+        heading: "Mail-in recovery: the safest option for cracked discs",
+        paragraphs: [
+          "For any crack that extends into the data area — radial cracks, hub cracks, or broken discs — professional mail-in recovery is the only responsible recommendation. Attempting to spin a structurally compromised disc in a consumer drive risks destroying the data permanently.",
+          "Heirvo's mail-in service uses professional-grade equipment that can image a disc at extremely low rotational speeds or, for broken discs, read individual fragments without spinning at all. The process is straightforward: you post the disc to our lab, we image it and extract every recoverable file, and we send you the recovered data on a USB drive or via secure download.",
+          "The service starts at $89 and comes with a no-recovery-no-charge guarantee. If we cannot recover any usable data, you pay nothing — not even for return postage.",
+        ],
+        callout: {
+          label: "No-recovery, no-charge",
+          text: "Heirvo's mail-in service carries a simple guarantee: if we recover nothing, you pay nothing. For cracked discs carrying irreplaceable memories — wedding videos, family footage, business archives — professional recovery is the safest path to getting your data back.",
+          color: "green",
+        },
+      },
+      {
+        id: "prevent-further-damage",
+        heading: "How to protect a cracked disc from further damage",
+        paragraphs: [
+          "While you arrange recovery, handle the disc as little as possible. Store it flat in a hard jewel case — not a paper sleeve, which can flex and worsen cracks. Do not attempt to glue, tape, or repair the crack yourself. Adhesives add weight unevenly, which makes the disc even more dangerous to spin, and residue on the data surface can block the laser permanently.",
+          "If the disc is broken into pieces, keep all fragments. Place each piece in a separate envelope inside a rigid mailer. Professional labs can sometimes extract data from individual fragments, but only if the reflective layer is not further scratched by fragments rubbing against each other.",
+          "Avoid exposing the disc to heat or direct sunlight, which can warp the polycarbonate and cause a minor crack to spread across the data area.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "Can I glue a cracked DVD back together and read it?",
+        a: "No. Glue adds uneven weight to the disc, making it dangerously unbalanced at high RPM. It also risks seeping onto the data surface and permanently blocking the laser. Never attempt to repair a cracked disc with adhesive — send it for professional recovery instead.",
+      },
+      {
+        q: "My disc has a small chip on the edge — is it safe to put in my drive?",
+        a: "A very small chip (under 2–3 mm) confined to the outermost edge, not reaching the shiny data area, is generally low-risk. Insert the disc gently and listen for any unusual vibration. If the drive sounds normal, you can scan it with Heirvo. If you hear anything abnormal, eject immediately.",
+      },
+      {
+        q: "How much does professional mail-in recovery cost for a cracked disc?",
+        a: "Heirvo's mail-in recovery service starts at $89 per disc. The price depends on the severity of the damage and the amount of data. Every job is covered by our no-recovery-no-charge guarantee — if we cannot recover any usable files, you pay nothing.",
+      },
+      {
+        q: "Can data be recovered from a DVD that broke in half?",
+        a: "In many cases, yes. Professional recovery labs can image individual fragments without spinning them using specialised optical readers. Recovery rates vary — a clean break through a less dense area of the disc may leave most of the data intact on one fragment. Heirvo's mail-in service handles broken discs regularly.",
+      },
+      {
+        q: "What caused my DVD to crack?",
+        a: "DVDs most commonly crack from being dropped, stepped on, stored under heavy objects, or flexed while being removed from a tight case. Thermal stress can also cause hub cracks — a disc left in a hot car can develop micro-fractures around the centre hub that worsen over time.",
+      },
+    ],
+    cta: {
+      heading: "Cracked disc? Don't risk it — let us recover it safely",
+      body: "Cracked DVDs are too dangerous for consumer drives. Heirvo's mail-in service recovers data from cracked, chipped, and broken discs using professional equipment — no high-speed spinning required. No-recovery, no-charge guarantee.",
+      primaryLabel: "Start Mail-In Recovery — from $89",
+      primaryHref: "/recover",
+      secondaryLabel: "Download Heirvo Free (minor chips only)",
+      secondaryHref: "/download",
     },
   },
 ];
