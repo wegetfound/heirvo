@@ -270,6 +270,7 @@ export default function LandingMin1() {
           opacity: 1,
           clearProps: "transform,clip-path",
         });
+        if (heroVisualRef.current) gsap.set(heroVisualRef.current, { opacity: 1 });
         return;
       }
 
@@ -293,17 +294,18 @@ export default function LandingMin1() {
       }
 
       if (heroSubRef.current) {
-        heroTl.from(heroSubRef.current, { opacity: 0, y: 18, duration: 0.8 }, "-=0.55");
+        heroTl.fromTo(heroSubRef.current, { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.8 }, "-=0.55");
       }
 
       if (heroCTAsRef.current) {
-        heroTl.from(heroCTAsRef.current, { opacity: 0, y: 14, duration: 0.65 }, "-=0.45");
+        heroTl.fromTo(heroCTAsRef.current, { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.65 }, "-=0.45");
       }
 
       if (heroVisualRef.current) {
-        heroTl.from(
+        heroTl.fromTo(
           heroVisualRef.current,
-          { opacity: 0, scale: 0.94, y: 24, duration: 1.3, ease: "power3.out" },
+          { opacity: 0, scale: 0.94, y: 24 },
+          { opacity: 1, scale: 1, y: 0, duration: 1.3, ease: "power3.out" },
           "-=1.1"
         );
         parallaxLayer(heroVisualRef.current, 0.3);
@@ -514,7 +516,7 @@ export default function LandingMin1() {
                   maxWidth: 480,
                 }}
               >
-                Heirvo is DVD recovery software that reads failing discs
+                Heirvo is DVD & CD recovery software that reads failing discs
                 sector by sector — through scratches, degraded dye, and
                 surface damage that stops every other tool. Free to scan.
                 Pay $39 once to save.
@@ -615,9 +617,14 @@ export default function LandingMin1() {
               </div>
             </div>
 
-            {/* Right — disc visual with ambient ring */}
+            {/* Right — disc visual with ambient ring.
+                Wrapper is CSS-only (GSAP never touches it) so mobile can
+                reposition it as a background layer without fighting inline
+                transforms set by the hero entrance timeline. */}
+            <div className="hero-disc-wrap">
             <div
               ref={heroVisualRef}
+              className="hero-disc-visual"
               style={{
                 display: "flex", justifyContent: "center", alignItems: "center",
                 position: "relative", opacity: 0,
@@ -670,8 +677,16 @@ export default function LandingMin1() {
                     }}
                   />
                 ))}
+                {/* Scanner beam */}
+                <div aria-hidden className="disc-scan-beam" style={{
+                  position: "absolute", top: "50%", left: "50%",
+                  width: 360, height: 360, borderRadius: "50%",
+                  background: "conic-gradient(transparent 330deg, rgba(10,132,255,0.04) 345deg, rgba(10,132,255,0.22) 355deg, rgba(10,132,255,0.06) 360deg)",
+                  transform: "translate(-50%, -50%)",
+                  pointerEvents: "none",
+                }} />
                 {/* Centre hub */}
-                <div aria-hidden style={{
+                <div aria-hidden className="disc-hub" style={{
                   position: "absolute", top: "50%", left: "50%",
                   transform: "translate(-50%, -50%)",
                   width: 32, height: 32, borderRadius: "50%",
@@ -680,7 +695,7 @@ export default function LandingMin1() {
                   boxShadow: "0 0 0 4px rgba(10,132,255,0.12)",
                 }} />
                 {/* Recovery status indicator */}
-                <div aria-hidden style={{
+                <div aria-hidden className="disc-status-card" style={{
                   position: "absolute", top: "50%", left: "50%",
                   transform: "translate(40px, -80px)",
                   background: C.pageMid,
@@ -698,10 +713,11 @@ export default function LandingMin1() {
                   </div>
                   {/* Progress bar */}
                   <div style={{ height: 3, background: C.border, borderRadius: 2, overflow: "hidden" }}>
-                    <div style={{ height: "100%", width: "73%", background: C.blue, borderRadius: 2, boxShadow: "0 0 8px rgba(10,132,255,0.6)" }} />
+                    <div className="disc-progress" style={{ height: "100%", background: C.blue, borderRadius: 2, boxShadow: "0 0 8px rgba(10,132,255,0.6)" }} />
                   </div>
                 </div>
               </div>
+            </div>
             </div>
           </div>
 
@@ -715,11 +731,57 @@ export default function LandingMin1() {
             @media (max-width: 860px) {
               .lm1-hero-grid {
                 grid-template-columns: 1fr !important;
-                gap: 56px !important;
+                gap: 0 !important;
+                position: relative;
               }
-              .lm1-hero-grid > div:last-child {
-                display: none;
+              /* Hero copy sits above the disc */
+              .lm1-hero-grid > div:first-child {
+                position: relative;
+                z-index: 2;
               }
+              /* Disc plays as a centered background layer inside the hero,
+                 not as a stacked block below it. GSAP animates the inner
+                 .hero-disc-visual; this wrapper is positioned by CSS only. */
+              .hero-disc-wrap {
+                position: absolute;
+                inset: 0;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 0;
+                opacity: 0.55;
+                pointer-events: none;
+                overflow: hidden;
+              }
+              .lm1-hero {
+                min-height: auto !important;
+              }
+              /* Status card is text-heavy — hide it so it doesn't clash
+                 with the hero copy layered on top of the disc */
+              .disc-status-card {
+                display: none !important;
+              }
+            }
+            @keyframes disc-scan {
+              from { transform: translate(-50%,-50%) rotate(0deg); }
+              to   { transform: translate(-50%,-50%) rotate(360deg); }
+            }
+            @keyframes hub-pulse {
+              0%,100% { box-shadow: 0 0 0 4px rgba(10,132,255,0.12); }
+              50%     { box-shadow: 0 0 0 10px rgba(10,132,255,0.28), 0 0 22px rgba(10,132,255,0.18); }
+            }
+            @keyframes progress-scan {
+              0%   { width: 12%; }
+              70%  { width: 87%; }
+              85%  { width: 91%; }
+              100% { width: 12%; }
+            }
+            .disc-scan-beam { animation: disc-scan 5s linear infinite; }
+            .disc-hub       { animation: hub-pulse 2.4s ease-in-out infinite; }
+            .disc-progress  { animation: progress-scan 4s ease-in-out infinite; }
+            @media (prefers-reduced-motion: reduce) {
+              .disc-scan-beam, .disc-hub, .disc-progress { animation: none !important; }
+              .disc-progress { width: 73% !important; }
             }
           `}</style>
         </section>
@@ -1901,7 +1963,7 @@ export default function LandingMin1() {
         }
         @media (max-width: 640px) {
           .lm1-container { padding: 0 16px; }
-          .lm1-hero { padding: 80px 0 48px !important; }
+          .lm1-hero { padding: 80px 0 48px !important; min-height: auto !important; }
         }
       `}</style>
     </div>
