@@ -4054,6 +4054,400 @@ const GUIDES: Guide[] = [
       secondaryHref: "https://github.com/JungleLivingPai/heirvo",
     },
   },
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 28. Recover mini-DVD (8cm camcorder disc)
+  // ─────────────────────────────────────────────────────────────────────────────
+  {
+    slug: "recover-mini-dvd-disc",
+    title: "How to Recover Files from a Mini-DVD (8cm Camcorder Disc)",
+    metaTitle: "Mini-DVD Recovery: How to Recover Files from an 8cm Camcorder Disc (2026)",
+    metaDescription:
+      "Step-by-step guide to recovering video from a mini-DVD or 8cm camcorder disc on Windows. Covers adapter rings, drive compatibility, Canon ZR, Sony DCR-DVD, and scratched disc recovery.",
+    datePublished: "2026-05-16",
+    dateModified: "2026-05-16",
+    readTime: "8 min read",
+    category: "DVD Recovery",
+    intro:
+      "Mini-DVDs — the 8cm discs used in DVD camcorders from the early 2000s — can be recovered using the same sector-level software as full-size DVDs, but they need a tray-loading disc drive and must be seated correctly in the inner ring of the disc tray. The most common reason mini-DVD recovery fails is not disc damage but simply the wrong type of drive or incorrect loading technique. This guide covers both: how to physically load a mini-DVD safely, and how to recover files when the disc itself is scratched, unfinalized, or degraded.",
+    related: ["recover-home-videos-dvd", "recover-video-from-camcorder-dvd", "recover-unfinalized-dvd", "recover-files-scratched-dvd", "recover-vhs-converted-dvd"],
+    sections: [
+      {
+        id: "what-is-mini-dvd",
+        heading: "What is a mini-DVD?",
+        paragraphs: [
+          "A mini-DVD is an 8-centimetre optical disc — physically identical to a standard DVD in every way except diameter. They hold approximately 1.4 GB (single-layer) or 2.6 GB (dual-layer), compared to 4.7 GB and 8.5 GB on full-size DVDs. DVD camcorders used mini-DVDs as their recording medium throughout the early and mid-2000s.",
+          "The most common cameras that recorded to mini-DVD include the Canon ZR series (ZR800, ZR830, ZR850, ZR900, ZR930, ZR950), the Sony DCR-DVD series (DCR-DVD105, DVD205, DVD305, DVD405, DVD505, DVD605, DVD705, DVD805), the Sony Handycam DVD series, and Panasonic VDR camcorders. If you have footage from any of these cameras, it lives on mini-DVDs.",
+          "The discs record in DVD-Video format — the same VIDEO_TS folder structure used by commercial DVDs and home-burned full-size discs. This means any software that can recover a standard DVD can also recover a mini-DVD, as long as the disc can be physically read by the drive.",
+        ],
+        callout: {
+          label: "Mini-DVD vs DVD-RAM",
+          text: "Some Panasonic camcorders used DVD-RAM discs that look similar to mini-DVDs. DVD-RAM requires special driver support and is a completely different format. If your Panasonic disc doesn't have the standard VIDEO_TS structure, it may be a DVD-RAM — see our dedicated DVD-RAM recovery guide.",
+          color: "amber",
+        },
+      },
+      {
+        id: "drive-requirements",
+        heading: "The most important thing: use the right type of drive",
+        paragraphs: [
+          "Mini-DVDs absolutely require a tray-loading disc drive. This is the type where a motorised tray slides out when you press the eject button — the disc sits in a circular depression in the centre of the tray. Standard full-size DVDs sit in the outer ring; mini-DVDs sit in the smaller inner ring, which is clearly moulded into the tray.",
+          "Never insert a mini-DVD into a slot-loading drive. Slot-loading drives — common in MacBooks, many slim laptops, and some car stereos — grip the disc by the edge and pull it in. They physically cannot grip an 8cm disc correctly, and if you try, the disc will jam inside the mechanism. Recovering a jammed mini-DVD from a slot-loading drive requires professional disassembly and risks destroying both the disc and the drive.",
+          "If your laptop or desktop PC has a slot-loading drive, buy an inexpensive USB external tray-loading drive. Tray-loading USB DVD drives are available for $15–$25 and are the right tool for this job. Verify it is tray-loading by checking the product listing photos before you buy.",
+        ],
+        callout: {
+          label: "Warning",
+          text: "Never force a mini-DVD into a slot-loading drive. If it jams, stop immediately and seek professional help. Forcing it further will scratch the disc and damage the drive mechanism.",
+          color: "amber",
+        },
+      },
+      {
+        id: "adapter-rings",
+        heading: "Do you need an adapter ring?",
+        paragraphs: [
+          "Mini-DVD adapter rings are plastic rings that snap around an 8cm disc to make it the same outer diameter as a full-size disc. They were popular in the mid-2000s and are still sold online. They let you load a mini-DVD into the outer ring of a tray-loading drive, which looks like the normal position.",
+          "You do not need an adapter ring if you load the mini-DVD directly into the inner ring of the disc tray — this is the correct and safest method. Most tray-loading drives have a clearly visible smaller ring moulded into the tray for exactly this purpose.",
+          "If you do use an adapter ring, make sure it snaps securely onto the disc and does not wobble. A loose ring can become unbalanced at speed, causing the drive to vibrate or the disc to be ejected mid-spin. Never use a ring with a cracked or bent tab.",
+        ],
+        callout: {
+          label: "Best practice",
+          text: "Skip the adapter ring and load the mini-DVD directly into the inner ring of the tray. It is simpler, safer, and just as reliable. The inner ring exists precisely for 8cm discs.",
+          color: "green",
+        },
+      },
+      {
+        id: "why-mini-dvds-fail",
+        heading: "Why mini-DVDs fail: physical and chemical causes",
+        paragraphs: [
+          "Mini-DVDs fail for the same reasons as full-size DVDs, but with a few additional vulnerabilities unique to the camcorder use case.",
+          "Physical shock is a major factor. Camcorders get dropped, knocked, and shaken in ways that desktop computers never do. A disc that was recording when the camera was dropped may have been scratched by the laser head, or may have fine circular scratches from a disc that moved inside the camcorder housing during impact.",
+          "Humidity is a second issue. Camcorders are used outdoors, at beaches, in rain, and in tropical conditions. Mini-DVDs stored inside a camcorder in a humid environment can develop mould on the disc surface or oxidation of the reflective layer — the same disc rot process that affects full-size home-burned discs but accelerated by the enclosed, humid storage environment.",
+          "Laser tracking issues during recording are specific to camcorders. If the camcorder battery died mid-recording, or if the camera was jarred during a write, the disc may have been finalised incorrectly or not at all. An unfinalized disc does not have the UDF directory written to disc, so Windows cannot browse the files — but the video data is still there and can be recovered.",
+        ],
+        table: {
+          caption: "Common mini-DVD failure modes and recovery outcomes",
+          headers: ["Failure mode", "Symptom", "Recovery likelihood"],
+          rows: [
+            ["Radial scratches (edge-to-hub)", "Some sectors unreadable", "High — 70–90% with retry scanning"],
+            ["Circular scratches (from handling)", "Multiple sector clusters unreadable", "Moderate — 50–80%"],
+            ["Unfinalized disc", "Windows shows disc as empty or 'not formatted'", "High — video data intact, filesystem missing"],
+            ["Dye oxidation (disc rot)", "Milky or discoloured appearance", "Moderate — depends on how far advanced"],
+            ["Physical crack", "Visible crack in disc body", "Low — data on cracked sectors is unreadable"],
+            ["Mould on surface", "Visible spotting or fogging", "Moderate after cleaning — mould does not destroy data layers"],
+          ],
+        },
+      },
+      {
+        id: "step-by-step",
+        heading: "Step-by-step: recover files from a mini-DVD with Heirvo",
+        numbered: true,
+        items: [
+          "Find a tray-loading USB DVD drive if your computer does not have one. Any USB tray-loading DVD drive will work — verify it is tray-loading before purchasing.",
+          "Gently clean the mini-DVD surface with a soft microfibre cloth, wiping from the centre hub outward in straight radial strokes. Never wipe in circles.",
+          "Press the eject button on the drive. When the tray opens, locate the smaller inner ring — it is a circular depression inside the standard disc ring. Place the mini-DVD in this inner ring, label side up. The disc should sit flat and centred.",
+          "Download and install Heirvo on your Windows 10 or 11 PC. Open Heirvo and select your disc drive from the dropdown. Heirvo will detect the disc type automatically, including whether it is finalized or unfinalized.",
+          "Click Scan. Heirvo reads the disc sector by sector. For mini-DVDs from camcorders, Heirvo prioritises recovering the VIDEO_TS folder and will attempt to reconstruct the directory from raw sector data even if the disc was never finalized.",
+          "When the scan completes, Heirvo shows you what was recovered. For a DVD-Video disc, you will see the VIDEO_TS folder with individual VOB video files. Activate Heirvo Pro ($39) to save the recovered files. You can save the full VIDEO_TS folder or extract individual titles as MP4 files.",
+        ],
+      },
+      {
+        id: "unfinalized-mini-dvd",
+        heading: "Recovering an unfinalized mini-DVD",
+        paragraphs: [
+          "Many mini-DVDs from camcorders were never properly finalized. Finalizing writes the DVD-Video directory structure (IFO files and the file system index) that lets standard DVD players and Windows recognise the disc. Without finalization, the video data is recorded on the disc but there is no map telling software where it is.",
+          "Windows Explorer shows an unfinalized mini-DVD as empty, or as a disc that needs to be formatted. A standalone DVD player typically shows 'No Disc' or 'Error'. None of this means the footage is gone — it means the directory is missing.",
+          "Heirvo handles unfinalized discs by scanning the raw sectors for DVD-Video data patterns (VOB start codes, MPEG-2 programme stream headers) and reconstructing the file structure from the data itself rather than reading a directory that was never written. This recovers the full video in most cases, including footage from the last incomplete recording session.",
+        ],
+      },
+      {
+        id: "after-recovery",
+        heading: "After recovery: convert and archive your footage",
+        paragraphs: [
+          "Once Heirvo has recovered your VIDEO_TS folder, you have two main options. The first is to save the raw VIDEO_TS folder — this preserves everything exactly as it was on the disc, including chapter marks, menus, and multiple audio tracks. VLC Media Player can play VIDEO_TS folders directly.",
+          "The second option is to let Heirvo convert individual video titles to MP4 during the save step. This produces files that play on any modern device and can be uploaded directly to Google Photos, iCloud, or YouTube. For camcorder footage, this is usually the better choice — you get one MP4 file per recording session, easy to rename and share.",
+          "After saving, make at least two backup copies in different places — for example, an external hard drive plus Google Photos or iCloud. These mini-DVDs have already shown they are not permanent storage. The footage is now on your hard drive; keep it there permanently.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "Can I use a slot-loading laptop drive for mini-DVD recovery?",
+        a: "No. Slot-loading drives cannot accept 8cm mini-DVDs and will jam if you try. You must use a tray-loading drive. Any inexpensive USB external tray-loading DVD drive ($15–$25) works. Check listing photos before buying to confirm it is a tray-loading model with a motorised disc tray.",
+      },
+      {
+        q: "My mini-DVD shows as empty or 'not formatted' in Windows — is the footage gone?",
+        a: "Almost certainly not. An empty or unformatted result usually means the disc was not finalized after recording, which is very common with camcorder discs. The video data is still recorded on the disc — there is simply no directory telling Windows where it is. Heirvo scans the raw sectors and reconstructs the file structure, recovering the footage even from unfinalized discs.",
+      },
+      {
+        q: "Which camcorders recorded on mini-DVDs?",
+        a: "The most common models are Canon ZR series (ZR800 through ZR950), Sony DCR-DVD series (DCR-DVD105 through DVD805), Sony Handycam DVD models, and Panasonic VDR camcorders (note: some Panasonic models used DVD-RAM, not standard DVD-Video). If you are unsure what format your Panasonic disc uses, insert it in a drive and try Heirvo — it will identify the format automatically.",
+      },
+      {
+        q: "Do I need an adapter ring to load a mini-DVD?",
+        a: "No. Load the mini-DVD directly into the smaller inner ring on the disc tray of your tray-loading drive. Adapter rings are optional and can actually introduce wobble if they are not securely attached. The inner ring approach is simpler and more reliable.",
+      },
+    ],
+    cta: {
+      heading: "Still can't see your camcorder footage?",
+      body: "Heirvo's free scan handles unfinalized discs, scratched mini-DVDs, and all Canon ZR and Sony DCR-DVD formats. See what's recoverable before you pay anything.",
+      primaryLabel: "Download Free — Windows",
+      primaryHref: "/download",
+      secondaryLabel: "Mail-in recovery service",
+      secondaryHref: "/recover",
+    },
+  },
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 29. Recover DVD-RAM disc
+  // ─────────────────────────────────────────────────────────────────────────────
+  {
+    slug: "recover-dvd-ram-disc",
+    title: "How to Recover Files from a DVD-RAM Disc on Windows",
+    metaTitle: "DVD-RAM Recovery: How to Recover Files from a DVD-RAM Disc (2026 Guide)",
+    metaDescription:
+      "DVD-RAM discs from Panasonic camcorders and DVD recorders need UDF 2.0 driver support that Windows 10 and 11 often lack. Learn how Heirvo recovers DVD-RAM files without special drivers.",
+    datePublished: "2026-05-16",
+    dateModified: "2026-05-16",
+    readTime: "9 min read",
+    category: "DVD Recovery",
+    intro:
+      "DVD-RAM is a rewritable optical disc format used primarily by Panasonic DVD camcorders and DVD recorders between the late 1990s and mid-2010s. Unlike DVD-R or DVD-RW, DVD-RAM stores files in a UDF 2.0 filesystem that Windows 10 and 11 often cannot read without additional driver support — leading many owners to believe their footage is lost when it is actually intact on the disc. Heirvo reads DVD-RAM discs directly at the sector level, bypassing the driver issue entirely.",
+    related: ["recover-mini-dvd-disc", "recover-home-videos-dvd", "recover-video-from-camcorder-dvd", "recover-unfinalized-dvd", "recover-files-scratched-dvd"],
+    sections: [
+      {
+        id: "what-is-dvd-ram",
+        heading: "What is DVD-RAM and why is it different?",
+        paragraphs: [
+          "DVD-RAM (DVD Random Access Memory) was designed as a true rewritable random-access storage medium — more like a hard drive than a typical optical disc. While DVD-R and DVD-RW are sequential formats where data is written in tracks from the inside out, DVD-RAM uses a concentric sector structure that allows individual sectors to be rewritten in place, just like a hard drive. This is why Panasonic used it for camcorders and DVRs — it allowed recording, pausing, deleting clips, and overwriting without ever 'filling up' the disc in the sequential way a DVD-R does.",
+          "DVD-RAM discs come in two physical forms. The bare disc version looks similar to a standard DVD, though it often has a slightly different sheen and a finer surface texture from the phase-change recording layer. The cartridge version is enclosed in a square plastic housing similar to a large floppy disk — the disc spins inside the cartridge and never touches the user's fingers. Some drives require you to remove the disc from the cartridge; others can read it while still enclosed.",
+          "Panasonic was by far the dominant manufacturer of DVD-RAM products. Common devices include the Panasonic VDR-D300, VDR-D310, VDR-D220, VDR-M30, VDR-M50, VDR-M70, and VDR-M95 camcorders, plus the Panasonic DMR-E55, DMR-E65, DMR-E85H, and DMR-ES15 DVD recorders. Hitachi also produced DVD-RAM camcorders (DZ-GX5060A, DZ-HS500A series).",
+        ],
+        callout: {
+          label: "Quick identification",
+          text: "DVD-RAM discs are often labelled 'DVD-RAM' on the hub label or printed on the surface. Cartridge versions are unmistakable — they have a solid plastic housing. Bare discs have a slightly matte or patterned appearance compared to the mirror finish of a DVD-R.",
+          color: "blue",
+        },
+      },
+      {
+        id: "why-windows-struggles",
+        heading: "Why Windows 10 and 11 often can't read DVD-RAM",
+        paragraphs: [
+          "DVD-RAM stores files in the UDF (Universal Disc Format) filesystem, specifically UDF 2.0 or UDF 2.5. Windows XP and Vista included a DVD-RAM driver that mounted these discs like removable hard drives — you could drag and drop files directly. This driver was removed in Windows 7 and has not been reinstated.",
+          "Windows 10 and 11 can read UDF 1.5 (used by standard DVD-Video discs) and UDF 2.5 (used by Blu-ray), but have incomplete support for UDF 2.0 — which is what most DVD-RAM camcorder discs use. The result: Windows shows the drive as having an 'unsupported filesystem' or simply shows the disc as empty even when it contains hours of footage.",
+          "A second complication is the disc's random-access structure. DVD-RAM uses sparing tables — a remapping system that redirects reads away from bad sectors to spare areas. If Windows does manage to partially mount the disc, it may misread the sparing tables and report files as corrupted or missing even when the underlying data is intact.",
+          "Third-party UDF drivers (like the InCD driver from Nero, or the Panasonic DVD-RAM driver v2.x) can restore Windows XP-style DVD-RAM access, but these drivers are no longer officially distributed and are often incompatible with Windows 10 and 11. Installing them can cause stability issues.",
+        ],
+      },
+      {
+        id: "dvd-ram-vs-dvd-r",
+        heading: "DVD-RAM vs DVD-R: key differences for recovery",
+        table: {
+          headers: ["Property", "DVD-RAM", "DVD-R / DVD+R"],
+          rows: [
+            ["Recording method", "Phase-change (rewritable)", "Organic dye burn (write-once)"],
+            ["Filesystem", "UDF 2.0 / 2.5 (random access)", "UDF 1.5 / ISO 9660 (sequential)"],
+            ["Windows 10/11 support", "Partial or none without drivers", "Full native support"],
+            ["Random rewrite", "Yes — any sector can be overwritten", "No — data is permanent once written"],
+            ["Bad-sector handling", "Sparing table remaps bad areas", "No remapping — bad sectors cause read errors"],
+            ["Cartridge variant", "Yes (can be bare or enclosed)", "No — always bare disc"],
+            ["Write cycles", "Up to 100,000 rewrites", "Write-once (DVD-R) or ~1,000 rewrites (DVD-RW)"],
+          ],
+        },
+        paragraphs: [
+          "For recovery purposes, the key difference is that DVD-RAM's sparing table must be correctly interpreted to find all the files. Heirvo reads the sparing table at the sector level and maps the logical block addresses correctly, so all files are found regardless of remapping — without needing any UDF driver installed in Windows.",
+        ],
+      },
+      {
+        id: "drive-compatibility",
+        heading: "Drive compatibility: not all DVD drives read DVD-RAM",
+        paragraphs: [
+          "Standard DVD-R/-RW drives often cannot read DVD-RAM discs at all — the phase-change recording layer requires a different laser power profile during reads. You need a DVD-RAM compatible drive, which will be marked on the drive's packaging or spec sheet with the DVD-RAM logo or 'DVD Multi' designation.",
+          "Most DVD-RAM compatible drives produced since 2004 use the 'DVD Multi' profile, which supports reading DVD-RAM, DVD-R, DVD+R, DVD-RW, DVD+RW, and DVD-ROM. Full-size desktop drives (both internal and external) are more likely to support DVD-RAM than slim laptop drives. The Pioneer BDR series Blu-ray drives support DVD-RAM reading. Most Panasonic DVD mechanisms (found in various branded drives) also support their own format.",
+          "If your drive does not support DVD-RAM, Windows will show the disc as blank or display an error. The solution is to borrow or buy a DVD-RAM compatible drive. Many USB external drives at the $30–$50 price point support DVD Multi including DVD-RAM — check the specifications before buying.",
+        ],
+        callout: {
+          label: "Check your drive",
+          text: "On Windows, open Device Manager, find your optical drive under 'DVD/CD-ROM drives', right-click it, and choose Properties. In the Properties window, look for 'DVD-RAM' or 'DVD Multi' in the capabilities listed. Alternatively, check the drive's model number against the manufacturer's spec sheet online.",
+          color: "blue",
+        },
+      },
+      {
+        id: "cartridge-removal",
+        heading: "Handling cartridge-type DVD-RAM discs",
+        paragraphs: [
+          "Cartridge DVD-RAM discs are enclosed in a hard plastic case. Some DVD-RAM drives can read the disc while it is still in the cartridge — these drives have a slot wide enough to accept the cartridge and a mechanism that engages the disc inside. Other drives require you to remove the disc from the cartridge first.",
+          "To remove a disc from a Type 1 cartridge (sealed): look for a small hole on the side of the cartridge. Insert a pin or unfolded paperclip into the hole while gently sliding the door open — the cartridge will release and you can slide the bare disc out. Handle the bare disc only by its edges. Type 2 cartridges have a slideable door on the cartridge itself and do not require a pin.",
+          "Once removed, the bare disc can be loaded into any compatible DVD-RAM drive normally. If you are unsure whether to remove the disc, check your drive's manual — forcing a cartridge disc into a non-cartridge slot will jam the drive.",
+        ],
+      },
+      {
+        id: "step-by-step",
+        heading: "Step-by-step: recover files from a DVD-RAM disc with Heirvo",
+        numbered: true,
+        items: [
+          "Confirm your drive supports DVD-RAM (look for DVD-RAM or DVD Multi in the drive specifications). If it does not, use a compatible external drive — most Pioneer BDR series or Panasonic-mechanism drives work.",
+          "For cartridge discs, remove the disc from the cartridge if your drive requires it (see the cartridge removal section above).",
+          "Insert the DVD-RAM disc into the drive. Windows may show an error, 'unsupported filesystem', or an empty disc — this is expected and does not mean the data is gone.",
+          "Download and install Heirvo on Windows 10 or 11. Open Heirvo and select the drive. Heirvo detects DVD-RAM format automatically and reads the sparing table directly from the sectors, bypassing the Windows UDF driver entirely.",
+          "Click Scan. Heirvo maps the disc's logical block addresses through the sparing table, recovers any remapped sectors from the spare area, and lists all recoverable files — video clips, DCIM photo folders, or raw MPEG-2 streams depending on what was recorded.",
+          "When the scan completes, review the recovered files. Activate Heirvo Pro ($39) to save them to your hard drive. DVD-RAM footage is typically in .MOD, .MOI, or .MPG format depending on the Panasonic model.",
+        ],
+      },
+      {
+        id: "damaged-dvd-ram",
+        heading: "Recovering a damaged or degraded DVD-RAM disc",
+        paragraphs: [
+          "DVD-RAM's phase-change recording layer is more durable than the organic dye in DVD-R discs, but it is still susceptible to physical damage and, over very long periods, layer delamination. The built-in sparing table means the disc self-heals minor errors by remapping bad sectors — which is why DVD-RAM discs often remain readable long after an equivalent DVD-R would have failed.",
+          "When a DVD-RAM disc is physically scratched, the sparing table may have remapped the damaged sectors to spare areas if the damage occurred during recording. If the disc was scratched after recording (for example, from storage), the sparing table cannot help — the data in those sectors is damaged at the physical level and requires sector-level retry scanning.",
+          "Heirvo handles both cases: it reads the sparing table to find all logically remapped data, and applies multi-pass sector retry on any physically damaged areas. Even partially damaged DVD-RAM discs typically yield the majority of their content.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "Why does Windows show my DVD-RAM disc as empty or unformatted?",
+        a: "Windows 10 and 11 removed the DVD-RAM UDF 2.0 driver that was present in Windows XP. Without this driver, Windows cannot mount DVD-RAM discs. The data is not gone — the disc is fine. Heirvo reads the disc at the sector level and bypasses the missing driver entirely, recovering your files without any additional software installation.",
+      },
+      {
+        q: "Do I need to install a special DVD-RAM driver to use Heirvo?",
+        a: "No. Heirvo reads DVD-RAM discs using direct sector-level access (SCSI Read commands) rather than going through the Windows filesystem driver. You do not need to install Panasonic's DVD-RAM driver or any third-party UDF software. The only requirement is a disc drive that physically supports DVD-RAM reading.",
+      },
+      {
+        q: "My Panasonic camcorder used DVD-RAM cartridges — can Heirvo recover those?",
+        a: "Yes. Remove the disc from the Type 1 cartridge using a pin in the release hole, or open the Type 2 cartridge door, and load the bare disc into any DVD-RAM compatible drive. Heirvo will recover it the same way as a bare DVD-RAM disc. If your drive accepts cartridges directly, you can insert the whole cartridge.",
+      },
+      {
+        q: "What file format is the video in on a DVD-RAM from a Panasonic camcorder?",
+        a: "Panasonic VDR camcorders record in .MOD format (MPEG-2 video in a program stream container) with matching .MOI sidecar files containing recording metadata. Some models store files in a DCAM folder with .MPG extensions. Heirvo recovers these files and preserves their names. Most modern video editors (DaVinci Resolve, Premiere, Vegas) can import .MOD files directly; VLC plays them without issues.",
+      },
+    ],
+    cta: {
+      heading: "Get your Panasonic footage off that DVD-RAM",
+      body: "Heirvo reads DVD-RAM discs directly without drivers and recovers MOD, MOI, and MPG footage from Panasonic camcorders and DVD recorders. Free scan, pay only to save.",
+      primaryLabel: "Download Free — Windows",
+      primaryHref: "/download",
+      secondaryLabel: "Mail-in recovery service",
+      secondaryHref: "/recover",
+    },
+  },
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 30. Recover PS2 game disc
+  // ─────────────────────────────────────────────────────────────────────────────
+  {
+    slug: "recover-ps2-game-disc",
+    title: "How to Recover a Scratched PS2 Game Disc (Back Up Your Own Discs)",
+    metaTitle: "PS2 Disc Recovery: Back Up a Scratched PlayStation 2 Game Disc (2026)",
+    metaDescription:
+      "How to recover and back up a scratched PlayStation 2 game disc you own on Windows. Covers PS2 dual-layer discs, blue-bottom pressed discs, scratch patterns, and sector errors in the data partition.",
+    datePublished: "2026-05-16",
+    dateModified: "2026-05-16",
+    readTime: "8 min read",
+    category: "Disc Recovery",
+    intro:
+      "A scratched PlayStation 2 game disc can often be backed up as a complete ISO image using sector-level disc recovery software — preserving every bit of data exactly as the manufacturer pressed it. This guide is for backing up discs you own. PS2 game discs are pressed commercial discs, which means they do not suffer from dye degradation like home-burned DVDs, but they are extremely vulnerable to the specific circular scratch patterns that children's handling produces. Understanding where PS2 disc data lives — and which scratches are fatal versus survivable — is the key to a successful backup.",
+    related: ["recover-files-scratched-dvd", "recover-corrupted-iso-file", "best-dvd-recovery-software", "recover-data-cracked-dvd", "mode-select-page-01h-scsi-dvd-recovery"],
+    sections: [
+      {
+        id: "ps2-disc-types",
+        heading: "PS2 disc types: blue-bottom pressed discs, DVD-R copies, and dual-layer titles",
+        paragraphs: [
+          "PlayStation 2 games were released on three physical disc types, and knowing which you have matters for recovery planning.",
+          "The vast majority of PS2 games are single-layer DVD-ROMs (4.7 GB capacity) with a distinctive blue-tinted underside. This blue colour comes from a second polycarbonate layer that Sony used for copy protection — it is purely cosmetic in terms of data storage, but it is a reliable visual identifier that this is an original pressed disc. These discs are extremely durable in normal use; the pressed aluminium reflective layer does not oxidise the way burned-disc dye does. Their weakness is purely physical: scratches.",
+          "Large, data-heavy PS2 titles used dual-layer DVD-ROMs (DVD-9, 8.5 GB). Games known to use dual-layer include Gran Turismo 4, God of War, Metal Gear Solid 3: Snake Eater, Final Fantasy XII, Kingdom Hearts 2, and Dragon Quest VIII. Dual-layer discs have two data layers and a layer break point roughly halfway through the disc where the drive's laser refocuses to the second layer. The layer break is a common point for read errors because the drive firmware must execute a precise focus shift at high speed.",
+          "Home-burned DVD-R copies (also called backups) exist but look obviously different: they have a purple or blue-green dye underside rather than the characteristic blue pressed-disc underside, and the label side is usually blank or has a printed paper sticker. These fail from dye degradation like any home-burned disc.",
+        ],
+        callout: {
+          label: "Pressed vs burned identification",
+          text: "Hold the disc up to a light and look at the edge. Pressed PS2 discs (original games) have a uniform, mirror-smooth data layer. Burned copies show a clear dye ring where recording ended — a visible circular boundary roughly 1–3 cm from the hub. If you see that ring, it's a burned copy, not an original.",
+          color: "blue",
+        },
+      },
+      {
+        id: "ps2-scratch-patterns",
+        heading: "PS2 scratch patterns: which scratches are survivable",
+        paragraphs: [
+          "PS2 games are read from the inside of the disc outward. The disc spins while the laser head moves from the inner hub toward the outer edge as data is read. The data partition on a PS2 DVD-ROM starts a few millimetres from the hub and extends toward the outer edge.",
+          "Radial scratches — running from the hub toward the outer edge — cross individual data tracks but typically only affect a few sectors per track. A disc with several radial scratches is often completely recoverable because each sector is independent and error correction handles brief interruptions.",
+          "Circular scratches — running parallel to the disc tracks — are far more damaging. A single circular scratch can damage an entire ring of the disc, potentially affecting thousands of consecutive sectors. This is exactly the pattern caused by setting a disc down carelessly on a hard surface, or by a disc rattling inside a case without the centre hub engaged.",
+          "The outer 2–3 centimetres of a PS2 disc are the highest-risk zone. The outer data tracks contain the largest files (typically level data, audio, and video cutscenes) and are most exposed to scratches from handling. The inner tracks (near the hub) contain the boot loader and executable code — these are usually the first areas the drive reads and are often less damaged because they are closer to the protected hub area.",
+        ],
+        table: {
+          caption: "PS2 scratch pattern recovery likelihood",
+          headers: ["Scratch type", "Cause", "Sectors affected", "Recovery likelihood"],
+          rows: [
+            ["Radial scratches", "Normal handling, fingernails", "Few per scratch", "Very high"],
+            ["Light circular scratches", "Disc set face-down on soft surface", "Moderate cluster", "High with retry scanning"],
+            ["Deep circular scratches", "Disc face-down on hard surface, grit", "Large ring of consecutive sectors", "Moderate — depends on depth"],
+            ["Hub area damage", "Forced into case without hub engagement", "Boot/executable sectors", "Low — game may be unplayable even if recovered"],
+            ["Edge chips or cracks", "Disc dropped", "Outer data sectors", "Low in chipped area"],
+            ["Dual-layer break errors", "Firmware refocus failure", "Sectors near 4.37 GB mark", "High — usually a drive/firmware issue, not disc damage"],
+          ],
+        },
+      },
+      {
+        id: "data-partition-structure",
+        heading: "Where PS2 data lives: partition structure and sector map",
+        paragraphs: [
+          "PS2 game DVDs use the ISO 9660 filesystem, the same standard used by computer data DVDs. The disc is organized as follows: the first 16 sectors (0–15) contain the system area, which includes the disc descriptor and, on PS2 discs, Sony's copy protection data. Sectors 16 onward contain the ISO 9660 primary volume descriptor and the file directory. The actual game files follow from sector 20 onward, arranged sequentially.",
+          "The copy protection zone is located in the innermost tracks (the first few thousand sectors) and involves deliberately malformed sectors that PS2 hardware reads correctly but that confuse standard DVD drives. When you attempt to back up a PS2 disc with basic file-copy software, these sectors cause read errors that stop the copy process. Sector-level recovery software like Heirvo reads these sectors directly via SCSI and either recovers them or marks them as skipped — the recovered ISO image is a complete sector-accurate copy of the disc.",
+          "For dual-layer PS2 discs, the layer break point is at LBA (Logical Block Address) approximately 2,084,960 — just past the 4.37 GB mark. Files that straddle this boundary are at higher risk of read errors during ISO creation because the drive must perform a laser focus shift mid-file. Heirvo handles the layer break automatically, reading both layers sequentially and assembling the complete ISO image.",
+        ],
+        callout: {
+          label: "Legal note",
+          text: "Backing up a PS2 disc you own for personal archival use is covered by fair use principles in most jurisdictions. This guide is written for owners making personal backup copies of discs they own and have purchased. Distributing or selling game ISO files is piracy and illegal — this guide does not support or assist with that.",
+          color: "amber",
+        },
+      },
+      {
+        id: "step-by-step",
+        heading: "Step-by-step: back up a PS2 disc as an ISO image with Heirvo",
+        numbered: true,
+        items: [
+          "Clean the disc with a soft microfibre cloth, wiping radially from hub to edge. For deeper scratches, a disc resurfacing service (available at many game shops for $2–$5 per disc) can remove surface scratches before you scan — this significantly improves recovery rates.",
+          "Download and install Heirvo on your Windows 10 or 11 PC.",
+          "Insert the PS2 disc into a standard USB or internal DVD drive. PS2 discs are standard DVD-ROMs and read in any DVD drive — you do not need a PlayStation console or a modded drive.",
+          "Open Heirvo and select the disc drive. Choose 'Save as ISO image' from the scan options — this creates a sector-accurate image of the entire disc, including the copy protection sectors, the full directory, and every game file.",
+          "Click Scan. Heirvo reads each sector in order. On scratched areas, Heirvo retries up to 16 times at different speeds. The recovery map shows which sectors were read cleanly, which were recovered after retry, and which could not be recovered. For dual-layer discs, Heirvo manages the layer break automatically.",
+          "When the scan completes, Heirvo shows the size of the recovered ISO and which sectors (if any) could not be read. Activate Heirvo Pro ($39) to save the ISO image to your hard drive. The resulting .ISO file can be mounted with any virtual drive tool (PowerISO, WinCDEmu, Daemon Tools) or written back to a blank DVD with ImgBurn.",
+        ],
+      },
+      {
+        id: "when-scratches-are-too-deep",
+        heading: "When scratches are too deep for software recovery",
+        paragraphs: [
+          "If Heirvo's scan shows a large red zone of unreadable sectors on the recovery map, the physical disc surface in that area may be too deeply scratched for any software to read. The data is not necessarily destroyed — the pits and lands in the pressed aluminium layer may still be intact below the scratch — but the scatter from a deep scratch prevents the laser from focusing well enough to read them.",
+          "A disc resurfacing machine removes the top polycarbonate layer in a controlled way until it gets below the depth of the scratches, re-exposing clean surface. Game shops, video rental shops, and some libraries have resurfacing machines. A professional resurface costs $2–$10 per disc and can restore readability to discs that seem destroyed. After resurfacing, run the Heirvo scan again — results often improve dramatically.",
+          "If resurfacing does not help or the disc is cracked, the Heirvo mail-in service uses professional optical recovery equipment and can sometimes read discs that no consumer drive can handle. Contact us with photos of the disc damage before mailing for a preliminary assessment.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "Do I need a PS2 console to back up a PS2 disc?",
+        a: "No. PS2 game discs are standard DVD-ROMs that any Windows DVD drive can physically read. You do not need a PlayStation console, a modded disc drive, or any special hardware. Heirvo reads the disc sectors directly via standard SCSI commands — the same way it reads any other DVD.",
+      },
+      {
+        q: "Why do I get read errors on my PS2 disc even when it looks clean?",
+        a: "Two common causes. First, if the error appears at roughly the 4.37 GB mark (LBA 2,084,960), you have a dual-layer disc and the read error is at the layer break. This is often a drive firmware issue rather than disc damage — try a different drive. Second, PS2 discs have deliberately malformed copy-protection sectors in the inner tracks that basic DVD software cannot read; Heirvo handles these via SCSI pass-through. If errors appear throughout the disc, the disc is likely physically scratched.",
+      },
+      {
+        q: "Can I recover a PS2 game that has a crack near the hub?",
+        a: "A crack that extends into the data area (even 1–2 mm past the hub ring) typically makes the disc unreadable because the crack physically destroys the sectors it crosses, and the vibration from a cracked spinning disc can damage the drive. For cracked discs, professional optical recovery (Heirvo mail-in) may be able to assess whether a controlled read is possible — but results are often poor. A pristine replacement copy is often the better option for cracked discs.",
+      },
+      {
+        q: "What ISO file does Heirvo create — will it work with PS2 emulators like PCSX2?",
+        a: "Heirvo creates a standard ISO 9660 image file (.ISO) that is a sector-accurate copy of the disc. PCSX2 (the leading PS2 emulator) accepts standard ISO files directly. Other emulators like AetherSX2 and DuckStation for PS1 also use standard ISO format. The ISO Heirvo creates is functionally identical to what the disc would produce if read perfectly on a PlayStation console.",
+      },
+    ],
+    cta: {
+      heading: "Back up your PS2 collection before the discs fail",
+      body: "Heirvo creates sector-accurate ISO images from scratched PS2 game discs — compatible with PCSX2 and all major emulators. Free scan to see what's readable. $39 to save.",
+      primaryLabel: "Download Free — Windows",
+      primaryHref: "/download",
+      secondaryLabel: "Mail-in recovery service",
+      secondaryHref: "/recover",
+    },
+  },
 ];
 
 export default GUIDES;
