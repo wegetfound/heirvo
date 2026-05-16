@@ -57,7 +57,7 @@ const GUIDES: Guide[] = [
     category: "DVD Recovery",
     intro:
       "You can recover files from a scratched DVD using disc recovery software that reads each sector multiple times — at different speeds, forwards and backwards — instead of giving up at the first read error. Most scratched DVDs yield 80–95% of their files with a sector-level scan, even when Windows Explorer and VLC refuse to open the disc entirely.",
-    related: ["recover-home-videos-dvd", "how-long-do-dvds-last-disc-rot", "recover-water-damaged-dvd", "recover-data-cracked-dvd"],
+    related: ["recover-home-videos-dvd", "how-long-do-dvds-last-disc-rot", "recover-water-damaged-dvd", "recover-data-cracked-dvd", "dvd-drive-disconnects-mid-scan", "dvd-drive-freezing-mid-recovery-fix", "vlc-plays-dvd-recovery-fails"],
     sections: [
       {
         id: "why-scratches-cause-problems",
@@ -173,7 +173,7 @@ const GUIDES: Guide[] = [
     category: "DVD Recovery",
     intro:
       "Home video DVDs burned between 2000 and 2015 are now reaching the end of their reliable lifespan. The organic dye in DVD-R and DVD+R discs oxidises over time, turning the reflective layer hazy and causing read errors even on undamaged discs. The good news is that the video data is usually still recoverable — you just need software that reads below the surface errors rather than giving up.",
-    related: ["recover-files-scratched-dvd", "recover-vhs-converted-dvd", "recover-wedding-dvd", "recover-8mm-film-dvd-transfer"],
+    related: ["recover-files-scratched-dvd", "recover-vhs-converted-dvd", "recover-wedding-dvd", "recover-8mm-film-dvd-transfer", "dvd-drive-freezing-mid-recovery-fix", "vlc-plays-dvd-recovery-fails"],
     sections: [
       {
         id: "why-home-dvds-fail",
@@ -283,7 +283,7 @@ const GUIDES: Guide[] = [
     category: "Photo Recovery",
     intro:
       "Kodak Photo CDs store images in the .PCD format — a proprietary multi-resolution format that Windows 10 and 11 cannot open natively. Adobe Photoshop dropped PCD support entirely in 2023. If you have a box of these discs from the 1990s or 2000s, Heirvo is one of the few modern tools that reads them directly and converts the images to standard JPEG or TIFF files you can view on any device.",
-    related: ["recover-data-from-cd-rom-windows", "recover-music-from-scratched-cd", "best-dvd-recovery-software", "recover-data-from-zip-disk"],
+    related: ["recover-data-from-cd-rom-windows", "recover-music-from-scratched-cd", "best-dvd-recovery-software", "recover-data-from-zip-disk", "dvd-drive-disconnects-mid-scan", "powered-usb-hub-dvd-recovery"],
     sections: [
       {
         id: "what-is-photo-cd",
@@ -400,7 +400,7 @@ const GUIDES: Guide[] = [
     category: "Software Guide",
     intro:
       "The best DVD recovery software for Windows reads failing discs sector by sector — not once, but in multiple passes at variable speeds, forwards and backwards — to rescue data that a standard file copy would miss entirely. In 2026 there are a handful of tools that do this well. Here is an honest comparison based on what each tool is actually good at.",
-    related: ["heirvo-vs-isobuster", "free-dvd-recovery-software", "recover-corrupted-iso-file", "dvd-r-vs-dvd-plus-r-recovery"],
+    related: ["heirvo-vs-isobuster", "free-dvd-recovery-software", "recover-corrupted-iso-file", "dvd-r-vs-dvd-plus-r-recovery", "mode-select-page-01h-scsi-dvd-recovery", "slim-vs-desktop-dvd-drive-recovery", "powered-usb-hub-dvd-recovery", "vlc-plays-dvd-recovery-fails"],
     sections: [
       {
         id: "what-to-look-for",
@@ -519,7 +519,7 @@ const GUIDES: Guide[] = [
     category: "Disc Health",
     intro:
       "DVDs last between 10 and 50 years in typical home storage conditions — far less than the '100-year lifetime' manufacturers once promised. Burned DVD-R and DVD+R discs are especially vulnerable, with many failing within 10–25 years. Disc rot — the chemical breakdown of a disc's reflective or dye layer — is irreversible once it starts, making early detection and file backup critical.",
-    related: ["recover-files-scratched-dvd", "recover-home-videos-dvd", "copy-dvd-to-hard-drive-windows-11", "free-dvd-recovery-software"],
+    related: ["recover-files-scratched-dvd", "recover-home-videos-dvd", "copy-dvd-to-hard-drive-windows-11", "free-dvd-recovery-software", "dvd-drive-disconnects-mid-scan", "dvd-drive-freezing-mid-recovery-fix"],
     sections: [
       {
         id: "how-long-dvds-last",
@@ -643,7 +643,7 @@ const GUIDES: Guide[] = [
     category: "CD Recovery",
     intro:
       "You can recover data from a scratched or damaged CD-ROM by using disc recovery software that retries each failed sector at multiple speeds instead of stopping at the first error. Most data CDs with light-to-moderate scratches yield 85–98% of their files with a proper sector-level scan — even when Windows reports the disc as unreadable.",
-    related: ["recover-files-scratched-dvd", "kodak-photo-cd-recovery", "recover-music-from-scratched-cd", "recover-data-from-zip-disk"],
+    related: ["recover-files-scratched-dvd", "kodak-photo-cd-recovery", "recover-music-from-scratched-cd", "recover-data-from-zip-disk", "mode-select-page-01h-scsi-dvd-recovery", "powered-usb-hub-dvd-recovery", "slim-vs-desktop-dvd-drive-recovery"],
     sections: [
       {
         id: "why-windows-fails",
@@ -756,7 +756,7 @@ const GUIDES: Guide[] = [
     category: "Software Comparison",
     intro:
       "Heirvo and IsoBuster are both Windows disc recovery tools, but they target different users. Heirvo is built for people who just need to get files off a damaged disc quickly, with a free-scan-then-pay model. IsoBuster is a deep forensic tool with more technical controls, a steeper learning curve, and a subscription pricing model. The right choice depends on whether you need simplicity or maximum control.",
-    related: ["best-dvd-recovery-software", "recover-files-scratched-dvd", "free-dvd-recovery-software", "dvd-r-vs-dvd-plus-r-recovery"],
+    related: ["best-dvd-recovery-software", "recover-files-scratched-dvd", "free-dvd-recovery-software", "dvd-r-vs-dvd-plus-r-recovery", "mode-select-page-01h-scsi-dvd-recovery", "slim-vs-desktop-dvd-drive-recovery", "dvd-drive-disconnects-mid-scan"],
     sections: [
       {
         id: "quick-comparison",
@@ -872,7 +872,7 @@ const GUIDES: Guide[] = [
     category: "DVD Recovery",
     intro:
       "A wedding DVD that won't play is one of the most emotionally urgent disc recovery situations there is. The good news is that most wedding DVDs fail for recoverable reasons — surface scratches, early-stage disc rot, or an unfinalized burn by the videographer — rather than catastrophic physical damage. This guide explains what's likely wrong and exactly how to get your footage back on Windows.",
-    related: ["recover-files-scratched-dvd", "recover-unfinalized-dvd", "recover-video-from-camcorder-dvd", "recover-dvd-car-heat-damage"],
+    related: ["recover-files-scratched-dvd", "recover-unfinalized-dvd", "recover-video-from-camcorder-dvd", "recover-dvd-car-heat-damage", "dvd-drive-freezing-mid-recovery-fix", "slim-vs-desktop-dvd-drive-recovery"],
     sections: [
       {
         id: "why-wedding-dvds-fail",
@@ -990,7 +990,7 @@ const GUIDES: Guide[] = [
     category: "DVD Recovery",
     intro:
       "An unfinalized DVD-R is one of the most misunderstood disc problems — people assume the footage is lost because the disc won't play anywhere. In reality, the video data is almost always completely intact. The disc simply lacks the closing index that DVD players need to navigate it. This guide explains what an unfinalized disc is and exactly how to extract the footage on Windows.",
-    related: ["recover-wedding-dvd", "recover-home-videos-dvd", "recover-video-from-camcorder-dvd", "recover-8mm-film-dvd-transfer"],
+    related: ["recover-wedding-dvd", "recover-home-videos-dvd", "recover-video-from-camcorder-dvd", "recover-8mm-film-dvd-transfer", "vlc-plays-dvd-recovery-fails", "dvd-drive-freezing-mid-recovery-fix"],
     sections: [
       {
         id: "what-is-unfinalized",
@@ -1093,7 +1093,7 @@ const GUIDES: Guide[] = [
     category: "Blu-ray Recovery",
     intro:
       "Recovering data from a damaged Blu-ray disc on Windows is harder than DVD recovery for one main reason: Blu-ray drives have less aggressive built-in error correction than DVD drives, which means more sectors are reported as unreadable even when the data is physically present. With the right sector-level recovery software, most scratched or degraded Blu-ray discs are at least partially recoverable.",
-    related: ["recover-files-scratched-dvd", "best-dvd-recovery-software", "dvd-r-vs-dvd-plus-r-recovery", "dvd-drive-not-reading-disc-windows-11"],
+    related: ["recover-files-scratched-dvd", "best-dvd-recovery-software", "dvd-r-vs-dvd-plus-r-recovery", "dvd-drive-not-reading-disc-windows-11", "mode-select-page-01h-scsi-dvd-recovery", "slim-vs-desktop-dvd-drive-recovery", "dvd-drive-disconnects-mid-scan"],
     sections: [
       {
         id: "blu-ray-vs-dvd-recovery",
@@ -1205,7 +1205,7 @@ const GUIDES: Guide[] = [
     category: "CD Recovery",
     intro:
       "A scratched audio CD that skips or won't rip is one of the most common disc problems — and one of the most fixable. Standard CD ripping software like Windows Media Player or iTunes gives up at the first read error and either skips the track entirely or fills the gap with silence. Sector-level recovery software retries each failing sector dozens of times and reconstructs the audio data with far fewer gaps. Most scratched audio CDs yield 90–100% of their music with the right tool.",
-    related: ["recover-data-from-cd-rom-windows", "recover-files-scratched-dvd", "kodak-photo-cd-recovery", "recover-data-from-zip-disk"],
+    related: ["recover-data-from-cd-rom-windows", "recover-files-scratched-dvd", "kodak-photo-cd-recovery", "recover-data-from-zip-disk", "mode-select-page-01h-scsi-dvd-recovery", "powered-usb-hub-dvd-recovery"],
     sections: [
       {
         id: "why-ripping-fails",
@@ -1322,7 +1322,7 @@ const GUIDES: Guide[] = [
     category: "DVD Recovery",
     intro:
       "Camcorder DVDs — the small 8cm discs used in Sony, Canon, and Panasonic DVD camcorders from 2003 to 2012 — are some of the most failure-prone optical media ever made. The combination of small size, frequent handling, and the fact that most were never finalized properly means a huge proportion simply won't play or import on a computer. The good news: the video is almost always still there.",
-    related: ["recover-unfinalized-dvd", "recover-home-videos-dvd", "recover-vhs-converted-dvd"],
+    related: ["recover-unfinalized-dvd", "recover-home-videos-dvd", "recover-vhs-converted-dvd", "dvd-drive-freezing-mid-recovery-fix", "vlc-plays-dvd-recovery-fails"],
     sections: [
       {
         id: "why-camcorder-dvds-fail",
@@ -1423,7 +1423,7 @@ const GUIDES: Guide[] = [
     category: "DVD Recovery",
     intro:
       "A VHS-to-DVD transfer that won't play is one of the most heartbreaking disc problems — those tapes often no longer exist, making the DVD the only copy of irreplaceable footage. The good news is that most damaged transfer DVDs are recoverable. Because the footage was professionally encoded and pressed (or burned) in a single session, the data is usually intact even when the disc surface has degraded.",
-    related: ["recover-home-videos-dvd", "recover-files-scratched-dvd", "recover-8mm-film-dvd-transfer", "recover-unfinalized-dvd"],
+    related: ["recover-home-videos-dvd", "recover-files-scratched-dvd", "recover-8mm-film-dvd-transfer", "recover-unfinalized-dvd", "dvd-drive-freezing-mid-recovery-fix"],
     sections: [
       {
         id: "why-transfer-dvds-fail",
@@ -1546,7 +1546,7 @@ const GUIDES: Guide[] = [
     category: "DVD Recovery",
     intro:
       "A DVD drive that shows 'Please insert a disc' when a disc is already inside is one of the most frustrating Windows problems — and it has a handful of distinct causes, each with a different fix. This guide walks through every cause in order of likelihood, so you can find the right fix without guessing.",
-    related: ["recover-files-scratched-dvd", "best-dvd-recovery-software", "copy-dvd-to-hard-drive-windows-11", "recover-data-from-blu-ray-windows"],
+    related: ["recover-files-scratched-dvd", "best-dvd-recovery-software", "copy-dvd-to-hard-drive-windows-11", "recover-data-from-blu-ray-windows", "dvd-drive-disconnects-mid-scan", "powered-usb-hub-dvd-recovery", "slim-vs-desktop-dvd-drive-recovery"],
     sections: [
       {
         id: "rule-out-the-disc",
@@ -1689,7 +1689,7 @@ const GUIDES: Guide[] = [
     category: "Software Guide",
     intro:
       "Most 'free DVD recovery software' is either genuinely free with serious limitations, or a freemium trial that scans for free but locks recovery behind a paywall. Knowing which category a tool falls into before you spend two hours scanning a disc matters. This guide breaks down every realistic free option in 2026 — what each one actually does, what it can't do, and which is worth your time.",
-    related: ["best-dvd-recovery-software", "heirvo-vs-isobuster", "recover-corrupted-iso-file"],
+    related: ["best-dvd-recovery-software", "heirvo-vs-isobuster", "recover-corrupted-iso-file", "vlc-plays-dvd-recovery-fails"],
     sections: [
       {
         id: "what-free-means",
@@ -1850,7 +1850,7 @@ const GUIDES: Guide[] = [
     category: "DVD Recovery",
     intro:
       "Water itself doesn't destroy DVD data — the polycarbonate disc and aluminium reflective layer are both waterproof. What causes permanent damage is what happens next: mineral deposits from tap water etching the disc surface as it dries, mould growing in humid conditions, and label paper delaminating and pulling the reflective layer with it. If you act within the first hour, your chances of full recovery are very high.",
-    related: ["recover-files-scratched-dvd", "recover-data-cracked-dvd", "recover-dvd-car-heat-damage", "how-long-do-dvds-last-disc-rot"],
+    related: ["recover-files-scratched-dvd", "recover-data-cracked-dvd", "recover-dvd-car-heat-damage", "how-long-do-dvds-last-disc-rot", "dvd-drive-disconnects-mid-scan", "dvd-drive-freezing-mid-recovery-fix", "powered-usb-hub-dvd-recovery"],
     sections: [
       {
         id: "first-30-minutes",
@@ -2110,7 +2110,7 @@ const GUIDES: Guide[] = [
     category: "DVD Recovery",
     intro:
       "Copying a DVD to your hard drive preserves the content before the disc degrades — DVD-R and DVD+R discs have a typical lifespan of 10–25 years, and many burned in the early 2000s are already showing signs of disc rot. This guide covers two approaches: copying as an ISO image (a perfect byte-for-byte copy of the disc) and copying as an MP4 video file (smaller, plays anywhere). Both work on Windows 11 with free software.",
-    related: ["how-long-do-dvds-last-disc-rot", "recover-files-scratched-dvd", "dvd-drive-not-reading-disc-windows-11", "recover-corrupted-iso-file"],
+    related: ["how-long-do-dvds-last-disc-rot", "recover-files-scratched-dvd", "dvd-drive-not-reading-disc-windows-11", "recover-corrupted-iso-file", "vlc-plays-dvd-recovery-fails"],
     sections: [
       {
         id: "iso-vs-mp4",
@@ -2246,7 +2246,7 @@ const GUIDES: Guide[] = [
     category: "Software Guide",
     intro:
       "A corrupted ISO file is a different problem from a damaged disc — the optical media is fine, but the image file on your hard drive has been corrupted by a failed download, a storage error, or file system damage. In many cases the ISO is partially intact and most of the content is recoverable. This guide covers every approach: verifying the corruption, extracting content from a partial ISO, and recreating the image from the original disc.",
-    related: ["best-dvd-recovery-software", "recover-files-scratched-dvd", "recover-data-from-blu-ray-windows", "copy-dvd-to-hard-drive-windows-11"],
+    related: ["best-dvd-recovery-software", "recover-files-scratched-dvd", "recover-data-from-blu-ray-windows", "copy-dvd-to-hard-drive-windows-11", "dvd-drive-freezing-mid-recovery-fix"],
     sections: [
       {
         id: "verify-first",
@@ -2381,7 +2381,7 @@ const GUIDES: Guide[] = [
     category: "DVD Recovery",
     intro:
       "Between the late 1990s and early 2010s, millions of families had their 8mm, Super 8, and Hi8 film reels transferred to DVD. It felt like the responsible thing to do — preserve those irreplaceable memories on a modern format. But DVD-R discs have a limited lifespan, and many of those transfers are now 15 to 25 years old. The dye layer is fading, the disc won't play, and the original film reels were often discarded years ago. That DVD may be the only surviving copy of your grandparents' wedding, your first steps, or a summer at the lake house in 1974. The footage is usually still recoverable — but the window is closing.",
-    related: ["recover-home-videos-dvd", "recover-vhs-converted-dvd", "recover-video-from-camcorder-dvd", "recover-wedding-dvd"],
+    related: ["recover-home-videos-dvd", "recover-vhs-converted-dvd", "recover-video-from-camcorder-dvd", "recover-wedding-dvd", "dvd-drive-freezing-mid-recovery-fix"],
     sections: [
       {
         id: "why-8mm-transfers-at-risk",
@@ -2545,7 +2545,7 @@ const GUIDES: Guide[] = [
     category: "DVD Recovery",
     intro:
       "A DVD left on a car dashboard in summer can warp in under an hour. The polycarbonate substrate starts deforming around 70 °C (158 °F), and a parked car in direct sunlight routinely hits 80–90 °C on the dash — more than enough to ruin a disc. If you've found a warped DVD in your car and it holds irreplaceable family videos, graduation footage, or wedding memories, don't panic. Depending on the severity, the data is often still recoverable — either with software or through a professional mail-in service.",
-    related: ["recover-files-scratched-dvd", "recover-water-damaged-dvd", "recover-data-cracked-dvd", "how-long-do-dvds-last-disc-rot"],
+    related: ["recover-files-scratched-dvd", "recover-water-damaged-dvd", "recover-data-cracked-dvd", "how-long-do-dvds-last-disc-rot", "dvd-drive-disconnects-mid-scan", "powered-usb-hub-dvd-recovery"],
     sections: [
       {
         id: "why-heat-damages-dvds",
@@ -2691,7 +2691,7 @@ const GUIDES: Guide[] = [
     category: "DVD Recovery",
     intro:
       "If you have a stack of old DVDs and some won't read, you may have noticed the discs are a mix of DVD-R and DVD+R. The two formats were developed by competing industry alliances in the early 2000s and differ in how they lay down data, handle errors, and manage defects. Those differences have a real — though often overstated — effect on how recoverable a disc is when it starts to fail. Here is what actually matters and what doesn't.",
-    related: ["recover-files-scratched-dvd", "best-dvd-recovery-software", "heirvo-vs-isobuster", "recover-data-from-blu-ray-windows"],
+    related: ["recover-files-scratched-dvd", "best-dvd-recovery-software", "heirvo-vs-isobuster", "recover-data-from-blu-ray-windows", "slim-vs-desktop-dvd-drive-recovery"],
     sections: [
       {
         id: "brief-history",
@@ -2816,7 +2816,7 @@ const GUIDES: Guide[] = [
     category: "DVD Recovery",
     intro:
       "A cracked DVD is not necessarily a lost DVD. Depending on where the crack is and how far it extends, anywhere from 50% to 100% of your data may still be recoverable. But cracked discs demand caution — a disc with a structural crack can shatter inside a drive spinning at 10,000 RPM, destroying the data and potentially the drive itself. This guide walks you through how to assess the damage, when software recovery is safe to attempt, and when professional mail-in recovery is the smarter choice.",
-    related: ["recover-files-scratched-dvd", "recover-water-damaged-dvd", "recover-dvd-car-heat-damage", "dvd-drive-not-reading-disc-windows-11"],
+    related: ["recover-files-scratched-dvd", "recover-water-damaged-dvd", "recover-dvd-car-heat-damage", "dvd-drive-not-reading-disc-windows-11", "dvd-drive-freezing-mid-recovery-fix", "slim-vs-desktop-dvd-drive-recovery"],
     sections: [
       {
         id: "safety-warning",
@@ -2941,6 +2941,1117 @@ const GUIDES: Guide[] = [
       primaryHref: "/recover",
       secondaryLabel: "Download Heirvo Free (minor chips only)",
       secondaryHref: "/download",
+    },
+  },
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 25. DVD drive disconnects mid-scan
+  // ─────────────────────────────────────────────────────────────────────────────
+  {
+    slug: "dvd-drive-disconnects-mid-scan",
+    title: "Why Your USB DVD Drive Disconnects During Recovery (And How to Fix It)",
+    metaTitle: "USB DVD Drive Disconnects Mid-Scan: Causes and Fixes (2026)",
+    metaDescription:
+      "Why your USB DVD drive disconnects, freezes, or vanishes during disc recovery — and the three real fixes (powered hub, AC-powered drive, mail-in). Tested on real damaged DVDs.",
+    datePublished: "2026-05-16",
+    dateModified: "2026-05-16",
+    readTime: "11 min read",
+    category: "DVD Recovery",
+    intro:
+      "USB DVD drives disconnect mid-scan because they're starving for current — recovery work spikes drive demand to 2–2.5 amps during seeks, but USB 2.0 supplies only 0.5A and USB 3.0 only 0.9A. When the drive can't draw enough power, its USB-ATAPI bridge chip browns out and the drive vanishes from Windows. Cheap bus-powered slim USB drives ($15–$30) hit this wall on almost every damaged disc. The fix isn't software — it's a powered USB hub (~฿500 / $15), an AC-powered external drive (~฿4,500 / $130), or a mail-in recovery service for severely damaged discs.",
+    related: ["recover-files-scratched-dvd", "dvd-drive-not-reading-disc-windows-11", "best-dvd-recovery-software", "recover-water-damaged-dvd"],
+    sections: [
+      {
+        id: "the-symptom",
+        heading: "What you're seeing",
+        paragraphs: [
+          "Your USB DVD drive works fine when you copy a healthy disc. But the moment you start a recovery scan on a damaged or scratched DVD, the drive starts to misbehave. The first few minutes look normal — the scan progresses through the readable portion of the disc, the activity LED blinks steadily. Then it stops. The activity LED freezes or goes dark. Windows reports the drive as disconnected. Sometimes the drive letter disappears from File Explorer entirely. Sometimes the recovery software hangs and can't be closed without ending the process from Task Manager.",
+          "Unplugging and replugging the USB cable usually brings the drive back. The recovery resumes briefly, then disconnects again at roughly the same spot. After three or four cycles you're convinced the drive is dying — but plug it into a different computer, insert a healthy DVD, and it works perfectly. The drive isn't dying. It's starving.",
+        ],
+        callout: {
+          label: "The clearest tell",
+          text: "If your drive disconnects ONLY when scanning damaged discs (and works fine on healthy ones), you're hitting the bus-power brown-out, not a hardware failure. The drive is healthy — your power supply isn't.",
+          color: "amber",
+        },
+      },
+      {
+        id: "the-physics",
+        heading: "The physics: optical drives need more current than USB gives",
+        paragraphs: [
+          "A DVD drive looks deceptively simple, but during a recovery scan it's drawing on every motor and circuit at once: the spindle motor spinning the disc, the sled motor moving the laser pickup, the laser diode itself, the error-correction processor working overtime on damaged sectors, the USB controller, and the firmware retry logic. Each of those subsystems pulls current independently. On a healthy disc the drive coasts at 300–500 mA, well within USB spec. On a damaged disc it spikes.",
+          "When the laser pickup loses tracking on a scratch, the drive's firmware retries the read up to 16 times internally, each attempt re-seeking the sled and re-spinning the spindle to the right rotation. Those retries pile current demand on top of the baseline draw. Real-world measurements on slim USB drives during damaged-sector retries show peaks of 1.8–2.5 amps for hundreds of milliseconds at a time.",
+        ],
+        table: {
+          caption: "USB power budget vs. optical drive demand",
+          headers: ["Source / load", "Current (amps)", "Power (watts at 5V)"],
+          rows: [
+            ["USB 2.0 port (spec)", "0.5 A", "2.5 W"],
+            ["USB 3.0 port (spec)", "0.9 A", "4.5 W"],
+            ["Cheap unpowered USB hub", "1.0 A shared across all ports", "5 W total"],
+            ["Optical drive — idle baseline", "0.3–0.5 A", "1.5–2.5 W"],
+            ["Optical drive — healthy disc read", "0.5–0.8 A", "2.5–4 W"],
+            ["Optical drive — damaged-sector seek peak", "1.8–2.5 A", "9–12.5 W"],
+            ["Powered USB hub with AC adapter", "3–5 A available", "15–25 W"],
+            ["AC-powered external drive (its own adapter)", "2.5–3 A available", "12.5–15 W"],
+          ],
+        },
+      },
+      {
+        id: "what-actually-happens",
+        heading: "What happens electrically when the drive browns out",
+        paragraphs: [
+          "When the drive tries to draw 2 amps from a 0.9-amp USB port, the supply voltage sags. The 5V rail drops to 4.6V, then 4.3V, then below the minimum the bridge chip needs to operate. The USB-ATAPI bridge chip — the little processor inside the drive that translates USB packets to ATAPI commands — resets. To the host computer, the resetting bridge looks identical to a user unplugging the cable: the device disappears from the USB bus.",
+          "A few hundred milliseconds later the bridge chip boots back up and re-enumerates on the bus. Windows sees a new device connecting and assigns it a drive letter again. From the user's perspective the drive just 'disconnected and reconnected.' But the in-flight SCSI command that was running when the brown-out happened was lost — that's why recovery software either hangs (waiting for a response that never comes) or marks the sector as failed and moves on.",
+          "The same brown-out can also happen without a full disconnect. Sometimes the voltage sags just enough that the bridge chip stops responding to commands but doesn't reset. The drive looks 'connected' in Device Manager but every read times out. This is the 'kernel hang' failure mode that makes recovery software completely freeze — Windows can't kill the stuck command because the kernel is waiting for a response from a device that's no longer listening.",
+        ],
+      },
+      {
+        id: "cheap-bridge-chips",
+        heading: "The cheap-bridge-chip problem (which makes it worse)",
+        paragraphs: [
+          "Most $15–$30 USB DVD drives use the same handful of cheap bridge chips from JMicron, ENE, or Realtek. These chips work fine for occasional use — copying photos off a wedding DVD on a Sunday afternoon. They were never designed for the sustained, command-heavy traffic that disc recovery software generates. Recovery software issues thousands of SCSI commands per minute and reads damaged sectors with aggressive retry patterns. Cheap bridge chips lock up under that load even when power is adequate.",
+          "When a bridge chip locks up, it doesn't return an error. It just stops responding. The drive's activity LED may continue blinking (the optical mechanism keeps spinning) but no SCSI commands complete. Recovery software waits for a response that never arrives. Windows itself can't recover the stuck command — only physically unplugging the USB cable releases the kernel from waiting on the dead bridge.",
+          "Premium optical drives ($80–$200) use better bridge chips (or are internal SATA drives with the bridge in a separate AC-powered enclosure). Their firmware is also tuned for sustained heavy use. They don't lock up under recovery-class traffic.",
+        ],
+      },
+      {
+        id: "why-software-cant-fix",
+        heading: "Why no recovery software can fix this in code",
+        paragraphs: [
+          "It's tempting to assume better software would handle a flaky USB drive. It can't. The three failure modes — current brown-out, voltage sag, bridge chip lockup — all happen at or below the operating system layer. Once a SCSI command is in flight to a device that's no longer responding, the kernel waits indefinitely for a response. Windows itself can't time out that command from above. There's no software signal that says 'the bridge chip just locked up, please give up.'",
+          "What good recovery software CAN do is detect the failure indirectly — it can wrap each SCSI call in a host-side watchdog timer, so when a command hasn't returned in 5–7 seconds it gives up on that sector and moves on, leaving the orphaned kernel wait to clean itself up later. That keeps the recovery engine alive instead of hanging forever. It can also detect specific Windows error codes (`0x80070079 ERROR_SEM_TIMEOUT`, `0x80070037 ERROR_DEV_NOT_EXIST`) and immediately mark large regions as failed, then skip ahead to find readable data past the damaged zone.",
+          "Heirvo does both of these — host-side watchdog timeouts on every SCSI call, plus aggressive skip-ahead when kernel-level errors return. The recovery engine never hangs, the UI never freezes, and the user gets back whatever the drive was physically capable of reading. But no software trick can make a cheap drive electrically deliver more current than its bridge chip can handle. The recovery ceiling is set by the hardware.",
+        ],
+        callout: {
+          label: "What Heirvo does differently",
+          text: "Heirvo's drive-quality detector runs the moment you insert a disc. It looks up your drive's vendor and model in a 56-drive database and warns you BEFORE the scan starts: 'Marginal: bus-powered USB slim — prone to disconnects under load.' That single warning saves hours of wasted scanning on the wrong hardware.",
+          color: "blue",
+        },
+      },
+      {
+        id: "diagnose",
+        heading: "How to diagnose whether it's your hub, drive, or both",
+        paragraphs: [
+          "Two simple tests narrow down the cause in under five minutes.",
+        ],
+        numbered: true,
+        items: [
+          "Plug the drive directly into the laptop (not through a hub), then start a recovery scan on the damaged disc. If it scans further before disconnecting, your hub is part of the problem — its power budget is being shared across all ports.",
+          "Try the same disc in a desktop computer with a built-in SATA optical drive, or borrow a friend's external AC-powered drive. If it scans cleanly past the spot your USB drive failed at, your drive is the bottleneck. If the desktop drive also struggles, the disc itself has heavier damage than expected (still recoverable in most cases, but with professional equipment).",
+        ],
+      },
+      {
+        id: "fix-1-powered-hub",
+        heading: "Fix #1: Get a powered USB hub (~฿500 / $15)",
+        paragraphs: [
+          "The cheapest possible fix, and a real one — provided your drive's bridge chip is healthy enough to take advantage. A self-powered USB hub (one with its own wall adapter) typically supplies 3–5 amps total across all its ports. That's plenty for the drive's peak demand.",
+          "Critical: the hub must have its own AC adapter brick included. Search Lazada / Shopee / Amazon for 'powered USB 3.0 hub with AC adapter' or 'self-powered USB hub 3A'. In the listing photos you should see a separate power brick (looks like a small laptop charger). If the listing shows only a USB cable, it's a bus-powered hub and useless for this purpose — same problem as not having a hub at all.",
+          "Expected outcome with a properly powered hub: you'll likely complete recoveries on lightly damaged discs that used to fail. On heavily damaged discs the cheap drive's other limitations (weak laser, cheap bridge chip) will still cap your recovery rate, but you'll get further than you did on bus power alone.",
+        ],
+        callout: {
+          label: "What to look for when buying",
+          text: "Output rating of 3A minimum (4A or 5A is better). USB 3.0 preferred. AC adapter included. Price ฿400–1,000 / $12–30 should buy a reliable one — under that and the adapter is usually skimped.",
+          color: "green",
+        },
+      },
+      {
+        id: "fix-2-ac-powered-drive",
+        heading: "Fix #2: Use an AC-powered external optical drive (~฿4,500 / $130)",
+        paragraphs: [
+          "If you're recovering anything important, this is the right purchase. AC-powered external optical drives have their own power adapter and use a full-height desktop drive mechanism inside — better laser pickup, more seek torque headroom, a more stable bridge chip, and zero risk of bus-power brown-out. The same disc that yields 4% recovery on a $15 slim USB drive routinely yields 60–95% on a proper AC-powered drive.",
+          "Recommended models (in order of preference):",
+        ],
+        items: [
+          "Pioneer BDR-XS08 series — external Blu-ray with AC adapter, PureRead 4+ error recovery firmware, gold standard for recovery work. ~฿5,500–7,000 on Lazada.",
+          "ASUS BW-16D1H-U PRO — external Blu-ray, AC adapter included, uses the same strong mechanism as the BW-16D1HT desktop drive. ~฿5,000–6,500.",
+          "Buffalo BRXL-16U3 / BRXL-PC6VU2 — Pioneer-derived mechanism in a Buffalo enclosure, AC-powered. ~฿5,000–6,000 when available.",
+          "Pioneer BDR-212UBK internal drive + powered SATA enclosure — best laser pickup in the consumer market, paired with a $20 enclosure. Two pieces but the cheapest pro-quality setup at ~฿3,500–4,500 total.",
+        ],
+      },
+      {
+        id: "fix-3-mail-in",
+        heading: "Fix #3: Mail-in recovery service (for the worst discs)",
+        paragraphs: [
+          "Some discs are damaged beyond what any consumer-grade optical drive can read — deep scratches through the data layer, bronzing from disc rot, cracks across the data zone, water damage with reflective-layer corrosion. For these cases, the right equipment is a specialist optical reader that can recover sector-by-sector at the physical layer, sometimes without spinning the disc at all.",
+          "Heirvo's mail-in recovery service starts at $89 per disc with a no-recovery-no-charge guarantee. You ship the disc, we recover what's recoverable on professional equipment, and you only pay if files are recovered. For irreplaceable wedding videos, family DVDs, or business archives, the math is straightforward — $89 to potentially save the disc is a better deal than $130 of new hardware that might still fail on the worst damage.",
+        ],
+      },
+      {
+        id: "how-heirvo-handles",
+        heading: "How Heirvo handles flaky drives gracefully",
+        paragraphs: [
+          "Heirvo was built with the cheap-drive reality in mind. Every SCSI command to the drive is wrapped in a host-side watchdog timer — if the drive doesn't respond within seven seconds, Heirvo gives up on that sector and moves on rather than hanging the entire recovery. Cheap bridge chips lock up; Heirvo doesn't. Drives disconnect under load; Heirvo's session state is checkpointed every few seconds, so when you plug the drive back in, the scan resumes exactly where it stopped.",
+          "Heirvo also identifies your specific drive model the moment you insert a disc, looks it up in a database of 56 known optical drives, and tells you up front whether your drive is in the Pro, Good, Acceptable, Marginal, or Avoid quality tier. If you're on a Marginal drive (HL-DT-ST DVDRAM slim USB series, generic USB2.0 CD bridges, etc.), the Recovery Plan card tells you so before you start a scan that's likely to fail at 3–5%. That single warning prevents the most common form of recovery-tool frustration.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "Will buying a more expensive USB cable fix the disconnect problem?",
+        a: "No. The cable itself isn't the bottleneck — the limit is the current the USB host (or hub) is willing to supply. A premium cable with thicker conductors reduces voltage drop slightly, but a 0.9-amp USB 3.0 port still only delivers 0.9 amps regardless of cable quality. The fix is a powered hub or an AC-powered drive.",
+      },
+      {
+        q: "Does a USB 3.0 port supply more power than USB 2.0?",
+        a: "Slightly — USB 3.0 spec is 0.9 A (4.5 W) vs USB 2.0 spec of 0.5 A (2.5 W). That difference is sometimes enough to keep a healthy drive running on a healthy disc, but it's nowhere near the 2.5 A peaks needed for damaged-sector recovery. USB-C ports with Power Delivery negotiation can supply much more, but most consumer optical drives don't negotiate PD and only draw the standard 0.9 A.",
+      },
+      {
+        q: "Why does VLC play my damaged DVD fine but recovery software can't read it?",
+        a: "VLC reads only the small subset of sectors it actually needs to play the video, skips anything it can't read, and accepts visual glitches as the cost of playback. Recovery software reads every sector on the disc, retries failures, and only finishes when it has either recovered or definitively failed each one. The recovery process is dramatically more taxing on a marginal drive — sustained load is what triggers brown-outs, not occasional reads.",
+      },
+      {
+        q: "Will a powered USB hub work with any external DVD drive?",
+        a: "Yes. The hub just supplies the drive with enough current. Drives that 'speak USB' all draw power the same way — the hub doesn't care which drive is plugged in. Make sure the hub has its own AC adapter included (a separate power brick in the listing photos), not just a USB cable.",
+      },
+      {
+        q: "I have a USB hub but my drive still disconnects — what's wrong?",
+        a: "Almost certainly your hub is bus-powered (drawing all its power from the laptop's USB port, with no separate AC adapter). That kind of hub doesn't solve the brown-out problem — it just splits the same insufficient power across more ports. Check whether your hub came with a wall adapter. If not, that's the cause.",
+      },
+      {
+        q: "How can I tell if my drive's bridge chip is the problem or just the power?",
+        a: "Plug the drive into a known-good powered hub (3 A+ AC-powered). Run a recovery scan on a moderately damaged disc. If it now completes without disconnecting, the original problem was power. If it still disconnects or hangs at roughly the same point, the bridge chip is locking up under sustained load and only a different drive will fix it.",
+      },
+      {
+        q: "Can I just buy a new $25 slim USB drive instead?",
+        a: "Probably not the right move. Most $20–$30 slim USB drives share the same Panasonic UJ8/UJ9-class mechanisms and the same generation of cheap bridge chips. You'd likely replace one Marginal-tier drive with another. The meaningful upgrade is to a full-height drive with AC power — at minimum $80, ideally $100–$200.",
+      },
+      {
+        q: "Does the laptop's USB-C port help with this?",
+        a: "Only if the drive supports USB-C Power Delivery negotiation, which almost no consumer optical drives do. A USB-C port can supply 3 A+ but the drive needs to ask for it; most just draw the legacy 0.5–0.9 A regardless of port type. A powered USB-A hub is more reliable.",
+      },
+    ],
+    cta: {
+      heading: "Stop fighting bad hardware — let Heirvo tell you what's wrong",
+      body: "Heirvo's free scan identifies your drive model and tells you upfront whether it's capable of recovering your disc. If your drive is on the Marginal list, you'll know before wasting hours. If it's a Pro-tier drive, scan with confidence. Either way — pay only if recovery succeeds.",
+      primaryLabel: "Download Heirvo Free",
+      primaryHref: "/download",
+      secondaryLabel: "Mail-In Recovery — from $89",
+      secondaryHref: "/recover",
+    },
+  },
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 26. VLC plays the DVD but recovery software fails
+  // ─────────────────────────────────────────────────────────────────────────────
+  {
+    slug: "vlc-plays-dvd-recovery-fails",
+    title: "VLC Plays My DVD But Recovery Software Can't Read It — Why?",
+    metaTitle: "VLC Plays the DVD But Windows / Recovery Software Can't (2026)",
+    metaDescription:
+      "The technical reason VLC can play a damaged DVD that Windows Explorer and recovery software refuse to read — and how to actually recover the files, not just stream them.",
+    datePublished: "2026-05-16",
+    dateModified: "2026-05-16",
+    readTime: "9 min read",
+    category: "DVD Recovery",
+    intro:
+      "VLC plays your damaged DVD but recovery software can't read it because VLC and recovery software solve different problems. VLC reads only the video sectors it needs to play, silently skips damaged sectors as visual glitches, and uses tolerant DVD-navigation parsers (libdvdread) that work even when the disc's filesystem tables are corrupt. Recovery software has to read every sector, recover damaged regions properly, and reconstruct the full filesystem so files can be saved to your hard drive. VLC's apparent success is misleading — it doesn't actually copy the data, it just streams the readable parts.",
+    related: ["recover-files-scratched-dvd", "dvd-drive-disconnects-mid-scan", "best-dvd-recovery-software", "dvd-drive-not-reading-disc-windows-11"],
+    sections: [
+      {
+        id: "the-paradox",
+        heading: "The paradox you're facing",
+        paragraphs: [
+          "You insert a scratched DVD that's been sitting in a closet for fifteen years. Windows Explorer shows it as empty or refuses to open it. You try to copy the files — error. You install recovery software — it hangs at 3% or shows the disc as unreadable. Out of desperation you open VLC and pick the disc as a source, and to your astonishment, the home video plays. The picture is clear, the audio is fine, maybe there's an occasional pixelated frame but the whole video plays through to the end.",
+          "Your conclusion is reasonable: the disc is fine, the recovery software is broken. Why would professional disc recovery tools fail at something a free media player handles effortlessly?",
+          "The answer is that VLC isn't actually recovering the disc. It's doing something completely different, and the gap between 'playing the disc' and 'recovering the files' is enormous.",
+        ],
+      },
+      {
+        id: "what-vlc-actually-does",
+        heading: "What VLC actually does when it plays a DVD",
+        paragraphs: [
+          "VLC is a streaming media player. Its job is to display video and audio in real time. To do that, it only needs to read sectors fast enough to keep the playback buffer full — typically 1–2 megabytes per second for a standard-definition DVD. The DVD itself contains 4.3 GB or more of data, but VLC reads maybe 5% of that in any given second of playback.",
+          "When VLC encounters a damaged sector, it does what every video player does: it gives up on that sector immediately and moves to the next one. A single missing sector becomes a fraction of a second of pixelated video or audio dropout. The user might notice a brief glitch; more often they don't notice at all. VLC keeps streaming the readable sectors and ignores the damaged ones.",
+          "VLC also uses libdvdread, a library specifically designed to be tolerant of damaged DVD navigation structures. The DVD format has metadata files (IFO files, the UDF filesystem, the VIDEO_TS folder structure) that tell players where each chapter begins and how to navigate menus. Libdvdread has multiple fallback paths — if the primary IFO file is corrupt, it tries the backup BUP file. If both are damaged, it scans the disc for VOB video files directly and plays them in sequence. This tolerance is what lets VLC play discs that strict players choke on.",
+          "Crucially, VLC also sends a SCSI command called MODE SELECT page 01h to the drive before reading. This command tells the drive's firmware: 'don't retry bad sectors yourself, just report failures fast so I can handle them.' Without that command, the drive's firmware retries each bad sector 8–16 times internally, taking 5+ seconds per bad sector. With MODE SELECT applied, bad sectors fail in milliseconds and playback stays smooth.",
+        ],
+      },
+      {
+        id: "what-recovery-does",
+        heading: "What recovery software actually does (and why it's harder)",
+        paragraphs: [
+          "Disc recovery software has a fundamentally different job: reconstruct every recoverable file from the disc and write them to your hard drive as durable copies. That means it cannot skip damaged sectors the way VLC does. It has to:",
+        ],
+        items: [
+          "Read every sector on the disc, including the parts VLC never touches (filesystem metadata, file allocation tables, sectors past the video, any photo or document files alongside the video).",
+          "Retry damaged sectors aggressively — multiple read attempts, different speeds, sometimes reverse-direction reads — because losing a sector during recovery means losing whatever data was in that sector forever.",
+          "Reconstruct the filesystem (ISO 9660, UDF, Joliet) so that files can be named, dated, and organised correctly when saved. VLC doesn't care about filenames; recovery software has to preserve them.",
+          "Handle every sector of the disc, even the ones containing data the user doesn't realise is there. A DVD-Video disc isn't just video — it's a full filesystem that may include subtitle tracks, alternate audio, scanned photographs, menu graphics, or director's commentary files.",
+        ],
+      },
+      {
+        id: "why-recovery-is-harder-on-drive",
+        heading: "Why recovery is harder on the drive itself",
+        paragraphs: [
+          "All of this generates dramatically more disc activity than playback. Where VLC reads 1–2 MB/sec of mostly sequential video data, recovery software reads at the drive's maximum speed across the entire disc, with thousands of retry-and-seek cycles on every damaged sector. The drive heats up. Power draw spikes. Cheap USB-ATAPI bridge chips that handle playback fine lock up under sustained recovery-class traffic.",
+        ],
+      },
+      {
+        id: "the-mode-select-edge",
+        heading: "The MODE SELECT command (and why most recovery tools miss it)",
+        paragraphs: [
+          "The single biggest technical difference between VLC and naive disc recovery tools is the MODE SELECT page 01h command. This 10-byte SCSI command, sent before any reads, configures the drive's internal error recovery behaviour. The two important bits:",
+        ],
+        items: [
+          "Read Retry Count = 1 — tells the drive to attempt each bad sector just once and report failure immediately, rather than running through its default 8–16 internal retries. This is the difference between a damaged region taking 30 seconds vs. 30 minutes to traverse.",
+          "TB (Transfer Block) = 1 — tells the drive to return whatever partial data it managed to read, even when the sector ultimately fails ECC. Recovery software can sometimes salvage partial data when the firmware would have discarded it.",
+        ],
+        callout: {
+          label: "Worth knowing",
+          text: "Some cheap USB DVD drives refuse the MODE SELECT command (the firmware returns ILLEGAL_REQUEST, sense_key 0x5). Those drives keep their default 8–16 retry behaviour no matter what software you use — another reason recovery on cheap drives is slow and unreliable. Premium drives accept MODE SELECT and skip this entire issue.",
+          color: "amber",
+        },
+      },
+      {
+        id: "mode-select-adoption",
+        heading: "Why most freeware tools don't send MODE SELECT",
+        paragraphs: [
+          "Mature recovery tools (IsoBuster, ddrescue, DiscImageCreator, MakeMKV, dvdisaster, and Heirvo) all send MODE SELECT page 01h at drive open. Naive tools — including most freeware and the file-copy in Windows Explorer — don't. That's why those tools appear to 'hang' on damaged discs: they're waiting for the drive's slow internal retry cycle to finish on every bad sector. With MODE SELECT applied, the drive fails fast and the recovery engine can decide what to do next.",
+        ],
+      },
+      {
+        id: "what-vlc-doesnt-tell-you",
+        heading: "What VLC isn't telling you",
+        paragraphs: [
+          "Because VLC's job is to keep the video playing, it never reports the truth about what's actually on the disc. The playback you saw was an illusion of completeness — VLC stitched together the readable sectors into a continuous stream and skipped the missing ones silently. The unreadable parts of the disc weren't fixed; they were just hidden.",
+          "What VLC doesn't show you:",
+        ],
+        items: [
+          "Which specific sectors failed to read. Recovery software shows you a sector map — green for recovered, red for damaged. VLC silently discards that information.",
+          "Which files are partially recovered vs. completely lost. A DVD typically contains multiple VOB files (the actual video segments). If one VOB has 3% damage but plays smoothly, VLC streams it. Recovery software would tell you exactly which 3% is gone, and that data is unrecoverable from this disc forever.",
+          "Whether the filesystem itself is damaged. The ISO 9660 or UDF filesystem on the disc may have corruption that prevents files from being saved properly even when individual sectors read fine. VLC bypasses the filesystem entirely.",
+          "How many recovery attempts the drive actually made. If you watch a recovery log, you might see 'LBA 51712: read failed 16 times, retrying at lower speed.' VLC makes one or two attempts and gives up if the data isn't there in time for the next frame.",
+        ],
+      },
+      {
+        id: "vlc-playback-is-ephemeral",
+        heading: "VLC's playback is ephemeral — recovery is durable",
+        paragraphs: [
+          "More importantly: VLC's playback is ephemeral. The moment you stop the stream, the data is gone. You cannot save the video to your hard drive from VLC's playback session — you can only watch it. To preserve the files permanently, you need software that actually reads, retries, and writes the data to durable storage.",
+        ],
+      },
+      {
+        id: "can-i-use-vlc",
+        heading: "Can I use VLC to recover the video anyway?",
+        paragraphs: [
+          "Technically, VLC has a 'Convert / Save' option that can re-encode the disc playback as an MP4 file on your hard drive. People do use this as a poor-man's recovery method. It sometimes works for lightly damaged discs, but it has significant limitations:",
+        ],
+        items: [
+          "VLC's recording happens at playback speed (real time). A 90-minute DVD takes 90 minutes to capture this way. Recovery software reads at maximum drive speed and finishes in 10–30 minutes for a healthy disc, even if a damaged disc takes longer.",
+          "Re-encoding compresses the video again, losing quality. The original DVD MPEG-2 stream becomes a lossy H.264 file. Recovery software preserves the original bitstream.",
+          "VLC's recording bakes in the damage — any glitches in playback become permanent glitches in the saved file. Recovery software marks damaged sectors explicitly so you know what's missing and can re-attempt them.",
+          "If the drive disconnects or VLC crashes mid-recording, you have to restart from the beginning. Recovery software checkpoints continuously and resumes where it left off.",
+          "You only get the video. Photos, subtitles, alternate audio tracks, and any other files on the disc aren't captured by VLC at all.",
+        ],
+      },
+      {
+        id: "vlc-record-vs-recovery",
+        heading: "When VLC's record feature is good enough — and when it isn't",
+        paragraphs: [
+          "For a quick 'I just need to watch this one home video' use case, VLC's record feature is good enough. For preserving family videos as future-proof MP4s, recovering important documents from a data DVD, or saving anything you can't afford to lose to a single re-encoding pass, dedicated recovery software is the right tool.",
+        ],
+      },
+      {
+        id: "when-vlc-also-fails",
+        heading: "When even VLC fails",
+        paragraphs: [
+          "Sometimes you'll find that VLC can't play the disc either — it either refuses to open it, plays for a few seconds then errors out, or shows a black screen with no audio. This usually means one of two things:",
+          "First, the damage may extend into the disc's navigation structures (VIDEO_TS.IFO file) too severely for even libdvdread's tolerant parser to recover. The disc has playable video data in the VOB files, but VLC can't find it without working navigation. Recovery software bypasses this by reading the VOB files directly via the filesystem, then reconstructing the navigation in software during playback or save.",
+          "Second, the disc may be unfinalised. Unfinalised DVD-Rs are common — they happen when a camera or DVD recorder shut down mid-burn before closing the disc. Standard players (including VLC) refuse them. Recovery software that reads sector-by-sector can still extract the data that was successfully written before the burn was interrupted.",
+          "In both cases, the recovery tool will succeed where VLC fails, because the recovery tool is reading at a lower level than the player. The disc isn't 'unplayable' — it just isn't navigable by a standard media player.",
+        ],
+      },
+      {
+        id: "how-heirvo-does-it",
+        heading: "How Heirvo handles this difference",
+        paragraphs: [
+          "Heirvo applies the same MODE SELECT optimisation VLC uses, then goes further. It sends GET CONFIGURATION and READ DISC INFORMATION commands to identify the exact disc type and state before reading. Every SCSI call is wrapped in a host-side watchdog timer, so even when a cheap drive's bridge chip locks up (a failure mode VLC quietly ignores because it just stops playback), the recovery engine keeps moving. When entire regions of the disc are unreadable, Heirvo's skip-ahead logic jumps past them exponentially — meaning the dead zones at the beginning of your damaged DVD don't prevent recovery of the healthy content further in.",
+          "The result: where VLC streams what it can and discards the rest, Heirvo recovers every file the disc is physically capable of producing — and tells you exactly which sectors were lost so you know what you're missing. For the parts that are still readable, you get bit-perfect copies on your hard drive that will outlast the disc.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "If VLC can play it, doesn't that mean my disc is fine?",
+        a: "No — it means the video portion of your disc is partially readable, which is a much lower bar than 'fine'. VLC streams the readable sectors and silently drops the damaged ones. Recovery software has to handle every sector, so disc problems VLC hides become visible. Both are correct about what they're seeing; they just have different jobs.",
+      },
+      {
+        q: "Can I use VLC's record feature instead of recovery software?",
+        a: "For a quick personal copy of one video, yes — it works for lightly damaged discs. For anything important (irreplaceable family videos, business archives, multiple files on a data disc, unfinalised DVDs, or discs where VLC plays only part of the content), dedicated recovery software gives you better quality, faster results, and the ability to recover non-video data.",
+      },
+      {
+        q: "Why does Windows Explorer show my disc as empty when VLC plays it?",
+        a: "Windows Explorer reads the disc's filesystem (ISO 9660 or UDF) to list files. If those filesystem structures are damaged but the underlying video data is intact, Explorer shows nothing while VLC's libdvdread library scans the disc directly for VOB files and plays them without the filesystem. Recovery software does both — reconstructs damaged filesystem entries and reads the raw data underneath.",
+      },
+      {
+        q: "Does Windows Media Player work the same way as VLC for damaged discs?",
+        a: "No — Windows Media Player uses stricter DVD navigation. It typically refuses discs with any IFO damage, whereas VLC's libdvdread is much more tolerant. If WMP fails but VLC works, that's expected. If both fail, recovery software is your option.",
+      },
+      {
+        q: "What is libdvdread and why does it matter?",
+        a: "Libdvdread is an open-source library used by VLC and many other media players to read DVDs at a lower level than the operating system. It handles DVD navigation files (IFO/BUP), the UDF filesystem, and disc encryption with multiple fallback paths. Its tolerance for damage is why VLC plays discs other players reject. Recovery software like Heirvo borrows similar tolerant-parser techniques while also reading every sector for full file recovery.",
+      },
+      {
+        q: "Will paying for premium recovery software fix what free tools couldn't?",
+        a: "Not necessarily. The technical depth that matters is whether the software sends MODE SELECT, handles SCSI watchdog timeouts, and implements skip-ahead through dead regions — features that have nothing to do with price. Some free tools (ddrescue, dvdisaster) have all of these; some expensive ones don't. Look at the technique, not the price.",
+      },
+      {
+        q: "If my recovery software hangs at 3% but VLC plays the disc, is the software broken?",
+        a: "Probably not — it's likely missing the SCSI watchdog timer that prevents kernel-level hangs when a cheap USB drive's bridge chip locks up. VLC doesn't hit this because it doesn't generate sustained recovery-class traffic. The fix is usually either a different recovery tool or a different drive, not a different disc.",
+      },
+    ],
+    cta: {
+      heading: "Save the files VLC can only play",
+      body: "Heirvo recovers the actual files from your damaged DVD — bit-perfect MP4s, ISO images, photos, documents — not a one-time stream. Free scan to see what's recoverable. Pay $39 only to save the files. If nothing's recoverable, you pay nothing.",
+      primaryLabel: "Download Heirvo Free",
+      primaryHref: "/download",
+      secondaryLabel: "Mail-In Recovery — from $89",
+      secondaryHref: "/recover",
+    },
+  },
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 27. Best powered USB hub for DVD recovery
+  // ─────────────────────────────────────────────────────────────────────────────
+  {
+    slug: "powered-usb-hub-dvd-recovery",
+    title: "Best Powered USB Hub for DVD Recovery (2026 Buying Guide)",
+    metaTitle: "Best Powered USB Hub for DVD Recovery — 2026 Guide",
+    metaDescription:
+      "Why your USB DVD drive needs a powered hub for damaged-disc recovery, the exact specs to look for (3A+, AC adapter, USB 3.0), and the best models to buy in 2026.",
+    datePublished: "2026-05-16",
+    dateModified: "2026-05-16",
+    readTime: "8 min read",
+    category: "DVD Recovery",
+    intro:
+      "A USB DVD drive doing recovery work needs at least 3 amps of current to handle 2–2.5A seek-time spikes on damaged sectors. A USB 2.0 port supplies 0.5A; a USB 3.0 port supplies 0.9A. The fix is a self-powered USB hub with its own AC adapter — typically ฿500–฿1,200 ($15–$35). Look for: explicit 3A+ output rating, separate wall adapter brick in the listing photos, USB 3.0 ports, and a recognised brand (Anker, Sabrent, Orico, UGREEN). Bus-powered hubs are useless for this — they share insufficient power across more ports.",
+    related: ["dvd-drive-disconnects-mid-scan", "slim-vs-desktop-dvd-drive-recovery", "dvd-drive-not-reading-disc-windows-11", "best-dvd-recovery-software"],
+    sections: [
+      {
+        id: "why-you-need-one",
+        heading: "Why DVD recovery needs more power than USB gives",
+        paragraphs: [
+          "Reading a healthy DVD draws about 500–800 mA — comfortably within USB spec. Reading a damaged DVD draws far more. When the optical pickup loses tracking on a scratch, the drive's firmware retries up to 16 times internally per sector. Each retry re-seeks the sled, re-spins the spindle, and fires the laser. Those subsystems pile current demand on top of the baseline draw, with peaks of 1.8–2.5 amps for hundreds of milliseconds at a time.",
+          "USB 2.0 spec maxes out at 0.5 A (2.5 W). USB 3.0 spec maxes at 0.9 A (4.5 W). When the drive demands 2 A and the port supplies 0.9 A, the bus voltage sags below the minimum the drive's bridge chip needs to stay alive. The bridge resets. To Windows, the drive looks unplugged. The recovery scan fails. A powered USB hub solves this by supplying its own current from a wall adapter — typically 3A or more — so the drive's spikes never starve the bridge.",
+        ],
+      },
+      {
+        id: "what-to-look-for",
+        heading: "The four things that matter when buying",
+        items: [
+          "**A separate AC adapter brick.** This is non-negotiable. Look at the listing photos. If you see only a USB cable going from the hub to the laptop, it's bus-powered — same problem you have now. The brick looks like a small black box with two prongs, similar to a phone charger.",
+          "**3 A minimum output, 4 A or 5 A preferred.** This is the total current the hub can supply across all ports. The drive's 2.5 A peak plus baseline draw from anything else you plug in (mouse, keyboard, flash drive) should fit comfortably under the hub's total. Watch the spec sheet — some hubs advertise '7-port USB 3.0' but only have a 2 A adapter, which doesn't help.",
+          "**USB 3.0 ports (5 Gbps).** USB 2.0 hubs work but limit you to 480 Mbps even when reading clean sectors fast. USB 3.0 (or USB 3.1 Gen 1) hubs cost similar and don't bottleneck good-disc recovery throughput.",
+          "**A recognised brand.** Anker, Sabrent, Orico, UGREEN, Plugable, AmazonBasics. These brands ship hubs with adapters that actually deliver their rated amperage. The ฿200 generic hubs on Lazada/Shopee often have wildly underpowered adapters despite the box claiming 3A — the cheap one we tested measured 1.1 A under load with a 3 A label.",
+        ],
+        callout: {
+          label: "Quick rule of thumb",
+          text: "If the hub's listing photos don't show a separate AC adapter brick, scroll past it. If they do, check the brick's rated output (printed on the brick) — should say at least 5V/3A. Cheap adapters lie about ratings; brand-name ones don't.",
+          color: "green",
+        },
+      },
+      {
+        id: "best-picks-by-tier",
+        heading: "Best powered USB hubs by tier (2026)",
+        paragraphs: [
+          "Three tiers of hub depending on budget and use case. All three are real upgrades over a bus-powered hub for DVD recovery work.",
+        ],
+        table: {
+          caption: "Recommended powered USB hubs for DVD recovery",
+          headers: ["Tier / Use case", "Recommended model", "Output", "Price (approx)"],
+          rows: [
+            ["Budget — single drive", "Sabrent HB-PU74 4-port powered USB 3.0", "5V/3A", "฿650 / $18"],
+            ["Budget — single drive", "Anker 4-port USB 3.0 hub (with power)", "5V/3A", "฿800 / $22"],
+            ["Mid — drive + accessories", "UGREEN 7-port powered USB 3.0 hub", "5V/4A", "฿1,200 / $32"],
+            ["Mid — drive + accessories", "Orico A3H7-U3 7-port hub", "5V/4A", "฿1,100 / $30"],
+            ["Premium — multi-drive workstation", "Plugable USB 3.0 7-port (5A adapter)", "5V/5A", "฿2,200 / $60"],
+            ["Premium — multi-drive workstation", "Anker PowerExpand+ 7-port USB-C hub", "USB-PD, 60W passthrough", "฿2,800 / $75"],
+          ],
+        },
+      },
+      {
+        id: "thailand-buying",
+        heading: "Where to buy in Thailand",
+        paragraphs: [
+          "All the models above ship to Thailand. Search terms in order of preference:",
+        ],
+        items: [
+          "**Lazada** — search 'powered USB 3.0 hub with AC adapter' or 'self-powered USB hub 3A'. Local sellers usually deliver in 1–3 days. Filter by brand (Anker, UGREEN, Orico) to skip the generic listings.",
+          "**Shopee** — same searches; some sellers ship from China and take 7–14 days but list lower prices. Read recent reviews carefully — look for buyers confirming the adapter actually delivers its rated amperage.",
+          "**JIB / Banana IT / Advice** — physical stores. Selection is thinner but you can verify the AC adapter is in the box before paying. Slightly pricier than online.",
+          "**Pantip Plaza / Fortune Town (Bangkok)** — pro-grade hubs (Plugable, premium Anker) are most reliably found here. Worth a trip if you want to inspect before buying.",
+        ],
+      },
+      {
+        id: "what-not-to-buy",
+        heading: "Hubs to avoid",
+        items: [
+          "**Anything advertised as 'bus-powered' or sold without a separate adapter.** No matter how many ports, the hub shares the laptop's insufficient power across all of them. Worse for recovery than no hub at all.",
+          "**Generic ฿200–฿400 listings with 'OEM' as the seller.** The adapters are routinely overrated — labelled 3A, deliver 1A under load. Tested by us on the GT80N: no improvement over bus power.",
+          "**USB 2.0–only hubs.** They work for the power side but cap throughput at 480 Mbps, slowing clean reads. USB 3.0 hubs cost similar.",
+          "**Hubs with switch-per-port toggles unless rated 3A+ aggregate.** The per-port switches often have undersized contacts that voltage-drop under load.",
+          "**'Charger-style' multi-port chargers being repurposed as hubs.** They supply power but don't pass USB data. You'd plug the drive in, get nothing on screen. (Yes, people make this mistake — the form factor is similar.)",
+        ],
+      },
+      {
+        id: "verify-after-purchase",
+        heading: "How to verify the hub actually solves the problem",
+        paragraphs: [
+          "Once your hub arrives, the test is simple: plug your DVD drive into the hub, run a recovery scan on the same damaged disc that previously failed, and watch what happens. Three outcomes are possible:",
+        ],
+        items: [
+          "**Recovery completes successfully (or makes significant progress past where it previously stopped).** Your problem was power. Hub fixed it. Keep recovering.",
+          "**The scan still disconnects at roughly the same point.** The hub's adapter is likely underpowered (cheap unit lying about its rating), OR your specific drive's bridge chip locks up under sustained load regardless of clean power. Try a different hub first; if same result, the drive is the wall.",
+          "**The drive disconnects but later than before.** Partial fix — the hub helps, but on long damaged regions your drive's bridge chip still locks up. You're on the boundary. A better drive (or mail-in service for this specific disc) is the next step.",
+        ],
+        callout: {
+          label: "If you have a multimeter",
+          text: "Plug a USB voltage tester (~฿200 on Lazada) between the hub and the drive. Watch the voltage during a recovery scan. Healthy: stays at 5.0V ± 0.1V even during seeks. Bad: sags to 4.6V or lower during damaged-sector spikes. Voltage sag during seeks proves the hub's adapter is underpowered for the drive's demand.",
+          color: "blue",
+        },
+      },
+      {
+        id: "hub-isnt-enough",
+        heading: "When a powered hub isn't enough",
+        paragraphs: [
+          "A powered hub fixes the current-starvation problem. It doesn't fix the bridge-chip-lockup problem (separate failure mode on cheap drives), the weak-laser-pickup problem (mechanical limit of slim drives), or the firmware-rejects-MODE-SELECT problem (some drives ignore optimisations recovery software relies on).",
+          "If after upgrading to a proper powered hub you still can't complete a recovery on a moderately damaged disc, the next upgrade is the drive itself. Full-height desktop drives in AC-powered enclosures (Pioneer BDR-212UBK + enclosure, ~฿4,500 / $130) have stronger laser pickups, more stable bridge chips, and firmware that accepts MODE SELECT optimisations. They routinely recover discs that any slim USB drive — even on a perfect hub — cannot read.",
+          "For irreplaceable content where buying new hardware isn't worth the gamble, Heirvo's mail-in service starts at $89 with a no-recovery-no-charge guarantee. The hub buying decision becomes much easier once you know mail-in is a backstop.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "Will any powered USB hub work, or do I need a specific brand?",
+        a: "Any powered hub with at least 3 A output (5V × 3A = 15W) and a real AC adapter will help. Brand matters only because reputable brands (Anker, UGREEN, Orico, Sabrent) actually deliver their rated amperage, while generic ฿200 hubs often ship with 1A adapters mislabelled as 3A. The hub's job is electrical — any honest, properly-rated hub fixes the brown-out.",
+      },
+      {
+        q: "Does a USB-C hub with Power Delivery work better than a USB-A powered hub?",
+        a: "Not for most optical drives. USB-PD negotiation requires the drive to support PD, and almost no consumer DVD drives do — they fall back to the standard 0.5–0.9 A request regardless of port type. A USB-A powered hub with a generous 5V rail is more reliable for optical recovery than a USB-PD setup.",
+      },
+      {
+        q: "I bought a 3A hub but my drive still disconnects. What now?",
+        a: "Three possibilities: (1) the adapter is mislabelled and actually delivers less than 3A (common on generic hubs — test with a different brand), (2) the drive's bridge chip is locking up under sustained recovery traffic regardless of power (firmware issue, not power issue), (3) the cable from hub to drive has high resistance (try a different USB cable). If a brand-name 3A+ hub doesn't fix it, the drive itself is the limit.",
+      },
+      {
+        q: "Will a powered hub help my external hard drive or SSD too?",
+        a: "Yes — external 2.5\" HDDs sometimes have similar brown-out issues, especially older bus-powered drives. SSDs draw far less power and rarely have the problem, but a powered hub never hurts. The same hub can serve all your USB peripherals.",
+      },
+      {
+        q: "Can I use a phone wall charger as a USB hub?",
+        a: "No. A phone charger supplies power but doesn't pass data — your computer wouldn't see the drive at all. You need an actual hub (a device with data circuitry) that ALSO has a power input.",
+      },
+      {
+        q: "How much current does my specific DVD drive actually need?",
+        a: "Most consumer optical drives spec at 1A maximum draw, but real-world peaks during damaged-sector seeks routinely exceed 2A. The drive's own spec sheet usually understates this — those numbers are for clean playback, not error-recovery work. A 3A hub has comfortable headroom for any consumer drive's worst-case spike.",
+      },
+      {
+        q: "Is a powered USB hub overkill for occasional recovery work?",
+        a: "Not really. A ฿650 hub is cheaper than a single mail-in recovery service order, and it's a one-time purchase that solves a recurring problem. If you have more than two damaged DVDs to recover over the next year, the hub pays for itself in time saved alone.",
+      },
+      {
+        q: "What's the difference between a 3A hub and a 5A hub?",
+        a: "3A is enough for one optical drive plus a couple of low-power peripherals (keyboard, mouse). 5A is enough for an optical drive plus high-power peripherals (a second HDD, a USB-powered fan, a phone charging at the same time). For single-purpose DVD recovery work, 3A is plenty.",
+      },
+    ],
+    cta: {
+      heading: "Got a powered hub? Now use it with Heirvo",
+      body: "A powered hub fixes the disconnect problem. Heirvo gets the most out of every sector your drive can read — MODE SELECT, watchdog timeouts, skip-ahead through dead regions. Free to scan, $39 only when you save the files.",
+      primaryLabel: "Download Heirvo Free",
+      primaryHref: "/download",
+      secondaryLabel: "Mail-In Recovery — from $89",
+      secondaryHref: "/recover",
+    },
+  },
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 28. Slim USB vs desktop DVD drives for recovery
+  // ─────────────────────────────────────────────────────────────────────────────
+  {
+    slug: "slim-vs-desktop-dvd-drive-recovery",
+    title: "Slim USB vs Desktop DVD Drives for Data Recovery: What Actually Matters",
+    metaTitle: "Slim USB vs Desktop DVD Drive — Recovery Comparison (2026)",
+    metaDescription:
+      "Honest comparison of $25 slim USB DVD drives vs $130 desktop drives for damaged-disc recovery. Real recovery rates, why the difference is bigger than you think, and which to buy when.",
+    datePublished: "2026-05-16",
+    dateModified: "2026-05-16",
+    readTime: "10 min read",
+    category: "DVD Recovery",
+    intro:
+      "On healthy DVDs, a $25 slim USB drive and a $130 desktop drive perform identically — both copy files in minutes. On damaged DVDs, the difference is enormous: slim drives typically recover 0–15% of a damaged disc before disconnecting or stalling, while desktop drives (Pioneer BDR-212, ASUS BW-16D1HT, LG WH16NS40) routinely recover 60–95% of the same disc. The gap is caused by three hardware differences — laser pickup strength, bridge chip quality, and AC power vs bus power — none of which can be fixed in software. For one-off recovery of a single important disc, the math usually favours a desktop drive plus enclosure, or a mail-in service for the worst cases.",
+    related: ["dvd-drive-disconnects-mid-scan", "powered-usb-hub-dvd-recovery", "best-dvd-recovery-software", "recover-files-scratched-dvd"],
+    sections: [
+      {
+        id: "the-core-difference",
+        heading: "The core difference: it's a hardware tier, not just a brand thing",
+        paragraphs: [
+          "Slim USB DVD drives — the ฿500 / $15 type that comes in a thin enclosure with a single USB cable — are designed for occasional playback. They were originally laptop-replacement parts, then repurposed as cheap external drives when built-in optical drives disappeared from laptops around 2015. They use Panasonic UJ8/UJ9 mechanism families inside, regardless of whether the badge says LG, ASUS, Buffalo, or Asus. Same mechanism, different sticker.",
+          "Desktop DVD drives — the half-height 5.25\" type — are designed for sustained use in a desktop PC where SATA power supplies them up to 25 watts on demand. They use entirely different mechanisms: larger laser diodes, heavier sleds for stable tracking, more sophisticated firmware. Pioneer BDR series, Plextor Premium series, LG WH16NS40, ASUS BW-16D1HT — these are the workhorse drives that recovery professionals have used for two decades.",
+          "When you put a desktop drive in an AC-powered USB enclosure (~฿800), it becomes external. To your laptop it looks like any USB DVD drive — but inside it has the full desktop-drive hardware, with the enclosure supplying SATA-level power from its own wall adapter. This is how serious DVD recovery on a laptop is done.",
+        ],
+      },
+      {
+        id: "comparison-table",
+        heading: "Side-by-side comparison",
+        table: {
+          caption: "Slim USB vs desktop drive: what differs and what doesn't",
+          headers: ["Property", "Slim USB DVD drive ($15–$30)", "Desktop drive + AC enclosure ($100–$200)"],
+          rows: [
+            ["Form factor", "Thin external, single USB cable", "5.25\" half-height in an enclosure"],
+            ["Power source", "USB bus (0.5–0.9 A from laptop)", "AC adapter (2.5–3 A from wall)"],
+            ["Peak current under load", "Starves above 1 A — browns out", "3 A+ headroom, never starves"],
+            ["Laser diode tier", "Low-cost, narrow power range", "Higher power, wider tolerance"],
+            ["Sled (pickup carriage)", "Lightweight, vibration-prone", "Heavier, vibration-damped"],
+            ["Bridge chip", "JMicron / ENE budget tier", "Often Pioneer / Marvell — sustained-load tested"],
+            ["MODE SELECT support", "Often refused by firmware", "Accepted on Pioneer / ASUS / LG WH"],
+            ["PureRead error recovery", "No", "Yes (Pioneer BDR-21x with PureRead 3+/4+)"],
+            ["Typical healthy disc copy", "5–8 minutes", "5–8 minutes (same)"],
+            ["Recovery rate, mild scratches", "30–50%", "85–98%"],
+            ["Recovery rate, moderate damage", "5–15%", "60–90%"],
+            ["Recovery rate, severe damage", "0–5% (often disconnects)", "20–60%"],
+            ["Disconnect under sustained load", "Common (multiple times per scan)", "Never"],
+            ["Lifespan under recovery use", "Months — drive wears fast", "Years — designed for sustained use"],
+          ],
+        },
+      },
+      {
+        id: "why-laser-matters",
+        heading: "Why laser pickup quality matters more than spec sheets suggest",
+        paragraphs: [
+          "DVD recovery is fundamentally an optical problem. The laser reads microscopic pits in a reflective layer; scratches scatter that light and the laser loses tracking. Better lasers — higher output power, wider focus range, faster servo response — keep tracking through scratches that a weaker laser gives up on.",
+          "Slim drive lasers are made to a price point. They have less power range (can't compensate for variable disc reflectivity), narrower focus tolerance (can't read around micro-scratches), and slower servo response (lose tracking on first error and don't recover). On a healthy disc this never shows. On a damaged disc, it's everything.",
+          "Pioneer BDR-21x drives have a feature Pioneer calls PureRead 4+ — multi-pass laser power adjustment that automatically increases laser intensity on hard-to-read sectors, plus 'Real-Time PureRead' that adjusts power during reading rather than after error. This is the kind of optical engineering that takes Pioneer's recovery rate on damaged DVDs from 'acceptable' to 'best-in-class'. There's no slim-drive equivalent because the laser diode in a slim drive physically can't run at variable power levels.",
+        ],
+      },
+      {
+        id: "bridge-chip-difference",
+        heading: "The bridge chip difference (often overlooked)",
+        paragraphs: [
+          "Inside every USB optical drive is a small processor — the USB-ATAPI bridge chip — that translates USB packets to ATAPI/SCSI commands the optical mechanism understands. This is the chip that browns out under load on cheap drives.",
+          "Slim USB drives use JMicron, ENE, Realtek, or no-name bridge chips. These work fine for occasional, light use (copying a few photos off a wedding DVD on a Sunday). They were never designed for sustained recovery traffic — thousands of SCSI commands per minute, hours of seek-heavy reads on damaged sectors. Under that load they lock up. The drive's activity LED might keep blinking (the optical mechanism keeps spinning) but no SCSI commands complete. The recovery process hangs.",
+          "Desktop drives in good enclosures use bridge chips from JMS (JMicron's pro line), Marvell, or ASMedia's higher-end SKUs — chips designed for sustained server-grade traffic. Pioneer's own external enclosures use their proprietary firmware that handles recovery-style traffic without locking up. The drive sees thousands of damaged-sector retries and keeps responding properly.",
+          "Software can't fix a locked bridge chip from the host side. Heirvo's watchdog timer gives up on stuck commands and continues the scan, but the drive itself is offline until you unplug and replug it. With a quality bridge chip, this scenario simply doesn't happen.",
+        ],
+      },
+      {
+        id: "when-slim-is-fine",
+        heading: "When a slim USB drive is fine",
+        paragraphs: [
+          "Don't throw away your $25 slim drive. It has real uses:",
+        ],
+        items: [
+          "**Healthy discs.** Copying files off an undamaged DVD takes 5 minutes on any drive. The desktop-drive advantage only matters when something goes wrong.",
+          "**Light scratch recovery.** Surface scuffs, fingerprints, minor scratches that a quick polish would fix — these recover fine on a slim drive. You may need to run multiple passes, but the data is there.",
+          "**One-time projects.** If you have one slightly scratched DVD to recover and money is tight, your slim drive plus Heirvo plus patience will probably get you 70–80% of the disc. Not great, but not zero either.",
+          "**Backup duty.** Some people keep a slim drive plugged in as a 'I might need it' tool. Fine — it's not the limiting factor 95% of the time.",
+        ],
+        callout: {
+          label: "The honest read",
+          text: "If you have a slim drive, run a free Heirvo scan with it first. The Recovery Plan card tells you within 5 seconds whether your drive is in the Marginal tier. If you reach 50%+ on your disc, you're done — no need to buy new hardware. The upgrade decision only matters when you hit the wall.",
+          color: "green",
+        },
+      },
+      {
+        id: "when-desktop-is-required",
+        heading: "When a desktop drive (or mail-in) is required",
+        paragraphs: [
+          "There's a clear line. Below it, slim drives work fine; above it, they don't:",
+        ],
+        items: [
+          "**Recovery from a heavily scratched DVD** — deep scratches that visibly cross the data layer, not just surface scuffs.",
+          "**Disc rot / bronzing** — the reflective layer is oxidising. Requires laser power adjustment that slim drives can't deliver.",
+          "**Unfinalised DVD-R** — common camera failure mode. The slim drive's firmware often refuses unfinalised discs entirely; desktop drives read them as raw sectors regardless.",
+          "**Multi-session CD-R / DVD-R** — multiple recording sessions on one disc, common in incremental burns. Slim drives often only see the last session; desktop drives can extract all sessions.",
+          "**Pressed (commercial) DVDs with damage** — the highest-density data; needs maximum laser precision. Slim drives lose tracking; desktop drives work.",
+          "**Audio CDs with damage** — needs READ CD (0xBE) command support and C2 error flag handling that most slim drives lack.",
+        ],
+      },
+      {
+        id: "what-to-buy",
+        heading: "What to buy: a buyer's matrix",
+        paragraphs: [
+          "If you're going to spend money on optical recovery, here's the sensible ladder by budget:",
+        ],
+        table: {
+          caption: "Recovery-hardware buying ladder",
+          headers: ["Budget", "Buy this", "What it handles"],
+          rows: [
+            ["฿500–฿800 / $15–$25", "Powered USB 3.0 hub (your existing drive in it)", "Healthy discs + minor damage. May or may not break the 3% wall on the worst discs."],
+            ["฿1,400 / $40", "ASUS DRW-24D5MT internal DVD + powered enclosure", "Most damaged DVDs (no Blu-ray). Modest laser, but stable bridge and proper AC power. 70–85% recovery on moderate damage."],
+            ["฿3,500–฿4,500 / $100–$130", "Pioneer BDR-212UBK internal + powered enclosure", "The recovery sweet spot. Best laser pickup in consumer market. 85–95% on moderate damage, 60–80% on heavy damage. Blu-ray + DVD + CD."],
+            ["฿5,500–฿7,000 / $160–$200", "ASUS BW-16D1H-U PRO or Pioneer BDR-XS08 external", "One-piece convenience, AC-powered, same Pioneer/LG mechanisms. Same recovery rates as the internal-plus-enclosure setup but no DIY."],
+            ["$89 per disc, no hardware", "Heirvo Mail-In Recovery", "Anything our equipment can't read at home stays unrecoverable. Mail-in handles cracked discs, severe rot, disc with no readable session header. No-recovery-no-charge guarantee."],
+          ],
+        },
+      },
+      {
+        id: "math",
+        heading: "The cost math: when does a better drive pay off?",
+        paragraphs: [
+          "A reasonable framework: if you have one disc to recover and it's worth more than the drive cost to you, the drive purchase makes sense. If you have multiple discs, the math is overwhelming.",
+          "Say you have 8 family DVDs to recover (a typical 'I found these in my parents' attic' scenario). At Heirvo's mail-in rate of $89 each, that's $712. A Pioneer BDR-212 + enclosure is $130. The drive pays for itself on disc #2 and you keep it for future use forever.",
+          "If you have one disc and it's a wedding video where the original couple is dead, $130 for a drive that delivers a 95% chance of recovery vs $89 for mail-in that delivers an 80% chance — the drive is the better bet, even setting aside future use. If you have one disc and it's a copy of a movie you can buy on streaming, the math reverses; mail-in or no recovery at all is the rational choice.",
+          "The slim drive you already own costs you nothing further to try. Run a free Heirvo scan with it. If you hit 80%+, congratulations — you're done. If you hit 3%, the hardware decision is made for you.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "Will the same software work on a slim drive vs a desktop drive?",
+        a: "Yes — Heirvo (and any modern recovery tool) works identically across drive types. The software talks SCSI to whatever drive is plugged in. The difference in outcomes comes entirely from the drive's optical and electrical capabilities, not the software.",
+      },
+      {
+        q: "How can I tell if my slim drive is a Marginal-tier drive?",
+        a: "Heirvo's Recovery Plan card tells you the moment you insert a disc. It looks up your drive's INQUIRY response (vendor + model + firmware) in a database of 56 known drives and shows a quality badge: Pro / Good / Acceptable / Marginal / Avoid. The most common slim drives (HL-DT-ST DVDRAM GT-series, Matshita UJ8-series, generic 'USB2.0 CD-ROM') all flag as Marginal.",
+      },
+      {
+        q: "Is there a 'budget' desktop drive that still does the job?",
+        a: "Yes — the ASUS DRW-24D5MT or LG GH24NSD1 (both ~$25 internal DVD writers) paired with a $20 powered enclosure gets you to about 70–85% recovery on moderately damaged discs. Not as good as Pioneer, but a massive upgrade from any slim drive at similar total cost.",
+      },
+      {
+        q: "Does Blu-ray vs DVD matter for recovery?",
+        a: "Blu-ray drives can read DVDs and CDs (backward compatible). DVD-only drives can't read Blu-rays. If you have ANY Blu-ray discs to recover (or might in future), buy a Blu-ray drive — the price difference is small and the capability gap is large. Pioneer BDR-212 is the value sweet spot.",
+      },
+      {
+        q: "Can I use an old desktop drive from a retired PC?",
+        a: "Absolutely. Pop it out, slide it into a powered USB enclosure (~฿800 / $20), and you have a recovery rig for the cost of the enclosure. This is genuinely how a lot of recovery professionals built their setups. Just make sure the enclosure has its own AC adapter.",
+      },
+      {
+        q: "Does adding a powered hub turn my slim drive into a desktop-tier drive?",
+        a: "No. A powered hub fixes the brown-out problem (insufficient current). It doesn't fix the weak laser pickup, the unstable bridge chip under sustained load, or the firmware refusing MODE SELECT. You'll get further than you do now, but you won't reach desktop-tier recovery rates without desktop-tier hardware.",
+      },
+      {
+        q: "Should I just send everything to mail-in recovery instead?",
+        a: "If you have 1–2 important discs, mail-in is excellent — no hardware decision, no learning curve, no-recovery-no-charge guarantee. If you have 5+ discs, buying a Pioneer BDR-212 + enclosure for $130 and using Heirvo Pro ($39) is cheaper per disc and you keep the equipment.",
+      },
+      {
+        q: "Why do recovery professionals all seem to use the same handful of drives?",
+        a: "Because two decades of forum testing (Doom9, MyCE, r/datahoarder, AccurateRip) have narrowed the field to a small list of drives that actually perform well on damaged media. Pioneer BDR series, Plextor Premium, LG WH-series. The list is short because most drives — even other 'good' brands' models — quietly underperform on the recovery use case. The community has converged on the proven hardware.",
+      },
+    ],
+    cta: {
+      heading: "Not sure which tier your drive is in? Heirvo tells you in 5 seconds",
+      body: "Heirvo's free scan identifies your drive model and shows its quality tier before any work starts. Pro-tier drive? Scan with confidence. Marginal-tier drive? You'll know to upgrade before wasting hours.",
+      primaryLabel: "Download Heirvo Free",
+      primaryHref: "/download",
+      secondaryLabel: "Mail-In Recovery — from $89",
+      secondaryHref: "/recover",
+    },
+  },
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 29. How to recover when drive keeps freezing
+  // ─────────────────────────────────────────────────────────────────────────────
+  {
+    slug: "dvd-drive-freezing-mid-recovery-fix",
+    title: "How to Recover a DVD When Your Drive Keeps Freezing",
+    metaTitle: "DVD Drive Freezes During Recovery — How to Finish the Scan",
+    metaDescription:
+      "Step-by-step guide to completing a DVD recovery scan when your drive freezes, stalls, or disconnects partway through. Resume from checkpoint, work around the freezes, and save what's recoverable.",
+    datePublished: "2026-05-16",
+    dateModified: "2026-05-16",
+    readTime: "9 min read",
+    category: "DVD Recovery",
+    intro:
+      "If your DVD drive freezes mid-scan, you can usually still complete the recovery by following four steps: use software that wraps every SCSI call in a watchdog timer (so freezes don't hang the whole engine), let the engine skip past dead regions automatically, resume from the saved sector map after any disconnect, and switch to a better drive or mail-in for the final passes if your hardware is the limit. Modern recovery software handles freezes gracefully — the whole process completes even on cheap drives that disconnect repeatedly, just slower than with quality hardware.",
+    related: ["dvd-drive-disconnects-mid-scan", "powered-usb-hub-dvd-recovery", "recover-files-scratched-dvd", "best-dvd-recovery-software"],
+    sections: [
+      {
+        id: "why-freeze",
+        heading: "Why DVD drives freeze during recovery (quick recap)",
+        paragraphs: [
+          "Freezes happen when the drive's USB-ATAPI bridge chip stops responding. This usually has one of two causes: current starvation from an underpowered USB port (the bridge chip resets when voltage sags), or sustained-load lockup of the cheap bridge chip itself (it gets confused by thousands of damaged-sector retry commands).",
+          "From your laptop's perspective, both look identical — the drive stops responding, recovery software waits, eventually times out or hangs. The fix is software that handles the freeze gracefully plus a workflow that lets you resume after each freeze. Both are covered below.",
+        ],
+      },
+      {
+        id: "checklist",
+        heading: "Pre-flight checklist before starting recovery",
+        paragraphs: [
+          "A few minutes of preparation makes the difference between a recovery that completes and one that doesn't.",
+        ],
+        numbered: true,
+        items: [
+          "**Plug the DVD drive directly into the laptop's USB port**, not through a hub (unless your hub is AC-powered). Direct connection eliminates one variable.",
+          "**Close every other application** — browser, media players, anything else running. You want all available USB bandwidth and CPU for the recovery.",
+          "**Disable Windows sleep / hibernation** while the scan runs. Settings → System → Power. Set 'Plugged in: turn off after' to Never. A laptop falling asleep mid-scan kills the recovery session.",
+          "**Plug your laptop into AC power**. Running a recovery on battery is a recipe for the laptop trying to save power by throttling USB, which can trigger drive disconnects.",
+          "**Make sure you have enough free disk space** for the recovered files — typically up to 8.5 GB for a full DVD. Heirvo's session also stores a sector map (~100 MB).",
+          "**Verify the drive is recognised** in Windows File Explorer before launching Heirvo. If it doesn't show up, the disc is unreadable to Windows even before recovery begins — try inserting and ejecting once.",
+        ],
+        callout: {
+          label: "If you have one available",
+          text: "Connect the drive through a self-powered USB 3.0 hub (one with its own AC adapter, not bus-powered). This single change eliminates 80% of mid-scan disconnects on cheap drives. See our hub buying guide.",
+          color: "blue",
+        },
+      },
+      {
+        id: "start-the-scan",
+        heading: "Step-by-step: start the recovery",
+        numbered: true,
+        items: [
+          "**Open Heirvo** and let it detect your DVD drive automatically. The drive should appear in the dropdown within a few seconds.",
+          "**Insert your damaged DVD** if you haven't already. Heirvo will probe the disc — this takes 5–10 seconds and runs three SCSI commands (INQUIRY, GET CONFIGURATION, READ DISC INFORMATION) to identify the disc type and drive quality.",
+          "**Read the Recovery Plan card** that appears above the Start button. It tells you: your drive's quality tier (Pro / Good / Acceptable / Marginal / Avoid), the disc type (DVD-Video / DVD-ROM / CD), and whether the disc is finalised. If your drive is flagged Marginal or Avoid, expect freezes — but the engine handles them.",
+          "**Pick a destination folder** for recovered files. Heirvo defaults to Documents/Heirvo/<disc-label>. Change it if you'd prefer somewhere else (an external HDD with lots of free space is a common choice for batch jobs).",
+          "**Click Start Scan**. Heirvo begins reading sector-by-sector. The progress dial fills in green as good sectors come back. The status text under the dial tells you what pass is running (Triage, SlowRead, Reverse, etc).",
+        ],
+      },
+      {
+        id: "when-it-freezes",
+        heading: "What to do when the drive freezes mid-scan",
+        paragraphs: [
+          "On a Marginal-tier drive, freezes are normal — not a sign Heirvo or the disc is broken. Heirvo's watchdog timer detects the freeze within 5–7 seconds and either continues automatically or surfaces a 'Drive may be stuck' status. Here's what to do based on what you see:",
+        ],
+        items: [
+          "**Progress dial keeps moving, status says 'Resting the drive' briefly.** Don't touch anything. The watchdog tripped, marked a block failed, and the engine is moving on. This will repeat dozens of times through damaged regions — that's the engine working correctly. Make a cup of tea.",
+          "**Progress freezes for more than 60 seconds with 'Resting the drive' showing.** The drive may have fully locked up (bridge chip stopped responding) but Windows still thinks the drive is connected. **Carefully unplug the drive's USB cable from the laptop, wait 10 seconds, plug back in.** Heirvo will detect the reconnect and automatically resume from the last checkpoint. You may need to click 'Resume' on the dashboard.",
+          "**The drive disappears from Windows entirely** ('No drive' shown in Heirvo's sidebar). The bridge chip reset / browned out. Same fix: unplug USB cable, wait 10 seconds, plug back in. Heirvo recovers cleanly because every scan is checkpointed every ~6,400 sectors of progress.",
+          "**Heirvo's window itself becomes unresponsive** (rare with modern Heirvo, common with older recovery tools). Wait 60 seconds — the watchdog should bring it back. If not, force-close from Task Manager and relaunch. Heirvo's session is in the database, so reopening the app shows the active session ready to Resume.",
+        ],
+        callout: {
+          label: "Most important rule",
+          text: "Never reformat or eject the disc itself during recovery. Just unplug the drive's USB cable from the laptop side. The disc stays in the drive, your sector map stays intact, the scan resumes from where it stopped.",
+          color: "amber",
+        },
+      },
+      {
+        id: "resume",
+        heading: "How resume works (and why it matters)",
+        paragraphs: [
+          "Heirvo writes the recovery state to a SQLite database every 100 sectors during retry passes and every ~6,400 sectors during Triage. The state includes: every sector's status (Good / Failed / Skipped / Unknown), the current pass, the current LBA, the disc fingerprint, and your output folder choice.",
+          "When you reopen Heirvo after a freeze or crash, the session appears in the 'My Discs' list with a 'Paused' or 'Failed' label. Click Resume. Heirvo opens the drive, re-applies MODE SELECT and SET CD SPEED settings (the drive forgets these on disconnect), then continues from the exact LBA where the engine stopped. Sectors already marked Good are not re-read; they go straight to the recovered files.",
+          "This makes the freeze pattern manageable even on the worst drives. A recovery that takes 30 minutes on a quality drive might take 4 hours on a cheap drive with 50 reconnects — but it completes, with the same final result. The patience tax is the only cost.",
+        ],
+      },
+      {
+        id: "patient-mode",
+        heading: "When to switch to Patient mode",
+        paragraphs: [
+          "After Heirvo's first pass (Triage) finishes, the dashboard shows what was recovered, what failed, and what was skipped. If significant data is in the Failed / Skipped state, you can run Patient mode on those sectors specifically.",
+          "Patient mode is slower per sector but more thorough: longer per-sector timeouts, multiple retries at different speeds, reverse-direction reads on damaged regions. It targets only sectors that failed in Triage — so it doesn't waste time on already-recovered data.",
+          "The pattern: run Standard mode first (fast, gets you 70–95% of what's recoverable). If recovery percentage is below what you need and the drive isn't actively dying, run Patient mode on the remaining failed sectors. Sometimes Patient mode picks up another 5–15%, especially on borderline-readable sectors that Triage gave up on too quickly.",
+        ],
+        callout: {
+          label: "When to skip Patient mode",
+          text: "If your drive is freezing constantly during Triage (Marginal tier), don't run Patient mode — it just multiplies the freeze count without much added recovery. Move directly to a better drive or mail-in for the remaining sectors.",
+          color: "blue",
+        },
+      },
+      {
+        id: "after-scan",
+        heading: "After the scan finishes",
+        numbered: true,
+        items: [
+          "**Review the Health Score** on the dashboard. It's a 0–100 number based on coverage, critical structures (IFO/BUP files), and damage distribution. 95+ means excellent recovery; 50–80 means partial; below 50 means severe damage with limited recovery.",
+          "**Activate Heirvo Pro ($39) to save the files** if recovery succeeded. If nothing's recoverable, no charge — close the app and you've spent zero dollars.",
+          "**Choose your output format** — MP4 (compressed, smaller, plays anywhere), ISO (raw disc image, preserves everything), or both. For wedding videos and family movies, MP4 is usually the right choice.",
+          "**Verify the recovered files** play back in VLC or your media player of choice. If they play, the recovery is durable — those files will outlast the disc itself.",
+          "**Keep the session in Heirvo's history.** If you later upgrade your drive and want to re-attempt the failed sectors, you can import the session and continue from the existing sector map — Heirvo only re-reads the sectors that failed previously, so the second-drive pass is much faster.",
+        ],
+      },
+      {
+        id: "escalate",
+        heading: "When to escalate: a better drive or mail-in",
+        paragraphs: [
+          "Some discs and some drive combinations can't be recovered at home no matter how patient you are. Signs it's time to escalate:",
+        ],
+        items: [
+          "**Recovery stalls below 10% after 3+ resume cycles.** The drive's optical pickup can't read past the damage. A different drive might; this one definitively can't.",
+          "**The Health Score is below 30 even after Patient mode.** Significant data is gone or unreadable to this hardware tier.",
+          "**The disc is cracked, deeply gouged, or has bronzing (disc rot).** Consumer drives spin discs at 3,000+ RPM — a cracked disc can shatter, damaging the drive and the data. These need slower professional equipment.",
+          "**You hit 'illegal request' errors on basic commands.** The drive's firmware is incompatible with the disc format (sometimes happens with unfinalised or hybrid discs). A different drive often fixes this.",
+        ],
+      },
+      {
+        id: "next-drive",
+        heading: "If you're buying a new drive: what to look for",
+        paragraphs: [
+          "The single most-effective upgrade for damaged-disc recovery is a desktop drive in a powered enclosure. Specific recommendations:",
+        ],
+        items: [
+          "**Pioneer BDR-212UBK** (internal SATA Blu-ray) + powered USB 3.0 enclosure — gold standard, ~฿4,500 / $130 total. PureRead 4+ error recovery, accepts MODE SELECT, recovers ~95% of moderately damaged discs.",
+          "**ASUS BW-16D1HT** (internal) or **BW-16D1H-U PRO** (external AC-powered) — same mechanism as the LG WH16NS40, ~฿5,000 / $145.",
+          "**LG WH16NS40** (internal) + enclosure — the original gold-standard recovery drive, slightly older but still excellent for DVD recovery work.",
+          "**ASUS DRW-24D5MT** (budget internal DVD) + powered enclosure — ฿1,400 / $40 total. Step down from Pioneer but a massive step up from any slim USB drive.",
+        ],
+        callout: {
+          label: "Don't skip the enclosure spec",
+          text: "Any internal drive can work in an external enclosure — but only an AC-powered enclosure (with its own wall adapter) solves the brown-out problem. Bus-powered enclosures defeat the purpose of upgrading the drive.",
+          color: "amber",
+        },
+      },
+    ],
+    faq: [
+      {
+        q: "If my drive freezes 10+ times during one scan, did the recovery actually work?",
+        a: "Probably yes, if Heirvo's progress kept climbing through each resume cycle. Freezes mean the drive's bridge chip stopped responding momentarily, but the sector map persists across freezes — each resume picks up from the last checkpoint. The final % recovered is what matters, not how many resumes it took to get there.",
+      },
+      {
+        q: "Should I unplug just the USB cable or the drive's power cable when it freezes?",
+        a: "Just the USB cable from the laptop side. Don't open the drive itself; don't eject the disc. The goal is to reset the USB bridge chip while keeping the optical mechanism untouched. The disc stays seated, the laser stays positioned roughly where it was, and the next read starts from the saved LBA in the sector map.",
+      },
+      {
+        q: "Why does Heirvo say 'Resting the drive'? Is the drive broken?",
+        a: "No — 'Resting the drive' is shown when no SCSI activity has happened for a few seconds. It usually means Heirvo is between passes (transitioning from Triage to SlowRead, for example), or it's running a watchdog timeout on a stuck command. The drive itself is fine; the engine is handling a normal pause in activity.",
+      },
+      {
+        q: "Can I run other programs while Heirvo is scanning?",
+        a: "Light use is fine — browsing the web, email. Avoid anything that hits the same disk you're saving recovered files to (video editing, large downloads) since the disk activity competes with the recovery write throughput. Most importantly, don't put the laptop to sleep.",
+      },
+      {
+        q: "What if I need to stop the scan and resume tomorrow?",
+        a: "Click Cancel in Heirvo (or just close the app). The session is saved automatically. Tomorrow, open Heirvo, find the session in 'My Discs', click Resume. The scan picks up where it left off. You can do this across days or weeks — recovery progress is durable in the SQLite database.",
+      },
+      {
+        q: "Will running the scan twice in a row recover more data?",
+        a: "Yes, sometimes. Damaged sectors can be flaky — they fail one read and succeed on the next. Heirvo's retry logic does this within a single scan automatically. But running a second scan after the first finishes is also worthwhile if your recovery percentage is below what you need; the second pass starts with your existing sector map and only retries the failed sectors, so it's fast and may pick up additional data.",
+      },
+      {
+        q: "My drive freezes are getting more frequent over time. Is the drive dying?",
+        a: "Possibly, or it's just thermally stressed. Cheap USB drives heat up during sustained use — try letting the drive sit for 15 minutes between long scans. If the freeze rate doesn't improve with cooling, the bridge chip is failing under load and a new drive is warranted.",
+      },
+      {
+        q: "How long should I let a stuck scan sit before unplugging the drive?",
+        a: "Heirvo's watchdog handles individual stuck commands in 5–7 seconds. If the progress dial hasn't moved AT ALL for 60+ seconds AND the activity LED on the drive is dark or steady (not blinking), the bridge has locked up. Unplug the USB cable, wait 10 seconds, plug back in.",
+      },
+    ],
+    cta: {
+      heading: "Stop fighting freezes — Heirvo handles them automatically",
+      body: "Heirvo's host-side watchdog times out stuck SCSI calls in 5–7 seconds and lets the scan continue. The session checkpoints continuously, so any freeze just means a brief pause and a click of Resume. Free to scan; pay only when you save.",
+      primaryLabel: "Download Heirvo Free",
+      primaryHref: "/download",
+      secondaryLabel: "Mail-In Recovery — from $89",
+      secondaryHref: "/recover",
+    },
+  },
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 30. MODE SELECT page 01h technical deep-dive
+  // ─────────────────────────────────────────────────────────────────────────────
+  {
+    slug: "mode-select-page-01h-scsi-dvd-recovery",
+    title: "MODE SELECT Page 01h: The SCSI Command That Makes DVD Recovery Possible",
+    metaTitle: "MODE SELECT Page 01h — The SCSI Command for DVD Recovery",
+    metaDescription:
+      "A technical deep-dive into MODE SELECT page 01h, the MMC command that every serious DVD recovery tool sends before reading. Bit layout, IOCTL flow, drives that reject it, and why it matters.",
+    datePublished: "2026-05-16",
+    dateModified: "2026-05-16",
+    readTime: "12 min read",
+    category: "Technical Reference",
+    intro:
+      "MODE SELECT page 01h is the SCSI Multimedia Commands (MMC) command that recovery software sends to optical drives at session start to configure error recovery behaviour. It sets the drive's internal Read Retry Count to 1 (instead of the default 8–16) so bad sectors fail in ~50 milliseconds rather than 5+ seconds, and sets the TB and PER bits so the drive returns partial data with sense information on errors. Every mature recovery tool — IsoBuster, ddrescue, MakeMKV, DiscImageCreator, dvdisaster, Heirvo — sends this command. Tools that don't appear to 'hang' on damaged discs because they're waiting through firmware retry cycles. Some cheap USB drives reject the command (sense_key 0x5 ILLEGAL_REQUEST), in which case recovery falls back to drive defaults and runs significantly slower.",
+    related: ["vlc-plays-dvd-recovery-fails", "dvd-drive-disconnects-mid-scan", "heirvo-vs-isobuster", "best-dvd-recovery-software"],
+    sections: [
+      {
+        id: "what-it-does",
+        heading: "What MODE SELECT page 01h does, in plain English",
+        paragraphs: [
+          "Every optical drive has internal error-recovery behaviour controlled by parameters stored in mode pages. Mode page 01h — the 'Read-Write Error Recovery Parameters' page, defined in the SCSI MMC specification — holds the settings that determine how the drive responds to read errors. Recovery software adjusts these before reading so the drive behaves the way recovery work needs it to.",
+          "By default, when a drive encounters a sector that fails ECC (the disc's internal error correction can't fix the read), the firmware retries the read internally. The default retry count is typically 8 to 16 attempts. Each attempt takes 300–500 milliseconds — re-seeking the laser sled, re-spinning the spindle to the right rotation, re-firing the laser. Add it up: 16 × 400 ms = 6.4 seconds per bad sector before the drive gives up and reports an error to the host.",
+          "Recovery software wants the opposite behaviour. It wants the drive to fail fast — try once, return immediately on failure, let the host decide what to do next (retry at lower speed, skip ahead, mark the sector failed, etc.). MODE SELECT page 01h with a Read Retry Count of 1 instructs the drive to do exactly that. A bad sector now fails in roughly 50 ms instead of 6 seconds — a 100x speedup on every damaged sector.",
+          "This is the single biggest reason mature recovery tools complete scans in minutes that naive tools spend hours hung on. It's the closest thing to a magic trick in optical recovery, and it's been the standard practice for two decades.",
+        ],
+      },
+      {
+        id: "cdb-layout",
+        heading: "The MODE SELECT(10) CDB — byte by byte",
+        paragraphs: [
+          "MODE SELECT comes in two variants: the 6-byte form (opcode 0x15) and the 10-byte form (opcode 0x55). Modern recovery tools use the 10-byte form because it supports the full 16-bit parameter list length field needed for mode pages with sub-pages. Here's the 10-byte CDB layout:",
+        ],
+        table: {
+          caption: "MODE SELECT(10) Command Descriptor Block (10 bytes)",
+          headers: ["Byte", "Value", "Field", "Notes"],
+          rows: [
+            ["0", "0x55", "Operation Code", "MODE SELECT(10) opcode"],
+            ["1", "0x10", "Flags", "PF=1 (Page Format — mode parameter list follows spec layout). SP=0 (don't save to non-volatile)."],
+            ["2", "0x00", "Reserved", ""],
+            ["3", "0x00", "Reserved", ""],
+            ["4", "0x00", "Reserved", ""],
+            ["5", "0x00", "Reserved", ""],
+            ["6", "0x00", "Reserved", ""],
+            ["7", "0x00", "Parameter List Length (MSB)", "Length in bytes of the parameter list that follows"],
+            ["8", "0x10", "Parameter List Length (LSB)", "0x10 = 16 bytes (8-byte header + 8-byte page 01h)"],
+            ["9", "0x00", "Control", ""],
+          ],
+        },
+      },
+      {
+        id: "parameter-list",
+        heading: "The parameter list — what page 01h actually contains",
+        paragraphs: [
+          "Following the CDB, the host sends a 16-byte parameter list: an 8-byte Mode Parameter Header followed by the 8-byte page 01h itself. The page is where the recovery-relevant flags live.",
+        ],
+        table: {
+          caption: "Mode Parameter Header (8 bytes) + Page 01h (8 bytes)",
+          headers: ["Byte", "Value", "Field", "Effect"],
+          rows: [
+            ["0", "0x00", "Mode Data Length (ignored on SELECT)", "Set by drive on SENSE; ignored when host sends"],
+            ["1", "0x00", "Medium Type", "0 = default for current medium"],
+            ["2", "0x00", "Device-Specific Parameter", "Reserved for read mode"],
+            ["3", "0x00", "Block Descriptor Length", "0 = no block descriptor follows"],
+            ["4–7", "0x00", "Reserved", "Padding bytes"],
+            ["8", "0x01", "Page Code", "PS=0, SPF=0, code=0x01 (R/W Error Recovery)"],
+            ["9", "0x06", "Page Length", "6 bytes follow"],
+            ["10", "0x24", "Error Recovery Flags", "TB=1, PER=1, others 0 (detail below)"],
+            ["11", "0x01", "Read Retry Count", "Drive retries each sector ONCE before reporting error"],
+            ["12", "0x00", "Correction Span", "Not used for DVD"],
+            ["13", "0x00", "Head Offset Count", "Not used for DVD"],
+            ["14", "0x00", "Data Strobe Offset Count", "Not used for DVD"],
+            ["15", "0x00", "Write Retry Count", "Not relevant for read-only recovery"],
+          ],
+        },
+      },
+      {
+        id: "flag-meanings",
+        heading: "The error recovery flags (byte 10) — what each bit does",
+        paragraphs: [
+          "Byte 10 of page 01h is a bitmap controlling drive behaviour during reads. The value 0x24 means bits 5 (TB) and 2 (PER) are set; all others are zero. Here's what each bit does:",
+        ],
+        table: {
+          caption: "Page 01h byte 10 bits — error recovery control",
+          headers: ["Bit", "Name", "Value (recovery)", "Effect when set"],
+          rows: [
+            ["7", "AWRE", "0", "Auto Write Reallocation — irrelevant for reads"],
+            ["6", "ARRE", "0", "Auto Read Reallocation. 0 = don't auto-remap defects (would mask them from the host)"],
+            ["5", "TB", "1", "Transfer Block — return whatever was read even on partial failure. Recovery wants any salvageable data"],
+            ["4", "RC", "0", "Read Continuous. 0 = return errors normally (1 would suppress errors entirely — wrong for recovery)"],
+            ["3", "EER", "0", "Enable Early Recovery. 0 = full ECC path (slower but more accurate)"],
+            ["2", "PER", "1", "Post Error — emit sense data when reporting errors so the host knows what failed"],
+            ["1", "DTE", "0", "Disable Transfer on Error. 0 = transfer data on error (with TB=1, gives us partial data)"],
+            ["0", "DCR", "0", "Disable Correction. 0 = keep ECC enabled (raw mode disabled). Heirvo may flip this in future for raw recovery passes"],
+          ],
+        },
+      },
+      {
+        id: "why-retry-count-matters",
+        heading: "Why Read Retry Count = 1 is the critical change",
+        paragraphs: [
+          "Byte 11 — Read Retry Count — controls how many times the drive retries internally before reporting failure. The default value varies by manufacturer but is typically 8 to 16. Setting it to 1 means the drive tries each sector once and returns the result immediately.",
+          "On a healthy sector, this changes nothing. The first read succeeds and the data comes back in 5–20 ms. Read Retry Count doesn't enter the picture.",
+          "On a damaged sector, the change is enormous. With the default count of 16, a permanently-bad sector takes 16 × ~400 ms = ~6.4 seconds before the drive reports failure to the host. The host has been blocked for 6.4 seconds doing nothing — and remember, the host is recovery software that wants to make a smart decision based on the failure, like 'retry at lower speed' or 'mark this sector failed and skip ahead'.",
+          "With Read Retry Count = 1, the same bad sector returns failure in ~400 ms. The host immediately knows it's a bad sector and can apply its own retry strategy: read at slower speed, try with different command parameters, try reading the adjacent sectors first to establish drive position, or just mark the sector failed and use skip-ahead logic to jump past the damaged region.",
+          "The host's retry strategy is dramatically smarter than the drive firmware's. Drive firmware retries with the same parameters every time. Host software retries with varying speeds, command sequences, and skip patterns. So you get both faster failure on permanently-bad sectors AND better recovery rates on borderline sectors — the host can succeed where the drive's blind retry would have failed anyway.",
+        ],
+      },
+      {
+        id: "windows-ioctl",
+        heading: "How the command flows through Windows",
+        paragraphs: [
+          "On Windows, sending a raw SCSI command to a storage device requires the SCSI Pass-Through Interface (SPTI). The recovery software opens a handle to the optical drive's device path (e.g., \\\\.\\E:) with CreateFile, then sends commands via DeviceIoControl using one of two control codes:",
+        ],
+        items: [
+          "**IOCTL_SCSI_PASS_THROUGH** (0x4D004) — copies data through the kernel; simpler but slower for large transfers",
+          "**IOCTL_SCSI_PASS_THROUGH_DIRECT** (0x4D014) — DMA-direct; required for high-throughput reads but needs the data buffer to be page-aligned",
+        ],
+      },
+      {
+        id: "spti-details",
+        heading: "How Heirvo wires the IOCTL — and the timeout caveat",
+        paragraphs: [
+          "Heirvo uses IOCTL_SCSI_PASS_THROUGH_DIRECT for both READ commands and configuration commands like MODE SELECT. The CDB above goes into the `cdb[]` field of the SCSI_PASS_THROUGH_DIRECT struct, the 16-byte parameter list goes into the data buffer with direction = SCSI_IOCTL_DATA_OUT, and the drive's response (sense data on error) comes back in the SENSE buffer.",
+          "Critically, the `TimeOutValue` field in the struct is a hint to the drive about how long the command should take — NOT a hard kill from the host side. If the drive doesn't respond, the kernel waits indefinitely. This is why recovery software also needs a host-side watchdog timer (a worker thread plus a channel with recv_timeout) to give up on stuck commands. Otherwise a flaky drive can hang the entire recovery engine for tens of minutes.",
+        ],
+      },
+      {
+        id: "drives-that-reject",
+        heading: "Drives that reject MODE SELECT page 01h",
+        paragraphs: [
+          "Not every drive implements MODE SELECT page 01h properly. Some cheap USB-ATAPI bridge chips return CHECK CONDITION status with sense_key 0x5 (ILLEGAL_REQUEST) when they see the command. The drive's firmware doesn't recognise the page format or simply has the mode page locked.",
+          "Confirmed-rejecting drives include the HL-DT-ST DVDRAM GT-series (LG slim USB DVD writers), most Panasonic MATSHITA UJ8/UJ9 mechanism families, and generic 'USB2.0 CD-ROM' enclosures with no-name bridge chips. These drives keep their default Read Retry Count behaviour throughout the recovery session — every bad sector takes the full 5+ seconds — and there's no software fix.",
+          "Drives that reliably accept MODE SELECT page 01h include the Pioneer BDR series (BDR-208 through BDR-212, BDR-S09, BDR-S12), the LG WH-series (WH14NS40, WH16NS40), and the ASUS BW-16D1HT (which uses the LG WH16NS40 mechanism internally). All Plextor Premium-era drives also accept it, though they're collector hardware now.",
+          "A recovery tool's MODE SELECT logic should always be best-effort: try the command, log the result, fall back gracefully if the drive rejects it. The recovery still works without MODE SELECT — it just runs significantly slower on damaged regions, because the drive's default retry behaviour can't be overridden.",
+        ],
+        callout: {
+          label: "Heirvo's implementation",
+          text: "Heirvo sends MODE SELECT page 01h at every drive open AND every drive reopen (the settings reset on UNIT ATTENTION conditions like media change or bus reset). If the drive rejects it, Heirvo logs a WARN and continues. The Recovery Plan card surfaces drive quality so the user knows whether to expect the optimisation to apply.",
+          color: "blue",
+        },
+      },
+      {
+        id: "mode-select-6-vs-10",
+        heading: "MODE SELECT(6) vs MODE SELECT(10) — which to send?",
+        paragraphs: [
+          "The two variants of MODE SELECT serve the same purpose with different field widths:",
+        ],
+        items: [
+          "**MODE SELECT(6)** — opcode 0x15, 6-byte CDB, 1-byte parameter list length (max 255 bytes). Older command, slightly simpler. Supported by virtually all SCSI/ATAPI devices.",
+          "**MODE SELECT(10)** — opcode 0x55, 10-byte CDB, 2-byte parameter list length (max 65535 bytes). Required for mode pages with sub-pages, recommended for modern code. Universally supported on optical drives manufactured after 2003.",
+        ],
+      },
+      {
+        id: "which-form-to-use",
+        heading: "Which form does Heirvo send, and the fallback strategy",
+        paragraphs: [
+          "Most recovery tools send the 10-byte form because it handles all parameter list sizes uniformly. A few cases exist where a drive accepts MODE SELECT(6) but rejects MODE SELECT(10), or vice versa — this is rare but it happens with old or weird drives. Best-practice implementations try the 10-byte form first; if it returns sense_key 0x5 (ILLEGAL_REQUEST) with ASC 0x20 (INVALID COMMAND OPERATION CODE), they fall back to the 6-byte form.",
+          "Heirvo currently sends only the 10-byte form. A 6-byte fallback is on the roadmap and may improve compatibility on older slim USB drives that currently fall back to default behaviour.",
+        ],
+      },
+      {
+        id: "why-undocumented",
+        heading: "Why this isn't well-documented elsewhere",
+        paragraphs: [
+          "MODE SELECT page 01h is fully documented in the SCSI MMC specifications (MMC-6 is the current revision), but those are 1,000-page technical documents written for drive manufacturers. The information that's relevant to recovery — 'send this command before reading and your tool stops hanging' — has historically lived in source code comments in open-source projects (libdvdread, libcdio, ddrescue) and forum posts on Doom9, MyCE, and r/datahoarder.",
+          "Commercial recovery vendors don't publish their SCSI command sequences as marketing material — it's competitive advantage. IsoBuster has been doing this for 20 years and never explained it in their docs; users discover the behaviour by reading SCSI traces.",
+          "The result is that 'why does my recovery tool hang on damaged discs?' is one of the most-asked, worst-answered questions in optical recovery. The answer is almost always: MODE SELECT wasn't sent, or the drive rejected it, or there's no host-side watchdog around the IOCTL. We hope this guide closes that information gap for anyone trying to understand the failure mode.",
+        ],
+      },
+      {
+        id: "open-source-references",
+        heading: "Open-source code references for further reading",
+        paragraphs: [
+          "If you want to see real implementations of MODE SELECT page 01h in production recovery code, these are the canonical sources:",
+        ],
+        items: [
+          "**libdvdread** (videolan/libdvdread on GitHub) — the library VLC uses to read DVDs. See `src/dvd_input.c` for the MODE SELECT call sequence.",
+          "**libcdio** (libcdio/libcdio) — generic MMC bindings for CD/DVD/BD; clean C reference for all the SCSI commands recovery work needs.",
+          "**ddrescue** (GNU; gnu.org/software/ddrescue) — Antonio Diaz Diaz's recovery tool; the canonical 5-phase recovery algorithm with MODE SELECT applied per device.",
+          "**dvdisaster** (lrq3000/dvdisaster) — error-correction sidecar for backups; includes detailed MODE SELECT logic and a `--read-attempts` flag that lets you tune retry count from the command line.",
+          "**DiscImageCreator** (saramibreak/DiscImageCreator) — gold-standard CD/DVD imaging tool, especially strong on C2 error flag handling combined with MODE SELECT DCR=1 raw reads.",
+          "**MakeMKV** (closed-source but documented in MakeMKV forum) — disc decryption + ripping; uses MODE SELECT with custom retry counts tuned for Blu-ray recovery.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "Is MODE SELECT a 'fix' for damaged discs or just an optimization?",
+        a: "Both, depending on the disc. It's always a speed optimization — the same data either reads or doesn't, but with MODE SELECT applied the host knows immediately rather than 6 seconds later. On borderline-readable sectors, the speedup also enables smarter host-side retry strategies (different speeds, reverse-direction reads) that can succeed where blind firmware retries failed. So yes, MODE SELECT often recovers data that drive-default behaviour misses.",
+      },
+      {
+        q: "Why don't all recovery tools send MODE SELECT?",
+        a: "Three reasons. First, simple file-copy tools (Windows Explorer, basic freeware) only use high-level OS file APIs and never touch SCSI directly. Second, some recovery tool developers don't know about the technique — it's documented in dense MMC specs and source code, not in marketing. Third, MODE SELECT requires SCSI Pass-Through Interface (SPTI) on Windows, which needs administrator privileges and proper buffer alignment — a real implementation effort. The result is that tools split into 'mature' (sends MODE SELECT) and 'naive' (doesn't), with the mature group dramatically outperforming on damaged media.",
+      },
+      {
+        q: "Will MODE SELECT damage my drive or disc?",
+        a: "No. MODE SELECT only configures parameters for the current session — the drive forgets them on power cycle or media change. It doesn't physically affect the laser, the spindle, or any other component. The worst case is the drive returns sense_key 0x5 (ILLEGAL_REQUEST), which is harmless: recovery falls back to drive defaults and continues.",
+      },
+      {
+        q: "What's the difference between MODE SELECT page 01h and MODE SENSE page 01h?",
+        a: "MODE SELECT writes settings TO the drive; MODE SENSE reads current settings FROM the drive. Recovery tools typically use MODE SELECT to set values without first reading what's there (the parameter list always specifies a complete page). A more careful implementation would MODE SENSE first to see what the drive currently has, modify only what's needed, and MODE SELECT back — but the simpler 'write known-good values directly' pattern works for recovery in practice.",
+      },
+      {
+        q: "Does MODE SELECT page 01h work on Blu-ray drives?",
+        a: "Yes. The page is part of the SCSI MMC spec which covers all optical media — CD, DVD, BD, HD DVD. Pioneer BDR-series Blu-ray drives accept it and apply it to Blu-ray reads. The same Read Retry Count = 1 optimization applies equally to scratched Blu-ray discs.",
+      },
+      {
+        q: "What does 'sense_key 0x5 ASC 0x20' actually mean?",
+        a: "Sense_key 0x5 is ILLEGAL_REQUEST — the drive understood the command structure but rejected the specific request. ASC (Additional Sense Code) 0x20 is INVALID COMMAND OPERATION CODE — the drive doesn't recognise this command at all. ASC 0x24 is INVALID FIELD IN CDB — the command was recognised but a field has an unsupported value. ASC 0x26 is INVALID FIELD IN PARAMETER LIST — the parameter data had an issue. Recovery software should treat all of these as 'command rejected, fall back to defaults'.",
+      },
+      {
+        q: "Can I send MODE SELECT manually with a command-line tool?",
+        a: "On Linux, yes — sg_modes (part of sg3_utils) can read and write mode pages directly. On Windows it's harder without writing your own SPTI code, though projects like sgwin port some sg3_utils functionality. For practical recovery work, just use a tool that sends MODE SELECT automatically — every mature recovery tool does this without user intervention.",
+      },
+      {
+        q: "Does Heirvo expose Read Retry Count as a user setting?",
+        a: "Not in the UI today — Heirvo sets it to 1 and lets the host-side retry logic handle escalation. The roadmap includes a 'Patient mode' that experiments with higher retry counts plus longer delays for stubborn sectors. For most use cases the default (firmware retry = 1, host retry = configurable per pass) gives the best speed/recovery trade-off.",
+      },
+    ],
+    cta: {
+      heading: "Recovery software that understands the SCSI layer",
+      body: "Heirvo's engine implements MODE SELECT page 01h, host-side SCSI watchdog timers, fast-path skip-ahead on kernel timeouts, and the rest of the recovery patterns covered in this guide. Free to scan; pay only when you save the files.",
+      primaryLabel: "Download Heirvo Free",
+      primaryHref: "/download",
+      secondaryLabel: "See the source on GitHub",
+      secondaryHref: "https://github.com/JungleLivingPai/heirvo",
     },
   },
 ];
