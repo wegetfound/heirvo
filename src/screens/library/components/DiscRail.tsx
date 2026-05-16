@@ -1,4 +1,5 @@
 import { ChevronRight } from "lucide-react";
+import { Link } from "react-router-dom";
 import type { Disc } from "../data/types";
 import { DiscCard } from "./DiscCard";
 
@@ -61,12 +62,8 @@ export function DiscRail({
             </div>
           )}
         </div>
-        <a
-          href={seeAllHref ?? "#"}
-          onClick={(e) => {
-            // No dedicated "all in this rail" route yet — stub until built.
-            if (!seeAllHref) e.preventDefault();
-          }}
+        <Link
+          to={seeAllHref ?? "#"}
           style={{
             fontSize: 13,
             fontWeight: 500,
@@ -78,7 +75,7 @@ export function DiscRail({
           }}
         >
           See all{extra > 0 ? ` (${extra} more)` : ""} <ChevronRight size={14} />
-        </a>
+        </Link>
       </header>
       <div
         className="lib-rail"

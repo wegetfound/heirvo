@@ -7,19 +7,92 @@ import { ipc } from "../../lib/ipc";
 
 const PAGE_SIZE = 60;
 
+type FilterId = "recent" | "on-this-day" | "birthdays" | "trips" | null;
+
+function applyFilter(discs: Disc[], filter: FilterId): Disc[] {
+  if (!filter) return discs;
+  const today = new Date();
+  switch (filter) {
+    case "recent": {
+      const cutoff = new Date(today);
+      cutoff.setDate(cutoff.getDate() - 30);
+      return discs.filter((d) => {
+        // recoveredAt format: "May 14" — assume current year, handle Jan boundary
+        const parsed = new Date(`${d.recoveredAt}, ${today.getFullYear()}`);
+        if (!isNaN(parsed.getTime())) {
+          const adjusted = parsed > today
+            ? new Date(parsed.setFullYear(today.getFullYear() - 1))
+            : parsed;
+          return adjusted >= cutoff;
+        }
+        return true;
+      });
+    }
+    case "on-this-day": {
+      const todayMonth = today.getMonth();
+      const todayDay = today.getDate();
+      const MONTHS = [
+        "january","february","march","april","may","june",
+        "july","august","september","october","november","december",
+      ];
+      return discs.filter((d) => {
+        // date format: "May 16, 1999"
+        const m = d.date.match(/^(\w+)\s+(\d+)/);
+        if (!m) return false;
+        const monthIdx = MONTHS.findIndex((n) =>
+          n.startsWith(m[1].toLowerCase().slice(0, 3))
+        );
+        return monthIdx === todayMonth && parseInt(m[2]) === todayDay;
+      });
+    }
+    case "birthdays":
+      return discs.filter((d) =>
+        d.topics.some((t) => {
+          const l = t.label.toLowerCase();
+          return l.includes("birthday") || l.includes("cake") || l.includes("candle");
+        })
+      );
+    case "trips":
+      return discs.filter((d) =>
+        d.topics.some((t) => {
+          const l = t.label.toLowerCase();
+          return (
+            l.includes("trip") ||
+            l.includes("vacation") ||
+            l.includes("travel") ||
+            l.includes("road") ||
+            l.includes("cruise")
+          );
+        })
+      );
+    default:
+      return discs;
+  }
+}
+
+function filterDescription(filter: FilterId): string | null {
+  switch (filter) {
+    case "recent": return "Discs recovered in the last 30 days";
+    case "on-this-day": return "Discs filmed on this calendar day in past years";
+    case "birthdays": return "Detected birthday moments — cake, candles, singing";
+    case "trips": return "Trips, vacations, and road journeys";
+    default: return null;
+  }
+}
+
 /**
- * Full paginated disc grid — the destination for every "See all" link in
- * the Library rails. Shows every disc newest-first with load-more pagination.
- * The optional `?title=<label>` param is used as the heading so the breadcrumb
- * context ("Family birthdays · All") makes sense when arriving from a rail.
+ * Full paginated disc grid — destination for every "See all" link in the
+ * Library rails. Applies a client-side filter when ?filter= is present so
+ * each rail shows only its relevant subset.
  */
 export default function LibraryAll() {
   const nav = useNavigate();
   const [params] = useSearchParams();
   const railTitle = params.get("title") ?? null;
+  const filter = (params.get("filter") ?? null) as FilterId;
 
   const [q, setQ] = useState("");
-  const [discs, setDiscs] = useState<Disc[]>([]);
+  const [allDiscs, setAllDiscs] = useState<Disc[]>([]);
   const [nextCursor, setNextCursor] = useState<number | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
   const [ready, setReady] = useState(false);
@@ -31,9 +104,8 @@ export default function LibraryAll() {
       try {
         const page = await ipc.library.listPage(0, PAGE_SIZE);
         if (cancelled) return;
-        setDiscs(page.discs);
+        setAllDiscs(page.discs);
         setNextCursor(page.nextCursor);
-        // Rough total: what we loaded + any remaining cursor indicates more.
         total.current = page.discs.length + (page.nextCursor != null ? 1 : 0);
       } catch {
         // Fallback to empty — no crash.
@@ -49,7 +121,7 @@ export default function LibraryAll() {
     setLoadingMore(true);
     try {
       const page = await ipc.library.listPage(nextCursor, PAGE_SIZE);
-      setDiscs((prev) => [...prev, ...page.discs]);
+      setAllDiscs((prev) => [...prev, ...page.discs]);
       setNextCursor(page.nextCursor);
     } catch {
       /* leave button visible for retry */
@@ -57,6 +129,9 @@ export default function LibraryAll() {
       setLoadingMore(false);
     }
   }
+
+  const discs = applyFilter(allDiscs, filter);
+  const filterDesc = filterDescription(filter);
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
@@ -110,9 +185,8 @@ export default function LibraryAll() {
               }}
             >
               {discs.length} disc{discs.length !== 1 ? "s" : ""}
-              {nextCursor != null ? "+" : ""}
-              {" "}
-              · every word searchable
+              {filter == null && nextCursor != null ? "+" : ""}
+              {filterDesc ? ` · ${filterDesc}` : " · every word searchable"}
             </div>
           )}
         </div>
@@ -151,20 +225,26 @@ export default function LibraryAll() {
               textAlign: "center",
             }}
           >
-            No discs yet.{" "}
-            <Link
-              to="/library"
-              style={{ color: "var(--lib-amber)", textDecoration: "none" }}
-            >
-              Import a video to get started.
-            </Link>
+            {filter ? (
+              <>
+                No discs match this filter yet.{" "}
+                <Link to="/library/all" style={{ color: "var(--lib-amber)", textDecoration: "none" }}>
+                  View all discs →
+                </Link>
+              </>
+            ) : (
+              <>
+                No discs yet.{" "}
+                <Link to="/library" style={{ color: "var(--lib-amber)", textDecoration: "none" }}>
+                  Import a video to get started.
+                </Link>
+              </>
+            )}
           </div>
         ) : (
           <div
             style={{
               display: "grid",
-              // 260px matches DiscCard's fixed width; auto-fill packs as many
-              // columns as fit, leaving a partial last row naturally.
               gridTemplateColumns: "repeat(auto-fill, 260px)",
               gap: 24,
             }}
@@ -180,8 +260,8 @@ export default function LibraryAll() {
           </div>
         )}
 
-        {/* Load more */}
-        {nextCursor != null && (
+        {/* Load more — only shown when not filtering (filter is client-side over loaded set) */}
+        {filter == null && nextCursor != null && (
           <div
             style={{
               display: "flex",
