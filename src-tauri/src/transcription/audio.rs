@@ -115,6 +115,59 @@ pub async fn prepare_audio(
     Ok(duration)
 }
 
+/// Extract a time-slice of a WAV into a new WAV file.
+///
+/// Uses PCM-copy (`-c copy`) so it's near-instant even for large files. The
+/// caller is responsible for deleting `output` after use. A 60-second watchdog
+/// is applied — PCM copy should complete in under a second for any slice size.
+pub async fn extract_chunk(
+    app: &AppHandle,
+    full_wav: &Path,
+    output: &Path,
+    start_sec: f64,
+    dur_sec: f64,
+) -> AppResult<()> {
+    let bin = ffmpeg::locate(app, if cfg!(windows) { "ffmpeg.exe" } else { "ffmpeg" })
+        .ok_or_else(|| AppError::Internal("FFmpeg not installed".into()))?;
+
+    if let Some(parent) = output.parent() {
+        let _ = std::fs::create_dir_all(parent);
+    }
+
+    let input_str = full_wav.to_string_lossy().to_string();
+    let out_str = output.to_string_lossy().to_string();
+    let start_str = format!("{:.3}", start_sec);
+    let dur_str = format!("{:.3}", dur_sec);
+
+    let mut child = tokio::process::Command::new(&bin)
+        .args([
+            "-y",
+            "-ss", &start_str,
+            "-t",  &dur_str,
+            "-i",  &input_str,
+            "-c",  "copy",
+            "-f",  "wav",
+            &out_str,
+        ])
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .spawn()
+        .map_err(|e| AppError::Internal(format!("spawn ffmpeg chunk extract: {e}")))?;
+
+    match tokio::time::timeout(Duration::from_secs(60), child.wait()).await {
+        Ok(Ok(s)) if s.success() => Ok(()),
+        Ok(Ok(s)) => Err(AppError::Internal(format!(
+            "ffmpeg chunk extract exited {:?}", s.code()
+        ))),
+        Ok(Err(e)) => Err(AppError::Internal(format!("waiting on ffmpeg chunk: {e}"))),
+        Err(_) => {
+            let _ = child.kill().await;
+            let _ = child.wait().await;
+            Err(AppError::Internal("ffmpeg chunk extract timed out (60s)".into()))
+        }
+    }
+}
+
 /// Backwards-compat alias. New callers should use `prepare_audio`.
 #[deprecated(note = "use prepare_audio — accepts video AND audio inputs")]
 pub async fn extract_audio(
@@ -123,6 +176,14 @@ pub async fn extract_audio(
     output_wav: &Path,
 ) -> AppResult<f64> {
     prepare_audio(app, video_path, output_wav).await
+}
+
+/// Estimate the duration of a 16 kHz mono 16-bit PCM WAV from its file size.
+/// Used by the resume path (chunks_done > 0) so we don't re-run FFprobe on a
+/// file we already probed. Accuracy within a few samples — good enough for the
+/// chunk-size calculation.
+pub fn wav_duration(wav: &Path) -> f64 {
+    estimate_wav_duration(wav)
 }
 
 /// 16 kHz mono 16-bit PCM ⇒ 32000 bytes/sec; the WAV header is negligible.

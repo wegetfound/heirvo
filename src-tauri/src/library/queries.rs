@@ -311,6 +311,76 @@ pub async fn get_disc(db: &Db, id: &str) -> AppResult<Option<Disc>> {
     }))
 }
 
+/// Delete all transcript lines for a disc without touching other disc data.
+/// Called by the transcription worker at the start of a fresh (non-resumed) job
+/// so we don't accumulate stale lines from a previous stub or partial run.
+pub async fn clear_transcript_lines(db: &Db, disc_id: &str) -> AppResult<()> {
+    sqlx::query("DELETE FROM library_transcript_lines WHERE disc_id = ?")
+        .bind(disc_id)
+        .execute(&db.pool)
+        .await?;
+    Ok(())
+}
+
+/// How many transcript lines currently exist for a disc.
+/// Used when resuming a chunked job to determine the `line_order` offset
+/// for newly appended lines.
+pub async fn count_transcript_lines(db: &Db, disc_id: &str) -> AppResult<i64> {
+    let row =
+        sqlx::query("SELECT COUNT(*) AS n FROM library_transcript_lines WHERE disc_id = ?")
+            .bind(disc_id)
+            .fetch_one(&db.pool)
+            .await?;
+    Ok(row.try_get("n")?)
+}
+
+/// Append transcript lines for a disc, starting at `start_order` in
+/// `line_order`. Does NOT delete existing lines — use `clear_transcript_lines`
+/// first for a fresh job. Updates `phrases_indexed` and `updated_at` on the
+/// parent disc row so the cursor-paginated list reflects the new content.
+pub async fn append_transcript_lines(
+    db: &Db,
+    disc_id: &str,
+    lines: &[TranscriptLine],
+    start_order: i64,
+) -> AppResult<()> {
+    if lines.is_empty() {
+        return Ok(());
+    }
+    let mut tx = db.pool.begin().await?;
+    for (i, line) in lines.iter().enumerate() {
+        sqlx::query(
+            "INSERT INTO library_transcript_lines
+             (disc_id, line_order, time_sec, time_display, speaker, text, is_stage_direction)
+             VALUES (?, ?, ?, ?, ?, ?, ?)",
+        )
+        .bind(disc_id)
+        .bind(start_order + i as i64)
+        .bind(line.time_sec)
+        .bind(&line.time)
+        .bind(&line.speaker)
+        .bind(&line.text)
+        .bind(line.is_stage_direction.unwrap_or(false) as i64)
+        .execute(&mut *tx)
+        .await?;
+    }
+    // Recount from DB (accurate even after multiple chunk appends).
+    let now = Utc::now().timestamp();
+    sqlx::query(
+        "UPDATE library_discs
+         SET phrases_indexed = (SELECT COUNT(*) FROM library_transcript_lines WHERE disc_id = ?),
+             updated_at = ?
+         WHERE id = ?",
+    )
+    .bind(disc_id)
+    .bind(now)
+    .bind(disc_id)
+    .execute(&mut *tx)
+    .await?;
+    tx.commit().await?;
+    Ok(())
+}
+
 /// Replace all transcript lines for a disc in a single transaction.
 /// Used by the transcription worker once a job completes. The FTS5 triggers
 /// on `library_transcript_lines` keep the search index in sync automatically.

@@ -29,6 +29,8 @@ fn row_to_job(row: sqlx::sqlite::SqliteRow) -> AppResult<TranscriptionJob> {
             .ok()
             .flatten(),
         duration_sec: row.try_get::<Option<i64>, _>("duration_sec").ok().flatten(),
+        total_chunks: row.try_get::<i64, _>("total_chunks").unwrap_or(0),
+        chunks_done: row.try_get::<i64, _>("chunks_done").unwrap_or(0),
     })
 }
 
@@ -157,13 +159,21 @@ pub async fn update_status(
 /// Called once on startup before the worker begins polling — without this,
 /// a crash mid-extraction (or a hard kill) leaves the job stuck in
 /// `extracting`/`transcribing` forever and the queue stops draining.
+///
+/// `chunks_done` and `total_chunks` are deliberately preserved so the worker
+/// can skip already-checkpointed chunks on resume. Progress is recalculated
+/// from chunks_done/total_chunks (or 0.0 for extraction-phase crashes).
 /// Returns the count of jobs reset.
 pub async fn reset_in_flight_jobs(pool: &SqlitePool) -> AppResult<u32> {
     let now = chrono::Utc::now().timestamp();
     let rows = sqlx::query(
         "UPDATE transcription_jobs
          SET status = 'queued',
-             progress = 0.0,
+             progress = CASE
+                 WHEN total_chunks > 0
+                 THEN CAST(chunks_done AS REAL) / CAST(total_chunks AS REAL)
+                 ELSE 0.0
+             END,
              error_message = COALESCE(error_message, '') || '[resumed after app restart at ' || ? || ']'
          WHERE status IN ('extracting', 'transcribing')",
     )
@@ -171,6 +181,33 @@ pub async fn reset_in_flight_jobs(pool: &SqlitePool) -> AppResult<u32> {
     .execute(pool)
     .await?;
     Ok(rows.rows_affected() as u32)
+}
+
+/// Persist the chunk checkpoint after each 10-minute window completes.
+/// Also updates progress so the UI reflects how far along we are.
+pub async fn update_chunks_done(
+    pool: &SqlitePool,
+    id: i64,
+    done: i64,
+    total: i64,
+) -> AppResult<()> {
+    let progress = if total > 0 {
+        done as f64 / total as f64
+    } else {
+        0.0
+    };
+    sqlx::query(
+        "UPDATE transcription_jobs
+         SET chunks_done = ?, total_chunks = ?, progress = ?
+         WHERE id = ?",
+    )
+    .bind(done)
+    .bind(total)
+    .bind(progress)
+    .bind(id)
+    .execute(pool)
+    .await?;
+    Ok(())
 }
 
 /// Mark a queued job cancelled. No-op if it's already running/done — we'd

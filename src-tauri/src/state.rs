@@ -73,7 +73,10 @@ fn sweep_stale_temp_wavs() {
     for entry in entries.flatten() {
         let name = entry.file_name();
         let name_str = name.to_string_lossy();
-        if name_str.starts_with("heirvo_trans_") && name_str.ends_with(".wav") {
+        let is_stale = (name_str.starts_with("heirvo_trans_")
+            || name_str.starts_with("heirvo_chunk_"))
+            && name_str.ends_with(".wav");
+        if is_stale {
             if let Ok(meta) = entry.metadata() {
                 bytes += meta.len();
             }

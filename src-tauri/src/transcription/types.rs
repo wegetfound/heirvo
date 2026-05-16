@@ -61,4 +61,8 @@ pub struct TranscriptionJob {
     pub started_at: Option<i64>,
     pub completed_at: Option<i64>,
     pub duration_sec: Option<i64>,
+    /// How many 10-minute chunks the audio was split into (0 = not yet calculated).
+    pub total_chunks: i64,
+    /// How many chunks have been fully transcribed and persisted (checkpoint cursor).
+    pub chunks_done: i64,
 }
