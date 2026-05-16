@@ -1,0 +1,1348 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Heirvo — Living Archive</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=Inter:wght@300;400;450;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #FBF7F2;
+    --bg-2: #F4EFE7;
+    --surface: rgba(255, 253, 249, 0.72);
+    --surface-strong: rgba(255, 253, 249, 0.92);
+    --ink: #1C1A17;
+    --ink-2: #4B4641;
+    --ink-3: #8A847C;
+    --ink-4: #B8B1A7;
+    --line: rgba(28, 26, 23, 0.08);
+    --line-2: rgba(28, 26, 23, 0.04);
+    --accent: #0A84FF;
+    --accent-soft: rgba(10, 132, 255, 0.10);
+    --highlight: rgba(255, 213, 109, 0.55);
+    --warm: #C97B45;
+    --shadow-1: 0 1px 2px rgba(28,26,23,0.04), 0 8px 28px rgba(28,26,23,0.06);
+    --shadow-2: 0 1px 2px rgba(28,26,23,0.05), 0 20px 60px rgba(28,26,23,0.08);
+    --serif: 'Newsreader', 'New York', Georgia, serif;
+    --sans: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+    --mono: 'JetBrains Mono', 'SF Mono', ui-monospace, Menlo, monospace;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-size: 16px;
+    line-height: 1.55;
+    letter-spacing: -0.005em;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Ambient warm wash – Vision Pro depth cue */
+  body::before {
+    content: "";
+    position: fixed; inset: -10%;
+    background:
+      radial-gradient(60% 50% at 15% 10%, rgba(255, 219, 168, 0.35), transparent 70%),
+      radial-gradient(50% 50% at 90% 20%, rgba(199, 214, 255, 0.28), transparent 70%),
+      radial-gradient(60% 60% at 70% 100%, rgba(255, 200, 180, 0.20), transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Top chrome */
+  .chrome {
+    position: sticky; top: 0; z-index: 50;
+    backdrop-filter: saturate(160%) blur(24px);
+    -webkit-backdrop-filter: saturate(160%) blur(24px);
+    background: rgba(251, 247, 242, 0.72);
+    border-bottom: 1px solid var(--line);
+  }
+  .chrome-inner {
+    max-width: 1200px; margin: 0 auto;
+    padding: 14px 32px;
+    display: flex; align-items: center; gap: 24px;
+  }
+  .brand {
+    display: flex; align-items: center; gap: 10px;
+    font-family: var(--serif); font-weight: 500; font-size: 19px;
+    letter-spacing: -0.01em;
+  }
+  .brand-dot {
+    width: 22px; height: 22px; border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, #fff, #C97B45 70%, #6c3a17);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.4), 0 1px 2px rgba(0,0,0,0.1);
+  }
+  .nav {
+    display: flex; gap: 4px; margin-left: 24px;
+  }
+  .nav button {
+    background: transparent; border: 0; cursor: pointer;
+    font-family: var(--sans); font-size: 13.5px; font-weight: 450;
+    color: var(--ink-2);
+    padding: 6px 12px; border-radius: 8px;
+    transition: all 0.2s ease;
+    letter-spacing: -0.005em;
+  }
+  .nav button:hover { background: rgba(28,26,23,0.05); color: var(--ink); }
+  .nav button.active {
+    background: rgba(28,26,23,0.07);
+    color: var(--ink);
+  }
+  .chrome-right {
+    margin-left: auto; display: flex; align-items: center; gap: 14px;
+    color: var(--ink-3); font-size: 13px;
+  }
+  .pill-status {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 10px; border-radius: 999px;
+    background: rgba(28,26,23,0.04); font-size: 12px;
+  }
+  .pill-status::before {
+    content: ""; width: 6px; height: 6px; border-radius: 50%;
+    background: #34C759; box-shadow: 0 0 0 3px rgba(52,199,89,0.18);
+  }
+
+  /* Layout */
+  .stage { position: relative; z-index: 1; }
+  .screen { display: none; animation: fadeIn 0.45s ease both; }
+  .screen.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px);} to { opacity: 1; transform: none;} }
+
+  .container {
+    max-width: 1100px; margin: 0 auto;
+    padding: 56px 32px 120px;
+  }
+  .container-wide {
+    max-width: 1280px; margin: 0 auto;
+    padding: 32px 32px 120px;
+  }
+
+  /* ---------- HOME ---------- */
+  .hero {
+    padding-top: 8vh; text-align: center;
+    max-width: 760px; margin: 0 auto;
+  }
+  .hero-eyebrow {
+    font-family: var(--sans);
+    text-transform: uppercase; letter-spacing: 0.18em;
+    font-size: 11px; color: var(--ink-3); font-weight: 500;
+    margin-bottom: 24px;
+  }
+  .hero-title {
+    font-family: var(--serif);
+    font-weight: 400;
+    font-size: clamp(40px, 5.6vw, 64px);
+    line-height: 1.05;
+    letter-spacing: -0.025em;
+    color: var(--ink);
+    margin: 0 0 18px;
+  }
+  .hero-title em {
+    font-style: italic; color: var(--ink-2);
+    font-weight: 300;
+  }
+  .hero-sub {
+    font-family: var(--serif);
+    font-size: 19px; color: var(--ink-2);
+    font-weight: 300;
+    max-width: 520px; margin: 0 auto 40px;
+    line-height: 1.5;
+  }
+
+  /* Spotlight search */
+  .spotlight {
+    position: relative; max-width: 680px; margin: 0 auto;
+  }
+  .spotlight-input {
+    width: 100%;
+    background: var(--surface-strong);
+    backdrop-filter: blur(30px) saturate(180%);
+    -webkit-backdrop-filter: blur(30px) saturate(180%);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    padding: 22px 22px 22px 60px;
+    font-family: var(--serif);
+    font-size: 22px;
+    font-weight: 400;
+    color: var(--ink);
+    box-shadow: var(--shadow-2);
+    outline: none;
+    transition: all 0.25s ease;
+    letter-spacing: -0.01em;
+  }
+  .spotlight-input::placeholder { color: var(--ink-4); font-style: italic; }
+  .spotlight-input:focus {
+    border-color: rgba(10,132,255,0.4);
+    box-shadow: var(--shadow-2), 0 0 0 4px rgba(10,132,255,0.10);
+  }
+  .spotlight-icon {
+    position: absolute; left: 22px; top: 50%;
+    transform: translateY(-50%);
+    color: var(--ink-3);
+    pointer-events: none;
+  }
+  .spotlight-hint {
+    margin-top: 14px; color: var(--ink-3); font-size: 13px;
+  }
+  .kbd {
+    display: inline-flex; align-items: center; justify-content: center;
+    padding: 1px 6px; border-radius: 5px;
+    background: rgba(28,26,23,0.06);
+    border: 1px solid var(--line);
+    font-family: var(--mono); font-size: 11px;
+    color: var(--ink-2);
+  }
+
+  /* Inline live results preview */
+  .live-results {
+    margin-top: 28px;
+    background: var(--surface-strong);
+    backdrop-filter: blur(30px) saturate(180%);
+    -webkit-backdrop-filter: blur(30px) saturate(180%);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    box-shadow: var(--shadow-2);
+    overflow: hidden;
+    text-align: left;
+  }
+  .live-section {
+    padding: 14px 22px 6px;
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.14em;
+    color: var(--ink-3); font-weight: 500;
+    border-top: 1px solid var(--line-2);
+  }
+  .live-section:first-child { border-top: 0; }
+  .live-row {
+    padding: 12px 22px; display: flex; align-items: baseline; gap: 14px;
+    cursor: pointer; transition: background 0.15s;
+    border-top: 1px solid var(--line-2);
+  }
+  .live-row:first-of-type { border-top: 0; }
+  .live-row:hover { background: rgba(10,132,255,0.05); }
+  .live-disc {
+    font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.12em;
+    color: var(--ink-3); font-weight: 500; min-width: 200px;
+    font-family: var(--sans);
+  }
+  .live-snippet {
+    font-family: var(--serif); font-size: 16px; color: var(--ink);
+    flex: 1; line-height: 1.45;
+  }
+  .live-time {
+    font-family: var(--mono); font-size: 12px; color: var(--ink-3);
+    font-variant-numeric: tabular-nums;
+  }
+  mark {
+    background: var(--highlight); color: var(--ink);
+    padding: 1px 3px; border-radius: 3px;
+  }
+
+  /* Recently recovered list */
+  .recent {
+    margin-top: 96px;
+    max-width: 820px; margin-left: auto; margin-right: auto;
+  }
+  .section-head {
+    display: flex; align-items: baseline; justify-content: space-between;
+    margin-bottom: 20px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--line);
+  }
+  .section-title {
+    font-family: var(--serif); font-size: 24px; font-weight: 400;
+    letter-spacing: -0.015em; color: var(--ink);
+  }
+  .section-meta {
+    color: var(--ink-3); font-size: 13px;
+  }
+  .disc-row {
+    display: grid;
+    grid-template-columns: 44px 1fr auto auto;
+    gap: 22px; align-items: center;
+    padding: 18px 8px;
+    border-bottom: 1px solid var(--line-2);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-radius: 10px;
+  }
+  .disc-row:hover {
+    background: rgba(255,255,255,0.55);
+    padding-left: 16px;
+  }
+  .monogram {
+    width: 40px; height: 40px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--serif); font-size: 18px; font-weight: 400;
+    color: #fff;
+    box-shadow: inset 0 -1px 2px rgba(0,0,0,0.15), 0 1px 2px rgba(0,0,0,0.06);
+    letter-spacing: 0;
+  }
+  .m1 { background: linear-gradient(135deg, #b58463, #8a5a3a); }
+  .m2 { background: linear-gradient(135deg, #6a8aa8, #455f78); }
+  .m3 { background: linear-gradient(135deg, #a87878, #7a4f4f); }
+  .m4 { background: linear-gradient(135deg, #8a9a7a, #5d6e4f); }
+  .m5 { background: linear-gradient(135deg, #a89260, #6f5d38); }
+  .m6 { background: linear-gradient(135deg, #7a6a8a, #4f4262); }
+  .m7 { background: linear-gradient(135deg, #c08f6a, #8a5e3e); }
+  .m8 { background: linear-gradient(135deg, #5f8587, #3a5a5c); }
+  .disc-meta-main {
+    display: flex; flex-direction: column; gap: 2px;
+  }
+  .disc-name {
+    font-family: var(--serif); font-size: 19px; color: var(--ink);
+    font-weight: 400; letter-spacing: -0.012em;
+  }
+  .disc-sub {
+    font-size: 12.5px; color: var(--ink-3);
+  }
+  .disc-dur {
+    font-family: var(--mono); font-size: 12.5px; color: var(--ink-3);
+    font-variant-numeric: tabular-nums;
+  }
+  .disc-status {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em;
+    color: var(--ink-3); padding: 3px 10px; border-radius: 999px;
+    background: rgba(28,26,23,0.04);
+  }
+  .disc-status.recovered {
+    color: #2c7a4b; background: rgba(52,199,89,0.12);
+  }
+  .disc-status.partial {
+    color: #8a6420; background: rgba(255,200,80,0.18);
+  }
+
+  /* ---------- SEARCH RESULTS ---------- */
+  .search-header {
+    padding-top: 20px; padding-bottom: 28px;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 24px;
+  }
+  .search-bar-mini {
+    display: flex; align-items: center; gap: 14px;
+    background: var(--surface-strong);
+    backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 14px 18px;
+    box-shadow: var(--shadow-1);
+  }
+  .search-bar-mini input {
+    flex: 1; border: 0; background: transparent; outline: none;
+    font-family: var(--serif); font-size: 19px; color: var(--ink);
+  }
+  .search-summary {
+    margin-top: 18px;
+    display: flex; gap: 24px; align-items: baseline;
+    color: var(--ink-3); font-size: 13px;
+  }
+  .filter-chips {
+    margin-left: auto; display: flex; gap: 8px;
+  }
+  .chip {
+    padding: 5px 12px; border-radius: 999px;
+    background: rgba(28,26,23,0.05);
+    font-size: 12px; color: var(--ink-2);
+    cursor: pointer; transition: all 0.15s;
+    border: 1px solid transparent;
+  }
+  .chip:hover { background: rgba(28,26,23,0.09); }
+  .chip.active {
+    background: var(--ink); color: #fff;
+  }
+
+  .results-list { margin-top: 8px; }
+  .result {
+    display: grid;
+    grid-template-columns: 200px 1fr auto;
+    gap: 28px;
+    padding: 26px 14px;
+    border-bottom: 1px solid var(--line-2);
+    cursor: pointer;
+    position: relative;
+    transition: all 0.2s ease;
+    border-radius: 10px;
+  }
+  .result:hover {
+    background: rgba(255,255,255,0.7);
+    padding-left: 22px; padding-right: 22px;
+  }
+  .result-meta {
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .result-disc-label {
+    font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.14em;
+    color: var(--ink-3); font-weight: 500;
+  }
+  .result-disc-name {
+    font-family: var(--serif); font-size: 14px; color: var(--ink-2);
+    font-weight: 400; letter-spacing: -0.01em;
+  }
+  .result-time {
+    font-family: var(--mono); font-size: 12px; color: var(--ink-3);
+    font-variant-numeric: tabular-nums;
+    margin-top: 4px;
+  }
+  .result-snippet {
+    font-family: var(--serif); font-size: 19px; line-height: 1.55;
+    color: var(--ink); letter-spacing: -0.012em;
+    font-weight: 400;
+  }
+  .result-snippet .speaker {
+    font-style: italic; color: var(--ink-3); font-weight: 400;
+    margin-right: 6px;
+  }
+  .result-action {
+    align-self: center;
+    opacity: 0;
+    transform: translateX(-6px);
+    transition: all 0.2s ease;
+    display: flex; align-items: center; gap: 6px;
+    color: var(--accent);
+    font-size: 13px; font-weight: 500;
+    white-space: nowrap;
+  }
+  .result:hover .result-action {
+    opacity: 1; transform: translateX(0);
+  }
+
+  /* ---------- WATCH ---------- */
+  .watch-wrap {
+    display: grid;
+    grid-template-columns: minmax(380px, 1fr) 1.4fr;
+    gap: 48px;
+    margin-top: 16px;
+  }
+  .watch-left { position: sticky; top: 92px; align-self: start; }
+  .video-card {
+    background: var(--surface-strong);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: var(--shadow-2);
+  }
+  .video-poster {
+    aspect-ratio: 4 / 3;
+    background:
+      linear-gradient(135deg, rgba(255,255,255,0.0), rgba(0,0,0,0.35)),
+      radial-gradient(80% 60% at 50% 40%, rgba(255,220,180,0.5), transparent 70%),
+      linear-gradient(180deg, #5d4332 0%, #2b1d15 100%);
+    position: relative;
+    display: flex; align-items: center; justify-content: center;
+    color: rgba(255,255,255,0.85);
+  }
+  .video-poster::after {
+    content: "";
+    position: absolute; inset: 0;
+    background:
+      repeating-linear-gradient(0deg, rgba(255,255,255,0.02) 0 1px, transparent 1px 3px),
+      radial-gradient(circle at 30% 80%, rgba(255,180,120,0.18), transparent 50%);
+    mix-blend-mode: overlay;
+    pointer-events: none;
+  }
+  .play-btn {
+    width: 64px; height: 64px; border-radius: 50%;
+    background: rgba(255,255,255,0.9);
+    backdrop-filter: blur(12px);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--ink);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+    z-index: 2;
+  }
+  .play-btn svg { margin-left: 3px; }
+  .video-controls {
+    padding: 14px 18px;
+    display: flex; align-items: center; gap: 14px;
+    border-top: 1px solid var(--line);
+    background: var(--surface);
+  }
+  .scrub {
+    flex: 1; height: 4px; border-radius: 2px;
+    background: rgba(28,26,23,0.08);
+    position: relative; cursor: pointer;
+  }
+  .scrub-fill {
+    position: absolute; left: 0; top: 0; bottom: 0;
+    width: 32%;
+    background: var(--ink);
+    border-radius: 2px;
+    transition: width 0.3s ease;
+  }
+  .scrub-head {
+    position: absolute; top: 50%; left: 32%;
+    width: 12px; height: 12px; border-radius: 50%;
+    background: #fff; border: 1.5px solid var(--ink);
+    transform: translate(-50%, -50%);
+    transition: left 0.3s ease;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+  }
+  .time-readout {
+    font-family: var(--mono); font-size: 12px;
+    color: var(--ink-2); font-variant-numeric: tabular-nums;
+  }
+  .ctrl-btn {
+    background: transparent; border: 0; cursor: pointer;
+    color: var(--ink-2); padding: 4px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .ctrl-btn:hover { color: var(--ink); }
+
+  .video-meta {
+    margin-top: 22px; padding: 0 4px;
+  }
+  .vm-title {
+    font-family: var(--serif); font-size: 26px; font-weight: 400;
+    letter-spacing: -0.02em; line-height: 1.15;
+  }
+  .vm-sub {
+    color: var(--ink-3); font-size: 13px; margin-top: 6px;
+  }
+  .vm-actions {
+    margin-top: 18px; display: flex; gap: 10px; flex-wrap: wrap;
+  }
+  .btn {
+    padding: 8px 14px; border-radius: 10px;
+    background: rgba(28,26,23,0.06);
+    border: 0; font-size: 13px; color: var(--ink);
+    cursor: pointer; font-family: var(--sans); font-weight: 500;
+    display: inline-flex; align-items: center; gap: 6px;
+    transition: all 0.15s;
+  }
+  .btn:hover { background: rgba(28,26,23,0.10); }
+  .btn.primary {
+    background: var(--ink); color: #fff;
+  }
+  .btn.primary:hover { background: #000; }
+
+  /* Transcript */
+  .transcript {
+    padding-top: 8px;
+  }
+  .transcript-head {
+    margin-bottom: 24px;
+    display: flex; align-items: baseline; justify-content: space-between;
+  }
+  .transcript-head h2 {
+    font-family: var(--serif); font-weight: 400; font-size: 22px;
+    margin: 0; letter-spacing: -0.015em;
+  }
+  .transcript-search {
+    position: relative;
+  }
+  .transcript-search input {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 7px 12px 7px 32px;
+    font-family: var(--sans); font-size: 13px;
+    color: var(--ink); outline: none; width: 200px;
+  }
+  .transcript-search svg {
+    position: absolute; left: 10px; top: 50%;
+    transform: translateY(-50%); color: var(--ink-3);
+  }
+  .t-line {
+    display: grid;
+    grid-template-columns: 70px 1fr;
+    gap: 24px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.15s;
+    align-items: baseline;
+  }
+  .t-line:hover { background: rgba(10,132,255,0.05); }
+  .t-line.active {
+    background: rgba(10,132,255,0.08);
+  }
+  .t-line.active .t-time { color: var(--accent); font-weight: 500; }
+  .t-time {
+    font-family: var(--mono); font-size: 11.5px;
+    color: var(--ink-4); font-variant-numeric: tabular-nums;
+    padding-top: 6px;
+  }
+  .t-text {
+    font-family: var(--serif); font-size: 19px; line-height: 1.65;
+    color: var(--ink); letter-spacing: -0.01em;
+  }
+  .t-text .speaker {
+    font-style: italic; color: var(--ink-3); margin-right: 8px;
+  }
+  .t-text .stage-dir {
+    color: var(--ink-3); font-style: italic; font-size: 16px;
+  }
+  .t-paragraph-gap { height: 14px; }
+
+  /* ---------- DISC DETAIL ---------- */
+  .detail-wrap {
+    display: grid;
+    grid-template-columns: 1fr 260px;
+    gap: 56px;
+  }
+  .detail-head {
+    margin-bottom: 32px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--line);
+  }
+  .detail-eyebrow {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.16em;
+    color: var(--ink-3); font-weight: 500;
+    margin-bottom: 14px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .detail-title {
+    font-family: var(--serif); font-weight: 400;
+    font-size: 44px; line-height: 1.08; letter-spacing: -0.022em;
+    margin: 0 0 12px;
+  }
+  .detail-byline {
+    font-family: var(--serif); font-style: italic;
+    font-size: 18px; color: var(--ink-2); font-weight: 300;
+  }
+  .meta-grid {
+    margin-top: 26px;
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px;
+  }
+  .meta-item {
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .meta-label {
+    font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.14em;
+    color: var(--ink-3); font-weight: 500;
+  }
+  .meta-value {
+    font-family: var(--serif); font-size: 16px; color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .inside-head {
+    font-family: var(--serif); font-size: 22px; font-weight: 400;
+    margin: 8px 0 16px; letter-spacing: -0.015em;
+  }
+  .topics {
+    display: flex; flex-wrap: wrap; gap: 8px;
+    margin-bottom: 40px;
+  }
+  .topic-pill {
+    padding: 7px 14px; border-radius: 999px;
+    background: var(--surface-strong);
+    border: 1px solid var(--line);
+    backdrop-filter: blur(12px);
+    font-family: var(--serif); font-size: 14px;
+    color: var(--ink-2);
+    cursor: pointer;
+    transition: all 0.18s;
+  }
+  .topic-pill:hover {
+    background: var(--ink); color: #fff;
+    border-color: var(--ink); transform: translateY(-1px);
+  }
+  .topic-pill .count {
+    font-family: var(--mono); font-size: 11px;
+    color: var(--ink-4); margin-left: 8px;
+    font-variant-numeric: tabular-nums;
+  }
+  .topic-pill:hover .count { color: rgba(255,255,255,0.7); }
+
+  .prose-transcript {
+    font-family: var(--serif); font-size: 19px; line-height: 1.75;
+    color: var(--ink); letter-spacing: -0.01em;
+    column-rule: 1px solid var(--line);
+  }
+  .prose-transcript p {
+    margin: 0 0 1.2em;
+  }
+  .prose-transcript .speaker {
+    font-style: italic; color: var(--ink-3); margin-right: 6px;
+  }
+  .prose-transcript .ts {
+    font-family: var(--mono); font-size: 11px; color: var(--ink-4);
+    vertical-align: baseline; margin-right: 8px;
+    font-variant-numeric: tabular-nums;
+  }
+  .prose-transcript .dropcap::first-letter {
+    font-size: 3.6em; float: left; line-height: 0.88;
+    padding: 6px 10px 0 0; font-weight: 400;
+    color: var(--warm);
+  }
+
+  /* Sidebar */
+  .sidebar {
+    position: sticky; top: 92px; align-self: start;
+    padding-top: 4px;
+  }
+  .side-head {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.14em;
+    color: var(--ink-3); font-weight: 500;
+    padding-bottom: 12px; margin-bottom: 6px;
+    border-bottom: 1px solid var(--line);
+  }
+  .scene {
+    display: grid; grid-template-columns: 56px 1fr; gap: 14px;
+    padding: 12px 4px;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: all 0.15s;
+  }
+  .scene:hover { background: rgba(255,255,255,0.6); padding-left: 10px; }
+  .scene-time {
+    font-family: var(--mono); font-size: 11.5px;
+    color: var(--ink-3); font-variant-numeric: tabular-nums;
+    padding-top: 2px;
+  }
+  .scene-title {
+    font-family: var(--serif); font-size: 14.5px; color: var(--ink);
+    line-height: 1.35; letter-spacing: -0.005em;
+  }
+
+  /* Footer breadcrumb */
+  .crumb {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: transparent; border: 0; cursor: pointer;
+    color: var(--ink-3); font-size: 13px;
+    padding: 4px 0; margin-bottom: 18px;
+  }
+  .crumb:hover { color: var(--ink); }
+
+  /* utility */
+  .row { display: flex; align-items: center; gap: 12px; }
+  .spacer { flex: 1; }
+
+  @media (max-width: 900px) {
+    .watch-wrap, .detail-wrap { grid-template-columns: 1fr; }
+    .watch-left, .sidebar { position: static; }
+    .meta-grid { grid-template-columns: repeat(2, 1fr); }
+    .result { grid-template-columns: 1fr; gap: 8px; }
+    .result-meta { flex-direction: row; gap: 12px; align-items: baseline; }
+  }
+</style>
+</head>
+<body>
+
+<header class="chrome">
+  <div class="chrome-inner">
+    <div class="brand">
+      <span class="brand-dot"></span>
+      <span>Heirvo</span>
+    </div>
+    <nav class="nav" id="nav">
+      <button data-screen="home" class="active">Library</button>
+      <button data-screen="search">Search</button>
+      <button data-screen="watch">Watch</button>
+      <button data-screen="disc">Disc</button>
+    </nav>
+    <div class="chrome-right">
+      <span class="pill-status">Drive ready</span>
+      <span>Eleanor's Archive</span>
+    </div>
+  </div>
+</header>
+
+<main class="stage">
+
+<!-- ============ HOME ============ -->
+<section class="screen active" id="screen-home">
+  <div class="container">
+    <div class="hero">
+      <div class="hero-eyebrow">Living Archive · 47 discs recovered</div>
+      <h1 class="hero-title">Every moment your family saved,<br><em>findable again.</em></h1>
+      <p class="hero-sub">Start typing what you remember &mdash; a name, a place, a song, even half a sentence. Heirvo will find it inside hours of home video.</p>
+
+      <div class="spotlight">
+        <div class="spotlight-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
+        </div>
+        <input class="spotlight-input" id="spotlight" placeholder="Search every word ever spoken on tape..." />
+        <div class="spotlight-hint">Try <span class="kbd">grandma's birthday</span> &nbsp; <span class="kbd">camping</span> &nbsp; <span class="kbd">first day of school</span> &nbsp; or press <span class="kbd">/</span> anywhere</div>
+
+        <!-- Live preview state, shown when input has content -->
+        <div class="live-results" id="liveResults" style="display:none;">
+          <div class="live-section">Top moments &middot; "<span id="echoQuery">grandma</span>"</div>
+          <div class="live-row" data-screen="watch">
+            <div class="live-disc">Grandma Eleanor's 80th · 1995</div>
+            <div class="live-snippet">"Happy birthday <mark>Grandma</mark>, you don't look a day over sixty&mdash;"</div>
+            <div class="live-time">00:12:43</div>
+          </div>
+          <div class="live-row" data-screen="watch">
+            <div class="live-disc">Christmas · 1992</div>
+            <div class="live-snippet">"<mark>Grandma</mark> made the pie from scratch, three days she said&hellip;"</div>
+            <div class="live-time">00:34:08</div>
+          </div>
+          <div class="live-row" data-screen="watch">
+            <div class="live-disc">Family Reunion · 2003</div>
+            <div class="live-snippet">"&hellip;and <mark>Grandma</mark> Eleanor still beats everyone at gin rummy."</div>
+            <div class="live-time">01:08:22</div>
+          </div>
+          <div class="live-section">In disc titles</div>
+          <div class="live-row" data-screen="disc">
+            <div class="live-disc">Disc</div>
+            <div class="live-snippet"><mark>Grandma</mark> Eleanor's 80th Birthday &mdash; July 1995</div>
+            <div class="live-time">2:14:30</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="recent">
+      <div class="section-head">
+        <div class="section-title">Recently recovered</div>
+        <div class="section-meta">12 of 47 &middot; sorted by date added</div>
+      </div>
+
+      <div class="disc-row" data-screen="disc">
+        <div class="monogram m1">G</div>
+        <div class="disc-meta-main">
+          <div class="disc-name">Grandma Eleanor's 80th Birthday</div>
+          <div class="disc-sub">DVD-R &middot; recovered May 14 &middot; 4,812 spoken phrases indexed</div>
+        </div>
+        <div class="disc-status recovered">Recovered</div>
+        <div class="disc-dur">2:14:30</div>
+      </div>
+
+      <div class="disc-row" data-screen="search">
+        <div class="monogram m2">W</div>
+        <div class="disc-meta-main">
+          <div class="disc-name">Wedding Day &mdash; Sarah &amp; Mike</div>
+          <div class="disc-sub">VHS transfer &middot; June 14, 1987 &middot; 6,201 phrases</div>
+        </div>
+        <div class="disc-status recovered">Recovered</div>
+        <div class="disc-dur">3:48:12</div>
+      </div>
+
+      <div class="disc-row">
+        <div class="monogram m3">C</div>
+        <div class="disc-meta-main">
+          <div class="disc-name">Christmas Morning</div>
+          <div class="disc-sub">DVD-R &middot; December 25, 1992 &middot; 1,884 phrases</div>
+        </div>
+        <div class="disc-status recovered">Recovered</div>
+        <div class="disc-dur">1:02:44</div>
+      </div>
+
+      <div class="disc-row">
+        <div class="monogram m4">H</div>
+        <div class="disc-meta-main">
+          <div class="disc-name">Hawaii Vacation</div>
+          <div class="disc-sub">Hi8 transfer &middot; August 1999 &middot; 3,402 phrases</div>
+        </div>
+        <div class="disc-status partial">Partial &middot; 2 sectors</div>
+        <div class="disc-dur">2:58:09</div>
+      </div>
+
+      <div class="disc-row">
+        <div class="monogram m5">D</div>
+        <div class="disc-meta-main">
+          <div class="disc-name">Dad's 60th Birthday Party</div>
+          <div class="disc-sub">DVD+RW &middot; March 11, 2004 &middot; 2,144 phrases</div>
+        </div>
+        <div class="disc-status recovered">Recovered</div>
+        <div class="disc-dur">1:42:18</div>
+      </div>
+
+      <div class="disc-row">
+        <div class="monogram m6">K</div>
+        <div class="disc-meta-main">
+          <div class="disc-name">Kids' First Day of School</div>
+          <div class="disc-sub">MiniDV transfer &middot; September 2001 &middot; 962 phrases</div>
+        </div>
+        <div class="disc-status recovered">Recovered</div>
+        <div class="disc-dur">0:48:30</div>
+      </div>
+
+      <div class="disc-row">
+        <div class="monogram m7">F</div>
+        <div class="disc-meta-main">
+          <div class="disc-name">Family Reunion &mdash; Lake House</div>
+          <div class="disc-sub">DVD-R &middot; July 2003 &middot; 5,118 phrases</div>
+        </div>
+        <div class="disc-status recovered">Recovered</div>
+        <div class="disc-dur">3:11:55</div>
+      </div>
+
+      <div class="disc-row">
+        <div class="monogram m8">Y</div>
+        <div class="disc-meta-main">
+          <div class="disc-name">Camping &mdash; Yellowstone</div>
+          <div class="disc-sub">Hi8 transfer &middot; June 1998 &middot; 1,407 phrases</div>
+        </div>
+        <div class="disc-status recovered">Recovered</div>
+        <div class="disc-dur">1:34:02</div>
+      </div>
+
+      <div class="disc-row">
+        <div class="monogram m1">T</div>
+        <div class="disc-meta-main">
+          <div class="disc-name">Thanksgiving at Aunt Mary's</div>
+          <div class="disc-sub">DVD-R &middot; November 1996 &middot; 2,031 phrases</div>
+        </div>
+        <div class="disc-status recovered">Recovered</div>
+        <div class="disc-dur">1:18:44</div>
+      </div>
+
+      <div class="disc-row">
+        <div class="monogram m2">B</div>
+        <div class="disc-meta-main">
+          <div class="disc-name">Baby Emma's First Steps</div>
+          <div class="disc-sub">MiniDV &middot; April 11, 2000 &middot; 514 phrases</div>
+        </div>
+        <div class="disc-status partial">Partial &middot; recovered 94%</div>
+        <div class="disc-dur">0:22:48</div>
+      </div>
+
+      <div class="disc-row">
+        <div class="monogram m4">G</div>
+        <div class="disc-meta-main">
+          <div class="disc-name">Graduation &mdash; Michael, High School</div>
+          <div class="disc-sub">DVD-R &middot; June 2008 &middot; 1,664 phrases</div>
+        </div>
+        <div class="disc-status recovered">Recovered</div>
+        <div class="disc-dur">1:48:00</div>
+      </div>
+
+      <div class="disc-row">
+        <div class="monogram m6">R</div>
+        <div class="disc-meta-main">
+          <div class="disc-name">Road Trip &mdash; Route 66</div>
+          <div class="disc-sub">VHS-C &middot; July 1991 &middot; 3,890 phrases</div>
+        </div>
+        <div class="disc-status recovered">Recovered</div>
+        <div class="disc-dur">2:21:11</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SEARCH ============ -->
+<section class="screen" id="screen-search">
+  <div class="container">
+    <button class="crumb" data-screen="home">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
+      Library
+    </button>
+
+    <div class="search-header">
+      <div class="search-bar-mini">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" color="#8A847C"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        <input value="grandma's birthday" id="searchInput" />
+        <span class="time-readout">142 moments</span>
+      </div>
+      <div class="search-summary">
+        <span>Searched <strong style="color:var(--ink);">47 discs</strong> · 89 hours of transcript</span>
+        <div class="filter-chips">
+          <div class="chip active">All moments</div>
+          <div class="chip">By disc</div>
+          <div class="chip">By person</div>
+          <div class="chip">By year</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="results-list">
+
+      <div class="result" data-screen="watch">
+        <div class="result-meta">
+          <div class="result-disc-label">Grandma Eleanor's 80th</div>
+          <div class="result-disc-name">July 22, 1995</div>
+          <div class="result-time">00:12:43</div>
+        </div>
+        <div class="result-snippet">
+          <span class="speaker">Uncle Robert:</span>"Alright everyone gather around &mdash; happy <mark>birthday</mark> <mark>Grandma</mark>, you don't look a day over sixty, and the kids made you sing all eighty candles' worth, so blow them out before the cake melts."
+        </div>
+        <div class="result-action">
+          Watch this moment
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+        </div>
+      </div>
+
+      <div class="result" data-screen="watch">
+        <div class="result-meta">
+          <div class="result-disc-label">Grandma Eleanor's 80th</div>
+          <div class="result-disc-name">July 22, 1995</div>
+          <div class="result-time">00:34:18</div>
+        </div>
+        <div class="result-snippet">
+          <span class="speaker">Mom:</span>"&hellip;she told me she's been waiting for this <mark>birthday</mark> her whole life, just to have all four of her grandkids in one room. Look at her face, that's the happiest I've seen <mark>Grandma</mark> since &mdash; well, since Pop-pop."
+        </div>
+        <div class="result-action">
+          Watch this moment
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+        </div>
+      </div>
+
+      <div class="result">
+        <div class="result-meta">
+          <div class="result-disc-label">Family Reunion &mdash; Lake House</div>
+          <div class="result-disc-name">July 2003</div>
+          <div class="result-time">01:08:22</div>
+        </div>
+        <div class="result-snippet">
+          <span class="speaker">Sarah:</span>"Remember Grandma's <mark>birthday</mark> back in '95? She made everyone hold hands and said something I think about every single day &mdash; that we're not really a family until we sit down and tell the same story twice."
+        </div>
+        <div class="result-action">
+          Watch this moment
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+        </div>
+      </div>
+
+      <div class="result">
+        <div class="result-meta">
+          <div class="result-disc-label">Christmas Morning</div>
+          <div class="result-disc-name">December 25, 1992</div>
+          <div class="result-time">00:48:11</div>
+        </div>
+        <div class="result-snippet">
+          <span class="speaker">Dad:</span>"Hey, hey &mdash; okay everyone smile, look at the camera honey &mdash; this one's going on <mark>Grandma's</mark> mantle for her <mark>birthday</mark> in July, so try to look like you don't hate each other for ten seconds."
+        </div>
+        <div class="result-action">
+          Watch this moment
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+        </div>
+      </div>
+
+      <div class="result">
+        <div class="result-meta">
+          <div class="result-disc-label">Thanksgiving at Aunt Mary's</div>
+          <div class="result-disc-name">November 1996</div>
+          <div class="result-time">00:21:09</div>
+        </div>
+        <div class="result-snippet">
+          <span class="speaker">Aunt Mary:</span>"&hellip;and we should toast to <mark>Grandma</mark> Eleanor, because her <mark>birthday</mark> last summer was the last time we were all in one place, and a year goes fast when you're not paying attention."
+        </div>
+        <div class="result-action">
+          Watch this moment
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+        </div>
+      </div>
+
+      <div class="result">
+        <div class="result-meta">
+          <div class="result-disc-label">Dad's 60th Birthday Party</div>
+          <div class="result-disc-name">March 11, 2004</div>
+          <div class="result-time">00:55:32</div>
+        </div>
+        <div class="result-snippet">
+          <span class="speaker">Dad:</span>"You know, this is the first <mark>birthday</mark> I've had without my mother, and I keep expecting her to walk through the door with that ridiculous cake she used to insist on for <mark>Grandma's</mark> &mdash; for everyone's birthdays really."
+        </div>
+        <div class="result-action">
+          Watch this moment
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+        </div>
+      </div>
+
+      <div class="result">
+        <div class="result-meta">
+          <div class="result-disc-label">Grandma Eleanor's 80th</div>
+          <div class="result-disc-name">July 22, 1995</div>
+          <div class="result-time">01:48:55</div>
+        </div>
+        <div class="result-snippet">
+          <span class="speaker">Grandma Eleanor:</span>"Oh stop it, stop with the camera &mdash; I'll tell you a secret, every <mark>birthday</mark> I've ever had I made the same wish, and look at all of you here, so I guess it finally came true."
+        </div>
+        <div class="result-action">
+          Watch this moment
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+        </div>
+      </div>
+
+      <div class="result">
+        <div class="result-meta">
+          <div class="result-disc-label">Wedding Day &mdash; Sarah &amp; Mike</div>
+          <div class="result-disc-name">June 14, 1987</div>
+          <div class="result-time">02:14:07</div>
+        </div>
+        <div class="result-snippet">
+          <span class="speaker">Mike's toast:</span>"&hellip;and Sarah, your <mark>grandma</mark> told me at her own <mark>birthday</mark> a few years back &mdash; she said marry the one who laughs at your worst joke, and I've been telling that one ever since."
+        </div>
+        <div class="result-action">
+          Watch this moment
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ============ WATCH ============ -->
+<section class="screen" id="screen-watch">
+  <div class="container-wide">
+    <button class="crumb" data-screen="search">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
+      Search results
+    </button>
+
+    <div class="watch-wrap">
+      <div class="watch-left">
+        <div class="video-card">
+          <div class="video-poster">
+            <div class="play-btn">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+            </div>
+          </div>
+          <div class="video-controls">
+            <button class="ctrl-btn"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></button>
+            <div class="scrub"><div class="scrub-fill" id="scrubFill"></div><div class="scrub-head" id="scrubHead"></div></div>
+            <span class="time-readout" id="watchTime">00:12:43 / 02:14:30</span>
+          </div>
+        </div>
+
+        <div class="video-meta">
+          <div class="vm-title">Grandma Eleanor's 80th Birthday</div>
+          <div class="vm-sub">July 22, 1995 &middot; DVD-R, recovered May 14 &middot; 12 scenes &middot; 4,812 phrases</div>
+          <div class="vm-actions">
+            <button class="btn primary">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+              Export clip
+            </button>
+            <button class="btn">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8M16 6l-4-4-4 4M12 2v13"/></svg>
+              Share moment
+            </button>
+            <button class="btn">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5L6 9H2v6h4l5 4V5zM15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+              Audio only
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="transcript">
+        <div class="transcript-head">
+          <h2>Transcript</h2>
+          <div class="transcript-search">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            <input placeholder="Find in transcript" />
+          </div>
+        </div>
+
+        <div class="t-line" data-t="00:12:18"><div class="t-time">00:12:18</div><div class="t-text"><span class="speaker">Uncle Robert:</span>Okay is the camera on? It's on right? Alright, alright everyone &mdash;</div></div>
+        <div class="t-line" data-t="00:12:24"><div class="t-time">00:12:24</div><div class="t-text"><span class="speaker">Mom:</span>The little red light, Bob. The little red light means it's on.</div></div>
+        <div class="t-line" data-t="00:12:30"><div class="t-time">00:12:30</div><div class="t-text"><span class="speaker">Uncle Robert:</span>I see it, I see it. Okay everyone gather around. Sarah honey, scoot in &mdash;</div></div>
+
+        <div class="t-line active" data-t="00:12:43" id="activeLine"><div class="t-time">00:12:43</div><div class="t-text"><span class="speaker">Uncle Robert:</span>Happy birthday Grandma, you don't look a day over sixty, and the kids made you sing all eighty candles' worth, so blow them out before the cake melts.</div></div>
+
+        <div class="t-line" data-t="00:12:58"><div class="t-time">00:12:58</div><div class="t-text"><span class="stage-dir">[laughter, sound of someone clapping]</span></div></div>
+        <div class="t-line" data-t="00:13:02"><div class="t-time">00:13:02</div><div class="t-text"><span class="speaker">Grandma Eleanor:</span>Oh good Lord, you're all going to give me a heart attack before I can blow them out. Where's Michael? Michael come closer, sweetheart, where are you hiding.</div></div>
+        <div class="t-line" data-t="00:13:18"><div class="t-time">00:13:18</div><div class="t-text"><span class="speaker">Michael (10):</span>I'm right here Grandma, I'm right behind you!</div></div>
+        <div class="t-line" data-t="00:13:22"><div class="t-time">00:13:22</div><div class="t-text"><span class="speaker">Grandma Eleanor:</span>Oh you. Come around so I can see you. Now everyone, on the count of three &mdash; one, two &mdash; wait, hold on, let me make my wish first.</div></div>
+        <div class="t-line" data-t="00:13:35"><div class="t-time">00:13:35</div><div class="t-text"><span class="stage-dir">[four seconds of silence, a cough, the hum of the camcorder]</span></div></div>
+        <div class="t-line" data-t="00:13:41"><div class="t-time">00:13:41</div><div class="t-text"><span class="speaker">Grandma Eleanor:</span>Okay. I made it.</div></div>
+        <div class="t-line" data-t="00:13:44"><div class="t-time">00:13:44</div><div class="t-text"><span class="speaker">Sarah:</span>What did you wish for?</div></div>
+        <div class="t-line" data-t="00:13:46"><div class="t-time">00:13:46</div><div class="t-text"><span class="speaker">Grandma Eleanor:</span>Now you know I can't tell you that, dear. But it's a good one. Alright &mdash; one, two, three &mdash;</div></div>
+        <div class="t-line" data-t="00:13:55"><div class="t-time">00:13:55</div><div class="t-text"><span class="stage-dir">[everyone blows candles, applause, "yay Grandma"]</span></div></div>
+        <div class="t-line" data-t="00:14:02"><div class="t-time">00:14:02</div><div class="t-text"><span class="speaker">Dad:</span>Did you get them all, Mom? Did she get them all?</div></div>
+        <div class="t-line" data-t="00:14:05"><div class="t-time">00:14:05</div><div class="t-text"><span class="speaker">Mom:</span>She got them all. Eighty out of eighty. That's our champion.</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ DISC DETAIL ============ -->
+<section class="screen" id="screen-disc">
+  <div class="container-wide">
+    <button class="crumb" data-screen="home">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
+      Library
+    </button>
+
+    <div class="detail-wrap">
+      <div>
+        <div class="detail-head">
+          <div class="detail-eyebrow">
+            <div class="monogram m1" style="width:22px;height:22px;font-size:11px;">G</div>
+            DVD-R · Disc 03 of 04 · "Eleanor Box"
+          </div>
+          <h1 class="detail-title">Grandma Eleanor's 80th Birthday</h1>
+          <div class="detail-byline">filmed by Robert Hartley &middot; July 22, 1995 &middot; Hartley family home, Belmont, MA</div>
+
+          <div class="meta-grid">
+            <div class="meta-item">
+              <div class="meta-label">Duration</div>
+              <div class="meta-value">2:14:30</div>
+            </div>
+            <div class="meta-item">
+              <div class="meta-label">Recovery</div>
+              <div class="meta-value">100% &middot; clean</div>
+            </div>
+            <div class="meta-item">
+              <div class="meta-label">Phrases indexed</div>
+              <div class="meta-value">4,812</div>
+            </div>
+            <div class="meta-item">
+              <div class="meta-label">People identified</div>
+              <div class="meta-value">11</div>
+            </div>
+          </div>
+        </div>
+
+        <h2 class="inside-head">Inside this disc</h2>
+        <div class="topics">
+          <div class="topic-pill">Birthday cake <span class="count">14</span></div>
+          <div class="topic-pill">Grandma Eleanor <span class="count">189</span></div>
+          <div class="topic-pill">Sarah <span class="count">62</span></div>
+          <div class="topic-pill">Michael <span class="count">48</span></div>
+          <div class="topic-pill">Uncle Robert <span class="count">71</span></div>
+          <div class="topic-pill">Hartley family home <span class="count">9</span></div>
+          <div class="topic-pill">Cousin toast <span class="count">3</span></div>
+          <div class="topic-pill">Wishes &amp; candles <span class="count">7</span></div>
+          <div class="topic-pill">Gin rummy <span class="count">11</span></div>
+          <div class="topic-pill">Old photo album <span class="count">5</span></div>
+          <div class="topic-pill">Pop-pop (mentioned) <span class="count">8</span></div>
+          <div class="topic-pill">Garden roses <span class="count">4</span></div>
+        </div>
+
+        <h2 class="inside-head">Full transcript</h2>
+        <div class="prose-transcript">
+          <p class="dropcap"><span class="ts">00:00:14</span><span class="speaker">Uncle Robert:</span>Test, test, one two three &mdash; alright. Okay, okay we are rolling. Today is July twenty-second, nineteen ninety-five, and we are at Mom's house in Belmont for the big day, the eight-oh, the ages-and-ages birthday. Sarah is here, Michael is here, the cousins drove down from Maine last night, and Mom doesn't know about half the people in the kitchen yet.</p>
+
+          <p><span class="ts">00:01:02</span><span class="speaker">Mom:</span>Bob, are you filming the rug? Why are you filming the rug?</p>
+
+          <p><span class="ts">00:01:06</span><span class="speaker">Uncle Robert:</span>I'm getting the establishing shot, like the documentary guys do. Setting the scene. The rug is part of the scene.</p>
+
+          <p><span class="ts">00:01:14</span><span class="speaker">Mom:</span>Well establish faster, the cake is melting.</p>
+
+          <p><span class="ts">00:04:18</span><span class="speaker">Grandma Eleanor:</span>Oh for heaven's sake, you all came. You all came. Look at this. Robert, put down the camera and give your mother a hug, the camera will still work in thirty seconds I promise you.</p>
+
+          <p><span class="ts">00:08:51</span><span class="speaker">Sarah:</span>Grandma, tell them the story about the wedding cake. The one where the &mdash; no, tell them, it's a good one, you have to tell it.</p>
+
+          <p><span class="ts">00:09:02</span><span class="speaker">Grandma Eleanor:</span>Oh good lord. Alright. So your grandfather and I, we got married on a Tuesday, because the church was free on Tuesdays in those days &mdash; that's how cheap your grandfather was, may he rest in peace &mdash; and the baker, Mr. Petrov, he forgot about us entirely. So at four o'clock when we walk in for the reception, there is no cake. None. Empty table.</p>
+
+          <p><span class="ts">00:09:38</span><span class="speaker">Grandma Eleanor:</span>So your grandfather, who has not said three words all morning because he is so nervous, he turns to Mr. Petrov's nephew, who happens to be in the pew, and he says "son, do you know how to make a cake," and the boy says "I know how to make pancakes," and your grandfather says "good enough, get the pan."</p>
+
+          <p><span class="ts">00:10:04</span><span class="speaker">Grandma Eleanor:</span>And that's how I got married with a stack of pancakes for a wedding cake and a man who would, for the next fifty-three years, never once let me forget that he saved the day. And I'm telling you all this because that pancake stack was the happiest I have ever been in my entire life, until right now, today, with all of you in my kitchen.</p>
+        </div>
+      </div>
+
+      <aside class="sidebar">
+        <div class="side-head">Scenes &middot; 12</div>
+        <div class="scene"><div class="scene-time">00:00</div><div class="scene-title">Uncle Robert sets up the camera</div></div>
+        <div class="scene"><div class="scene-time">04:18</div><div class="scene-title">Grandma arrives, surprise reveal</div></div>
+        <div class="scene"><div class="scene-time">08:51</div><div class="scene-title">The pancake-wedding story</div></div>
+        <div class="scene"><div class="scene-time">12:43</div><div class="scene-title">Cake &amp; candles &middot; the wish</div></div>
+        <div class="scene"><div class="scene-time">28:11</div><div class="scene-title">Cousin toasts, oldest to youngest</div></div>
+        <div class="scene"><div class="scene-time">42:09</div><div class="scene-title">Sarah's poem from the grandchildren</div></div>
+        <div class="scene"><div class="scene-time">58:34</div><div class="scene-title">Old photo album passed around</div></div>
+        <div class="scene"><div class="scene-time">1:18:22</div><div class="scene-title">Gin rummy tournament begins</div></div>
+        <div class="scene"><div class="scene-time">1:42:55</div><div class="scene-title">Dancing in the kitchen</div></div>
+        <div class="scene"><div class="scene-time">1:58:01</div><div class="scene-title">Grandma's quiet moment on the porch</div></div>
+        <div class="scene"><div class="scene-time">2:06:30</div><div class="scene-title">Group photo, three takes</div></div>
+        <div class="scene"><div class="scene-time">2:11:48</div><div class="scene-title">Goodnights and last lights out</div></div>
+
+        <div class="side-head" style="margin-top:32px;">Related discs</div>
+        <div class="scene"><div class="scene-time" style="font-family:var(--serif);font-size:13px;color:var(--ink-2);">'92</div><div class="scene-title">Christmas Morning</div></div>
+        <div class="scene"><div class="scene-time" style="font-family:var(--serif);font-size:13px;color:var(--ink-2);">'96</div><div class="scene-title">Thanksgiving at Aunt Mary's</div></div>
+        <div class="scene"><div class="scene-time" style="font-family:var(--serif);font-size:13px;color:var(--ink-2);">'03</div><div class="scene-title">Family Reunion &mdash; Lake House</div></div>
+      </aside>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<script>
+  // Navigation
+  const nav = document.getElementById('nav');
+  const screens = document.querySelectorAll('.screen');
+  const navButtons = nav.querySelectorAll('button');
+
+  function go(name) {
+    screens.forEach(s => s.classList.toggle('active', s.id === 'screen-' + name));
+    navButtons.forEach(b => b.classList.toggle('active', b.dataset.screen === name));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  nav.addEventListener('click', e => {
+    const b = e.target.closest('button');
+    if (b && b.dataset.screen) go(b.dataset.screen);
+  });
+
+  // Anything with data-screen acts as a link
+  document.body.addEventListener('click', e => {
+    const link = e.target.closest('[data-screen]');
+    if (link && !link.closest('#nav')) {
+      e.preventDefault();
+      go(link.dataset.screen);
+    }
+  });
+
+  // Spotlight live preview
+  const spot = document.getElementById('spotlight');
+  const live = document.getElementById('liveResults');
+  const echo = document.getElementById('echoQuery');
+  spot.addEventListener('input', () => {
+    const v = spot.value.trim();
+    if (v.length >= 2) {
+      echo.textContent = v;
+      live.style.display = 'block';
+    } else {
+      live.style.display = 'none';
+    }
+  });
+  // Submit -> go to search
+  spot.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && spot.value.trim()) {
+      document.getElementById('searchInput').value = spot.value.trim();
+      go('search');
+    }
+  });
+  // Pre-seed a demo state so reviewers see the live results immediately on first focus
+  spot.addEventListener('focus', () => {
+    if (!spot.value) {
+      spot.value = 'grandma';
+      echo.textContent = 'grandma';
+      live.style.display = 'block';
+    }
+  });
+
+  // Global "/" shortcut
+  document.addEventListener('keydown', e => {
+    if (e.key === '/' && document.activeElement.tagName !== 'INPUT') {
+      e.preventDefault();
+      go('home');
+      setTimeout(() => spot.focus(), 200);
+    }
+  });
+
+  // Transcript click -> seek the fake playhead
+  const totalSeconds = 2*3600 + 14*60 + 30;
+  function tsToSec(t) {
+    const parts = t.split(':').map(Number);
+    if (parts.length === 3) return parts[0]*3600 + parts[1]*60 + parts[2];
+    return parts[0]*60 + parts[1];
+  }
+  function fmt(sec) {
+    const h = Math.floor(sec/3600), m = Math.floor((sec%3600)/60), s = sec%60;
+    return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  }
+  document.querySelectorAll('.t-line').forEach(line => {
+    line.addEventListener('click', () => {
+      document.querySelectorAll('.t-line').forEach(l => l.classList.remove('active'));
+      line.classList.add('active');
+      const t = line.dataset.t;
+      const sec = tsToSec(t);
+      const pct = (sec / totalSeconds) * 100;
+      document.getElementById('scrubFill').style.width = pct + '%';
+      document.getElementById('scrubHead').style.left = pct + '%';
+      document.getElementById('watchTime').textContent = `${fmt(sec)} / 02:14:30`;
+    });
+  });
+
+  // Scene markers seek too
+  document.querySelectorAll('.scene').forEach(sc => {
+    sc.addEventListener('click', () => {
+      const t = sc.querySelector('.scene-time').textContent.trim();
+      if (t.match(/^\d/)) {
+        go('watch');
+      }
+    });
+  });
+</script>
+</body>
+</html>

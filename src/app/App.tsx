@@ -1,7 +1,7 @@
 import { Routes, Route, Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
 import { gsap } from "gsap";
-import { Disc3, History, Film, Settings as SettingsIcon, ChevronLeft, ChevronRight as ChevronRightIcon } from "lucide-react";
+import { Disc3, History, Film, Library as LibraryIcon, Settings as SettingsIcon, ChevronLeft, ChevronRight as ChevronRightIcon } from "lucide-react";
 import Home from "@/screens/Home";
 import { Wizard } from "@/screens/wizard/Wizard";
 import { Dashboard } from "@/screens/dashboard/Dashboard";
@@ -9,6 +9,10 @@ import { SessionHistory } from "@/screens/history/SessionHistory";
 import { Transcode } from "@/screens/transcode/Transcode";
 import { Settings } from "@/screens/settings/Settings";
 import Preflight from "@/screens/preflight/Preflight";
+import Library from "@/screens/library/Library";
+import LibrarySearch from "@/screens/library/Search";
+import LibraryWatch from "@/screens/library/Watch";
+import LibraryDiscDetail from "@/screens/library/DiscDetail";
 // UpdateBanner disabled until signing keypair is generated.
 // import UpdateBanner from "@/components/UpdateBanner";
 import { ipc } from "@/lib/ipc";
@@ -42,6 +46,10 @@ export default function App() {
             <Route path="/history" element={<SessionHistory />} />
             <Route path="/transcode" element={<Transcode />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/library" element={<Library />} />
+            <Route path="/search" element={<LibrarySearch />} />
+            <Route path="/watch/:discId" element={<LibraryWatch />} />
+            <Route path="/disc/:discId" element={<LibraryDiscDetail />} />
             <Route path="*" element={<Home />} />
           </Route>
         </Routes>
@@ -128,6 +136,7 @@ function Sidebar() {
 
   const items = [
     { to: "/", label: "Home", icon: Disc3 },
+    { to: "/library", label: "Library", icon: LibraryIcon },
     { to: "/history", label: "My Discs", icon: History },
     { to: "/transcode", label: "Save As…", icon: Film },
     { to: "/settings", label: "Settings", icon: SettingsIcon },

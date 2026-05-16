@@ -4,6 +4,201 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ─────────────────────────────────────────────────────────────────────────────
+   Library / Memory Vault design tokens — a warm-paper aesthetic that lives
+   alongside the existing brand-blue palette. Scoped via .lib-root and lib-*
+   class names so it never bleeds into the rest of the app.
+───────────────────────────────────────────────────────────────────────────── */
+:root {
+  --paper:       #F8F4EC;
+  --paper-2:     #F2ECDF;
+  --paper-3:     #EAE2D0;
+  --ink-warm:    #1B1714;
+  --ink-warm-2:  #3A332C;
+  --amber:       #C2741F;
+  --amber-soft:  #E9B97A;
+  --hl:          #F6D27A;
+  --font-serif:  'Fraunces', 'New York', 'Georgia', ui-serif, serif;
+  --font-sans:   'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+
+  /* Aliases consumed by library components */
+  --lib-paper:        var(--paper);
+  --lib-paper-2:      var(--paper-2);
+  --lib-paper-3:      var(--paper-3);
+  --lib-ink:          var(--ink-warm);
+  --lib-ink-2:        var(--ink-warm-2);
+  --lib-muted:        #7A6F62;
+  --lib-line:         #E2D8C4;
+  --lib-amber:        var(--amber);
+  --lib-amber-soft:   var(--amber-soft);
+  --lib-hl:           var(--hl);
+  --lib-serif:        var(--font-serif);
+  --lib-sans:         var(--font-sans);
+  --lib-shadow-soft:  0 1px 2px rgba(40,30,20,.04), 0 10px 30px rgba(40,30,20,.06);
+  --lib-shadow-card:  0 1px 2px rgba(40,30,20,.05), 0 20px 60px rgba(40,30,20,.10);
+}
+
+.lib-root {
+  font-family: var(--lib-sans);
+  background: var(--lib-paper);
+  color: var(--lib-ink);
+  min-height: 100%;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+.lib-root ::selection { background: var(--lib-hl); color: var(--lib-ink); }
+
+.lib-container {
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 0 32px;
+}
+.lib-container-wide {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 0 32px;
+}
+
+.lib-search-form {
+  position: relative;
+  margin-top: 28px;
+  max-width: 480px;
+}
+.lib-search-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--lib-muted);
+  pointer-events: none;
+}
+.lib-search-input {
+  width: 100%;
+  background: rgba(255,255,255,.7);
+  border: 1px solid var(--lib-line);
+  border-radius: 99px;
+  padding: 10px 16px 10px 40px;
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--lib-ink);
+  outline: none;
+  transition: all .2s;
+}
+.lib-search-input:focus {
+  background: #fff;
+  border-color: var(--lib-amber-soft);
+  box-shadow: 0 0 0 4px rgba(194,116,31,.12);
+}
+
+/* Hide horizontal scrollbar inside rails (webkit + firefox) */
+.lib-rail::-webkit-scrollbar { display: none; }
+
+.lib-card:hover { transform: translateY(-4px); }
+.lib-result-row:hover { background: rgba(0,0,0,.025); }
+.lib-tline:hover { background: var(--lib-paper-2); }
+
+.lib-btn {
+  border: 0;
+  padding: 13px 22px;
+  border-radius: 99px;
+  font-size: 14px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: transform .15s ease, box-shadow .2s ease, background .2s ease;
+  text-decoration: none;
+  font-family: var(--lib-sans);
+  cursor: pointer;
+}
+.lib-btn-primary {
+  background: #1B1714;
+  color: var(--lib-paper);
+  box-shadow: 0 6px 18px rgba(27,23,20,.25);
+}
+.lib-btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 24px rgba(27,23,20,.32);
+}
+.lib-btn-ghost {
+  background: rgba(255,255,255,.55);
+  color: #2B1E12;
+  border: 1px solid rgba(27,23,20,.12);
+  backdrop-filter: blur(8px);
+}
+.lib-btn-ghost:hover { background: rgba(255,255,255,.85); }
+
+.lib-btn-flat {
+  padding: 8px 14px;
+  border-radius: 10px;
+  background: rgba(28,26,23,0.06);
+  border: 0;
+  font-size: 13px;
+  color: var(--lib-ink);
+  cursor: pointer;
+  font-family: var(--lib-sans);
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s;
+  text-decoration: none;
+}
+.lib-btn-flat:hover { background: rgba(28,26,23,0.10); }
+.lib-btn-flat-primary {
+  background: var(--lib-ink);
+  color: #fff;
+}
+.lib-btn-flat-primary:hover { background: #000; }
+
+.lib-pill {
+  background: rgba(255,255,255,.6);
+  border: 1px solid rgba(0,0,0,.06);
+  backdrop-filter: blur(8px);
+  padding: 4px 10px;
+  border-radius: 99px;
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--lib-ink-2);
+}
+.lib-bullet {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--lib-muted);
+  display: inline-block;
+}
+
+.lib-root mark {
+  background: var(--lib-hl);
+  color: var(--lib-ink);
+  padding: 0 3px;
+  border-radius: 3px;
+}
+
+/* Watch screen — transcript-dominant grid (from Living Archive) */
+.lib-watch-wrap {
+  display: grid;
+  grid-template-columns: minmax(380px, 1fr) 1.4fr;
+  gap: 48px;
+  margin-top: 16px;
+  padding-bottom: 64px;
+}
+.lib-watch-left { position: sticky; top: 16px; align-self: start; }
+
+@media (max-width: 1100px) {
+  .lib-watch-wrap { grid-template-columns: 1fr; }
+  .lib-watch-left { position: static; }
+  .lib-chapters-grid { grid-template-columns: repeat(2, 1fr) !important; }
+  .lib-disc-transcript { grid-template-columns: 1fr !important; }
+  .lib-sidekick {
+    border-left: 0 !important;
+    padding-left: 0 !important;
+    border-top: 1px solid var(--lib-line);
+    padding-top: 24px;
+  }
+}
+
 @layer base {
   html, body, #root { height: 100%; }
   body {
