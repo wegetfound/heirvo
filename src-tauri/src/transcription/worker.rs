@@ -2,9 +2,10 @@
 //! Spawned once at app startup via `spawn_worker(app_handle, db)`.
 
 use super::audio;
-use super::backend::{StubTranscriber, Transcriber};
+use super::backend::{ProgressCb, StubTranscriber, Transcriber};
 use super::queue;
 use super::types::{JobStatus, TranscriptionJob};
+use super::whisper_cpp::{whisper_available, WhisperCppTranscriber};
 use crate::error::AppResult;
 use crate::library::queries as lib_q;
 use crate::library::types::TranscriptLine;
@@ -48,9 +49,9 @@ async fn run_job(app: &AppHandle, db: &Db, job: TranscriptionJob) -> AppResult<(
         }),
     );
 
-    // Extract audio
+    // Prepare audio (video OR audio input → 16kHz mono 16-bit WAV).
     let audio_path = wav_path_for(&job);
-    let duration = match audio::extract_audio(
+    let duration = match audio::prepare_audio(
         app,
         std::path::Path::new(&job.video_path),
         &audio_path,
@@ -89,15 +90,47 @@ async fn run_job(app: &AppHandle, db: &Db, job: TranscriptionJob) -> AppResult<(
         }),
     );
 
-    // Pick backend (today: always stub).
-    let backend: Arc<dyn Transcriber> = Arc::new(StubTranscriber {
-        disc_duration_sec: duration,
-    });
+    // Pick backend: real whisper.cpp when bundled, stub otherwise.
+    let backend: Arc<dyn Transcriber> = if whisper_available(app) {
+        match WhisperCppTranscriber::new(app) {
+            Ok(w) => {
+                tracing::info!(
+                    "Transcription job {}: using whisper.cpp/base.en",
+                    job.id
+                );
+                Arc::new(w)
+            }
+            Err(e) => {
+                tracing::warn!(
+                    "whisper.cpp unavailable ({e:?}), falling back to stub"
+                );
+                Arc::new(StubTranscriber {
+                    disc_duration_sec: duration,
+                })
+            }
+        }
+    } else {
+        tracing::info!(
+            "Transcription job {}: whisper.cpp not installed, using stub backend",
+            job.id
+        );
+        Arc::new(StubTranscriber {
+            disc_duration_sec: duration,
+        })
+    };
+
+    // Persist the real backend name on the job row so the UI can label it.
+    let backend_name = backend.name();
+    let _ = sqlx::query("UPDATE transcription_jobs SET backend = ? WHERE id = ?")
+        .bind(backend_name)
+        .bind(job.id)
+        .execute(&db.pool)
+        .await;
 
     let app_clone = app.clone();
     let disc_id_clone = job.disc_id.clone();
     let job_id = job.id;
-    let progress_cb = move |p: f64| {
+    let progress_cb: ProgressCb = Arc::new(move |p: f64| {
         let _ = app_clone.emit(
             "transcription:progress",
             &serde_json::json!({
@@ -105,9 +138,9 @@ async fn run_job(app: &AppHandle, db: &Db, job: TranscriptionJob) -> AppResult<(
                 "status": "transcribing", "progress": p,
             }),
         );
-    };
+    });
 
-    match backend.transcribe(&audio_path, &progress_cb).await {
+    match backend.transcribe(&audio_path, progress_cb).await {
         Ok(segments) => {
             let lines: Vec<TranscriptLine> = segments
                 .into_iter()

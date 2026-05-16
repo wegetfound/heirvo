@@ -53,13 +53,17 @@ pub async fn export_disc_html(
         .map_err(|e| crate::error::AppError::Internal(format!("write failed: {e}")))
 }
 
-/// Create a new library disc from a user-imported video file. Returns the
-/// new disc id. The frontend follows up with `enqueue_transcription` to kick
-/// off audio extraction + transcription against the same `video_path`.
+/// Create a new library disc from a user-imported media file (video OR
+/// audio). Returns the new disc id. The frontend follows up with
+/// `enqueue_transcription` to kick off audio prep + transcription against
+/// the same `media_path`.
+///
+/// Audio inputs get a distinct (moodier) gradient palette so they're
+/// visually distinguishable from video imports in the library grid.
 #[tauri::command]
-pub async fn import_video_disc(
+pub async fn import_media_disc(
     state: State<'_, AppState>,
-    video_path: String,
+    media_path: String,
     title: String,
 ) -> AppResult<String> {
     let now = Utc::now();
@@ -72,13 +76,25 @@ pub async fn import_video_disc(
     let date_display = format!("{} {}, {}", month_name(now.month()), now.day(), year);
     let recovered_at = format!("{} {}", short_month(now.month()), now.day());
 
-    const GRADIENTS: [&str; 14] = [
+    let is_audio = is_audio_ext(&media_path);
+
+    const VIDEO_GRADIENTS: [&str; 14] = [
         "wedding", "christmas", "hawaii", "birthday", "summer", "autumn",
         "winter", "spring", "graduation", "vacation", "family", "baby",
         "anniversary", "reunion",
     ];
-    let gradient = GRADIENTS[(now.timestamp_subsec_nanos() as usize) % GRADIENTS.len()];
+    // Moodier palette for audio — feels distinct in the grid.
+    const AUDIO_GRADIENTS: [&str; 5] = [
+        "eleanor", "christmas", "winter", "autumn", "anniversary",
+    ];
+    let palette: &[&str] = if is_audio {
+        &AUDIO_GRADIENTS
+    } else {
+        &VIDEO_GRADIENTS
+    };
+    let gradient = palette[(now.timestamp_subsec_nanos() as usize) % palette.len()];
     let monogram_id = ((title_hash(&title) % 8) + 1) as i64;
+    let source = if is_audio { "Imported audio" } else { "Imported video" };
 
     let now_ts = now.timestamp();
     sqlx::query(
@@ -94,17 +110,40 @@ pub async fn import_video_disc(
     .bind(&title)
     .bind(year)
     .bind(&date_display)
-    .bind("Imported video")
+    .bind(source)
     .bind(&recovered_at)
     .bind(monogram_id)
     .bind(gradient)
-    .bind(&video_path)
+    .bind(&media_path)
     .bind(now_ts)
     .bind(now_ts)
     .execute(&state.db.pool)
     .await?;
 
     Ok(id)
+}
+
+/// Backwards-compat: legacy IPC name still used by older builds of the UI.
+/// Thin wrapper around `import_media_disc`.
+#[tauri::command]
+pub async fn import_video_disc(
+    state: State<'_, AppState>,
+    video_path: String,
+    title: String,
+) -> AppResult<String> {
+    import_media_disc(state, video_path, title).await
+}
+
+fn is_audio_ext(path: &str) -> bool {
+    let ext = path
+        .rsplit('.')
+        .next()
+        .unwrap_or("")
+        .to_ascii_lowercase();
+    matches!(
+        ext.as_str(),
+        "wav" | "mp3" | "flac" | "m4a" | "aac" | "ogg" | "opus"
+    )
 }
 
 fn slugify(s: &str) -> String {

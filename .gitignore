@@ -33,5 +33,10 @@ recovery-output/
 src-tauri/resources/ffmpeg/*.exe
 src-tauri/resources/ffmpeg/*.dll
 
+# Bundled whisper.cpp + model — too large for git, fetched per-machine
+src-tauri/resources/whisper/*.exe
+src-tauri/resources/whisper/*.dll
+src-tauri/resources/whisper/*.bin
+
 # Claude Code internal state (worktrees, launch config)
 .claude/

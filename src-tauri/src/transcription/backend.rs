@@ -1,11 +1,18 @@
 //! Transcriber backends. `StubTranscriber` lets the entire pipeline work
-//! end-to-end today; `WhisperCppTranscriber` is the planned future home
-//! of the real speech-to-text integration once a model is chosen.
+//! end-to-end today; `WhisperCppTranscriber` (in `whisper_cpp.rs`) is the
+//! real speech-to-text backend, selected at runtime when the bundled
+//! `whisper-cli.exe` + `ggml-base.en.bin` are present.
 
 use super::types::TranscriptSegment;
-use crate::error::{AppError, AppResult};
+use crate::error::AppResult;
 use async_trait::async_trait;
 use std::path::Path;
+use std::sync::Arc;
+
+/// Callback the worker passes to backends to report progress in [0.0, 1.0].
+/// Arc-wrapped so it can be cheaply cloned into spawned tasks (e.g. the
+/// stderr-tailing task in the whisper backend) without lifetime gymnastics.
+pub type ProgressCb = Arc<dyn Fn(f64) + Send + Sync>;
 
 #[async_trait]
 pub trait Transcriber: Send + Sync {
@@ -14,7 +21,7 @@ pub trait Transcriber: Send + Sync {
     async fn transcribe(
         &self,
         wav_path: &Path,
-        progress_cb: &(dyn Fn(f64) + Send + Sync),
+        progress_cb: ProgressCb,
     ) -> AppResult<Vec<TranscriptSegment>>;
 
     fn name(&self) -> &'static str;
@@ -22,7 +29,7 @@ pub trait Transcriber: Send + Sync {
 
 /// Stub transcriber that emits plausible family-video segments without
 /// actually running speech recognition. Used for end-to-end pipeline
-/// testing before whisper.cpp is integrated.
+/// testing and as a graceful fallback when whisper.cpp isn't installed.
 pub struct StubTranscriber {
     pub disc_duration_sec: f64,
 }
@@ -32,7 +39,7 @@ impl Transcriber for StubTranscriber {
     async fn transcribe(
         &self,
         _wav: &Path,
-        progress_cb: &(dyn Fn(f64) + Send + Sync),
+        progress_cb: ProgressCb,
     ) -> AppResult<Vec<TranscriptSegment>> {
         let segments_text: [(&str, &str); 12] = [
             ("Mom", "Okay, okay — is the camera on? Is it recording?"),
@@ -85,30 +92,5 @@ impl Transcriber for StubTranscriber {
     }
     fn name(&self) -> &'static str {
         "stub"
-    }
-}
-
-/// Future home of whisper.cpp integration. Currently a placeholder that
-/// returns an error explaining the model still needs to be selected and
-/// bundled. Do NOT call this — the queue worker hard-codes `StubTranscriber`
-/// until this lights up.
-#[allow(dead_code)]
-pub struct WhisperCppTranscriber {
-    pub model_path: std::path::PathBuf,
-}
-
-#[async_trait]
-impl Transcriber for WhisperCppTranscriber {
-    async fn transcribe(
-        &self,
-        _wav: &Path,
-        _progress_cb: &(dyn Fn(f64) + Send + Sync),
-    ) -> AppResult<Vec<TranscriptSegment>> {
-        Err(AppError::Internal(
-            "whisper.cpp backend not yet bundled — see Settings".into(),
-        ))
-    }
-    fn name(&self) -> &'static str {
-        "whisper-cpp"
     }
 }

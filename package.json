@@ -10,7 +10,8 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "tauri": "tauri",
-    "fetch-ffmpeg": "powershell -ExecutionPolicy Bypass -File scripts/fetch-ffmpeg.ps1"
+    "fetch-ffmpeg": "powershell -ExecutionPolicy Bypass -File scripts/fetch-ffmpeg.ps1",
+    "fetch-whisper": "powershell -ExecutionPolicy Bypass -File scripts/fetch-whisper.ps1"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.1.1",

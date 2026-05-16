@@ -108,9 +108,10 @@ export default function Library() {
         directory: false,
         filters: [
           {
-            name: "Video",
+            name: "Video or Audio",
             extensions: [
               "mp4", "mov", "avi", "mkv", "mts", "m2ts", "ts", "wmv", "webm",
+              "wav", "mp3", "flac", "m4a", "aac", "ogg", "opus",
             ],
           },
         ],
@@ -126,8 +127,8 @@ export default function Library() {
         .replace(/[_\-]+/g, " ")
         .replace(/\s+/g, " ")
         .trim()
-        .replace(/\b\w/g, (c) => c.toUpperCase()) || "Imported Video";
-      const discId = await ipc.library.importVideoDisc(picked, title);
+        .replace(/\b\w/g, (c) => c.toUpperCase()) || "Imported Media";
+      const discId = await ipc.library.importMedia(picked, title);
       try {
         await ipc.transcription.enqueue(discId, picked);
       } catch {
@@ -185,10 +186,10 @@ export default function Library() {
               cursor: importing ? "default" : "pointer",
               opacity: importing ? 0.6 : 1,
             }}
-            title="Add a local video file to your library and transcribe it"
+            title="Add a local video or audio file to your library and transcribe it"
           >
             <Upload size={13} />
-            {importing ? "Importing…" : "Import a video"}
+            {importing ? "Importing…" : "Import media"}
           </button>
         </div>
 

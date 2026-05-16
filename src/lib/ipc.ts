@@ -151,7 +151,10 @@ export const ipc = {
     exportHtml: (discId: string, outputPath: string) =>
       invoke<number>("export_disc_html", { discId, outputPath }),
     importVideoDisc: (videoPath: string, title: string) =>
-      invoke<string>("import_video_disc", { videoPath, title }),
+      // Backwards-compat alias — routes to the new media importer.
+      invoke<string>("import_media_disc", { mediaPath: videoPath, title }),
+    importMedia: (mediaPath: string, title: string) =>
+      invoke<string>("import_media_disc", { mediaPath, title }),
   },
 
   // Transcription

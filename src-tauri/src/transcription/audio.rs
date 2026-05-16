@@ -1,5 +1,10 @@
-//! Audio extraction for transcription. Uses the bundled/system FFmpeg via the
+//! Audio preparation for transcription. Uses the bundled/system FFmpeg via the
 //! existing `media::ffmpeg` discovery — no parallel binary lookup.
+//!
+//! Accepts BOTH video and pure-audio inputs. We always re-encode to 16 kHz
+//! mono 16-bit PCM WAV (whisper.cpp's native input format). We could short-
+//! circuit when the input is already that exact format, but FFmpeg's
+//! re-encode is fast and the simpler one-path code is easier to reason about.
 
 use crate::error::{AppError, AppResult};
 use crate::media::ffmpeg;
@@ -7,13 +12,16 @@ use std::path::Path;
 use tauri::AppHandle;
 use tokio::process::Command;
 
-/// Extract video → 16 kHz mono 16-bit PCM WAV at `output_wav`.
+/// Prepare an audio or video file → 16 kHz mono 16-bit PCM WAV at
+/// `output_wav`. Returns the detected duration in seconds.
 ///
-/// Returns the detected audio duration in seconds. If ffprobe fails we fall
-/// back to estimating from the file size (bytes / (16000 * 2)).
-pub async fn extract_audio(
+/// For pure-audio inputs (wav/mp3/flac/m4a/aac/ogg/opus) FFmpeg simply skips
+/// the missing video stream; the same command works for both cases. If
+/// ffprobe is unavailable or fails we fall back to estimating the duration
+/// from the file size.
+pub async fn prepare_audio(
     app: &AppHandle,
-    video_path: &Path,
+    input_path: &Path,
     output_wav: &Path,
 ) -> AppResult<f64> {
     let bin = ffmpeg::locate(app, if cfg!(windows) { "ffmpeg.exe" } else { "ffmpeg" })
@@ -26,15 +34,15 @@ pub async fn extract_audio(
         let _ = std::fs::create_dir_all(parent);
     }
 
-    let video_str = video_path.to_string_lossy().to_string();
+    let input_str = input_path.to_string_lossy().to_string();
     let out_str = output_wav.to_string_lossy().to_string();
 
-    tracing::info!("transcription audio extract: {} -> {}", video_str, out_str);
+    tracing::info!("transcription audio prepare: {} -> {}", input_str, out_str);
     let output = Command::new(&bin)
         .args([
             "-y",
             "-i",
-            &video_str,
+            &input_str,
             "-vn",
             "-acodec",
             "pcm_s16le",
@@ -66,6 +74,16 @@ pub async fn extract_audio(
     };
 
     Ok(duration)
+}
+
+/// Backwards-compat alias. New callers should use `prepare_audio`.
+#[deprecated(note = "use prepare_audio — accepts video AND audio inputs")]
+pub async fn extract_audio(
+    app: &AppHandle,
+    video_path: &Path,
+    output_wav: &Path,
+) -> AppResult<f64> {
+    prepare_audio(app, video_path, output_wav).await
 }
 
 /// 16 kHz mono 16-bit PCM ⇒ 32000 bytes/sec; the WAV header is negligible.

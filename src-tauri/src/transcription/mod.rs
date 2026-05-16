@@ -11,4 +11,5 @@ pub mod audio;
 pub mod backend;
 pub mod queue;
 pub mod types;
+pub mod whisper_cpp;
 pub mod worker;

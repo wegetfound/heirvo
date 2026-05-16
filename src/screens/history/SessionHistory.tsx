@@ -1,8 +1,15 @@
 import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { ipc } from "@/lib/ipc";
 import type { Session, SessionStatus } from "@/lib/types";
-import { Trash2, ChevronRight, Pencil, Check } from "lucide-react";
+import {
+  Trash2,
+  ChevronRight,
+  Pencil,
+  Check,
+  Library as LibraryIcon,
+  Sparkles,
+} from "lucide-react";
 import { cn } from "@/lib/cn";
 
 export function SessionHistory() {
@@ -104,9 +111,52 @@ function SessionRow({
   onDelete: () => void;
   onRenamed: () => void;
 }) {
+  const nav = useNavigate();
   const [renaming, setRenaming] = useState(false);
   const [draft, setDraft] = useState("");
+  const [enrolling, setEnrolling] = useState(false);
+  const [enrollMsg, setEnrollMsg] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const enrollToLibrary = async () => {
+    if (enrolling) return;
+    setEnrolling(true);
+    setEnrollMsg(null);
+    try {
+      const dialog = await import("@tauri-apps/plugin-dialog");
+      const picked = await dialog.open({
+        multiple: false,
+        directory: false,
+        defaultPath: s.output_dir,
+        filters: [
+          {
+            name: "Video or Audio",
+            extensions: [
+              "mp4", "mov", "avi", "mkv", "mts", "m2ts", "ts", "wmv", "webm",
+              "wav", "mp3", "flac", "m4a", "aac", "ogg", "opus",
+            ],
+          },
+        ],
+      });
+      if (!picked || typeof picked !== "string") {
+        setEnrolling(false);
+        return;
+      }
+      const title = s.user_label || s.disc_label || "Recovered disc";
+      const discId = await ipc.library.importMedia(picked, title);
+      try {
+        await ipc.transcription.enqueue(discId, picked);
+      } catch {
+        // Non-fatal — user can retry from the disc page.
+      }
+      nav(`/disc/${discId}`);
+    } catch {
+      setEnrollMsg("Save this disc as MP4 first (Save As… screen).");
+      setTimeout(() => setEnrollMsg(null), 4500);
+    } finally {
+      setEnrolling(false);
+    }
+  };
 
   const startRename = () => {
     setDraft(s.user_label ?? s.disc_label ?? "");
@@ -199,6 +249,26 @@ function SessionRow({
           {s.output_dir}
         </div>
       </div>
+
+      {s.status === "completed" && (
+        <div className="flex flex-col items-end gap-0.5">
+          <button
+            className="inline-flex items-center gap-1.5 rounded-lg border border-ink-200/70 bg-white px-2.5 py-1.5 text-[12px] font-medium text-ink-700 opacity-0 transition hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700 group-hover:opacity-100 disabled:opacity-50"
+            onClick={enrollToLibrary}
+            disabled={enrolling}
+            title="Add the recovered file to your library and transcribe it"
+          >
+            <LibraryIcon className="h-3.5 w-3.5" />
+            <Sparkles className="h-3.5 w-3.5" />
+            {enrolling ? "Adding…" : "Add to Library + transcribe"}
+          </button>
+          {enrollMsg && (
+            <span className="text-[11px] text-ink-500" role="status">
+              {enrollMsg}
+            </span>
+          )}
+        </div>
+      )}
 
       <button
         className="rounded-lg p-2 text-ink-400 opacity-0 transition hover:bg-ios-red/10 hover:text-ios-red group-hover:opacity-100"
