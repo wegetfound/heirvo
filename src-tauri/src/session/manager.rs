@@ -244,6 +244,77 @@ pub async fn load_sector_map(db: &Db, id: Uuid) -> AppResult<Option<SectorMap>> 
     Ok(Some(SectorMap::from_compressed(total as u64, &data)?))
 }
 
+// ─── Per-sector SHA-256 receipt functions ────────────────────────────────
+
+/// Record a batch of SHA-256 receipts in a single transaction.
+///
+/// Ignores conflicts (same session_id + lba) — the first written receipt wins.
+/// This allows the caller to fire-and-forget without tracking duplicates.
+pub async fn record_receipts(
+    db: &Db,
+    session_id: Uuid,
+    receipts: &[(u64, String)], // (lba, sha256_hex)
+) -> AppResult<()> {
+    if receipts.is_empty() {
+        return Ok(());
+    }
+    let id_str = session_id.to_string();
+    let mut tx = db.pool.begin().await?;
+    for (lba, hex) in receipts {
+        sqlx::query(
+            "INSERT OR IGNORE INTO sector_receipts (session_id, lba, sha256_hex)
+             VALUES (?, ?, ?)",
+        )
+        .bind(&id_str)
+        .bind(*lba as i64)
+        .bind(hex)
+        .execute(&mut *tx)
+        .await?;
+    }
+    tx.commit().await?;
+    Ok(())
+}
+
+/// Export all receipts for a session as a text manifest.
+///
+/// Each line: `<LBA_hex>  <SHA-256_hex>` — one sector per line, sorted by LBA.
+/// The format is stable across versions; suitable for long-term archival and
+/// forensic chain-of-custody verification.
+pub async fn export_receipt_manifest(db: &Db, session_id: Uuid) -> AppResult<String> {
+    let id_str = session_id.to_string();
+    let rows = sqlx::query(
+        "SELECT lba, sha256_hex FROM sector_receipts WHERE session_id = ? ORDER BY lba ASC",
+    )
+    .bind(&id_str)
+    .fetch_all(&db.pool)
+    .await?;
+
+    let mut out = String::with_capacity(rows.len() * 80);
+    out.push_str("# Heirvo sector receipt manifest\n");
+    out.push_str(&format!("# session_id: {session_id}\n"));
+    out.push_str(&format!("# sectors: {}\n", rows.len()));
+    out.push_str("# format: LBA(hex)  SHA-256\n\n");
+
+    for row in rows {
+        let lba: i64 = row.try_get("lba")?;
+        let hex: String = row.try_get("sha256_hex")?;
+        out.push_str(&format!("{:#012x}  {hex}\n", lba as u64));
+    }
+    Ok(out)
+}
+
+/// Count how many sectors have receipts for a session.
+pub async fn count_receipts(db: &Db, session_id: Uuid) -> AppResult<u64> {
+    let row = sqlx::query(
+        "SELECT COUNT(*) as n FROM sector_receipts WHERE session_id = ?",
+    )
+    .bind(session_id.to_string())
+    .fetch_one(&db.pool)
+    .await?;
+    let n: i64 = row.try_get("n")?;
+    Ok(n as u64)
+}
+
 fn row_to_session(row: sqlx::sqlite::SqliteRow) -> AppResult<Session> {
     let id_str: String = row.try_get("id")?;
     let id = Uuid::parse_str(&id_str)

@@ -8,11 +8,15 @@ use crate::recovery::map::{SectorMap, SectorState};
 use crate::recovery::passes::{PassStrategy, RecoveryMode};
 use parking_lot::Mutex;
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::sync::mpsc;
 use uuid::Uuid;
+
+/// Batch of (lba, sha256_hex) pairs sent from the engine to the receipt writer.
+pub type ReceiptBatch = Vec<(u64, String)>;
 
 /// Heuristic about whether the drive itself looks healthy. Helps users tell
 /// "this disc is damaged" apart from "my drive is broken/disconnecting" —
@@ -102,7 +106,14 @@ pub struct RecoveryEngine {
     last_success_ms: AtomicU64,
     progress_tx: Option<mpsc::UnboundedSender<RecoveryProgress>>,
     checkpoint_tx: Option<mpsc::UnboundedSender<()>>,
+    /// Receipts are batched here (up to RECEIPT_BATCH_SIZE) then flushed to the
+    /// async DB writer via `receipt_tx`. Using a local Vec avoids per-sector
+    /// channel sends and keeps the hot read loop allocation-free.
+    receipt_batch: Mutex<Vec<(u64, String)>>,
+    receipt_tx: Option<mpsc::UnboundedSender<ReceiptBatch>>,
 }
+
+const RECEIPT_BATCH_SIZE: usize = 256;
 
 impl RecoveryEngine {
     pub fn new(
@@ -128,7 +139,14 @@ impl RecoveryEngine {
             last_success_ms: AtomicU64::new(0),
             progress_tx: None,
             checkpoint_tx: None,
+            receipt_batch: Mutex::new(Vec::new()),
+            receipt_tx: None,
         }
+    }
+
+    pub fn with_receipt_channel(mut self, tx: mpsc::UnboundedSender<ReceiptBatch>) -> Self {
+        self.receipt_tx = Some(tx);
+        self
     }
 
     /// Bump the read-attempt counters used for drive-health classification.
@@ -142,6 +160,44 @@ impl RecoveryEngine {
             self.last_success_ms.store(now_ms, Ordering::Relaxed);
         } else {
             self.reads_err.fetch_add(1, Ordering::Relaxed);
+        }
+    }
+
+    /// Record a SHA-256 receipt for a successfully read sector.
+    ///
+    /// Receipts are accumulated in `receipt_batch` and flushed to the DB writer
+    /// channel every `RECEIPT_BATCH_SIZE` entries to keep channel traffic low.
+    fn record_receipt(&self, lba: u64, data: &[u8]) {
+        if self.receipt_tx.is_none() {
+            return;
+        }
+        let mut hasher = Sha256::new();
+        hasher.update(data);
+        let hex = format!("{:x}", hasher.finalize());
+
+        let mut batch = self.receipt_batch.lock();
+        batch.push((lba, hex));
+        if batch.len() >= RECEIPT_BATCH_SIZE {
+            let flush: Vec<_> = batch.drain(..).collect();
+            drop(batch);
+            if let Some(tx) = &self.receipt_tx {
+                let _ = tx.send(flush);
+            }
+        }
+    }
+
+    /// Flush any remaining receipts from the local batch buffer.
+    fn flush_receipts(&self) {
+        if self.receipt_tx.is_none() {
+            return;
+        }
+        let mut batch = self.receipt_batch.lock();
+        if !batch.is_empty() {
+            let flush: Vec<_> = batch.drain(..).collect();
+            drop(batch);
+            if let Some(tx) = &self.receipt_tx {
+                let _ = tx.send(flush);
+            }
         }
     }
 
@@ -243,6 +299,7 @@ impl RecoveryEngine {
             }
         }
 
+        self.flush_receipts();
         *self.state.lock() = EngineState::Completed;
         EngineState::Completed
     }
@@ -416,6 +473,9 @@ impl RecoveryEngine {
                         map.set(r.lba, SectorState::Good);
                         all_failed = false;
                         self.record_read_outcome(true);
+                        if let Some(data) = &r.data {
+                            self.record_receipt(r.lba, data);
+                        }
                     } else {
                         map.set(r.lba, SectorState::Failed);
                         self.record_read_outcome(false);
@@ -529,6 +589,11 @@ impl RecoveryEngine {
             }
             drop(map);
             self.record_read_outcome(ok);
+            if ok {
+                if let Some(data) = &result.data {
+                    self.record_receipt(lba, data);
+                }
+            }
         }
 
         if !delay.is_zero() {

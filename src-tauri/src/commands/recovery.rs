@@ -30,15 +30,32 @@ pub async fn start_recovery(
 
     #[cfg(windows)]
     let reader: Arc<dyn crate::disc::sector::SectorReader> = {
-        use crate::disc::scsi_windows::ScsiSectorReader;
+        use crate::disc::scsi_windows::{CdSectorReader, ScsiSectorReader};
         use crate::disc::sector::SectorReader;
-        let r = ScsiSectorReader::open(&session.drive_path)
-            .map_err(|e| AppError::Drive(format!("open {}: {e}", session.drive_path)))?;
-        tracing::info!(
-            "start_recovery: drive open ok, capacity {} sectors",
-            r.capacity()
-        );
-        Arc::new(r)
+
+        // Probe the disc type so we can choose the right reader.
+        // If the probe fails (e.g. no disc), fall back to ScsiSectorReader
+        // (READ_10 path) — the engine will handle the resulting errors gracefully.
+        let use_cd_reader = crate::disc::scsi_windows::probe_disc_profile(&session.drive_path)
+            .ok()
+            .map(|p| p.use_read_cd())
+            .unwrap_or(false);
+
+        let (reader, capacity) = if use_cd_reader {
+            tracing::info!("start_recovery: CD profile detected, using CdSectorReader (READ CD 0xBE)");
+            let r = CdSectorReader::open(&session.drive_path)
+                .map_err(|e| AppError::Drive(format!("open CD {}: {e}", session.drive_path)))?;
+            let cap = r.capacity();
+            (Arc::new(r) as Arc<dyn SectorReader>, cap)
+        } else {
+            tracing::info!("start_recovery: DVD/BD/unknown profile, using ScsiSectorReader (READ_10)");
+            let r = ScsiSectorReader::open(&session.drive_path)
+                .map_err(|e| AppError::Drive(format!("open {}: {e}", session.drive_path)))?;
+            let cap = r.capacity();
+            (Arc::new(r) as Arc<dyn SectorReader>, cap)
+        };
+        tracing::info!("start_recovery: drive open ok, capacity {capacity} sectors");
+        reader
     };
 
     #[cfg(not(windows))]
@@ -49,12 +66,14 @@ pub async fn start_recovery(
 
     let (tx, mut rx) = mpsc::unbounded_channel();
     let (ckpt_tx, mut ckpt_rx) = mpsc::unbounded_channel();
+    let (rcpt_tx, mut rcpt_rx) = mpsc::unbounded_channel();
     tracing::info!("start_recovery: mode={:?}", mode);
     let engine = Arc::new(
         RecoveryEngine::new(id, reader, pass_plan(mode))
             .with_mode(mode)
             .with_progress_channel(tx)
-            .with_checkpoint_channel(ckpt_tx),
+            .with_checkpoint_channel(ckpt_tx)
+            .with_receipt_channel(rcpt_tx),
     );
 
     // Restore prior sector map if present (resume).
@@ -114,6 +133,16 @@ pub async fn start_recovery(
             let map = engine_for_ckpt.snapshot_map();
             if let Err(e) = manager::save_sector_map(&db_for_ckpt, id, &map).await {
                 tracing::warn!("checkpoint save_sector_map failed: {e:?}");
+            }
+        }
+    });
+
+    // Write receipt batches to DB as they arrive from the engine.
+    let db_for_rcpt = state.db.clone();
+    tokio::spawn(async move {
+        while let Some(batch) = rcpt_rx.recv().await {
+            if let Err(e) = manager::record_receipts(&db_for_rcpt, id, &batch).await {
+                tracing::warn!("receipt write failed: {e:?}");
             }
         }
     });
@@ -277,4 +306,38 @@ pub async fn import_rmap(
     };
     manager::save_sector_map(&state.db, id, &map).await?;
     Ok(summary)
+}
+
+/// Export the SHA-256 sector receipt manifest for a session.
+///
+/// Returns the manifest text (suitable for writing to a file) and the sector
+/// count. The manifest is a human-readable chain-of-custody record: one line
+/// per recovered sector, formatted as `LBA(hex)  SHA-256`.
+#[derive(Debug, serde::Serialize)]
+pub struct ReceiptManifestResult {
+    pub manifest: String,
+    pub sector_count: u64,
+}
+
+#[tauri::command]
+pub async fn export_receipt_manifest(
+    state: State<'_, AppState>,
+    session_id: String,
+    output_path: Option<String>,
+) -> AppResult<ReceiptManifestResult> {
+    let id = Uuid::parse_str(&session_id)
+        .map_err(|_| AppError::SessionNotFound(session_id.clone()))?;
+
+    let manifest = manager::export_receipt_manifest(&state.db, id).await?;
+    let sector_count = manager::count_receipts(&state.db, id).await?;
+
+    if let Some(path) = output_path {
+        if let Some(parent) = std::path::Path::new(&path).parent() {
+            std::fs::create_dir_all(parent)?;
+        }
+        std::fs::write(&path, manifest.as_bytes())?;
+        tracing::info!("receipt manifest exported to {path} ({sector_count} sectors)");
+    }
+
+    Ok(ReceiptManifestResult { manifest, sector_count })
 }

@@ -4,7 +4,9 @@
 
 pub mod ifo;
 pub mod iso9660;
+pub mod sig_scan;
 pub mod structure;
+pub mod udf;
 
 #[cfg(test)]
 pub mod test_iso;

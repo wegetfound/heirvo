@@ -94,9 +94,43 @@ pub struct DriveAssessment {
     pub notes: String,
 }
 
+/// One session entry from READ TOC Format=0x01 (Session Info).
+///
+/// A multi-session CD-R may have 2–99 sessions. Windows normally mounts only
+/// the last session; earlier sessions may contain data the user needs.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TocSession {
+    pub session_number: u8,
+    pub first_track: u8,
+    pub last_track: u8,
+    /// Lead-in start LBA (first sector of this session's track area).
+    pub lead_in_lba: u32,
+}
+
+/// TOC metadata gathered by READ TOC (Format=0x01 + Format=0x02).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DiscTocInfo {
+    pub sessions: Vec<TocSession>,
+    /// True if the Full TOC (Format=0x02) shows a track at negative LBA
+    /// or below track 1 — i.e., a "hidden" track in the pre-gap.
+    pub has_hidden_track: bool,
+    /// LBAs of pre-gap regions discovered in the Full TOC.
+    pub pre_gap_lbas: Vec<u32>,
+}
+
+/// Broad disc class — drives which command set the engine should use.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum DiscClass {
+    Cd,
+    Dvd,
+    Bluray,
+    Unknown,
+}
+
 /// Complete pre-scan briefing returned by `probe_disc_profile`. Combines
-/// drive identity (INQUIRY), disc identity (GET CONFIGURATION), and disc
-/// state (READ DISC INFORMATION). Consumed by the UI's Recovery Plan card.
+/// drive identity (INQUIRY), disc identity (GET CONFIGURATION), disc
+/// state (READ DISC INFORMATION), and session/TOC topology.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DiscProfile {
     pub vendor: String,
@@ -109,6 +143,28 @@ pub struct DiscProfile {
     pub disc_status: DiscStatus,
     pub num_sessions: u16,
     pub erasable: bool,
+    /// Session topology from READ TOC — None if the drive rejected the command
+    /// or no disc is present.
+    #[serde(default)]
+    pub toc_info: Option<DiscTocInfo>,
+}
+
+impl DiscProfile {
+    /// Broad disc class derived from the MMC profile code.
+    pub fn disc_class(&self) -> DiscClass {
+        match self.profile_code {
+            0x0008..=0x000A => DiscClass::Cd,  // CD-ROM, CD-R, CD-RW
+            0x0010..=0x002B => DiscClass::Dvd, // DVD-ROM … DVD+R DL
+            0x0040..=0x0043 => DiscClass::Bluray, // BD-ROM, BD-R SRM, BD-R RRM, BD-RE
+            0x0050..=0x0052 => DiscClass::Dvd, // HD DVD (treat as DVD-class command set)
+            _ => DiscClass::Unknown,
+        }
+    }
+
+    /// True when the engine should use READ CD (0xBE) instead of READ(10).
+    pub fn use_read_cd(&self) -> bool {
+        self.disc_class() == DiscClass::Cd
+    }
 }
 
 #[cfg(windows)]

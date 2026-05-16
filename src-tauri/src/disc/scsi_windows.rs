@@ -108,6 +108,10 @@ const SCSI_OP_SET_CD_SPEED: u8 = 0xBB;
 const SCSI_OP_GET_CONFIGURATION: u8 = 0x46;
 /// MMC READ DISC INFORMATION — returns finalized state, session count, disc type.
 const SCSI_OP_READ_DISC_INFORMATION: u8 = 0x51;
+/// MMC READ TOC/PMA/ATIP — multi-format TOC command.
+const SCSI_OP_READ_TOC: u8 = 0x43;
+/// MMC READ CD — raw CD sector extraction with optional C2 error pointer return.
+const SCSI_OP_READ_CD: u8 = 0xBE;
 
 // MMC current-profile codes (subset). Returned in bytes [6..8] of GET CONFIGURATION.
 const PROFILE_NO_DISC: u16 = 0x0000;
@@ -676,6 +680,117 @@ fn read_disc_information(drive: &DriveHandle) -> Option<DiscInformationRaw> {
     }
 }
 
+/// Issue READ TOC Format=0x01 (Session Info) and parse per-session entries.
+///
+/// Each 11-byte descriptor contains the session number, first/last track in that
+/// session, and the lead-in LBA (first physical sector of the session track area).
+/// This is the only command that reveals hidden sessions on multi-session CD-Rs.
+fn read_session_toc(drive: &DriveHandle) -> Option<Vec<crate::disc::drive::TocSession>> {
+    // Format=0x01 → "Session Info". Allocation: 4-byte header + up to 100
+    // sessions × 11 bytes each. Practical discs have ≤ 5 sessions.
+    let alloc: u16 = 4 + 100 * 11;
+    let cdb: [u8; 10] = [
+        SCSI_OP_READ_TOC,
+        0x00,                          // MSF=0 → LBA addressing
+        0x01,                          // Format = Session Info
+        0x00, 0x00, 0x00,
+        0x01,                          // Starting Session = 1
+        ((alloc >> 8) & 0xFF) as u8,
+        (alloc & 0xFF) as u8,
+        0x00,
+    ];
+    let mut buf = vec![0u8; alloc as usize];
+    match scsi_passthrough(drive, &cdb, &mut buf, SCSI_IOCTL_DATA_IN, 10) {
+        Ok((0, _)) => {}
+        _ => return None,
+    }
+    if buf.len() < 4 {
+        return None;
+    }
+    let data_len = u16::from_be_bytes([buf[0], buf[1]]) as usize;
+    let total = data_len + 2;
+    if total < 4 || total > buf.len() {
+        return None;
+    }
+    // Session descriptors start at byte 4; each is 11 bytes.
+    let descriptors = &buf[4..total.min(buf.len())];
+    let mut sessions = Vec::new();
+    for chunk in descriptors.chunks_exact(11) {
+        let session_num = chunk[3];
+        let first_track = chunk[4];
+        let control = chunk[5];
+        let last_track = chunk[6];
+        // Bytes 7..11 = lead-in LBA (BE u32).
+        let lead_in = u32::from_be_bytes([chunk[7], chunk[8], chunk[9], chunk[10]]);
+        let _ = control; // ADR/control nibbles — not needed for routing
+        sessions.push(crate::disc::drive::TocSession {
+            session_number: session_num,
+            first_track,
+            last_track,
+            lead_in_lba: lead_in,
+        });
+    }
+    if sessions.is_empty() { None } else { Some(sessions) }
+}
+
+/// Issue READ TOC Format=0x02 (Full TOC) and scan for hidden tracks and pre-gaps.
+///
+/// The Full TOC returns raw Q-subchannel lead-in data. Each 11-byte descriptor
+/// can represent a track, session boundary, or a "point" entry. Point 0xA0/A1/A2
+/// are session control; point 0x00 is the pre-gap (hidden track) entry; negative
+/// pre-gap LBAs wrap around as large u32 values.
+///
+/// We return `(has_hidden_track, pre_gap_lbas)` from the raw descriptor scan.
+fn read_full_toc(drive: &DriveHandle) -> (bool, Vec<u32>) {
+    let alloc: u16 = 4 + 2048; // generous — full TOC is rarely >2 KB
+    let cdb: [u8; 10] = [
+        SCSI_OP_READ_TOC,
+        0x00,
+        0x02,                          // Format = Full TOC
+        0x00, 0x00, 0x00,
+        0x01,
+        ((alloc >> 8) & 0xFF) as u8,
+        (alloc & 0xFF) as u8,
+        0x00,
+    ];
+    let mut buf = vec![0u8; alloc as usize];
+    match scsi_passthrough(drive, &cdb, &mut buf, SCSI_IOCTL_DATA_IN, 10) {
+        Ok((0, _)) => {}
+        _ => return (false, Vec::new()),
+    }
+    if buf.len() < 4 {
+        return (false, Vec::new());
+    }
+    let data_len = u16::from_be_bytes([buf[0], buf[1]]) as usize;
+    let total = (data_len + 2).min(buf.len());
+    if total < 4 {
+        return (false, Vec::new());
+    }
+    let descriptors = &buf[4..total];
+    let mut has_hidden = false;
+    let mut pre_gaps = Vec::new();
+
+    for chunk in descriptors.chunks_exact(11) {
+        let point = chunk[3];
+        let lba = u32::from_be_bytes([chunk[7], chunk[8], chunk[9], chunk[10]]);
+
+        // Point 0x00 is the pre-gap. A non-zero pre-gap LBA that is "large"
+        // (> 0xFFFF_FF00) represents a negative start (the hidden track).
+        if point == 0x00 {
+            if lba > 0xFFFF_FF00 {
+                has_hidden = true;
+            }
+            pre_gaps.push(lba);
+        }
+        // Track 1 starting from a non-standard LBA (< 150) also indicates
+        // a hidden track used by some pressed CDs (e.g. Primus "Sailing the Seas of Cheese").
+        if point == 0x01 && lba > 0 && lba < 150 {
+            has_hidden = true;
+        }
+    }
+    (has_hidden, pre_gaps)
+}
+
 /// Run the full pre-scan disc probe: INQUIRY + GET CONFIGURATION + READ DISC INFO.
 ///
 /// This is the **Recovery Plan briefing** — everything Heirvo can learn about
@@ -684,7 +799,7 @@ fn read_disc_information(drive: &DriveHandle) -> Option<DiscInformationRaw> {
 /// to a multi-hour scan. Best-effort: any individual probe failure falls back
 /// to sensible defaults rather than aborting the whole briefing.
 pub fn probe_disc_profile(path: &str) -> io::Result<crate::disc::drive::DiscProfile> {
-    use crate::disc::drive::{DiscProfile, DiscStatus};
+    use crate::disc::drive::{DiscProfile, DiscStatus, DiscTocInfo};
     let drive = open_drive(path)?;
 
     let (vendor, model, firmware) = inquiry(&drive).unwrap_or_default();
@@ -706,17 +821,36 @@ pub fn probe_disc_profile(path: &str) -> io::Result<crate::disc::drive::DiscProf
         None => (DiscStatus::Other, 0, false),
     };
 
-    Ok(DiscProfile {
-        vendor,
-        model,
-        firmware,
-        media_present,
-        profile_code,
-        profile_name,
-        disc_status: status,
-        num_sessions,
-        erasable,
-    })
+    // READ TOC session info and full-TOC pre-gap scan. Only meaningful for CD
+    // family — DVDs and BDs don't use multi-session CD-style TOC.
+    let is_cd_profile = matches!(profile_code, 0x0008..=0x000A);
+    let toc_info: Option<DiscTocInfo> = if media_present && is_cd_profile {
+        let sessions = read_session_toc(&drive).unwrap_or_default();
+        let (has_hidden, pre_gaps) = if !sessions.is_empty() {
+            read_full_toc(&drive)
+        } else {
+            (false, Vec::new())
+        };
+        tracing::info!(
+            "TOC: {} session(s), hidden_track={has_hidden}, pre_gaps={}",
+            sessions.len(), pre_gaps.len()
+        );
+        if !sessions.is_empty() || has_hidden {
+            Some(DiscTocInfo { sessions, has_hidden_track: has_hidden, pre_gap_lbas: pre_gaps })
+        } else {
+            None
+        }
+    } else {
+        None
+    };
+
+    // Log the class so we can verify routing in dev.
+    let disc = DiscProfile {
+        vendor, model, firmware, media_present, profile_code, profile_name,
+        disc_status: status, num_sessions, erasable, toc_info,
+    };
+    tracing::info!("probe_disc_profile: class={:?} profile={}", disc.disc_class(), disc.profile_name);
+    Ok(disc)
 }
 
 /// Build a SCSI READ(10) CDB.
@@ -985,4 +1119,339 @@ pub fn enumerate_optical_drives() -> io::Result<Vec<DriveInfo>> {
         }
     }
     Ok(drives)
+}
+
+// ───────────────────────────────────────────────────────────────────────────
+// CdSectorReader — data-CD recovery path using READ CD (0xBE)
+//
+// Advantages over ScsiSectorReader (which uses READ(10) / 0x28):
+// • Correctly handles Mode 1, Mode 2 Form 1, and Mode 2 Form 2 sectors with a
+//   single command — READ(10) only works reliably on Mode 1.
+// • C2 Error Pointer support: per-byte error mask lets us count exactly how
+//   many bytes the drive's firmware couldn't correct. A sector with 3 bad bytes
+//   out of 2048 is recoverable; one with 512 bad bytes is not.
+// • DCR=1 raw fallback: when C2 shows a small number of uncorrectable bytes,
+//   we bypass firmware ECC entirely, read the raw 2352-byte sector, and extract
+//   the user data. Even corrupted bytes are more useful than silence for video
+//   decoders — a bad block causes a glitched frame, not a stall.
+// ───────────────────────────────────────────────────────────────────────────
+
+/// Raw sector size for a CD including sync + header + user data + ECC/EDC.
+/// Mode 1: 12 sync + 4 header + 2048 user + 4 EDC + 8 zero + 276 ECC = 2352.
+const CD_RAW_SECTOR_BYTES: usize = 2352;
+/// C2 Error Block: one bit per raw byte = 2352/8 = 294 bytes.
+const CD_C2_BLOCK_BYTES: usize = 294;
+/// User data offset within a raw Mode 1 CD sector.
+const CD_USER_DATA_OFFSET: usize = 16;
+/// User data length (2048 bytes).
+const CD_USER_DATA_LEN: usize = DVD_SECTOR_SIZE; // 2048
+
+/// Build a READ CD (0xBE) CDB requesting user-data-only for `count` sectors.
+/// byte 9 = 0x10 → User Data flag; returns `count × 2048` bytes.
+/// Expected sector type = 0 (Any) for maximum compatibility.
+fn build_read_cd_user_data_cdb(lba: u32, count: u32) -> [u8; 12] {
+    [
+        SCSI_OP_READ_CD,
+        0x00,                          // Expected Sector Type = Any
+        ((lba >> 24) & 0xFF) as u8,
+        ((lba >> 16) & 0xFF) as u8,
+        ((lba >> 8) & 0xFF) as u8,
+        (lba & 0xFF) as u8,
+        ((count >> 16) & 0xFF) as u8,
+        ((count >> 8) & 0xFF) as u8,
+        (count & 0xFF) as u8,
+        0x10,                          // User Data only
+        0x00,                          // No subchannel
+        0x00,
+    ]
+}
+
+/// Build a READ CD CDB requesting User Data + C2 Error Block.
+/// byte 9 = 0x12 → User Data (0x10) | C2 Error Block (0x02).
+/// Returns `count × (2048 + 294)` bytes per sector interleaved.
+fn build_read_cd_c2_cdb(lba: u32, count: u32) -> [u8; 12] {
+    [
+        SCSI_OP_READ_CD,
+        0x00,
+        ((lba >> 24) & 0xFF) as u8,
+        ((lba >> 16) & 0xFF) as u8,
+        ((lba >> 8) & 0xFF) as u8,
+        (lba & 0xFF) as u8,
+        ((count >> 16) & 0xFF) as u8,
+        ((count >> 8) & 0xFF) as u8,
+        (count & 0xFF) as u8,
+        0x12,                          // User Data | C2 Error Block
+        0x00,
+        0x00,
+    ]
+}
+
+/// Build a READ CD CDB requesting the full raw 2352-byte sector (no C2).
+/// byte 9 = 0b1111_1000 = 0xF8 → Sync | All Headers | User Data | EDC/ECC.
+/// Used for the DCR (Disable Error Correction) raw-read fallback.
+fn build_read_cd_raw_cdb(lba: u32, count: u32) -> [u8; 12] {
+    [
+        SCSI_OP_READ_CD,
+        0x00,
+        ((lba >> 24) & 0xFF) as u8,
+        ((lba >> 16) & 0xFF) as u8,
+        ((lba >> 8) & 0xFF) as u8,
+        (lba & 0xFF) as u8,
+        ((count >> 16) & 0xFF) as u8,
+        ((count >> 8) & 0xFF) as u8,
+        (count & 0xFF) as u8,
+        0xF8,                          // Sync | All Headers | User Data | EDC/ECC
+        0x00,
+        0x00,
+    ]
+}
+
+/// Count bits set in the C2 block that correspond to user data bytes.
+///
+/// For a Mode 1 CD sector the raw layout is:
+///   Sync (12) + Header (4) + User Data (2048) + EDC (4) + Zeros (8) + ECC (276)
+/// User data starts at raw byte 16, so its C2 bits are bits 128..16383,
+/// which correspond to C2 bytes 16..272. We count set bits in that range.
+/// Returns the count of user data bytes that the drive flagged as uncorrectable.
+fn count_c2_user_data_errors(c2: &[u8]) -> u32 {
+    if c2.len() < 272 {
+        return 0;
+    }
+    c2[16..272].iter().map(|b| b.count_ones()).sum()
+}
+
+/// Apply MODE SELECT page 01h with DCR=1 (Disable Error Correction).
+/// The drive will return raw bits without applying ECC. Always paired with
+/// `apply_recovery_mode_settings()` to restore DCR=0 afterward.
+fn set_dcr_mode(drive: &DriveHandle) {
+    let param_list: [u8; 16] = [
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x01, 0x06,
+        0b00100101, // same as recovery mode but with DCR=1 (bit 0 set)
+        0x00,       // Read Retry Count = 0 (no retries in DCR mode)
+        0x00, 0x00, 0x00, 0x00,
+    ];
+    let cdb: [u8; 10] = [SCSI_OP_MODE_SELECT_10, 0x10, 0, 0, 0, 0, 0, 0, 16, 0];
+    let mut buf = param_list;
+    // Best-effort — if rejected, DCR read degrades to firmware-corrected data.
+    let _ = scsi_passthrough(drive, &cdb, &mut buf, SCSI_IOCTL_DATA_OUT, 5);
+}
+
+/// CD data-disc sector reader using READ CD (0xBE).
+///
+/// Three-phase fallback per sector:
+///   1. READ CD with User Data only → 2048 bytes. Fast path, same throughput
+///      as READ(10) on healthy discs.
+///   2. On failure: READ CD with User Data + C2 Error Pointers → 2342 bytes.
+///      Parse the C2 mask to count uncorrectable user-data bytes.
+///   3. If C2 error count ≤ `DCR_THRESHOLD`: apply DCR=1, read raw 2352-byte
+///      sector, extract bytes 16..2064 as user data, restore DCR=0.
+///      Even wrong bytes beat silence for video/audio recovery.
+pub struct CdSectorReader {
+    drive: DriveHandle,
+    capacity_lba: u64,
+}
+
+/// Maximum C2 user-data errors before we give up on the DCR fallback.
+/// 64 bad bytes out of 2048 ≈ 3% corruption. A video decoder can conceal
+/// this; at higher rates the sector is likely unrecoverable anyway.
+const DCR_THRESHOLD: u32 = 64;
+
+impl CdSectorReader {
+    pub fn open(path: &str) -> io::Result<Self> {
+        let drive = open_drive(path)?;
+        apply_recovery_mode_settings(&drive);
+        let capacity_lba = read_capacity(&drive)?;
+        tracing::info!(
+            "CdSectorReader: opened {path}, capacity={capacity_lba} sectors, using READ CD (0xBE)"
+        );
+        Ok(Self { drive, capacity_lba })
+    }
+
+    /// Phase 1: fast path — READ CD user-data-only. Identical performance to
+    /// READ(10) on healthy sectors, but correctly handles Mode 2 XA sectors.
+    fn try_read_cd_user_data(&self, lba: u32, timeout_secs: u32) -> Option<Vec<u8>> {
+        let cdb = build_read_cd_user_data_cdb(lba, 1);
+        let mut buf = vec![0u8; CD_USER_DATA_LEN];
+        match scsi_passthrough(&self.drive, &cdb, &mut buf, SCSI_IOCTL_DATA_IN, timeout_secs) {
+            Ok((0, _)) => Some(buf),
+            _ => None,
+        }
+    }
+
+    /// Phase 2: READ CD with C2 error pointers. Buffer layout per sector:
+    ///   [0..2048] = user data, [2048..2342] = C2 error block (294 bytes).
+    /// Returns (user_data, c2_error_count) on success.
+    fn try_read_cd_c2(&self, lba: u32, timeout_secs: u32) -> Option<(Vec<u8>, u32)> {
+        let frame_size = CD_USER_DATA_LEN + CD_C2_BLOCK_BYTES; // 2342
+        let cdb = build_read_cd_c2_cdb(lba, 1);
+        let mut buf = vec![0u8; frame_size];
+        match scsi_passthrough(&self.drive, &cdb, &mut buf, SCSI_IOCTL_DATA_IN, timeout_secs) {
+            Ok((0, _)) => {
+                let user_data = buf[..CD_USER_DATA_LEN].to_vec();
+                let c2_block = &buf[CD_USER_DATA_LEN..];
+                let errors = count_c2_user_data_errors(c2_block);
+                tracing::debug!("C2 read LBA {lba}: {errors} user-data bytes flagged");
+                Some((user_data, errors))
+            }
+            _ => None,
+        }
+    }
+
+    /// Phase 3: DCR raw fallback. Temporarily disables firmware ECC, reads the
+    /// full 2352-byte raw sector, and extracts the Mode 1 user data region
+    /// (bytes 16..2064). Restores ECC mode immediately after.
+    ///
+    /// The returned data may contain incorrect bytes where C2 flagged errors,
+    /// but it is still useful: video decoders conceal individual bad blocks and
+    /// audio decoders can interpolate over a handful of bad samples.
+    fn try_read_cd_dcr(&self, lba: u32, timeout_secs: u32) -> Option<Vec<u8>> {
+        set_dcr_mode(&self.drive);
+        let cdb = build_read_cd_raw_cdb(lba, 1);
+        let mut raw = vec![0u8; CD_RAW_SECTOR_BYTES];
+        let result = scsi_passthrough(&self.drive, &cdb, &mut raw, SCSI_IOCTL_DATA_IN, timeout_secs);
+        // Restore recovery mode (DCR=0) regardless of outcome.
+        apply_recovery_mode_settings(&self.drive);
+
+        match result {
+            Ok((0, _)) => {
+                if raw.len() >= CD_USER_DATA_OFFSET + CD_USER_DATA_LEN {
+                    let user = raw[CD_USER_DATA_OFFSET..CD_USER_DATA_OFFSET + CD_USER_DATA_LEN].to_vec();
+                    tracing::debug!("DCR raw read LBA {lba}: extracted user data (may contain errors)");
+                    Some(user)
+                } else {
+                    None
+                }
+            }
+            _ => {
+                tracing::debug!("DCR raw read LBA {lba}: command rejected by drive");
+                None
+            }
+        }
+    }
+
+    /// Per-sector fast fallback for block read failures: 2s cap, no resilient retry.
+    fn cd_fast_sector_fallback(
+        &self,
+        start_lba: u64,
+        count: u32,
+        timeout_secs: u32,
+    ) -> Vec<SectorReadResult> {
+        let timeout = timeout_secs.min(2).max(1);
+        (0..count as u64)
+            .map(|i| {
+                let lba = (start_lba + i) as u32;
+                let started = Instant::now();
+                let result = self.try_read_cd_user_data(lba, timeout);
+                let elapsed = started.elapsed().as_millis() as u32;
+                match result {
+                    Some(data) => SectorReadResult::ok(start_lba + i, data, elapsed),
+                    None => SectorReadResult::err(
+                        start_lba + i, SectorError::MediumError, 1, elapsed,
+                    ),
+                }
+            })
+            .collect()
+    }
+}
+
+impl SectorReader for CdSectorReader {
+    fn read_sector(&self, lba: u64, opts: ReadOptions) -> SectorReadResult {
+        if lba >= self.capacity_lba {
+            return SectorReadResult::err(lba, SectorError::IllegalRequest, 0, 0);
+        }
+        let timeout_secs = (opts.timeout_ms / 1000).max(5);
+        let started = Instant::now();
+
+        // Phase 1: normal READ CD — correct data if drive can manage it.
+        if let Some(data) = self.try_read_cd_user_data(lba as u32, timeout_secs) {
+            return SectorReadResult::ok(lba, data, started.elapsed().as_millis() as u32);
+        }
+
+        // Phase 2: C2 analysis to measure damage.
+        let c2_result = self.try_read_cd_c2(lba as u32, timeout_secs);
+
+        let c2_errors = c2_result.as_ref().map(|(_, e)| *e).unwrap_or(u32::MAX);
+        tracing::debug!("LBA {lba}: Phase 1 failed, C2 error count = {c2_errors}");
+
+        // Phase 3: if damage is ≤ threshold, try DCR raw read.
+        if c2_errors <= DCR_THRESHOLD {
+            if let Some(data) = self.try_read_cd_dcr(lba as u32, timeout_secs) {
+                tracing::info!(
+                    "LBA {lba}: DCR fallback recovered sector with {c2_errors} known-bad bytes"
+                );
+                return SectorReadResult::ok(lba, data, started.elapsed().as_millis() as u32);
+            }
+        }
+
+        // All phases failed.
+        SectorReadResult::err(
+            lba,
+            SectorError::Uncorrectable,
+            3,
+            started.elapsed().as_millis() as u32,
+        )
+    }
+
+    fn read_block(&self, start_lba: u64, count: u32, opts: ReadOptions) -> Vec<SectorReadResult> {
+        if count == 0 {
+            return Vec::new();
+        }
+        if count == 1 || start_lba >= self.capacity_lba {
+            return vec![self.read_sector(start_lba, opts)];
+        }
+
+        let remaining = self.capacity_lba - start_lba;
+        let n = std::cmp::min(count, MAX_BLOCK_SECTORS) as u64;
+        let n = std::cmp::min(n, remaining) as u32;
+        let timeout_secs = (opts.timeout_ms / 1000).max(5);
+
+        let cdb = build_read_cd_user_data_cdb(start_lba as u32, n);
+        let mut buf = AlignedBuffer::new(n as usize * CD_USER_DATA_LEN, 4096);
+        let started = Instant::now();
+
+        let result = scsi_passthrough(
+            &self.drive, &cdb, buf.as_mut_slice(), SCSI_IOCTL_DATA_IN, timeout_secs,
+        );
+        let elapsed_ms = started.elapsed().as_millis() as u32;
+
+        match result {
+            Ok((0, _)) => {
+                let per_ms = elapsed_ms.checked_div(n).unwrap_or(0);
+                let bytes = buf.as_slice();
+                (0..n as usize)
+                    .map(|i| {
+                        let off = i * CD_USER_DATA_LEN;
+                        SectorReadResult::ok(
+                            start_lba + i as u64,
+                            bytes[off..off + CD_USER_DATA_LEN].to_vec(),
+                            per_ms,
+                        )
+                    })
+                    .collect()
+            }
+            Err(e)
+                if e.kind() == io::ErrorKind::TimedOut || is_drive_disconnect_error(&e) =>
+            {
+                tracing::warn!(
+                    "CD block timeout at LBA {start_lba} n={n}: {e}; skip per-sector retry"
+                );
+                (0..n as u64)
+                    .map(|i| {
+                        SectorReadResult::err(start_lba + i, SectorError::Timeout, 1, elapsed_ms)
+                    })
+                    .collect()
+            }
+            _ => {
+                tracing::debug!(
+                    "CD block read failed at LBA {start_lba} n={n}, falling back to per-sector"
+                );
+                self.cd_fast_sector_fallback(start_lba, n, timeout_secs)
+            }
+        }
+    }
+
+    fn capacity(&self) -> u64 {
+        self.capacity_lba
+    }
 }

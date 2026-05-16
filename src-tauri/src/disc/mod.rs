@@ -17,5 +17,5 @@ pub mod scsi_windows;
 #[cfg(windows)]
 pub use scsi_windows as scsi;
 
-pub use drive::{DriveCapabilities, DriveInfo, DiscInfo, DiscType};
+pub use drive::{DriveCapabilities, DriveInfo, DiscInfo, DiscType, DiscClass, DiscProfile, TocSession, DiscTocInfo};
 pub use sector::{SectorError, SectorReadResult, SectorReader, DVD_SECTOR_SIZE, MAX_BLOCK_SECTORS};

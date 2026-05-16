@@ -99,6 +99,7 @@ pub fn run() {
             commands::recovery::get_sector_map,
             commands::recovery::export_rmap,
             commands::recovery::import_rmap,
+            commands::recovery::export_receipt_manifest,
             commands::dvd::analyze_structure,
             commands::dvd::extract_vobs,
             commands::dvd::extract_all_files,
