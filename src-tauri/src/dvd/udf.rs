@@ -923,185 +923,345 @@ mod tests {
         assert!(parse_descriptor_tag(&sector).is_none());
     }
 
-    /// End-to-end: build a minimal valid UDF volume in memory (AVDP →
-    /// VDS{PD, LVD, Terminating} → FSD → root FE → one FID → one file FE)
-    /// and walk it. This exercises every offset table we just fixed.
+    /// End-to-end smoke test: build a minimal valid UDF volume (AVDP → VDS
+    /// → FSD → root FE → one FID → one file FE) and walk it. This is the
+    /// baseline that proves all the offset tables for the common case.
     #[test]
     fn walks_minimal_udf_volume() {
-        // Volume layout we'll construct:
-        //   LBA 32  → start of partition
-        //   LBA 33  → File Set Descriptor (partition-relative LBA = 1)
-        //   LBA 34  → root directory File Entry (partition-relative LBA = 2)
-        //   LBA 35  → root directory contents (one FID pointing at LBA 4 rel)
-        //   LBA 36  → file's File Entry (partition-relative LBA = 4)
-        //   LBA 37  → file data (one sector of 'A')
-        //   LBA 100 → main VDS start (PD + LVD + Terminating, each one sector)
-        //   LBA 256 → AVDP pointing at VDS @ 100
         let reader = MemReader::new(1024);
+        let part = build_volume_scaffolding(&reader, "TEST_VOL", /*root_fe_rel*/ 2);
+
+        // Root FE @ rel 2: directory with content @ rel 3 (one sector).
+        reader.put((part + 2) as u64,
+            build_fe(2, 4, DVD_SECTOR_SIZE as u64, &[(DVD_SECTOR_SIZE as u32, 3)], None, false));
+        // Root content @ rel 3: one FID "HELLO.TXT" → rel 4.
+        reader.put((part + 3) as u64, build_dir_content(3, &[
+            FidSpec { name: "HELLO.TXT".into(), name_utf16: false, icb_lba: 4, is_dir: false },
+        ]));
+        // HELLO.TXT FE @ rel 4: file, 5 bytes, data @ rel 5.
+        reader.put((part + 4) as u64, build_fe(4, 5, 5, &[(5, 5)], None, false));
+
+        let vol = walk_udf(&reader).expect("UDF walk should succeed");
+        assert_eq!(vol.label, "TEST_VOL");
+        let files: Vec<_> = vol.entries.iter().filter(|e| !e.is_dir).collect();
+        assert_eq!(files.len(), 1, "expected 1 file, got {:?}", vol.entries);
+        assert_eq!(files[0].path, "HELLO.TXT");
+        assert_eq!(files[0].size_bytes, 5);
+        assert_eq!(files[0].start_lba, (part + 5) as u64);
+    }
+
+    // ── Flexible builders used by every UDF round-trip test ──────────────
+
+    /// One File Identifier description for the directory-content builder.
+    struct FidSpec {
+        /// File name. Mixed ASCII / non-ASCII handled by name_utf16.
+        name: String,
+        /// If true, encode with OSTA-CS0 16-bit big-endian; else 8-bit.
+        name_utf16: bool,
+        /// Partition-relative LBA of the child's File Entry.
+        icb_lba: u32,
+        /// File Characteristics bit 1 (directory).
+        is_dir: bool,
+    }
+
+    /// File Entry / Extended File Entry builder. Pick `extended=true` to
+    /// produce a tag-266 EFE with L_EA at byte 208 and data at byte 216.
+    /// Pass `inline_data=Some(…)` to use ad_type=3 (embedded), else short_ad
+    /// extents listed in `extents`.
+    fn build_fe(
+        self_lba: u32,
+        file_type: u8,
+        info_len: u64,
+        extents: &[(u32 /*len*/, u32 /*pos*/)],
+        inline_data: Option<&[u8]>,
+        extended: bool,
+    ) -> Vec<u8> {
+        let tag_id = if extended { TAG_EXTENDED_FILE_ENTRY } else { TAG_FILE_ENTRY };
+        let (l_ea_off, l_ad_off, data_off) = if extended {
+            (208usize, 212usize, 216usize)
+        } else {
+            (168usize, 172usize, 176usize)
+        };
+
+        let mut fe = vec![0u8; DVD_SECTOR_SIZE];
+        fe[..16].copy_from_slice(&make_tag(tag_id, self_lba));
+        // ICB Tag at bytes 16..36: File Type @ 27, Strategy Type @ 20..22, Flags @ 34..36.
+        fe[27] = file_type;
+        fe[20..22].copy_from_slice(&4u16.to_le_bytes()); // Strategy Type 4 = direct
+        let ad_type: u16 = if inline_data.is_some() { 3 } else { 0 }; // 3 = embedded, 0 = short_ad
+        fe[34..36].copy_from_slice(&ad_type.to_le_bytes());
+        fe[56..64].copy_from_slice(&info_len.to_le_bytes());
+        fe[l_ea_off..l_ea_off + 4].copy_from_slice(&0u32.to_le_bytes()); // L_EA = 0
+
+        match inline_data {
+            Some(bytes) => {
+                let l_ad = bytes.len() as u32;
+                fe[l_ad_off..l_ad_off + 4].copy_from_slice(&l_ad.to_le_bytes());
+                fe[data_off..data_off + bytes.len()].copy_from_slice(bytes);
+            }
+            None => {
+                let l_ad = (extents.len() * 8) as u32; // each short_ad is 8 bytes
+                fe[l_ad_off..l_ad_off + 4].copy_from_slice(&l_ad.to_le_bytes());
+                for (i, &(len, pos)) in extents.iter().enumerate() {
+                    let o = data_off + i * 8;
+                    fe[o..o + 4].copy_from_slice(&len.to_le_bytes());
+                    fe[o + 4..o + 8].copy_from_slice(&pos.to_le_bytes());
+                }
+            }
+        }
+        fe
+    }
+
+    /// Build a directory-content sector containing the given FIDs. Each FID
+    /// is packed in 4-byte aligned succession starting at byte 0 of the
+    /// sector. `self_anchor` is the partition-relative LBA the sector lives
+    /// at (used as the FID tag_location even though our parser doesn't
+    /// validate FID self-anchors).
+    fn build_dir_content(self_anchor: u32, fids: &[FidSpec]) -> Vec<u8> {
+        let mut dir = vec![0u8; DVD_SECTOR_SIZE];
+        let mut off = 0usize;
+
+        for fid in fids {
+            // Encode the File Identifier payload (compression byte + chars).
+            let mut fi: Vec<u8> = Vec::new();
+            if fid.name_utf16 {
+                fi.push(16);
+                for c in fid.name.encode_utf16() {
+                    fi.extend_from_slice(&c.to_be_bytes()); // OSTA-CS0 is big-endian
+                }
+            } else {
+                fi.push(8);
+                fi.extend_from_slice(fid.name.as_bytes());
+            }
+            let l_fi = fi.len();
+            let raw_len = 38 + 0 /*L_IU*/ + l_fi;
+            let fid_len = (raw_len + 3) & !3;
+
+            // Refuse to write past the sector — real burners would jump to the
+            // next sector here, but our tests stay within one sector.
+            assert!(off + fid_len <= DVD_SECTOR_SIZE, "FID overflows test sector");
+
+            dir[off..off + 16].copy_from_slice(&make_tag(TAG_FILE_IDENTIFIER_DESCRIPTOR, self_anchor));
+            dir[off + 16..off + 18].copy_from_slice(&1u16.to_le_bytes()); // version = 1
+            dir[off + 18] = if fid.is_dir { 0x02 } else { 0x00 };          // file chars
+            dir[off + 19] = l_fi as u8;                                     // L_FI
+            // ICB long_ad: length(4) + lba(4) + part_ref(2) + impl_use(6)
+            dir[off + 20..off + 24].copy_from_slice(&(DVD_SECTOR_SIZE as u32).to_le_bytes());
+            dir[off + 24..off + 28].copy_from_slice(&fid.icb_lba.to_le_bytes());
+            dir[off + 28..off + 30].copy_from_slice(&0u16.to_le_bytes());
+            dir[off + 36..off + 38].copy_from_slice(&0u16.to_le_bytes()); // L_IU = 0
+            dir[off + 38..off + 38 + l_fi].copy_from_slice(&fi);
+            off += fid_len;
+        }
+        dir
+    }
+
+    /// Assemble the AVDP + VDS + FSD scaffolding common to every E2E test.
+    /// Returns the configured MemReader plus the partition's `start_lba` so
+    /// callers can place File Entries at known absolute LBAs.
+    fn build_volume_scaffolding(
+        reader: &MemReader,
+        label: &str,
+        root_fe_rel: u32,
+    ) -> u32 /* partition_start */ {
         const PARTITION_START: u32 = 32;
-        const FSD_REL: u32 = 1;
-        const ROOT_FE_REL: u32 = 2;
-        const ROOT_DIR_CONTENT_REL: u32 = 3;
-        const FILE_FE_REL: u32 = 4;
-        const FILE_DATA_REL: u32 = 5;
         const VDS_LBA: u32 = 100;
         const AVDP_LBA: u32 = 256;
+        const FSD_REL: u32 = 1;
 
-        // ── AVDP at LBA 256: points to VDS at LBA 100, length = 3 * 2048 ──
+        // AVDP @ 256 → VDS @ 100, length = 3 sectors
         let mut avdp = vec![0u8; DVD_SECTOR_SIZE];
         avdp[..16].copy_from_slice(&make_tag(TAG_ANCHOR_VOLUME_DESCRIPTOR_POINTER, AVDP_LBA));
         avdp[16..20].copy_from_slice(&(3u32 * DVD_SECTOR_SIZE as u32).to_le_bytes());
         avdp[20..24].copy_from_slice(&VDS_LBA.to_le_bytes());
         reader.put(AVDP_LBA as u64, avdp);
 
-        // ── VDS sector 0 @ LBA 100: Partition Descriptor ──
+        // PD @ 100
         let mut pd = vec![0u8; DVD_SECTOR_SIZE];
         pd[..16].copy_from_slice(&make_tag(TAG_PARTITION_DESCRIPTOR, VDS_LBA));
-        pd[22..24].copy_from_slice(&0u16.to_le_bytes()); // partition number = 0
+        pd[22..24].copy_from_slice(&0u16.to_le_bytes());
         pd[188..192].copy_from_slice(&PARTITION_START.to_le_bytes());
-        pd[192..196].copy_from_slice(&100u32.to_le_bytes()); // length
+        pd[192..196].copy_from_slice(&100u32.to_le_bytes());
         reader.put(VDS_LBA as u64, pd);
 
-        // ── VDS sector 1 @ LBA 101: Logical Volume Descriptor ──
+        // LVD @ 101 with FSD long_ad pointing at partition-relative LBA 1
         let mut lvd = vec![0u8; DVD_SECTOR_SIZE];
         lvd[..16].copy_from_slice(&make_tag(TAG_LOGICAL_VOLUME_DESCRIPTOR, VDS_LBA + 1));
-        // Logical Volume Identifier dstring at bytes 84..212 (128 bytes).
-        let label = make_dstring(128, "TEST_VOL");
-        lvd[84..212].copy_from_slice(&label);
-        // FSD long_ad at bytes 248..264. We need: length (4), lba (4), part_ref (2), impl-use (6).
-        lvd[248..252].copy_from_slice(&(DVD_SECTOR_SIZE as u32).to_le_bytes()); // length
-        lvd[252..256].copy_from_slice(&FSD_REL.to_le_bytes());                  // lba
-        lvd[256..258].copy_from_slice(&0u16.to_le_bytes());                     // partition_ref = 0
+        lvd[84..212].copy_from_slice(&make_dstring(128, label));
+        lvd[248..252].copy_from_slice(&(DVD_SECTOR_SIZE as u32).to_le_bytes());
+        lvd[252..256].copy_from_slice(&FSD_REL.to_le_bytes());
+        lvd[256..258].copy_from_slice(&0u16.to_le_bytes());
         reader.put((VDS_LBA + 1) as u64, lvd);
 
-        // ── VDS sector 2 @ LBA 102: Terminating Descriptor ──
+        // Terminating @ 102
         let mut term = vec![0u8; DVD_SECTOR_SIZE];
         term[..16].copy_from_slice(&make_tag(TAG_TERMINATING_DESCRIPTOR, VDS_LBA + 2));
         reader.put((VDS_LBA + 2) as u64, term);
 
-        // ── File Set Descriptor at partition-relative LBA 1 → absolute 33 ──
+        // FSD @ partition-rel 1 (= absolute 33) with Root Directory ICB
+        // pointing at the requested root_fe_rel.
         let mut fsd = vec![0u8; DVD_SECTOR_SIZE];
         fsd[..16].copy_from_slice(&make_tag(TAG_FILE_SET_DESCRIPTOR, FSD_REL));
-        // Root Directory ICB long_ad at bytes 400..416.
         fsd[400..404].copy_from_slice(&(DVD_SECTOR_SIZE as u32).to_le_bytes());
-        fsd[404..408].copy_from_slice(&ROOT_FE_REL.to_le_bytes());
+        fsd[404..408].copy_from_slice(&root_fe_rel.to_le_bytes());
         fsd[408..410].copy_from_slice(&0u16.to_le_bytes());
         reader.put((PARTITION_START + FSD_REL) as u64, fsd);
 
-        // ── Root directory File Entry at partition-relative LBA 2 → absolute 34 ──
-        // Uses short_ad allocation pointing at partition-relative LBA 3 (= absolute 35)
-        // for one sector of FID content.
-        let root_fe = build_file_entry(
-            ROOT_FE_REL,
-            /*file_type*/ 4, // directory
-            /*info_len*/ DVD_SECTOR_SIZE as u64,
-            /*ad_short_pos*/ ROOT_DIR_CONTENT_REL,
-            /*ad_short_len*/ DVD_SECTOR_SIZE as u32,
-        );
-        reader.put((PARTITION_START + ROOT_FE_REL) as u64, root_fe);
+        PARTITION_START
+    }
 
-        // ── Root directory contents @ partition-rel LBA 3 → absolute 35 ──
-        // Single FID pointing at FILE_FE_REL with name "HELLO.TXT".
-        let root_content = build_dir_with_one_fid("HELLO.TXT", FILE_FE_REL, /*is_dir*/ false);
-        reader.put((PARTITION_START + ROOT_DIR_CONTENT_REL) as u64, root_content);
+    // ── End-to-end tests ──────────────────────────────────────────────────
 
-        // ── File's File Entry at partition-rel LBA 4 → absolute 36 ──
-        let file_fe = build_file_entry(
-            FILE_FE_REL,
-            /*file_type*/ 5, // regular file
-            /*info_len*/ 5, // "AAAAA"
-            /*ad_short_pos*/ FILE_DATA_REL,
-            /*ad_short_len*/ 5,
-        );
-        reader.put((PARTITION_START + FILE_FE_REL) as u64, file_fe);
+    /// Walk a UDF volume with two nested directories:
+    ///   /HELLO.TXT
+    ///   /PHOTOS/PIC.JPG
+    /// Validates that recursion into subdirectories works and produces the
+    /// expected slash-joined paths.
+    #[test]
+    fn walks_nested_directories() {
+        let reader = MemReader::new(1024);
+        let part = build_volume_scaffolding(&reader, "NESTED", /*root_fe_rel*/ 2);
 
-        // ── File data sector (we don't actually read it during the walk, but
-        //    we put something there so any future content-reading test passes).
-        let mut file_data = vec![0u8; DVD_SECTOR_SIZE];
-        file_data[..5].copy_from_slice(b"AAAAA");
-        reader.put((PARTITION_START + FILE_DATA_REL) as u64, file_data);
+        // Root FE @ rel 2 → dir, content @ rel 3
+        reader.put((part + 2) as u64,
+            build_fe(2, 4, DVD_SECTOR_SIZE as u64, &[(DVD_SECTOR_SIZE as u32, 3)], None, false));
+        // Root dir content @ rel 3: HELLO.TXT (→ rel 4) and PHOTOS (→ rel 5)
+        reader.put((part + 3) as u64, build_dir_content(3, &[
+            FidSpec { name: "HELLO.TXT".into(), name_utf16: false, icb_lba: 4, is_dir: false },
+            FidSpec { name: "PHOTOS".into(),    name_utf16: false, icb_lba: 5, is_dir: true  },
+        ]));
+        // HELLO.TXT FE @ rel 4 → file data @ rel 6, 11 bytes "hello world"
+        reader.put((part + 4) as u64, build_fe(4, 5, 11, &[(11, 6)], None, false));
+        // PHOTOS FE @ rel 5 → dir content @ rel 7
+        reader.put((part + 5) as u64,
+            build_fe(5, 4, DVD_SECTOR_SIZE as u64, &[(DVD_SECTOR_SIZE as u32, 7)], None, false));
+        // PHOTOS dir content @ rel 7: PIC.JPG (→ rel 8)
+        reader.put((part + 7) as u64, build_dir_content(7, &[
+            FidSpec { name: "PIC.JPG".into(), name_utf16: false, icb_lba: 8, is_dir: false },
+        ]));
+        // PIC.JPG FE @ rel 8 → file data @ rel 9, 100 bytes
+        reader.put((part + 8) as u64, build_fe(8, 5, 100, &[(100, 9)], None, false));
 
-        // ── Walk it! ──
-        let vol = walk_udf(&reader).expect("UDF walk should succeed");
-        assert_eq!(vol.label, "TEST_VOL");
-        // Should have found exactly one file: HELLO.TXT
+        let vol = walk_udf(&reader).expect("walk should succeed");
+        let files: Vec<_> = vol.entries.iter()
+            .filter(|e| !e.is_dir).map(|e| (e.path.as_str(), e.size_bytes, e.start_lba))
+            .collect();
+        assert!(files.contains(&("HELLO.TXT", 11, (part + 6) as u64)),
+            "missing HELLO.TXT, got {:?}", files);
+        assert!(files.contains(&("PHOTOS/PIC.JPG", 100, (part + 9) as u64)),
+            "missing PHOTOS/PIC.JPG, got {:?}", files);
+    }
+
+    /// Walk a volume where the only file's name is a UTF-16 dstring
+    /// (CS0 compression 16, big-endian). Validates that the non-ASCII path
+    /// round-trips through parse_fi_name.
+    #[test]
+    fn walks_utf16_filename() {
+        let reader = MemReader::new(1024);
+        let part = build_volume_scaffolding(&reader, "UTF16", 2);
+        reader.put((part + 2) as u64,
+            build_fe(2, 4, DVD_SECTOR_SIZE as u64, &[(DVD_SECTOR_SIZE as u32, 3)], None, false));
+
+        // "café_2024" — has one non-ASCII char (é = U+00E9). UTF-16 encoding
+        // is 18 bytes (9 code units × 2). With the 1-byte compression
+        // prefix L_FI = 19.
+        let name = "café_2024";
+        reader.put((part + 3) as u64, build_dir_content(3, &[
+            FidSpec { name: name.into(), name_utf16: true, icb_lba: 4, is_dir: false },
+        ]));
+        reader.put((part + 4) as u64, build_fe(4, 5, 42, &[(42, 5)], None, false));
+
+        let vol = walk_udf(&reader).expect("walk should succeed");
         let files: Vec<_> = vol.entries.iter().filter(|e| !e.is_dir).collect();
-        assert_eq!(files.len(), 1, "expected 1 file, got {:?}", vol.entries);
-        assert_eq!(files[0].path, "HELLO.TXT");
-        assert_eq!(files[0].size_bytes, 5);
-        assert_eq!(files[0].start_lba, (PARTITION_START + FILE_DATA_REL) as u64);
+        assert_eq!(files.len(), 1);
+        assert_eq!(files[0].path, "café_2024",
+            "expected UTF-16 round-trip 'café_2024', got {:?}", files[0].path);
     }
 
-    /// Build a minimal File Entry sector with one short_ad allocation descriptor.
-    fn build_file_entry(
-        self_lba: u32,
-        file_type: u8,
-        info_len: u64,
-        ad_short_pos: u32,
-        ad_short_len: u32,
-    ) -> Vec<u8> {
-        let mut fe = vec![0u8; DVD_SECTOR_SIZE];
-        fe[..16].copy_from_slice(&make_tag(TAG_FILE_ENTRY, self_lba));
-        // ICB Tag at bytes 16..36. File Type byte at 27 (= 16+11).
-        fe[27] = file_type;
-        // Strategy Type at bytes 20..22 (= 16+4..16+6): 4 = direct.
-        fe[20..22].copy_from_slice(&4u16.to_le_bytes());
-        // Flags at bytes 34..36 (= 16+18..16+20). AD type 0 = short_ad (low 3 bits = 0).
-        fe[34..36].copy_from_slice(&0u16.to_le_bytes());
-        // Information Length at bytes 56..64.
-        fe[56..64].copy_from_slice(&info_len.to_le_bytes());
-        // Per ECMA-167 §14.9 the FE layout is:
-        //   bytes 168..172: L_EA  (Length of Extended Attributes)
-        //   bytes 172..176: L_AD  (Length of Allocation Descriptors)
-        //   bytes 176..(176+L_EA): EAs (none here)
-        //   bytes (176+L_EA)..(176+L_EA+L_AD): allocation descriptors
-        fe[168..172].copy_from_slice(&0u32.to_le_bytes()); // L_EA = 0
-        fe[172..176].copy_from_slice(&8u32.to_le_bytes()); // L_AD = 8 (one short_ad)
-        // short_ad at byte 176: length (4) + position (4).
-        fe[176..180].copy_from_slice(&ad_short_len.to_le_bytes());
-        fe[180..184].copy_from_slice(&ad_short_pos.to_le_bytes());
-        fe
+    /// Walk a volume where a directory's content is split across TWO short_ad
+    /// extents. Exercises the chunks_exact loop in read_extent_data and proves
+    /// FIDs from a second extent are reachable.
+    #[test]
+    fn walks_directory_with_multi_extent_content() {
+        let reader = MemReader::new(1024);
+        let part = build_volume_scaffolding(&reader, "MULTI", 2);
+
+        // Root FE has TWO short_ads: extent A at rel 3, extent B at rel 4.
+        let extents = [(DVD_SECTOR_SIZE as u32, 3u32), (DVD_SECTOR_SIZE as u32, 4u32)];
+        reader.put((part + 2) as u64,
+            build_fe(2, 4, (DVD_SECTOR_SIZE as u64) * 2, &extents, None, false));
+
+        // Extent A (rel 3): FILE_A.TXT → rel 10
+        reader.put((part + 3) as u64, build_dir_content(3, &[
+            FidSpec { name: "FILE_A.TXT".into(), name_utf16: false, icb_lba: 10, is_dir: false },
+        ]));
+        // Extent B (rel 4): FILE_B.TXT → rel 11
+        reader.put((part + 4) as u64, build_dir_content(4, &[
+            FidSpec { name: "FILE_B.TXT".into(), name_utf16: false, icb_lba: 11, is_dir: false },
+        ]));
+        reader.put((part + 10) as u64, build_fe(10, 5, 1, &[(1, 20)], None, false));
+        reader.put((part + 11) as u64, build_fe(11, 5, 2, &[(2, 21)], None, false));
+
+        let vol = walk_udf(&reader).expect("walk should succeed");
+        let names: Vec<_> = vol.entries.iter()
+            .filter(|e| !e.is_dir).map(|e| e.path.clone()).collect();
+        assert!(names.contains(&"FILE_A.TXT".into()),
+            "missing FILE_A.TXT from first extent, got {:?}", names);
+        assert!(names.contains(&"FILE_B.TXT".into()),
+            "missing FILE_B.TXT from SECOND extent — multi-extent walk broken: {:?}", names);
     }
 
-    /// Build a directory-content sector with a single FID for `name`.
-    fn build_dir_with_one_fid(name: &str, child_icb_rel_lba: u32, is_dir: bool) -> Vec<u8> {
-        let mut dir = vec![0u8; DVD_SECTOR_SIZE];
-        // FID tag at offset 0 of directory content. Self-anchor = the
-        // partition-relative LBA the directory content sits at, but FIDs use
-        // tag_location of the FIRST sector containing the FID; for a
-        // single-sector dir starting at partition-relative LBA
-        // ROOT_DIR_CONTENT_REL = 3 we use that. (parse_file_identifiers
-        // uses the non-validating tag parser, so this isn't strictly required,
-        // but we set it correctly for completeness.)
-        let dir_self_anchor = 3u32; // matches ROOT_DIR_CONTENT_REL in the test above
-        dir[..16].copy_from_slice(&make_tag(TAG_FILE_IDENTIFIER_DESCRIPTOR, dir_self_anchor));
-        // FID body:
-        //   bytes 16..18: File Version Number = 1
-        //   byte 18: File Characteristics (bit 1 = directory)
-        //   byte 19: L_FI = name length (raw bytes, including the compression
-        //            ID prefix if name is encoded as a CS0 string)
-        //   bytes 20..36: ICB long_ad (length, lba, part_ref, impl_use)
-        //   bytes 36..38: L_IU = 0
-        //   bytes 38..38+L_IU+L_FI: payload
-        dir[16..18].copy_from_slice(&1u16.to_le_bytes());
-        let mut chars: u8 = 0;
-        if is_dir { chars |= 0x02; }
-        dir[18] = chars;
+    /// Walk a volume containing one Extended File Entry (tag 266) instead of
+    /// a basic File Entry. Validates the L_EA/L_AD/data offset triple
+    /// (208/212/216) used for EFE.
+    #[test]
+    fn walks_extended_file_entry() {
+        let reader = MemReader::new(1024);
+        let part = build_volume_scaffolding(&reader, "EFEVOL", 2);
 
-        // File Identifier payload: 1 byte compression ID + raw bytes.
-        let mut fi_payload = Vec::with_capacity(1 + name.len());
-        fi_payload.push(8u8); // compression = 8-bit
-        fi_payload.extend_from_slice(name.as_bytes());
-        let l_fi = fi_payload.len();
-        dir[19] = l_fi as u8;
+        reader.put((part + 2) as u64,
+            build_fe(2, 4, DVD_SECTOR_SIZE as u64, &[(DVD_SECTOR_SIZE as u32, 3)], None, false));
+        reader.put((part + 3) as u64, build_dir_content(3, &[
+            FidSpec { name: "EFE_FILE".into(), name_utf16: false, icb_lba: 4, is_dir: false },
+        ]));
+        // Child's FE is an EFE (extended = true), pointing at data @ rel 5.
+        reader.put((part + 4) as u64,
+            build_fe(4, /*file*/ 5, 256, &[(256, 5)], None, /*extended*/ true));
 
-        // ICB long_ad pointing at the child File Entry.
-        dir[20..24].copy_from_slice(&(DVD_SECTOR_SIZE as u32).to_le_bytes());
-        dir[24..28].copy_from_slice(&child_icb_rel_lba.to_le_bytes());
-        dir[28..30].copy_from_slice(&0u16.to_le_bytes());
+        let vol = walk_udf(&reader).expect("walk should succeed");
+        let files: Vec<_> = vol.entries.iter().filter(|e| !e.is_dir).collect();
+        assert_eq!(files.len(), 1, "got {:?}", vol.entries);
+        assert_eq!(files[0].path, "EFE_FILE");
+        assert_eq!(files[0].size_bytes, 256, "EFE info_len should round-trip");
+        assert_eq!(files[0].start_lba, (part + 5) as u64,
+            "EFE extent LBA mis-read — L_AD offset wrong?");
+    }
 
-        dir[36..38].copy_from_slice(&0u16.to_le_bytes()); // L_IU = 0
-        dir[38..38 + l_fi].copy_from_slice(&fi_payload);
-        dir
+    /// Walk a volume with one inline-data file (ad_type=3, data stored in the
+    /// File Entry itself rather than at a separate extent).
+    #[test]
+    fn walks_inline_data_file() {
+        let reader = MemReader::new(1024);
+        let part = build_volume_scaffolding(&reader, "INLINE", 2);
+
+        reader.put((part + 2) as u64,
+            build_fe(2, 4, DVD_SECTOR_SIZE as u64, &[(DVD_SECTOR_SIZE as u32, 3)], None, false));
+        reader.put((part + 3) as u64, build_dir_content(3, &[
+            FidSpec { name: "TINY.TXT".into(), name_utf16: false, icb_lba: 4, is_dir: false },
+        ]));
+        // Inline file: ad_type=3, data ("hi!") embedded in the ICB body.
+        let inline = b"hi!";
+        reader.put((part + 4) as u64,
+            build_fe(4, 5, inline.len() as u64, &[], Some(inline), false));
+
+        let vol = walk_udf(&reader).expect("walk should succeed");
+        let files: Vec<_> = vol.entries.iter().filter(|e| !e.is_dir).collect();
+        assert_eq!(files.len(), 1, "expected 1 inline file, got {:?}", vol.entries);
+        assert_eq!(files[0].path, "TINY.TXT");
+        assert_eq!(files[0].size_bytes, inline.len() as u64);
+        // For ad_type=3 the start_lba convention is the ICB sector itself
+        // (callers extract data from the ICB body at base_offset + L_EA).
+        assert_eq!(files[0].start_lba, (part + 4) as u64,
+            "inline file's start_lba should be the ICB sector");
     }
 }
