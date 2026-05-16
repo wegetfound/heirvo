@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { useLicense } from "@/lib/useLicense";
-import { Loader2, Check, ExternalLink, LogOut, Sparkles, FolderOpen, FileText, Volume2, Play, Mail, ChevronDown, ChevronRight, Mic, Film } from "lucide-react";
+import { useTheme } from "@/lib/theme";
+import { Loader2, Check, ExternalLink, LogOut, Sparkles, FolderOpen, FileText, Volume2, Play, Mail, ChevronDown, ChevronRight, Mic, Film, Sun, Moon } from "lucide-react";
 import { ipc } from "@/lib/ipc";
 import { audio, type AudioPrefs } from "@/lib/audio";
 import type { PreflightStatus } from "@/lib/types";
@@ -108,6 +109,9 @@ export function Settings() {
 
       {/* Sound */}
       <SoundPanel />
+
+      {/* Appearance */}
+      <AppearancePanel />
 
       {/* System status */}
       <SystemStatusPanel />
@@ -393,6 +397,61 @@ function MailInPanel() {
           <p className="mt-2 text-center text-[10px]" style={{ color: "rgba(255,255,255,0.28)" }}>
             Separate paid service — pricing on the page
           </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Appearance panel ─────────────────────────────────────────────────────────
+
+function AppearancePanel() {
+  const { isDark, toggle } = useTheme();
+
+  return (
+    <div className="mt-4 rounded-2xl border border-ink-200/70 bg-white/60 p-5">
+      <div className="flex items-start gap-3">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-ink-100">
+          {isDark ? (
+            <Moon className="h-4 w-4 text-ink-600" />
+          ) : (
+            <Sun className="h-4 w-4 text-ink-600" />
+          )}
+        </div>
+        <div className="flex-1 min-w-0">
+          <span className="micro-label">Appearance</span>
+          <div className="mt-3 flex items-center justify-between">
+            <div>
+              <p className="text-[13px] font-medium text-ink-800">
+                {isDark ? "Dark mode" : "Light mode"}
+              </p>
+              <p className="mt-0.5 text-[12px] text-ink-500">
+                {isDark
+                  ? "Cinematic dark theme — easier on the eyes at night."
+                  : "Clean light theme — works great in any room."}
+              </p>
+            </div>
+            {/* Toggle pill */}
+            <button
+              onClick={toggle}
+              aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+              className="relative ml-4 h-7 w-12 shrink-0 rounded-full transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400"
+              style={{
+                background: isDark ? "#C2741F" : "#E2DDD6",
+              }}
+            >
+              <span
+                className="absolute top-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-white shadow-sm transition-transform duration-200"
+                style={{ transform: isDark ? "translateX(20px)" : "translateX(2px)" }}
+              >
+                {isDark ? (
+                  <Moon className="h-3 w-3 text-ink-500" />
+                ) : (
+                  <Sun className="h-3 w-3 text-amber-500" />
+                )}
+              </span>
+            </button>
+          </div>
         </div>
       </div>
     </div>

@@ -38,6 +38,50 @@
   --lib-shadow-card:  0 1px 2px rgba(40,30,20,.05), 0 20px 60px rgba(40,30,20,.10);
 }
 
+/* ─────────────────────────────────────────────────────────────────────────────
+   Dashboard theme tokens — light (default) & dark (cinematic).
+   Applied via [data-theme="dark"] on <html>. All --db-* vars respond.
+───────────────────────────────────────────────────────────────────────────── */
+:root {
+  /* Light — warm cream / amber */
+  --db-base:          #FFFEF8;
+  --db-surface:       #FFFFFF;
+  --db-surface-2:     #F9F7F3;
+  --db-border:        #EAE6DF;
+  --db-border-soft:   #F2EFE8;
+  --db-text:          #1A1714;
+  --db-text-muted:    #6B6560;
+  --db-text-faint:    #A09890;
+  --db-amber:         #C2741F;
+  --db-amber-light:   #F5E4CC;
+  --db-amber-glow:    rgba(194,116,31,0.15);
+  --db-green:         #1A8750;
+  --db-green-light:   #E3F5EC;
+  --db-red:           #C53030;
+  --db-shadow:        0 1px 3px rgba(30,20,10,0.06), 0 8px 32px rgba(30,20,10,0.08);
+  --db-serif:         'Fraunces', 'New York', Georgia, ui-serif, serif;
+  --db-sans:          'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+}
+
+[data-theme="dark"] {
+  /* Dark — midnight blue / electric amber (cinematic) */
+  --db-base:          #0F1623;
+  --db-surface:       #151E2E;
+  --db-surface-2:     #1A2337;
+  --db-border:        rgba(255,255,255,0.07);
+  --db-border-soft:   rgba(255,255,255,0.04);
+  --db-text:          #F0F4FF;
+  --db-text-muted:    rgba(240,244,255,0.50);
+  --db-text-faint:    rgba(240,244,255,0.30);
+  --db-amber:         #F5A623;
+  --db-amber-light:   rgba(245,166,35,0.18);
+  --db-amber-glow:    rgba(245,166,35,0.30);
+  --db-green:         #34C759;
+  --db-green-light:   rgba(52,199,89,0.15);
+  --db-red:           #FF453A;
+  --db-shadow:        0 2px 8px rgba(0,0,0,0.4), 0 16px 48px rgba(0,0,0,0.3);
+}
+
 .lib-root {
   font-family: var(--lib-sans);
   background: var(--lib-paper);
