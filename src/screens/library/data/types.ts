@@ -66,6 +66,9 @@ export interface Disc {
   monogramId: MonogramId;
   gradient: GradientId;
   about?: string;
+  /** Local filesystem path to the recovered media file. Loaded via Tauri's
+   *  asset protocol (convertFileSrc) in the Watch screen. */
+  videoPath?: string;
 }
 
 export interface SearchHit {

@@ -105,6 +105,7 @@ fn build_demo_discs() -> Vec<Disc> {
                 l("00:14:02", "Sarah", "Daddy. Daddy look at it. Look at the water. It's the same as the sky."),
                 l("00:44:00", "Helen", "Bob. I could die here. Right here on this porch with this drink. Just let me."),
             ],
+            video_path: None,
         },
         Disc {
             id: "wedding-sarah-mike".into(),
@@ -140,6 +141,7 @@ fn build_demo_discs() -> Vec<Disc> {
                 l("00:48:33", "Officiant", "You may kiss the bride."),
                 l("01:02:14", "Helen", "To my daughter — and to the boy who finally figured out he was lucky."),
             ],
+            video_path: None,
         },
         Disc {
             id: "christmas-1992".into(),
@@ -172,6 +174,7 @@ fn build_demo_discs() -> Vec<Disc> {
                 l("00:18:00", "Mike", "No way. NO WAY. Mom, Dad — look — look at the box, it's the Nintendo, it's the —"),
                 sd("00:18:09", "[wrapping paper, dog barking, someone laughing]"),
             ],
+            video_path: None,
         },
         Disc {
             id: "dads-60th".into(),
@@ -211,6 +214,7 @@ fn build_demo_discs() -> Vec<Disc> {
                 l("00:43:40", "Sarah", "Dad, you say that every time."),
                 l("00:43:55", "Helen", "To the love of my life. Happy birthday, Robert. Sixty more."),
             ],
+            video_path: None,
         },
         Disc {
             id: "kids-first-day-school".into(),
@@ -241,6 +245,7 @@ fn build_demo_discs() -> Vec<Disc> {
                 l("00:00:24", "Sarah", "Mom, please. I am ten. The neighbors can see."),
                 l("00:11:11", "Helen", "There's the bus. Okay — kiss, hug, go, GO."),
             ],
+            video_path: None,
         },
         Disc {
             id: "eleanor-80th".into(),
@@ -289,6 +294,7 @@ fn build_demo_discs() -> Vec<Disc> {
                 sd("00:24:34", "[laughter from the whole room]"),
                 l("00:24:40", "Eleanor", "He ate them. Then I said yes. Best pancakes I ever had in my life."),
             ],
+            video_path: None,
         },
         Disc {
             id: "family-reunion-lake-house".into(),
@@ -321,6 +327,7 @@ fn build_demo_discs() -> Vec<Disc> {
                 l("01:42:09", "Helen", "While we're all here — did anyone remember it's Grandpa's birthday next week? He's turning ninety. Ninety!"),
                 l("01:42:22", "Sarah", "Let's get him on the phone. Where's the cordless?"),
             ],
+            video_path: None,
         },
         Disc {
             id: "camping-yellowstone".into(),
@@ -354,6 +361,7 @@ fn build_demo_discs() -> Vec<Disc> {
                 sd("00:32:30", "[long silence, then nervous laughter]"),
                 l("00:32:42", "Helen", "Robert. That was a squirrel."),
             ],
+            video_path: None,
         },
         Disc {
             id: "thanksgiving-aunt-mary".into(),
@@ -386,6 +394,7 @@ fn build_demo_discs() -> Vec<Disc> {
                 l("00:32:00", "Robert", "Lord, we thank you for this food, this family, and for Mary, who apparently was extra grateful this year."),
                 sd("00:32:14", "[the whole table laughing]"),
             ],
+            video_path: None,
         },
         Disc {
             id: "baby-emma-first-steps".into(),
@@ -417,6 +426,7 @@ fn build_demo_discs() -> Vec<Disc> {
                 sd("00:04:30", "[gasp, then cheering]"),
                 l("00:04:34", "Helen", "She did it. She did it. Oh my god, she did it."),
             ],
+            video_path: None,
         },
         Disc {
             id: "graduation-michael".into(),
@@ -449,6 +459,7 @@ fn build_demo_discs() -> Vec<Disc> {
                 l("01:24:30", "Mike", "Dad. Dad — quick question. You proud?"),
                 l("01:24:36", "Robert", "Yeah, buddy. Yeah. Every day for eighteen years. Today especially."),
             ],
+            video_path: None,
         },
         Disc {
             id: "road-trip-route-66".into(),
@@ -480,6 +491,7 @@ fn build_demo_discs() -> Vec<Disc> {
                 l("00:24:18", "Robert", "That's how they talk out here, kiddo. Eat your fries."),
                 l("01:40:00", "Helen", "We made it. Bob — we made it. From the kitchen to the Pacific Ocean."),
             ],
+            video_path: None,
         },
     ]
 }

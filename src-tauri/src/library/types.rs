@@ -71,6 +71,10 @@ pub struct Disc {
     pub gradient: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub about: Option<String>,
+    /// Local filesystem path to the recovered media file (MP4/WAV/etc.).
+    /// Surfaced so the Watch screen can load it via Tauri's asset protocol.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub video_path: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   useNavigate,
   useParams,
@@ -6,6 +6,7 @@ import {
   Link,
 } from "react-router-dom";
 import { ChevronLeft, Play, Pause, Search as SearchIcon } from "lucide-react";
+import { convertFileSrc } from "@tauri-apps/api/core";
 import { getDiscById, tsToSec } from "./data/mockDiscs";
 import { gradientCss } from "./components/GradientArt";
 import { TranscriptLine } from "./components/TranscriptLine";
@@ -57,10 +58,43 @@ export default function Watch() {
   const [currentSec, setCurrentSec] = useState(initialSec);
   const [playing, setPlaying] = useState(false);
   const [filterQ, setFilterQ] = useState("");
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+
+  // Resolve the local media path to an asset URL the webview can load.
+  // Falls back to null when the disc has no recovered file (mock/demo data).
+  const mediaSrc = useMemo(() => {
+    if (!disc?.videoPath) return null;
+    try {
+      return convertFileSrc(disc.videoPath);
+    } catch {
+      return null;
+    }
+  }, [disc?.videoPath]);
+  const hasMedia = mediaSrc !== null;
 
   useEffect(() => {
     setCurrentSec(initialSec);
   }, [initialSec]);
+
+  // Sync video element with React state. Seeks come from transcript clicks
+  // and scrubber drags; the timeupdate handler below pushes back the other way.
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    if (Math.abs(v.currentTime - currentSec) > 0.5) {
+      v.currentTime = currentSec;
+    }
+  }, [currentSec]);
+
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    if (playing) {
+      v.play().catch(() => setPlaying(false));
+    } else {
+      v.pause();
+    }
+  }, [playing]);
 
   if (!disc) {
     return (
@@ -138,48 +172,86 @@ export default function Watch() {
               <div
                 style={{
                   aspectRatio: "4 / 3",
-                  background: gradientCss(disc.gradient),
+                  background: hasMedia ? "#000" : gradientCss(disc.gradient),
                   position: "relative",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                 }}
               >
-                <div
-                  aria-hidden
-                  style={{
-                    position: "absolute",
-                    inset: 0,
-                    background:
-                      "repeating-linear-gradient(0deg, rgba(255,255,255,0.02) 0 1px, transparent 1px 3px), radial-gradient(circle at 30% 80%, rgba(255,180,120,0.18), transparent 50%)",
-                    mixBlendMode: "overlay",
-                    pointerEvents: "none",
-                  }}
-                />
-                <button
-                  type="button"
-                  onClick={() => setPlaying((p) => !p)}
-                  style={{
-                    width: 64,
-                    height: 64,
-                    borderRadius: "50%",
-                    background: "rgba(255,255,255,0.92)",
-                    border: 0,
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    color: "var(--lib-ink)",
-                    boxShadow: "0 8px 32px rgba(0,0,0,0.3)",
-                    zIndex: 2,
-                  }}
-                >
-                  {playing ? (
-                    <Pause size={24} fill="currentColor" stroke="none" />
-                  ) : (
-                    <Play size={24} fill="currentColor" stroke="none" style={{ marginLeft: 3 }} />
-                  )}
-                </button>
+                {hasMedia ? (
+                  <video
+                    ref={videoRef}
+                    src={mediaSrc ?? undefined}
+                    onTimeUpdate={(e) => setCurrentSec(e.currentTarget.currentTime)}
+                    onPlay={() => setPlaying(true)}
+                    onPause={() => setPlaying(false)}
+                    onEnded={() => setPlaying(false)}
+                    onClick={() => setPlaying((p) => !p)}
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "contain",
+                      cursor: "pointer",
+                      background: "#000",
+                    }}
+                    playsInline
+                  />
+                ) : (
+                  <>
+                    <div
+                      aria-hidden
+                      style={{
+                        position: "absolute",
+                        inset: 0,
+                        background:
+                          "repeating-linear-gradient(0deg, rgba(255,255,255,0.02) 0 1px, transparent 1px 3px), radial-gradient(circle at 30% 80%, rgba(255,180,120,0.18), transparent 50%)",
+                        mixBlendMode: "overlay",
+                        pointerEvents: "none",
+                      }}
+                    />
+                    <div
+                      style={{
+                        position: "absolute",
+                        bottom: 16,
+                        left: 16,
+                        padding: "4px 10px",
+                        background: "rgba(0,0,0,0.55)",
+                        color: "rgba(255,255,255,0.9)",
+                        borderRadius: 6,
+                        fontFamily: "var(--lib-sans)",
+                        fontSize: 11,
+                        letterSpacing: "0.04em",
+                        textTransform: "uppercase",
+                        zIndex: 1,
+                      }}
+                    >
+                      Transcript-only preview
+                    </div>
+                    <button
+                      type="button"
+                      disabled
+                      title="No recovered media file linked to this disc"
+                      style={{
+                        width: 64,
+                        height: 64,
+                        borderRadius: "50%",
+                        background: "rgba(255,255,255,0.92)",
+                        border: 0,
+                        cursor: "not-allowed",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        color: "var(--lib-ink)",
+                        boxShadow: "0 8px 32px rgba(0,0,0,0.3)",
+                        zIndex: 2,
+                        opacity: 0.55,
+                      }}
+                    >
+                      <Play size={24} fill="currentColor" stroke="none" style={{ marginLeft: 3 }} />
+                    </button>
+                  </>
+                )}
               </div>
               <div
                 style={{
@@ -193,14 +265,17 @@ export default function Watch() {
               >
                 <button
                   type="button"
-                  onClick={() => setPlaying((p) => !p)}
+                  onClick={() => hasMedia && setPlaying((p) => !p)}
+                  disabled={!hasMedia}
+                  title={hasMedia ? undefined : "No recovered media file"}
                   style={{
                     background: "transparent",
                     border: 0,
-                    cursor: "pointer",
+                    cursor: hasMedia ? "pointer" : "not-allowed",
                     color: "var(--lib-ink-2)",
                     padding: 4,
                     display: "flex",
+                    opacity: hasMedia ? 1 : 0.4,
                   }}
                 >
                   {playing ? (

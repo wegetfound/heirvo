@@ -287,6 +287,10 @@ pub async fn get_disc(db: &Db, id: &str) -> AppResult<Option<Disc>> {
         .try_get::<Option<String>, _>("date_display")
         .ok()
         .flatten();
+    let video_path: Option<String> = row
+        .try_get::<Option<String>, _>("video_path")
+        .ok()
+        .flatten();
 
     Ok(Some(Disc {
         id: row.try_get("id")?,
@@ -308,6 +312,7 @@ pub async fn get_disc(db: &Db, id: &str) -> AppResult<Option<Disc>> {
         monogram_id: row.try_get("monogram_id")?,
         gradient: row.try_get("gradient")?,
         about,
+        video_path,
     }))
 }
 
