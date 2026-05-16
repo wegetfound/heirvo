@@ -8,7 +8,7 @@
 //! worker picks up from that window rather than re-transcribing from scratch.
 
 use super::audio;
-use super::backend::{ProgressCb, StubTranscriber, Transcriber};
+use super::backend::{validate_chunk_output, ProgressCb, StubTranscriber, Transcriber};
 use super::queue;
 use super::types::{JobStatus, TranscriptionJob};
 use super::whisper_cpp::{whisper_available, WhisperCppTranscriber};
@@ -210,7 +210,20 @@ async fn run_job_inner(
         let _ = tokio::fs::remove_file(&chunk_wav).await;
 
         match transcribe_result {
-            Ok(segments) => {
+            Ok(raw_segments) => {
+                // Validate before persisting — catches timestamp overflows and
+                // whisper hallucination loops common on corrupted/silent audio.
+                let (segments, warn) = validate_chunk_output(raw_segments, chunk_dur);
+                if let Some(ref w) = warn {
+                    tracing::warn!(
+                        "job {} chunk {}/{}: output validation cleaned segments: {}",
+                        job.id,
+                        chunk_idx + 1,
+                        total_chunks,
+                        w
+                    );
+                }
+
                 let lines: Vec<TranscriptLine> = segments
                     .into_iter()
                     .map(|s| TranscriptLine {

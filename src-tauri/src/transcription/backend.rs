@@ -31,6 +31,86 @@ pub trait Transcriber: Send + Sync {
     fn name(&self) -> &'static str;
 }
 
+/// Validate and clean segments returned by a transcriber for a single chunk.
+///
+/// Two passes:
+/// 1. **Timestamp filter** — drops segments whose start ≥ `chunk_dur * 1.1`
+///    (clear timestamp overflow / garbage from a corrupted WAV). Clamps
+///    `end_sec` to `chunk_dur` so segments don't bleed into the next chunk.
+/// 2. **Repetition filter** — collapses runs of 3+ consecutive identical texts
+///    into a single segment (whisper's most common hallucination on silent
+///    audio: dozens of "[Music]" or "Thank you for watching." in a loop).
+///
+/// Returns `(cleaned_segments, Option<warning_string>)`. Non-empty warning
+/// means something was cleaned; callers should log it at WARN level.
+/// The function is intentionally lenient: a partially corrupted chunk that
+/// yields some usable segments is better than rejecting everything.
+pub fn validate_chunk_output(
+    segments: Vec<TranscriptSegment>,
+    chunk_dur: f64,
+) -> (Vec<TranscriptSegment>, Option<String>) {
+    let original_count = segments.len();
+    let time_ceiling = (chunk_dur * 1.1).max(1.0);
+    let mut warnings: Vec<String> = Vec::new();
+
+    // Pass 1: timestamp filter.
+    let mut ts_ok: Vec<TranscriptSegment> = segments
+        .into_iter()
+        .filter(|s| {
+            // Drop zero-duration or impossible timestamps.
+            s.start_sec >= 0.0 && s.start_sec < time_ceiling
+        })
+        .map(|mut s| {
+            // Clamp end to the chunk boundary so offsets don't drift.
+            if s.end_sec > chunk_dur {
+                s.end_sec = chunk_dur;
+            }
+            s
+        })
+        .collect();
+
+    let dropped_ts = original_count.saturating_sub(ts_ok.len());
+    if dropped_ts > 0 {
+        warnings.push(format!("{dropped_ts} segment(s) had out-of-range timestamps"));
+    }
+
+    // Pass 2: repetition run collapse.
+    // Walk through segments; when a text appears in 3+ consecutive positions,
+    // keep only the first and skip the rest.
+    let mut deduped: Vec<TranscriptSegment> = Vec::with_capacity(ts_ok.len());
+    let mut run_text: Option<String> = None;
+    let mut run_count: usize = 0;
+    let mut total_collapsed: usize = 0;
+
+    for seg in ts_ok.drain(..) {
+        let same_as_run = run_text.as_deref() == Some(seg.text.as_str());
+        if same_as_run {
+            run_count += 1;
+            if run_count >= 3 {
+                // Third+ repetition — this is a hallucination loop; skip.
+                total_collapsed += 1;
+                continue;
+            }
+        } else {
+            run_text = Some(seg.text.clone());
+            run_count = 1;
+        }
+        deduped.push(seg);
+    }
+
+    if total_collapsed > 0 {
+        warnings.push(format!("{total_collapsed} repeated segment(s) collapsed (hallucination loop)"));
+    }
+
+    let warn = if warnings.is_empty() {
+        None
+    } else {
+        Some(warnings.join("; "))
+    };
+
+    (deduped, warn)
+}
+
 /// Stub transcriber that emits plausible family-video segments without
 /// actually running speech recognition. Used for end-to-end pipeline
 /// testing and as a graceful fallback when whisper.cpp isn't installed.
