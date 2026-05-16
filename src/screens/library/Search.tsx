@@ -1,10 +1,12 @@
-import { useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { Play, Search as SearchIcon, ArrowRight } from "lucide-react";
 import { searchTranscripts } from "./data/mockSearch";
 import { getDiscById } from "./data/mockDiscs";
+import type { Disc, SearchHit } from "./data/types";
 import { GradientArt } from "./components/GradientArt";
 import { SearchResultRow, highlightTerms } from "./components/SearchResultRow";
+import { ipc } from "../../lib/ipc";
 
 export default function Search() {
   const [params, setParams] = useSearchParams();
@@ -13,11 +15,56 @@ export default function Search() {
   const [q, setQ] = useState(initialQ);
 
   const queryString = params.get("q") ?? "";
-  const hits = useMemo(() => searchTranscripts(queryString), [queryString]);
+
+  // Real FTS5 search via IPC, with mock fallback if Tauri isn't available.
+  const [hits, setHits] = useState<SearchHit[]>(() =>
+    searchTranscripts(queryString),
+  );
+  useEffect(() => {
+    let cancelled = false;
+    if (!queryString.trim()) {
+      setHits([]);
+      return;
+    }
+    (async () => {
+      try {
+        const real = await ipc.library.search(queryString);
+        if (!cancelled) setHits(real);
+      } catch {
+        if (!cancelled) setHits(searchTranscripts(queryString));
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [queryString]);
+
+  // Resolve the "best disc" art via IPC, falling back to the mock catalog.
   const best = hits[0];
   const rest = hits.slice(1);
-
-  const bestDisc = best ? getDiscById(best.discId) : undefined;
+  const [bestDisc, setBestDisc] = useState<Disc | undefined>(() =>
+    best ? getDiscById(best.discId) : undefined,
+  );
+  useEffect(() => {
+    let cancelled = false;
+    if (!best) {
+      setBestDisc(undefined);
+      return;
+    }
+    // Optimistic mock-backed render first, then upgrade to the real disc.
+    setBestDisc(getDiscById(best.discId));
+    (async () => {
+      try {
+        const real = await ipc.library.get(best.discId);
+        if (!cancelled && real) setBestDisc(real);
+      } catch {
+        // ignore — mock fallback already showing
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [best]);
 
   const discCount = useMemo(() => new Set(hits.map((h) => h.discId)).size, [hits]);
 

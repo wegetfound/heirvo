@@ -406,3 +406,17 @@ export interface PreflightStatus {
   checks: PreflightCheck[];
   allCriticalOk: boolean;
 }
+
+// Library — re-export the canonical shapes used by the library screens so
+// every consumer (IPC client, screen components) imports from one place.
+export type {
+  Disc as LibraryDisc,
+  SearchHit as LibrarySearchHit,
+  TranscriptLine as LibraryTranscriptLine,
+  Scene as LibraryScene,
+  TopicTag as LibraryTopicTag,
+  Person as LibraryPerson,
+  DiscStatus as LibraryDiscStatus,
+  GradientId as LibraryGradientId,
+  MonogramId as LibraryMonogramId,
+} from "../screens/library/data/types";

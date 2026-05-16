@@ -6,6 +6,7 @@ pub mod audio;
 pub mod diagnostic;
 pub mod drive;
 pub mod dvd;
+pub mod library;
 pub mod license;
 pub mod media;
 pub mod preflight;

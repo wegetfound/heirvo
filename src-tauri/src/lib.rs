@@ -14,6 +14,7 @@ pub mod commands;
 pub mod disc;
 pub mod dvd;
 pub mod error;
+pub mod library;
 pub mod licensing;
 pub mod media;
 pub mod recovery;
@@ -127,6 +128,10 @@ pub fn run() {
             commands::audio::extract_audio_tracks,
             commands::preflight::get_preflight_status,
             commands::preflight::mark_preflight_seen,
+            commands::library::list_library_discs,
+            commands::library::get_library_disc,
+            commands::library::search_library_transcripts,
+            commands::library::seed_library_demo,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -1,17 +1,45 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search } from "lucide-react";
 import { MOCK_DISCS, getDiscById } from "./data/mockDiscs";
+import type { Disc } from "./data/types";
 import { HeroFeatured } from "./components/HeroFeatured";
 import { DiscRail } from "./components/DiscRail";
+import { ipc } from "../../lib/ipc";
 
 export default function Library() {
   const nav = useNavigate();
   const [q, setQ] = useState("");
+  const [discs, setDiscs] = useState<Disc[]>(MOCK_DISCS);
 
-  const featured = getDiscById("hawaii-vacation") ?? MOCK_DISCS[0];
+  // Pull real discs from the backend. If the library is empty on first
+  // launch, seed it with the same demo content the UI shows so the user gets
+  // an instantly-interactive, DB-backed (and searchable) library.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        let real = await ipc.library.list();
+        if (!cancelled && real.length === 0) {
+          await ipc.library.seedDemo();
+          real = await ipc.library.list();
+        }
+        if (!cancelled && real.length > 0) setDiscs(real);
+      } catch {
+        // Dev mode without Tauri shell, or backend error — fall back to mock.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
-  const recentlyRecovered = MOCK_DISCS.slice(0, 8);
+  const findById = (id: string): Disc | undefined =>
+    discs.find((d) => d.id === id) ?? getDiscById(id);
+
+  const featured = findById("hawaii-vacation") ?? discs[0] ?? MOCK_DISCS[0];
+
+  const recentlyRecovered = discs.slice(0, 8);
   const onThisDay = [
     "hawaii-vacation",
     "baby-emma-first-steps",
@@ -20,7 +48,7 @@ export default function Library() {
     "road-trip-route-66",
     "thanksgiving-aunt-mary",
   ]
-    .map((id) => getDiscById(id))
+    .map((id) => findById(id))
     .filter((d): d is NonNullable<typeof d> => Boolean(d));
 
   const birthdays = [
@@ -29,7 +57,7 @@ export default function Library() {
     "baby-emma-first-steps",
     "kids-first-day-school",
   ]
-    .map((id) => getDiscById(id))
+    .map((id) => findById(id))
     .filter((d): d is NonNullable<typeof d> => Boolean(d));
 
   const trips = [
@@ -38,7 +66,7 @@ export default function Library() {
     "road-trip-route-66",
     "family-reunion-lake-house",
   ]
-    .map((id) => getDiscById(id))
+    .map((id) => findById(id))
     .filter((d): d is NonNullable<typeof d> => Boolean(d));
 
   const submit = (e: FormEvent) => {
@@ -96,7 +124,7 @@ export default function Library() {
             justifyContent: "space-between",
           }}
         >
-          <div>Heirvo · {MOCK_DISCS.length} discs in your library · backed up locally</div>
+          <div>Heirvo · {discs.length} discs in your library · backed up locally</div>
           <div>v0.9 preview</div>
         </footer>
       </div>

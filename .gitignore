@@ -32,3 +32,6 @@ recovery-output/
 # Bundled FFmpeg binaries — too large for git, fetched per-machine
 src-tauri/resources/ffmpeg/*.exe
 src-tauri/resources/ffmpeg/*.dll
+
+# Claude Code internal state (worktrees, launch config)
+.claude/

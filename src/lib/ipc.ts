@@ -21,6 +21,8 @@ import type {
   LicenseStatus,
   AudioToc,
   ExtractedAudioFile,
+  LibraryDisc,
+  LibrarySearchHit,
 } from "./types";
 
 export const ipc = {
@@ -136,6 +138,15 @@ export const ipc = {
   getPreflightStatus: () =>
     invoke<import("./types").PreflightStatus>("get_preflight_status"),
   markPreflightSeen: () => invoke<void>("mark_preflight_seen"),
+
+  // Library
+  library: {
+    list: () => invoke<LibraryDisc[]>("list_library_discs"),
+    get: (id: string) => invoke<LibraryDisc | null>("get_library_disc", { id }),
+    search: (query: string) =>
+      invoke<LibrarySearchHit[]>("search_library_transcripts", { query }),
+    seedDemo: () => invoke<number>("seed_library_demo"),
+  },
 
   // Diagnostics
   exportDiagnosticBundle: (sessionId: string, outputPath?: string) =>

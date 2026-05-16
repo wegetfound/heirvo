@@ -1,13 +1,37 @@
+import { useEffect, useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { ChevronLeft, Play, Download, Share2 } from "lucide-react";
 import { getDiscById } from "./data/mockDiscs";
+import type { Disc } from "./data/types";
 import { GradientArt, gradientCss } from "./components/GradientArt";
 import { Monogram } from "./components/Monogram";
+import { ipc } from "../../lib/ipc";
 
 export default function DiscDetail() {
   const { discId } = useParams<{ discId: string }>();
   const nav = useNavigate();
-  const disc = discId ? getDiscById(discId) : undefined;
+  const [disc, setDisc] = useState<Disc | undefined>(() =>
+    discId ? getDiscById(discId) : undefined,
+  );
+  useEffect(() => {
+    let cancelled = false;
+    if (!discId) {
+      setDisc(undefined);
+      return;
+    }
+    setDisc(getDiscById(discId));
+    (async () => {
+      try {
+        const real = await ipc.library.get(discId);
+        if (!cancelled && real) setDisc(real);
+      } catch {
+        // mock fallback already shown
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [discId]);
 
   if (!disc) {
     return (

@@ -9,7 +9,8 @@ import { ChevronLeft, Play, Pause, Search as SearchIcon } from "lucide-react";
 import { getDiscById, tsToSec } from "./data/mockDiscs";
 import { gradientCss } from "./components/GradientArt";
 import { TranscriptLine } from "./components/TranscriptLine";
-import type { TranscriptLine as TLine } from "./data/types";
+import type { Disc, TranscriptLine as TLine } from "./data/types";
+import { ipc } from "../../lib/ipc";
 
 function fmtTime(sec: number): string {
   const h = Math.floor(sec / 3600);
@@ -22,7 +23,30 @@ export default function Watch() {
   const { discId } = useParams<{ discId: string }>();
   const [params] = useSearchParams();
   const nav = useNavigate();
-  const disc = discId ? getDiscById(discId) : undefined;
+  // Start with the mock so the UI never goes blank, then upgrade to the
+  // real DB-backed disc once IPC resolves.
+  const [disc, setDisc] = useState<Disc | undefined>(() =>
+    discId ? getDiscById(discId) : undefined,
+  );
+  useEffect(() => {
+    let cancelled = false;
+    if (!discId) {
+      setDisc(undefined);
+      return;
+    }
+    setDisc(getDiscById(discId));
+    (async () => {
+      try {
+        const real = await ipc.library.get(discId);
+        if (!cancelled && real) setDisc(real);
+      } catch {
+        // mock fallback already shown
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [discId]);
 
   const initialSec = useMemo(() => {
     const t = params.get("t");
