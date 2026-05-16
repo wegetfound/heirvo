@@ -10,6 +10,7 @@ import { Transcode } from "@/screens/transcode/Transcode";
 import { Settings } from "@/screens/settings/Settings";
 import Preflight from "@/screens/preflight/Preflight";
 import Library from "@/screens/library/Library";
+import LibraryAll from "@/screens/library/LibraryAll";
 import LibrarySearch from "@/screens/library/Search";
 import LibraryWatch from "@/screens/library/Watch";
 import LibraryDiscDetail from "@/screens/library/DiscDetail";
@@ -47,6 +48,7 @@ export default function App() {
             <Route path="/transcode" element={<Transcode />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/library" element={<Library />} />
+            <Route path="/library/all" element={<LibraryAll />} />
             <Route path="/search" element={<LibrarySearch />} />
             <Route path="/watch/:discId" element={<LibraryWatch />} />
             <Route path="/disc/:discId" element={<LibraryDiscDetail />} />

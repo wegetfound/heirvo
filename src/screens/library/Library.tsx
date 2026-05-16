@@ -344,24 +344,28 @@ export default function Library() {
           title="Recently recovered"
           sub="From the last 30 days · 7 discs, 14 hours restored"
           discs={recentlyRecovered}
+          seeAllHref="/library/all?title=Recently+recovered"
         />
         <DiscRail
           title="On this day in your archive"
           sub="May 16 across the years — birthdays, beaches, backyards"
           discs={onThisDay}
           showStatus={false}
+          seeAllHref="/library/all?title=On+this+day"
         />
         <DiscRail
           title="Family birthdays"
           sub='Curated automatically from cake, candles & "happy birthday" detected in audio'
           discs={birthdays}
           showStatus={false}
+          seeAllHref="/library/all?title=Family+birthdays"
         />
         <DiscRail
           title="Trips & vacations"
           sub="Places you went, road songs you sang in the back seat"
           discs={trips}
           showStatus={false}
+          seeAllHref="/library/all?title=Trips+%26+vacations"
         />
 
         {nextCursor != null && (

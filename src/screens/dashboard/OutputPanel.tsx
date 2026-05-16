@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { ipc } from "@/lib/ipc";
 import type { HealthReport, IsoResult, ExtractedFile, StorageDrive, Session, AudioToc, ExtractedAudioFile } from "@/lib/types";
-import { FileVideo, Files, Loader2, FileArchive, LifeBuoy, Save, Upload, Usb, HardDrive, Pencil, Lock, Sparkles, Music, FolderOpen } from "lucide-react";
+import { FileVideo, Files, Loader2, FileArchive, LifeBuoy, Save, Upload, Usb, HardDrive, Pencil, Lock, Sparkles, Music, FolderOpen, ArrowRight } from "lucide-react";
 import { open as openDialog, save as saveDialog } from "@tauri-apps/plugin-dialog";
 import { bytesToHuman } from "@/lib/human";
 import { useLicense } from "@/lib/useLicense";
@@ -35,6 +36,7 @@ export function OutputPanel({
   const [rmapImport, setRmapImport] = useState<RmapImport | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [enrolledDiscId, setEnrolledDiscId] = useState<string | null>(null);
 
   const { status: license } = useLicense();
   const canSave = license.can_save;
@@ -302,6 +304,22 @@ export function OutputPanel({
                   const r = await ipc.saveAsMp4(sessionId);
                   setMp4(r);
                   onMp4Saved?.(r.output_path);
+                  // Auto-enroll: import into Library + kick off transcription.
+                  try {
+                    const label = session?.user_label || session?.disc_label || null;
+                    const base = r.output_path.split(/[\\/]/).pop() ?? r.output_path;
+                    const stem = base.replace(/\.[^.]+$/, "");
+                    const derived = stem.replace(/[_\-]+/g, " ").trim()
+                      .replace(/\b\w/g, (c) => c.toUpperCase()) || "Recovered disc";
+                    const title = label ?? derived;
+                    const enrolled = await ipc.library.importMedia(r.output_path, title);
+                    if (!enrolled.isDuplicate) {
+                      await ipc.transcription.enqueue(enrolled.id, r.output_path).catch(() => {});
+                    }
+                    setEnrolledDiscId(enrolled.id);
+                  } catch {
+                    // Non-fatal — user can add from History screen.
+                  }
                 })}
               >
                 {busy === "mp4" && <Loader2 className="h-4 w-4 animate-spin" />}
@@ -398,6 +416,29 @@ export function OutputPanel({
                 {mp4.source_files.length} chapter{mp4.source_files.length === 1 ? "" : "s"}
               </div>
             </div>
+          )}
+
+          {enrolledDiscId && (
+            <Link
+              to={`/disc/${enrolledDiscId}`}
+              className="mt-3 flex items-center gap-2 rounded-xl border p-3 text-[12px] no-underline transition-opacity hover:opacity-80"
+              style={{
+                background: "linear-gradient(135deg, #FFF8EC 0%, #FBF1DE 100%)",
+                borderColor: "rgba(194,116,31,0.30)",
+                color: "var(--lib-ink, #2C2416)",
+              }}
+            >
+              <span style={{ fontSize: 16 }}>📼</span>
+              <div className="flex-1">
+                <div className="font-medium" style={{ color: "var(--lib-amber, #C2741F)" }}>
+                  Added to your Library
+                </div>
+                <div className="mt-0.5 text-ink-500">
+                  Transcription starting in the background — search every spoken word when done
+                </div>
+              </div>
+              <ArrowRight className="h-3.5 w-3.5 shrink-0" style={{ color: "var(--lib-amber, #C2741F)" }} />
+            </Link>
           )}
 
           {iso && (
