@@ -82,6 +82,74 @@
   --db-shadow:        0 2px 8px rgba(0,0,0,0.4), 0 16px 48px rgba(0,0,0,0.3);
 }
 
+/* ─────────────────────────────────────────────────────────────────────────────
+   OutputPanel dark-mode overrides. OutputPanel uses many Tailwind ink-*/brand-*
+   utilities; rather than rewriting 65 class usages, we override the most
+   visible color tokens when the panel renders inside [data-theme="dark"].
+───────────────────────────────────────────────────────────────────────────── */
+[data-theme="dark"] .output-panel-root {
+  color: var(--db-text);
+}
+[data-theme="dark"] .output-panel-root .card,
+[data-theme="dark"] .output-panel-root .bg-white\/60,
+[data-theme="dark"] .output-panel-root .bg-white\/80,
+[data-theme="dark"] .output-panel-root .bg-white\/90 {
+  background: var(--db-surface) !important;
+}
+[data-theme="dark"] .output-panel-root .bg-ink-100 {
+  background: var(--db-surface-2) !important;
+}
+[data-theme="dark"] .output-panel-root .border-ink-200,
+[data-theme="dark"] .output-panel-root .border-ink-200\/70 {
+  border-color: var(--db-border) !important;
+}
+[data-theme="dark"] .output-panel-root .text-ink-900,
+[data-theme="dark"] .output-panel-root .text-ink-800,
+[data-theme="dark"] .output-panel-root .text-ink-700 {
+  color: var(--db-text) !important;
+}
+[data-theme="dark"] .output-panel-root .text-ink-600,
+[data-theme="dark"] .output-panel-root .text-ink-500 {
+  color: var(--db-text-muted) !important;
+}
+[data-theme="dark"] .output-panel-root .text-ink-400,
+[data-theme="dark"] .output-panel-root .text-ink-300 {
+  color: var(--db-text-faint) !important;
+}
+[data-theme="dark"] .output-panel-root .text-brand-500,
+[data-theme="dark"] .output-panel-root .text-brand-600,
+[data-theme="dark"] .output-panel-root .text-brand-700 {
+  color: var(--db-amber) !important;
+}
+[data-theme="dark"] .output-panel-root .hover\:text-brand-600:hover,
+[data-theme="dark"] .output-panel-root .hover\:text-brand-700:hover {
+  color: var(--db-amber) !important;
+}
+[data-theme="dark"] .output-panel-root .hover\:bg-brand-50:hover {
+  background: var(--db-amber-light) !important;
+}
+[data-theme="dark"] .output-panel-root .hover\:border-brand-300:hover {
+  border-color: var(--db-amber) !important;
+}
+[data-theme="dark"] .output-panel-root .bg-ink-900 {
+  background: var(--db-surface-2) !important;
+}
+[data-theme="dark"] .output-panel-root .hover\:bg-black\/5:hover {
+  background: rgba(255,255,255,0.05) !important;
+}
+[data-theme="dark"] .output-panel-root .text-ios-green {
+  color: var(--db-green) !important;
+}
+[data-theme="dark"] .output-panel-root .text-ios-red {
+  color: var(--db-red) !important;
+}
+[data-theme="dark"] .output-panel-root .bg-brand-50 {
+  background: var(--db-amber-light) !important;
+}
+[data-theme="dark"] .output-panel-root .text-brand-700 {
+  color: var(--db-amber) !important;
+}
+
 .lib-root {
   font-family: var(--lib-sans);
   background: var(--lib-paper);

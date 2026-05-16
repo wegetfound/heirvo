@@ -8,7 +8,7 @@
     Fetches the official whisper.cpp Windows release (whisper-bin-x64.zip)
     and the ggml-base.en.bin model from Hugging Face (~142 MB).
 
-    Idempotent — exits immediately if both whisper-cli.exe and
+    Idempotent - exits immediately if both whisper-cli.exe and
     ggml-base.en.bin are already present.
 
 .PARAMETER Force
@@ -41,7 +41,7 @@ function Format-MB {
 $exeReal   = (Test-Path $WhisperExe) -and ((Get-Item $WhisperExe).Length -gt 100KB)
 $modelReal0 = (Test-Path $ModelFile)  -and ((Get-Item $ModelFile).Length  -gt 10MB)
 if (-not $Force -and $exeReal -and $modelReal0) {
-    $fmsg = 'whisper.cpp already present at {0} — skipping.' -f $TargetDir
+    $fmsg = 'whisper.cpp already present at {0} - skipping.' -f $TargetDir
     Write-Host $fmsg -ForegroundColor Green
     Write-Host ('  whisper-cli.exe:   {0}' -f (Format-MB $WhisperExe))
     Write-Host ('  ggml-base.en.bin:  {0}' -f (Format-MB $ModelFile))
@@ -91,7 +91,7 @@ try {
             Write-Host ('  {0}: {1}' -f $dll.Name, (Format-MB $dest))
         }
     } else {
-        Write-Host "whisper-cli.exe already present — skipping binary download." -ForegroundColor DarkGray
+        Write-Host "whisper-cli.exe already present - skipping binary download." -ForegroundColor DarkGray
     }
 
     # ----- 2. Model -----
@@ -110,11 +110,12 @@ try {
         $modelSize = (Get-Item $ModelFile).Length
         if ($modelSize -lt $ModelMinBytes) {
             Remove-Item $ModelFile -Force -ErrorAction SilentlyContinue
-            throw "Model download failed or returned unexpected content ($([math]::Round($modelSize/1KB,1)) KB). Re-run the script to retry."
+            $sizeKB = [math]::Round($modelSize / 1024, 1)
+            throw "Model download failed or returned unexpected content ($sizeKB KB). Re-run the script to retry."
         }
         Write-Host ('  Model: {0} in {1:N1}s' -f (Format-MB $ModelFile), $elapsed.TotalSeconds) -ForegroundColor Green
     } else {
-        Write-Host "ggml-base.en.bin already present — skipping model download." -ForegroundColor DarkGray
+        Write-Host "ggml-base.en.bin already present - skipping model download." -ForegroundColor DarkGray
     }
 
     $totalElapsed = (Get-Date) - $totalStart

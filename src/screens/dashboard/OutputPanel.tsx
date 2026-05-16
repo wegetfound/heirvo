@@ -112,7 +112,7 @@ export function OutputPanel({
   };
 
   return (
-    <div className="px-4 py-4">
+    <div className="output-panel-root px-4 py-4">
       <div className="mb-4 border-b border-ink-200/70 pb-3">
         <span className="micro-label">Output</span>
         <p className="mt-0.5 text-[11px] leading-relaxed text-ink-500">
