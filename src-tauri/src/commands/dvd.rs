@@ -165,3 +165,91 @@ pub async fn health_score(
 
     Ok(crate::recovery::health::compute(&map, video_ts.as_deref()))
 }
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct IsoBrowseResult {
+    pub path: String,
+    pub total_sectors: u64,
+    pub file_count: usize,
+    pub used_udf: bool,
+    pub entries: Vec<IsoBrowseEntry>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct IsoBrowseEntry {
+    pub path: String,
+    pub size_bytes: u64,
+    pub start_lba: u64,
+    pub is_damaged: bool,
+}
+
+/// Open a local `.iso` file and list every file inside via the UDF parser
+/// (with ISO 9660 fallback). Use case: a user already has a disc image
+/// (their own ddrescue dump, a friend's rip, an archive download) and wants
+/// to browse / save individual files without involving a physical drive.
+///
+/// Returns whether the UDF parser succeeded so the UI can flag ISO-9660-only
+/// images differently from full UDF volumes.
+#[tauri::command]
+pub async fn list_files_in_iso(iso_path: String) -> AppResult<IsoBrowseResult> {
+    tokio::task::spawn_blocking(move || -> AppResult<IsoBrowseResult> {
+        use crate::disc::iso_file::IsoFileSectorReader;
+        use crate::disc::sector::SectorReader;
+        use std::path::Path;
+
+        let path = Path::new(&iso_path);
+        if !path.exists() {
+            return Err(AppError::Internal(format!("ISO not found: {iso_path}")));
+        }
+        let reader = IsoFileSectorReader::open(path)
+            .map_err(|e| AppError::Internal(format!("open {iso_path}: {e}")))?;
+        let total_sectors = reader.capacity();
+        tracing::info!("list_files_in_iso: opened {iso_path} ({total_sectors} sectors)");
+
+        // Try UDF first — modern (post-2005) burned discs use UDF. Fall back
+        // to ISO 9660 if no UDF anchor is found.
+        let (entries, used_udf) = match crate::dvd::udf::walk_udf(&reader) {
+            Ok(vol) => {
+                let mapped: Vec<IsoBrowseEntry> = vol.entries.into_iter()
+                    .filter(|e| !e.is_dir)
+                    .map(|e| IsoBrowseEntry {
+                        path: e.path,
+                        size_bytes: e.size_bytes,
+                        start_lba: e.start_lba,
+                        is_damaged: e.is_damaged,
+                    })
+                    .collect();
+                tracing::info!(
+                    "list_files_in_iso: UDF ok, label={:?}, files={}, damaged_sectors={}",
+                    vol.label, mapped.len(), vol.unreadable_sectors.len()
+                );
+                (mapped, true)
+            }
+            Err(udf_err) => {
+                tracing::info!("list_files_in_iso: UDF failed ({udf_err}); trying ISO 9660");
+                let iso_entries = crate::dvd::iso9660::walk_all_files(&reader)
+                    .map_err(|e| AppError::DvdStructure(
+                        format!("neither UDF ({udf_err}) nor ISO 9660 ({e}) parsed")
+                    ))?;
+                let mapped: Vec<IsoBrowseEntry> = iso_entries.into_iter()
+                    .filter(|e| !e.is_dir)
+                    .map(|e| IsoBrowseEntry {
+                        path: e.name,
+                        size_bytes: e.size_bytes,
+                        start_lba: e.start_lba,
+                        is_damaged: false,
+                    })
+                    .collect();
+                tracing::info!("list_files_in_iso: ISO 9660 ok, files={}", mapped.len());
+                (mapped, false)
+            }
+        };
+
+        let file_count = entries.len();
+        Ok(IsoBrowseResult { path: iso_path, total_sectors, file_count, used_udf, entries })
+    })
+    .await
+    .map_err(|e| AppError::Internal(format!("join: {e}")))?
+}

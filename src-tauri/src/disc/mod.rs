@@ -8,7 +8,6 @@ pub mod sector;
 #[cfg(test)]
 pub mod mock;
 
-#[cfg(test)]
 pub mod iso_file;
 
 #[cfg(windows)]

@@ -1,7 +1,7 @@
 import { Routes, Route, Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
 import { gsap } from "gsap";
-import { Disc3, History, Film, Library as LibraryIcon, Settings as SettingsIcon, ChevronLeft, ChevronRight as ChevronRightIcon } from "lucide-react";
+import { Disc3, History, Film, Library as LibraryIcon, Settings as SettingsIcon, ChevronLeft, ChevronRight as ChevronRightIcon, FileSearch } from "lucide-react";
 import Home from "@/screens/Home";
 import { Wizard } from "@/screens/wizard/Wizard";
 import { Dashboard } from "@/screens/dashboard/Dashboard";
@@ -14,6 +14,7 @@ import LibraryAll from "@/screens/library/LibraryAll";
 import LibrarySearch from "@/screens/library/Search";
 import LibraryWatch from "@/screens/library/Watch";
 import LibraryDiscDetail from "@/screens/library/DiscDetail";
+import IsoBrowser from "@/screens/iso/IsoBrowser";
 // UpdateBanner disabled until signing keypair is generated.
 // import UpdateBanner from "@/components/UpdateBanner";
 import { ipc } from "@/lib/ipc";
@@ -52,6 +53,7 @@ export default function App() {
             <Route path="/search" element={<LibrarySearch />} />
             <Route path="/watch/:discId" element={<LibraryWatch />} />
             <Route path="/disc/:discId" element={<LibraryDiscDetail />} />
+            <Route path="/iso" element={<IsoBrowser />} />
             <Route path="*" element={<Home />} />
           </Route>
         </Routes>
@@ -141,6 +143,7 @@ function Sidebar() {
     { to: "/library", label: "Library", icon: LibraryIcon },
     { to: "/history", label: "My Discs", icon: History },
     { to: "/transcode", label: "Save As…", icon: Film },
+    { to: "/iso", label: "Browse ISO", icon: FileSearch },
     { to: "/settings", label: "Settings", icon: SettingsIcon },
   ];
 

@@ -83,7 +83,7 @@
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   OutputPanel dark-mode overrides. OutputPanel uses many Tailwind ink-*/brand-*
+   OutputPanel dark-mode overrides. OutputPanel uses many Tailwind ink/brand
    utilities; rather than rewriting 65 class usages, we override the most
    visible color tokens when the panel renders inside [data-theme="dark"].
 ───────────────────────────────────────────────────────────────────────────── */

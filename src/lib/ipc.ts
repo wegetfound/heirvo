@@ -97,6 +97,14 @@ export const ipc = {
     invoke<ExtractedFile[]>("extract_all_files", { sessionId }),
   healthScore: (sessionId: string) =>
     invoke<HealthReport>("health_score", { sessionId }),
+  listFilesInIso: (isoPath: string) =>
+    invoke<{
+      path: string;
+      totalSectors: number;
+      fileCount: number;
+      usedUdf: boolean;
+      entries: Array<{ path: string; sizeBytes: number; startLba: number; isDamaged: boolean }>;
+    }>("list_files_in_iso", { isoPath }),
 
   // Media
   createIso: (sessionId: string, outputPath?: string) =>

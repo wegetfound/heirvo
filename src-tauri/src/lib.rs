@@ -104,6 +104,7 @@ pub fn run() {
             commands::dvd::extract_vobs,
             commands::dvd::extract_all_files,
             commands::dvd::health_score,
+            commands::dvd::list_files_in_iso,
             commands::media::create_iso,
             commands::media::transcode,
             commands::media::ffmpeg_status,
