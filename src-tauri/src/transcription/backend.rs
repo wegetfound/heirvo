@@ -17,10 +17,14 @@ pub type ProgressCb = Arc<dyn Fn(f64) + Send + Sync>;
 #[async_trait]
 pub trait Transcriber: Send + Sync {
     /// Transcribe an audio file (16kHz mono PCM WAV) into ordered segments.
+    /// `audio_duration_sec` is the measured input duration — backends use it
+    /// to size a host-side watchdog timeout (so a wedged whisper-cli on a
+    /// damaged WAV doesn't pin the worker forever).
     /// `progress_cb` is called with values in [0.0, 1.0] as work proceeds.
     async fn transcribe(
         &self,
         wav_path: &Path,
+        audio_duration_sec: f64,
         progress_cb: ProgressCb,
     ) -> AppResult<Vec<TranscriptSegment>>;
 
@@ -39,6 +43,7 @@ impl Transcriber for StubTranscriber {
     async fn transcribe(
         &self,
         _wav: &Path,
+        _audio_duration_sec: f64,
         progress_cb: ProgressCb,
     ) -> AppResult<Vec<TranscriptSegment>> {
         let segments_text: [(&str, &str); 12] = [

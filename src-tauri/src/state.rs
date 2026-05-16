@@ -30,6 +30,11 @@ impl AppState {
         let db = Db::open(&db_path).await?;
         db.migrate().await?;
 
+        // Clear any stale `heirvo_trans_*.wav` files left behind by a prior
+        // crash. The worker now cleans these up per-job, but if the app was
+        // killed mid-transcription nothing got the chance.
+        sweep_stale_temp_wavs();
+
         let db_for_worker = db.clone();
         let state = Self {
             db,
@@ -50,6 +55,39 @@ impl AppState {
         });
 
         Ok(())
+    }
+}
+
+/// Remove stale `heirvo_trans_*.wav` files from the temp dir on startup.
+/// These are left behind when transcription crashes mid-flight (or the user
+/// kills the app). At ~115 MB per hour of audio they pile up fast on a
+/// commercial workload.
+fn sweep_stale_temp_wavs() {
+    let temp = std::env::temp_dir();
+    let entries = match std::fs::read_dir(&temp) {
+        Ok(e) => e,
+        Err(_) => return,
+    };
+    let mut count = 0;
+    let mut bytes = 0u64;
+    for entry in entries.flatten() {
+        let name = entry.file_name();
+        let name_str = name.to_string_lossy();
+        if name_str.starts_with("heirvo_trans_") && name_str.ends_with(".wav") {
+            if let Ok(meta) = entry.metadata() {
+                bytes += meta.len();
+            }
+            if std::fs::remove_file(entry.path()).is_ok() {
+                count += 1;
+            }
+        }
+    }
+    if count > 0 {
+        tracing::info!(
+            "Swept {} stale transcription temp file(s), reclaimed {:.1} MB",
+            count,
+            bytes as f64 / 1_048_576.0
+        );
     }
 }
 

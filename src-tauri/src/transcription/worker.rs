@@ -10,13 +10,23 @@ use crate::error::AppResult;
 use crate::library::queries as lib_q;
 use crate::library::types::TranscriptLine;
 use crate::session::db::Db;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Duration;
 use tauri::{AppHandle, Emitter};
 
 pub fn spawn_worker(app: AppHandle, db: Db) {
     tauri::async_runtime::spawn(async move {
+        // Sweep stuck jobs from prior crashes — must run before drain so the
+        // worker doesn't sit on `Ok(None)` while half-finished jobs hold
+        // `extracting`/`transcribing` status.
+        match queue::reset_in_flight_jobs(&db.pool).await {
+            Ok(0) => {}
+            Ok(n) => tracing::info!(
+                "Transcription: resumed {n} in-flight job(s) from prior session"
+            ),
+            Err(e) => tracing::warn!("Transcription startup sweep failed: {e:?}"),
+        }
         loop {
             match queue::next_queued(&db.pool).await {
                 Ok(Some(job)) => {
@@ -37,6 +47,27 @@ pub fn spawn_worker(app: AppHandle, db: Db) {
 }
 
 async fn run_job(app: &AppHandle, db: &Db, job: TranscriptionJob) -> AppResult<()> {
+    let audio_path = wav_path_for(&job);
+    let result = run_job_inner(app, db, &job, &audio_path).await;
+    // Cleanup the temp WAV regardless of outcome — terabytes of media * a
+    // 16 kHz mono WAV per video adds up to gigabytes of temp on a long run.
+    if let Err(e) = tokio::fs::remove_file(&audio_path).await {
+        if e.kind() != std::io::ErrorKind::NotFound {
+            tracing::warn!(
+                "Failed to clean up temp WAV {}: {e:?}",
+                audio_path.display()
+            );
+        }
+    }
+    result
+}
+
+async fn run_job_inner(
+    app: &AppHandle,
+    db: &Db,
+    job: &TranscriptionJob,
+    audio_path: &Path,
+) -> AppResult<()> {
     let started = chrono::Utc::now().timestamp();
 
     // Mark extracting
@@ -50,11 +81,10 @@ async fn run_job(app: &AppHandle, db: &Db, job: TranscriptionJob) -> AppResult<(
     );
 
     // Prepare audio (video OR audio input → 16kHz mono 16-bit WAV).
-    let audio_path = wav_path_for(&job);
     let duration = match audio::prepare_audio(
         app,
         std::path::Path::new(&job.video_path),
-        &audio_path,
+        audio_path,
     )
     .await
     {
@@ -140,7 +170,7 @@ async fn run_job(app: &AppHandle, db: &Db, job: TranscriptionJob) -> AppResult<(
         );
     });
 
-    match backend.transcribe(&audio_path, progress_cb).await {
+    match backend.transcribe(audio_path, duration, progress_cb).await {
         Ok(segments) => {
             let lines: Vec<TranscriptLine> = segments
                 .into_iter()

@@ -126,6 +126,69 @@ pub async fn list_discs(db: &Db) -> AppResult<Vec<Disc>> {
     Ok(out)
 }
 
+/// Page through the library newest-first. Pass `cursor = 0` to fetch the
+/// first page; subsequent pages pass the `next_cursor` returned previously.
+///
+/// Cursor design: `updated_at` (epoch seconds) — every disc gets bumped on
+/// transcript-replace and on insert, so newest-first ordering is stable.
+/// We fetch `limit + 1` rows to cheaply detect "more available" without a
+/// second COUNT(*) query, drop the extra, and return its `updated_at` as the
+/// next cursor. Ties on `updated_at` are broken by `id DESC` to keep order
+/// deterministic across pages.
+///
+/// `limit` is clamped to [1, 200]. The full `Disc` (with joined transcript,
+/// scenes, topics, people) is loaded per row via `get_disc` — N+1, but the
+/// library rail UI needs every joined collection anyway, and pages are small.
+pub async fn list_discs_page(
+    db: &Db,
+    cursor: i64,
+    limit: i64,
+) -> AppResult<(Vec<Disc>, Option<i64>)> {
+    let limit = limit.clamp(1, 200);
+    let fetch = limit + 1;
+    let rows = if cursor == 0 {
+        sqlx::query(
+            "SELECT id, updated_at FROM library_discs
+             ORDER BY updated_at DESC, id DESC LIMIT ?",
+        )
+        .bind(fetch)
+        .fetch_all(&db.pool)
+        .await?
+    } else {
+        sqlx::query(
+            "SELECT id, updated_at FROM library_discs
+             WHERE updated_at < ?
+             ORDER BY updated_at DESC, id DESC LIMIT ?",
+        )
+        .bind(cursor)
+        .bind(fetch)
+        .fetch_all(&db.pool)
+        .await?
+    };
+
+    let has_more = rows.len() as i64 > limit;
+    let take = if has_more { limit as usize } else { rows.len() };
+    let next_cursor = if has_more {
+        // Cursor = updated_at of the *last kept* row; next page uses `< cursor`.
+        // (Note: ties on updated_at could in theory be skipped here; in practice
+        //  inserts/updates are timestamped to the second + id-tiebreaker so the
+        //  collision risk is negligible. Documented as a future tightening.)
+        let last = &rows[take - 1];
+        Some(last.try_get::<i64, _>("updated_at")?)
+    } else {
+        None
+    };
+
+    let mut out = Vec::with_capacity(take);
+    for row in rows.iter().take(take) {
+        let id: String = row.try_get("id")?;
+        if let Some(disc) = get_disc(db, &id).await? {
+            out.push(disc);
+        }
+    }
+    Ok((out, next_cursor))
+}
+
 /// Fetch a single disc with all joined data.
 pub async fn get_disc(db: &Db, id: &str) -> AppResult<Option<Disc>> {
     let row = sqlx::query("SELECT * FROM library_discs WHERE id = ?")

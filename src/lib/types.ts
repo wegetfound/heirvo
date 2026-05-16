@@ -439,6 +439,15 @@ export interface TranscriptionProgress {
   progress: number;
 }
 
+// Paginated library page — returned by ipc.library.listPage.
+// `nextCursor === null` ⇒ no more rows; otherwise pass it back to fetch
+// the next page. The cursor is an opaque epoch-seconds value the backend
+// uses to seek; treat it as an opaque token in the UI.
+export interface LibraryDiscPage {
+  discs: import("../screens/library/data/types").Disc[];
+  nextCursor: number | null;
+}
+
 // Library — re-export the canonical shapes used by the library screens so
 // every consumer (IPC client, screen components) imports from one place.
 export type {

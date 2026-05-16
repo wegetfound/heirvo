@@ -153,6 +153,26 @@ pub async fn update_status(
     Ok(())
 }
 
+/// Reset any jobs that were mid-flight when the app last shut down.
+/// Called once on startup before the worker begins polling — without this,
+/// a crash mid-extraction (or a hard kill) leaves the job stuck in
+/// `extracting`/`transcribing` forever and the queue stops draining.
+/// Returns the count of jobs reset.
+pub async fn reset_in_flight_jobs(pool: &SqlitePool) -> AppResult<u32> {
+    let now = chrono::Utc::now().timestamp();
+    let rows = sqlx::query(
+        "UPDATE transcription_jobs
+         SET status = 'queued',
+             progress = 0.0,
+             error_message = COALESCE(error_message, '') || '[resumed after app restart at ' || ? || ']'
+         WHERE status IN ('extracting', 'transcribing')",
+    )
+    .bind(now)
+    .execute(pool)
+    .await?;
+    Ok(rows.rows_affected() as u32)
+}
+
 /// Mark a queued job cancelled. No-op if it's already running/done — we'd
 /// need a cancel token plumbed through the worker for mid-flight cancel.
 pub async fn cancel(pool: &SqlitePool, id: i64) -> AppResult<()> {

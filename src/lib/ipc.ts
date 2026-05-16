@@ -22,6 +22,7 @@ import type {
   AudioToc,
   ExtractedAudioFile,
   LibraryDisc,
+  LibraryDiscPage,
   LibrarySearchHit,
   TranscriptionJob,
   TranscriptionProgress,
@@ -144,6 +145,8 @@ export const ipc = {
   // Library
   library: {
     list: () => invoke<LibraryDisc[]>("list_library_discs"),
+    listPage: (cursor: number, limit: number) =>
+      invoke<LibraryDiscPage>("list_library_discs_page", { cursor, limit }),
     get: (id: string) => invoke<LibraryDisc | null>("get_library_disc", { id }),
     search: (query: string) =>
       invoke<LibrarySearchHit[]>("search_library_transcripts", { query }),

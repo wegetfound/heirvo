@@ -9,8 +9,14 @@
 use crate::error::{AppError, AppResult};
 use crate::media::ffmpeg;
 use std::path::Path;
+use std::time::Duration;
 use tauri::AppHandle;
 use tokio::process::Command;
+
+/// Hard ceiling on a single audio-extraction subprocess. Typical 2-hour video
+/// extracts in under 5 min; 30 min is "the file is damaged or the drive is
+/// hosed — give up so the worker can move on to the next job".
+const FFMPEG_EXTRACTION_TIMEOUT: Duration = Duration::from_secs(30 * 60);
 
 /// Prepare an audio or video file → 16 kHz mono 16-bit PCM WAV at
 /// `output_wav`. Returns the detected duration in seconds.
@@ -38,7 +44,10 @@ pub async fn prepare_audio(
     let out_str = output_wav.to_string_lossy().to_string();
 
     tracing::info!("transcription audio prepare: {} -> {}", input_str, out_str);
-    let output = Command::new(&bin)
+    // Spawn (vs `.output()`) so we keep a handle to kill on watchdog timeout.
+    // A damaged input file can keep FFmpeg looping forever in its demuxer; the
+    // host-side timeout is the only thing that guarantees the worker survives.
+    let mut child = Command::new(&bin)
         .args([
             "-y",
             "-i",
@@ -52,15 +61,45 @@ pub async fn prepare_audio(
             "1",
             &out_str,
         ])
-        .output()
-        .await
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped())
+        .spawn()
         .map_err(|e| AppError::Internal(format!("spawn ffmpeg: {e}")))?;
 
-    if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
+    let status = match tokio::time::timeout(FFMPEG_EXTRACTION_TIMEOUT, child.wait()).await {
+        Ok(Ok(s)) => s,
+        Ok(Err(e)) => {
+            return Err(AppError::Internal(format!("waiting on ffmpeg failed: {e}")));
+        }
+        Err(_) => {
+            tracing::warn!(
+                "ffmpeg audio extraction timed out after {:?}; killing child",
+                FFMPEG_EXTRACTION_TIMEOUT
+            );
+            let _ = child.kill().await;
+            let _ = child.wait().await;
+            return Err(AppError::Internal(
+                "audio extraction timed out (30 min) — file may be damaged".into(),
+            ));
+        }
+    };
+
+    if !status.success() {
+        // Best-effort capture of stderr tail. We already consumed `wait()`, so
+        // pull whatever was buffered on the pipe before the process exited.
+        let mut stderr_buf = String::new();
+        if let Some(mut err) = child.stderr.take() {
+            use tokio::io::AsyncReadExt;
+            let _ = err.read_to_string(&mut stderr_buf).await;
+        }
         return Err(AppError::Internal(format!(
             "ffmpeg audio extraction failed: {}",
-            stderr.lines().rev().take(4).collect::<Vec<_>>().join(" | ")
+            stderr_buf
+                .lines()
+                .rev()
+                .take(4)
+                .collect::<Vec<_>>()
+                .join(" | ")
         )));
     }
 

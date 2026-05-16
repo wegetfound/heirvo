@@ -8,9 +8,30 @@ interface Props {
   discs: Disc[];
   showStatus?: boolean;
   showSource?: boolean;
+  /**
+   * Cap the rail at N visible cards. Anything beyond is summarised in the
+   * "See all → (M more)" affordance. Default 20 — matches the Apple-style
+   * editorial rail. Pass `Infinity` to disable capping.
+   */
+  maxVisible?: number;
+  /**
+   * Where the "See all" link routes to. If undefined, the link is rendered
+   * but inert (the dedicated "all in this rail" route is not yet built).
+   */
+  seeAllHref?: string;
 }
 
-export function DiscRail({ title, sub, discs, showStatus, showSource }: Props) {
+export function DiscRail({
+  title,
+  sub,
+  discs,
+  showStatus,
+  showSource,
+  maxVisible = 20,
+  seeAllHref,
+}: Props) {
+  const visible = discs.slice(0, maxVisible);
+  const extra = Math.max(0, discs.length - visible.length);
   return (
     <section style={{ marginTop: 64 }}>
       <header
@@ -41,8 +62,11 @@ export function DiscRail({ title, sub, discs, showStatus, showSource }: Props) {
           )}
         </div>
         <a
-          href="#"
-          onClick={(e) => e.preventDefault()}
+          href={seeAllHref ?? "#"}
+          onClick={(e) => {
+            // No dedicated "all in this rail" route yet — stub until built.
+            if (!seeAllHref) e.preventDefault();
+          }}
           style={{
             fontSize: 13,
             fontWeight: 500,
@@ -53,7 +77,7 @@ export function DiscRail({ title, sub, discs, showStatus, showSource }: Props) {
             textDecoration: "none",
           }}
         >
-          See all <ChevronRight size={14} />
+          See all{extra > 0 ? ` (${extra} more)` : ""} <ChevronRight size={14} />
         </a>
       </header>
       <div
@@ -69,7 +93,7 @@ export function DiscRail({ title, sub, discs, showStatus, showSource }: Props) {
           scrollbarWidth: "none",
         }}
       >
-        {discs.map((d) => (
+        {visible.map((d) => (
           <DiscCard
             key={d.id + title}
             disc={d}

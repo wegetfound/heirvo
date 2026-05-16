@@ -12,7 +12,14 @@ export default function Library() {
   const nav = useNavigate();
   const [q, setQ] = useState("");
   const [discs, setDiscs] = useState<Disc[]>(MOCK_DISCS);
+  const [nextCursor, setNextCursor] = useState<number | null>(null);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [activeSession, setActiveSession] = useState<Session | null>(null);
+
+  // Page size for the first load and each "Load more" click. 60 covers
+  // ~3-4 rails of 15-20 cards each, which is what the rail composition
+  // below (recentlyRecovered / onThisDay / birthdays / trips) consumes.
+  const PAGE_SIZE = 60;
 
   // Poll for an in-flight recovery session — mirrors Home.tsx so the
   // library always surfaces the live rescue at the top.
@@ -40,12 +47,15 @@ export default function Library() {
     let cancelled = false;
     (async () => {
       try {
-        let real = await ipc.library.list();
-        if (!cancelled && real.length === 0) {
+        let page = await ipc.library.listPage(0, PAGE_SIZE);
+        if (!cancelled && page.discs.length === 0) {
           await ipc.library.seedDemo();
-          real = await ipc.library.list();
+          page = await ipc.library.listPage(0, PAGE_SIZE);
         }
-        if (!cancelled && real.length > 0) setDiscs(real);
+        if (!cancelled && page.discs.length > 0) {
+          setDiscs(page.discs);
+          setNextCursor(page.nextCursor);
+        }
       } catch {
         // Dev mode without Tauri shell, or backend error — fall back to mock.
       }
@@ -54,6 +64,22 @@ export default function Library() {
       cancelled = true;
     };
   }, []);
+
+  // Explicit "Load more" — keeps older users from being confused by
+  // infinite scroll, and keeps the IPC load bounded.
+  async function loadMore() {
+    if (nextCursor == null || loadingMore) return;
+    setLoadingMore(true);
+    try {
+      const page = await ipc.library.listPage(nextCursor, PAGE_SIZE);
+      setDiscs((prev) => [...prev, ...page.discs]);
+      setNextCursor(page.nextCursor);
+    } catch {
+      // Best-effort; leave the button visible so the user can retry.
+    } finally {
+      setLoadingMore(false);
+    }
+  }
 
   const findById = (id: string): Disc | undefined =>
     discs.find((d) => d.id === id) ?? getDiscById(id);
@@ -335,6 +361,36 @@ export default function Library() {
           discs={trips}
           showStatus={false}
         />
+
+        {nextCursor != null && (
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              marginTop: 56,
+            }}
+          >
+            <button
+              type="button"
+              onClick={loadMore}
+              disabled={loadingMore}
+              style={{
+                padding: "10px 22px",
+                borderRadius: 10,
+                border: "1px solid var(--lib-line)",
+                background: "#fff",
+                color: "var(--lib-ink-2)",
+                fontFamily: "var(--lib-sans)",
+                fontSize: 13,
+                fontWeight: 500,
+                cursor: loadingMore ? "default" : "pointer",
+                opacity: loadingMore ? 0.6 : 1,
+              }}
+            >
+              {loadingMore ? "Loading…" : "Load more discs"}
+            </button>
+          </div>
+        )}
 
         <footer
           style={{

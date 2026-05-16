@@ -13,6 +13,29 @@ pub async fn list_library_discs(state: State<'_, AppState>) -> AppResult<Vec<Dis
     queries::list_discs(&state.db).await
 }
 
+/// Paginated variant — preferred for the Library screen on libraries with
+/// thousands of discs. `cursor = 0` for the first page; subsequent calls pass
+/// the `next_cursor` returned by the previous page. `limit` clamped to 200.
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LibraryDiscPage {
+    pub discs: Vec<Disc>,
+    pub next_cursor: Option<i64>,
+}
+
+#[tauri::command]
+pub async fn list_library_discs_page(
+    state: State<'_, AppState>,
+    cursor: i64,
+    limit: i64,
+) -> AppResult<LibraryDiscPage> {
+    let (discs, next_cursor) = queries::list_discs_page(&state.db, cursor, limit).await?;
+    Ok(LibraryDiscPage {
+        discs,
+        next_cursor,
+    })
+}
+
 #[tauri::command]
 pub async fn get_library_disc(
     state: State<'_, AppState>,

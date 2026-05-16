@@ -123,6 +123,7 @@ impl Transcriber for WhisperCppTranscriber {
     async fn transcribe(
         &self,
         wav_path: &Path,
+        audio_duration_sec: f64,
         progress_cb: ProgressCb,
     ) -> AppResult<Vec<TranscriptSegment>> {
         // whisper-cli appends `.json` to whatever `-of <stem>` we pass.
@@ -184,13 +185,38 @@ impl Transcriber for WhisperCppTranscriber {
             }
         });
 
-        // Wait for the child to finish. Segments come from the JSON sidecar,
-        // so we don't need to read stdout (whisper writes nothing useful to
-        // it when `-oj` is set anyway).
-        let status = child
-            .wait()
-            .await
-            .map_err(|e| AppError::Internal(format!("waiting on whisper failed: {e}")))?;
+        // Watchdog. base.en runs roughly 1× realtime on a typical CPU; 6× is
+        // a very generous safety margin. Floor at 10 min so a 30-second clip
+        // still gets a reasonable budget.
+        let timeout_secs = (audio_duration_sec * 6.0).max(600.0);
+        let timeout = std::time::Duration::from_secs(timeout_secs as u64);
+        let timeout_min = (timeout_secs / 60.0).round() as u64;
+
+        // Segments come from the JSON sidecar, so we don't need to read stdout
+        // (whisper writes nothing useful to it when `-oj` is set anyway).
+        let status = match tokio::time::timeout(timeout, child.wait()).await {
+            Ok(Ok(s)) => s,
+            Ok(Err(e)) => {
+                let _ = progress_task.await;
+                return Err(AppError::Internal(format!(
+                    "waiting on whisper failed: {e}"
+                )));
+            }
+            Err(_) => {
+                tracing::warn!(
+                    "whisper-cli watchdog tripped after {} min (audio_duration={:.1}s); killing child",
+                    timeout_min,
+                    audio_duration_sec
+                );
+                let _ = child.kill().await;
+                let _ = child.wait().await;
+                let _ = progress_task.await;
+                return Err(AppError::Internal(format!(
+                    "transcription timed out after {} min — file may be too long for this hardware",
+                    timeout_min
+                )));
+            }
+        };
         let _ = progress_task.await;
 
         if !status.success() {

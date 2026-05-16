@@ -130,6 +130,7 @@ pub fn run() {
             commands::preflight::get_preflight_status,
             commands::preflight::mark_preflight_seen,
             commands::library::list_library_discs,
+            commands::library::list_library_discs_page,
             commands::library::get_library_disc,
             commands::library::search_library_transcripts,
             commands::library::seed_library_demo,
