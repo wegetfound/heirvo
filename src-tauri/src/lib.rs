@@ -132,6 +132,7 @@ pub fn run() {
             commands::library::get_library_disc,
             commands::library::search_library_transcripts,
             commands::library::seed_library_demo,
+            commands::library::export_disc_html,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

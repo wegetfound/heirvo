@@ -33,3 +33,21 @@ pub async fn search_library_transcripts(
 pub async fn seed_library_demo(state: State<'_, AppState>) -> AppResult<u32> {
     seed::seed_demo_data(&state.db).await
 }
+
+/// Write a single self-contained HTML archive of a disc to `output_path`.
+/// Returns the number of bytes written.
+#[tauri::command]
+pub async fn export_disc_html(
+    state: State<'_, AppState>,
+    disc_id: String,
+    output_path: String,
+) -> AppResult<u64> {
+    let Some(disc) = queries::get_disc(&state.db, &disc_id).await? else {
+        return Err(crate::error::AppError::Internal(format!(
+            "disc not found: {disc_id}"
+        )));
+    };
+    crate::library::html_export::write_disc_html(&disc, std::path::Path::new(&output_path))
+        .await
+        .map_err(|e| crate::error::AppError::Internal(format!("write failed: {e}")))
+}

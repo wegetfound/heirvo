@@ -146,6 +146,8 @@ export const ipc = {
     search: (query: string) =>
       invoke<LibrarySearchHit[]>("search_library_transcripts", { query }),
     seedDemo: () => invoke<number>("seed_library_demo"),
+    exportHtml: (discId: string, outputPath: string) =>
+      invoke<number>("export_disc_html", { discId, outputPath }),
   },
 
   // Diagnostics

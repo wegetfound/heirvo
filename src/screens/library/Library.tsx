@@ -1,16 +1,37 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { useNavigate } from "react-router-dom";
-import { Search } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { Search, Activity, ArrowRight } from "lucide-react";
 import { MOCK_DISCS, getDiscById } from "./data/mockDiscs";
 import type { Disc } from "./data/types";
 import { HeroFeatured } from "./components/HeroFeatured";
 import { DiscRail } from "./components/DiscRail";
 import { ipc } from "../../lib/ipc";
+import type { Session } from "../../lib/types";
 
 export default function Library() {
   const nav = useNavigate();
   const [q, setQ] = useState("");
   const [discs, setDiscs] = useState<Disc[]>(MOCK_DISCS);
+  const [activeSession, setActiveSession] = useState<Session | null>(null);
+
+  // Poll for an in-flight recovery session — mirrors Home.tsx so the
+  // library always surfaces the live rescue at the top.
+  useEffect(() => {
+    const tick = async () => {
+      try {
+        const list = await ipc.listSessions();
+        const running = list.find(
+          (s) => s.status === "recovering" || s.status === "paused",
+        );
+        setActiveSession(running ?? null);
+      } catch {
+        /* ignore until backend ready */
+      }
+    };
+    tick();
+    const t = setInterval(tick, 3000);
+    return () => clearInterval(t);
+  }, []);
 
   // Pull real discs from the backend. If the library is empty on first
   // launch, seed it with the same demo content the UI shows so the user gets
@@ -86,6 +107,113 @@ export default function Library() {
             className="lib-search-input"
           />
         </form>
+
+        {activeSession && (
+          <Link
+            to={`/session/${activeSession.id}`}
+            style={{
+              marginTop: 20,
+              display: "flex",
+              alignItems: "center",
+              gap: 14,
+              padding: "14px 18px",
+              borderRadius: 14,
+              background: "linear-gradient(180deg, #FFF8EC 0%, #FBF1DE 100%)",
+              border: "1px solid var(--lib-amber-soft)",
+              boxShadow: "var(--lib-shadow-soft)",
+              textDecoration: "none",
+              color: "var(--lib-ink)",
+              transition: "transform .2s ease, box-shadow .2s ease",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = "translateY(-1px)";
+              e.currentTarget.style.boxShadow = "var(--lib-shadow-card)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = "translateY(0)";
+              e.currentTarget.style.boxShadow = "var(--lib-shadow-soft)";
+            }}
+          >
+            <span
+              aria-hidden
+              style={{
+                position: "relative",
+                width: 10,
+                height: 10,
+                flexShrink: 0,
+              }}
+            >
+              <span
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  borderRadius: "50%",
+                  background: "var(--lib-amber)",
+                  opacity: 0.55,
+                  animation: "lib-ping 1.6s cubic-bezier(0,0,.2,1) infinite",
+                }}
+              />
+              <span
+                style={{
+                  position: "relative",
+                  display: "inline-block",
+                  width: 10,
+                  height: 10,
+                  borderRadius: "50%",
+                  background: "var(--lib-amber)",
+                }}
+              />
+            </span>
+            <Activity
+              size={18}
+              style={{ flexShrink: 0, color: "var(--lib-amber)" }}
+            />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div
+                style={{
+                  fontFamily: "var(--lib-sans)",
+                  fontSize: 13.5,
+                  fontWeight: 600,
+                  color: "var(--lib-ink)",
+                }}
+              >
+                Live: rescuing {activeSession.user_label || activeSession.disc_label || "Untitled disc"}
+              </div>
+              <div
+                style={{
+                  fontFamily: "var(--lib-sans)",
+                  fontSize: 12,
+                  color: "var(--lib-muted)",
+                  marginTop: 2,
+                }}
+              >
+                {activeSession.status === "paused"
+                  ? "Paused — click to resume"
+                  : "Reading sector by sector — open the scan to watch progress"}
+              </div>
+            </div>
+            <span
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                fontFamily: "var(--lib-sans)",
+                fontSize: 12.5,
+                fontWeight: 600,
+                color: "var(--lib-amber)",
+                flexShrink: 0,
+              }}
+            >
+              Open scan
+              <ArrowRight size={14} />
+            </span>
+            <style>{`
+              @keyframes lib-ping {
+                75%, 100% { transform: scale(2.2); opacity: 0; }
+              }
+            `}</style>
+          </Link>
+        )}
 
         <HeroFeatured disc={featured} />
 

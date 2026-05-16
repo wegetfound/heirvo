@@ -6,6 +6,7 @@ import type { Disc } from "./data/types";
 import { GradientArt, gradientCss } from "./components/GradientArt";
 import { Monogram } from "./components/Monogram";
 import { ipc } from "../../lib/ipc";
+import { renderDiscHtmlBrowser } from "./data/htmlExport";
 
 export default function DiscDetail() {
   const { discId } = useParams<{ discId: string }>();
@@ -13,6 +14,51 @@ export default function DiscDetail() {
   const [disc, setDisc] = useState<Disc | undefined>(() =>
     discId ? getDiscById(discId) : undefined,
   );
+  const [exportMsg, setExportMsg] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
+
+  async function handleExport() {
+    if (!disc || exporting) return;
+    setExporting(true);
+    setExportMsg(null);
+    const defaultName = `${disc.title} — Heirvo Archive.html`;
+    try {
+      // Try the native Tauri save dialog first.
+      const dialog = await import("@tauri-apps/plugin-dialog");
+      const target = await dialog.save({
+        defaultPath: defaultName,
+        filters: [{ name: "HTML", extensions: ["html"] }],
+      });
+      if (!target) {
+        setExporting(false);
+        return;
+      }
+      const bytes = await ipc.library.exportHtml(disc.id, target);
+      const kb = Math.max(1, Math.round(bytes / 1024));
+      setExportMsg(`Saved · ${kb.toLocaleString()} KB`);
+    } catch {
+      // Dev mode without Tauri shell — fall back to a data-URL download
+      // produced from the same TS template as the Rust side.
+      try {
+        const html = renderDiscHtmlBrowser(disc);
+        const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = defaultName;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+        setExportMsg("Downloaded");
+      } catch {
+        setExportMsg("Export failed");
+      }
+    } finally {
+      setExporting(false);
+      setTimeout(() => setExportMsg(null), 4000);
+    }
+  }
   useEffect(() => {
     let cancelled = false;
     if (!discId) {
@@ -215,10 +261,30 @@ export default function DiscDetail() {
                   <Play size={14} fill="currentColor" stroke="none" />
                   Play from start
                 </Link>
-                <button type="button" className="lib-btn lib-btn-ghost">
+                <button
+                  type="button"
+                  className="lib-btn lib-btn-ghost"
+                  onClick={handleExport}
+                  disabled={exporting}
+                  title="Export a single, searchable HTML file you can open in any browser, forever."
+                >
                   <Download size={14} />
-                  Export
+                  {exporting ? "Exporting…" : "Export this archive"}
                 </button>
+                {exportMsg && (
+                  <span
+                    role="status"
+                    style={{
+                      alignSelf: "center",
+                      fontSize: 12.5,
+                      color: "var(--lib-amber)",
+                      fontFamily: "var(--lib-sans)",
+                      fontWeight: 500,
+                    }}
+                  >
+                    {exportMsg}
+                  </span>
+                )}
                 <button type="button" className="lib-btn lib-btn-ghost">
                   <Share2 size={14} />
                   Share with family

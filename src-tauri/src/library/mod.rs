@@ -2,6 +2,7 @@
 //!
 //! See `migrations/20260516000000_library.sql` for the schema.
 
+pub mod html_export;
 pub mod queries;
 pub mod seed;
 pub mod types;
