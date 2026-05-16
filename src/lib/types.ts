@@ -407,6 +407,38 @@ export interface PreflightStatus {
   allCriticalOk: boolean;
 }
 
+// Transcription pipeline (audio extraction + speech-to-text).
+export type TranscriptionStatus =
+  | "queued"
+  | "extracting"
+  | "transcribing"
+  | "complete"
+  | "error"
+  | "cancelled";
+
+export interface TranscriptionJob {
+  id: number;
+  discId: string;
+  videoPath: string;
+  audioPath: string | null;
+  backend: string;
+  model: string | null;
+  status: TranscriptionStatus;
+  progress: number;
+  errorMessage: string | null;
+  queuedAt: number;
+  startedAt: number | null;
+  completedAt: number | null;
+  durationSec: number | null;
+}
+
+export interface TranscriptionProgress {
+  jobId: number;
+  discId: string;
+  status: TranscriptionStatus;
+  progress: number;
+}
+
 // Library — re-export the canonical shapes used by the library screens so
 // every consumer (IPC client, screen components) imports from one place.
 export type {

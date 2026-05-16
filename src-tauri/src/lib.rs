@@ -20,6 +20,7 @@ pub mod media;
 pub mod recovery;
 pub mod session;
 pub mod state;
+pub mod transcription;
 
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 
@@ -133,6 +134,12 @@ pub fn run() {
             commands::library::search_library_transcripts,
             commands::library::seed_library_demo,
             commands::library::export_disc_html,
+            commands::library::import_video_disc,
+            commands::transcription::enqueue_transcription,
+            commands::transcription::list_transcription_jobs,
+            commands::transcription::jobs_for_disc,
+            commands::transcription::cancel_transcription,
+            commands::transcription::retry_transcription,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

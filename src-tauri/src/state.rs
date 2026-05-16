@@ -30,6 +30,7 @@ impl AppState {
         let db = Db::open(&db_path).await?;
         db.migrate().await?;
 
+        let db_for_worker = db.clone();
         let state = Self {
             db,
             engines: Arc::new(RwLock::new(HashMap::new())),
@@ -37,6 +38,9 @@ impl AppState {
 
         app.manage(state);
         tracing::info!("App state initialized");
+
+        // Spawn the transcription queue worker (single concurrent job).
+        crate::transcription::worker::spawn_worker(app.clone(), db_for_worker);
 
         // Spawn the drive watcher: polls every 2s, emits `drives:changed` when
         // the set of optical drives or their `has_media` flag changes.

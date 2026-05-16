@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Search, Activity, ArrowRight } from "lucide-react";
+import { Search, Activity, ArrowRight, Upload } from "lucide-react";
 import { MOCK_DISCS, getDiscById } from "./data/mockDiscs";
 import type { Disc } from "./data/types";
 import { HeroFeatured } from "./components/HeroFeatured";
@@ -95,9 +95,103 @@ export default function Library() {
     if (q.trim()) nav(`/search?q=${encodeURIComponent(q.trim())}`);
   };
 
+  const [importMsg, setImportMsg] = useState<string | null>(null);
+  const [importing, setImporting] = useState(false);
+  async function handleImportVideo() {
+    if (importing) return;
+    setImporting(true);
+    setImportMsg(null);
+    try {
+      const dialog = await import("@tauri-apps/plugin-dialog");
+      const picked = await dialog.open({
+        multiple: false,
+        directory: false,
+        filters: [
+          {
+            name: "Video",
+            extensions: [
+              "mp4", "mov", "avi", "mkv", "mts", "m2ts", "ts", "wmv", "webm",
+            ],
+          },
+        ],
+      });
+      if (!picked || typeof picked !== "string") {
+        setImporting(false);
+        return;
+      }
+      // Derive a nice title from the filename.
+      const base = picked.split(/[\\/]/).pop() ?? picked;
+      const stem = base.replace(/\.[^.]+$/, "");
+      const title = stem
+        .replace(/[_\-]+/g, " ")
+        .replace(/\s+/g, " ")
+        .trim()
+        .replace(/\b\w/g, (c) => c.toUpperCase()) || "Imported Video";
+      const discId = await ipc.library.importVideoDisc(picked, title);
+      try {
+        await ipc.transcription.enqueue(discId, picked);
+      } catch {
+        // Non-fatal — user can retry from the disc page.
+      }
+      nav(`/disc/${discId}`);
+    } catch {
+      setImportMsg("Available in the desktop app");
+      setTimeout(() => setImportMsg(null), 3500);
+    } finally {
+      setImporting(false);
+    }
+  }
+
   return (
     <div className="lib-root">
       <div className="lib-container">
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "flex-end",
+            padding: "16px 0 0",
+            gap: 10,
+            alignItems: "center",
+          }}
+        >
+          {importMsg && (
+            <span
+              role="status"
+              style={{
+                fontSize: 12.5,
+                color: "var(--lib-muted)",
+                fontFamily: "var(--lib-sans)",
+              }}
+            >
+              {importMsg}
+            </span>
+          )}
+          <button
+            type="button"
+            onClick={handleImportVideo}
+            disabled={importing}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "7px 13px",
+              borderRadius: 8,
+              border: "1px solid var(--lib-line)",
+              background: "#fff",
+              color: "var(--lib-ink-2)",
+              fontFamily: "var(--lib-sans)",
+              fontSize: 12.5,
+              fontWeight: 500,
+              cursor: importing ? "default" : "pointer",
+              opacity: importing ? 0.6 : 1,
+            }}
+            title="Add a local video file to your library and transcribe it"
+          >
+            <Upload size={13} />
+            {importing ? "Importing…" : "Import a video"}
+          </button>
+        </div>
+
         <form onSubmit={submit} className="lib-search-form">
           <Search size={16} className="lib-search-icon" />
           <input

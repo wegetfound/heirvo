@@ -1679,6 +1679,7 @@ name = "heirvo"
 version = "1.0.0"
 dependencies = [
  "anyhow",
+ "async-trait",
  "bytes",
  "chrono",
  "dirs 5.0.1",

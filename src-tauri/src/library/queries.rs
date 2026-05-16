@@ -248,6 +248,49 @@ pub async fn get_disc(db: &Db, id: &str) -> AppResult<Option<Disc>> {
     }))
 }
 
+/// Replace all transcript lines for a disc in a single transaction.
+/// Used by the transcription worker once a job completes. The FTS5 triggers
+/// on `library_transcript_lines` keep the search index in sync automatically.
+pub async fn replace_transcript_lines(
+    db: &Db,
+    disc_id: &str,
+    lines: &[TranscriptLine],
+) -> AppResult<()> {
+    let mut tx = db.pool.begin().await?;
+    sqlx::query("DELETE FROM library_transcript_lines WHERE disc_id = ?")
+        .bind(disc_id)
+        .execute(&mut *tx)
+        .await?;
+    for (i, line) in lines.iter().enumerate() {
+        sqlx::query(
+            "INSERT INTO library_transcript_lines
+             (disc_id, line_order, time_sec, time_display, speaker, text, is_stage_direction)
+             VALUES (?, ?, ?, ?, ?, ?, ?)",
+        )
+        .bind(disc_id)
+        .bind(i as i64)
+        .bind(line.time_sec)
+        .bind(&line.time)
+        .bind(&line.speaker)
+        .bind(&line.text)
+        .bind(line.is_stage_direction.unwrap_or(false) as i64)
+        .execute(&mut *tx)
+        .await?;
+    }
+    // Bump phrase count + updated_at to reflect new transcript.
+    let now = Utc::now().timestamp();
+    sqlx::query(
+        "UPDATE library_discs SET phrases_indexed = ?, updated_at = ? WHERE id = ?",
+    )
+    .bind(lines.len() as i64)
+    .bind(now)
+    .bind(disc_id)
+    .execute(&mut *tx)
+    .await?;
+    tx.commit().await?;
+    Ok(())
+}
+
 /// FTS5 full-text search across transcript lines. Returns up to 100 hits,
 /// joined back to the parent disc for title/date display.
 pub async fn search(db: &Db, query: &str) -> AppResult<Vec<SearchHit>> {

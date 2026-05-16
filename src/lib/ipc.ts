@@ -23,6 +23,8 @@ import type {
   ExtractedAudioFile,
   LibraryDisc,
   LibrarySearchHit,
+  TranscriptionJob,
+  TranscriptionProgress,
 } from "./types";
 
 export const ipc = {
@@ -148,6 +150,19 @@ export const ipc = {
     seedDemo: () => invoke<number>("seed_library_demo"),
     exportHtml: (discId: string, outputPath: string) =>
       invoke<number>("export_disc_html", { discId, outputPath }),
+    importVideoDisc: (videoPath: string, title: string) =>
+      invoke<string>("import_video_disc", { videoPath, title }),
+  },
+
+  // Transcription
+  transcription: {
+    enqueue: (discId: string, videoPath: string) =>
+      invoke<number>("enqueue_transcription", { discId, videoPath }),
+    list: () => invoke<TranscriptionJob[]>("list_transcription_jobs"),
+    forDisc: (discId: string) =>
+      invoke<TranscriptionJob[]>("jobs_for_disc", { discId }),
+    cancel: (jobId: number) => invoke<void>("cancel_transcription", { jobId }),
+    retry: (jobId: number) => invoke<number>("retry_transcription", { jobId }),
   },
 
   // Diagnostics
@@ -204,6 +219,29 @@ export const events = {
   ): Promise<UnlistenFn> {
     return listen<import("./types").AiJobError>("enhancement:error", (e) =>
       handler(e.payload),
+    );
+  },
+  onTranscriptionProgress(
+    handler: (p: TranscriptionProgress) => void,
+  ): Promise<UnlistenFn> {
+    return listen<TranscriptionProgress>("transcription:progress", (e) =>
+      handler(e.payload),
+    );
+  },
+  onTranscriptionComplete(
+    handler: (p: { jobId: number; discId: string }) => void,
+  ): Promise<UnlistenFn> {
+    return listen<{ jobId: number; discId: string }>(
+      "transcription:complete",
+      (e) => handler(e.payload),
+    );
+  },
+  onTranscriptionError(
+    handler: (p: { jobId: number; discId: string; error: string }) => void,
+  ): Promise<UnlistenFn> {
+    return listen<{ jobId: number; discId: string; error: string }>(
+      "transcription:error",
+      (e) => handler(e.payload),
     );
   },
   onModelDownloadProgress(

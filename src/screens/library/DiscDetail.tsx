@@ -5,8 +5,9 @@ import { getDiscById } from "./data/mockDiscs";
 import type { Disc } from "./data/types";
 import { GradientArt, gradientCss } from "./components/GradientArt";
 import { Monogram } from "./components/Monogram";
-import { ipc } from "../../lib/ipc";
+import { ipc, events } from "../../lib/ipc";
 import { renderDiscHtmlBrowser } from "./data/htmlExport";
+import type { TranscriptionJob } from "../../lib/types";
 
 export default function DiscDetail() {
   const { discId } = useParams<{ discId: string }>();
@@ -16,6 +17,65 @@ export default function DiscDetail() {
   );
   const [exportMsg, setExportMsg] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
+  const [activeJob, setActiveJob] = useState<TranscriptionJob | null>(null);
+
+  // Poll for the latest transcription job for this disc + subscribe to
+  // progress events so the status block updates live.
+  useEffect(() => {
+    if (!discId) return;
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const jobs = await ipc.transcription.forDisc(discId);
+        if (!cancelled) setActiveJob(jobs[0] ?? null);
+      } catch {
+        /* dev mode */
+      }
+    };
+    load();
+    const unsubs: Array<Promise<() => void>> = [
+      events.onTranscriptionProgress((p) => {
+        if (p.discId !== discId) return;
+        setActiveJob((prev) =>
+          prev && prev.id === p.jobId
+            ? { ...prev, status: p.status, progress: p.progress }
+            : prev,
+        );
+      }),
+      events.onTranscriptionComplete((p) => {
+        if (p.discId !== discId) return;
+        load();
+        // Also refresh the disc to pick up new transcript lines.
+        (async () => {
+          try {
+            const fresh = await ipc.library.get(discId);
+            if (fresh) setDisc(fresh);
+          } catch {
+            /* ignore */
+          }
+        })();
+      }),
+      events.onTranscriptionError((p) => {
+        if (p.discId !== discId) return;
+        load();
+      }),
+    ];
+    return () => {
+      cancelled = true;
+      unsubs.forEach((u) => u.then((fn) => fn()).catch(() => {}));
+    };
+  }, [discId]);
+
+  async function retryTranscription() {
+    if (!activeJob) return;
+    try {
+      await ipc.transcription.retry(activeJob.id);
+      const jobs = await ipc.transcription.forDisc(activeJob.discId);
+      setActiveJob(jobs[0] ?? null);
+    } catch {
+      /* ignore */
+    }
+  }
 
   async function handleExport() {
     if (!disc || exporting) return;
@@ -290,6 +350,112 @@ export default function DiscDetail() {
                   Share with family
                 </button>
               </div>
+              {activeJob &&
+                activeJob.status !== "complete" &&
+                activeJob.status !== "cancelled" && (
+                  <div
+                    style={{
+                      marginTop: 18,
+                      padding: "10px 14px",
+                      borderRadius: 10,
+                      border:
+                        activeJob.status === "error"
+                          ? "1px solid #E8B0A6"
+                          : "1px solid var(--lib-line)",
+                      background:
+                        activeJob.status === "error" ? "#FFF1EC" : "#FFFDF7",
+                      maxWidth: 560,
+                      fontFamily: "var(--lib-sans)",
+                      fontSize: 12.5,
+                      color: "var(--lib-ink-2)",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 12,
+                    }}
+                  >
+                    {activeJob.status === "queued" && (
+                      <>
+                        <span style={{ fontWeight: 600 }}>
+                          Queued for transcription
+                        </span>
+                        <span style={{ color: "var(--lib-muted)" }}>
+                          Will start automatically
+                        </span>
+                      </>
+                    )}
+                    {(activeJob.status === "extracting" ||
+                      activeJob.status === "transcribing") && (
+                      <>
+                        <span style={{ fontWeight: 600 }}>
+                          {activeJob.status === "extracting"
+                            ? "Extracting audio…"
+                            : `Transcribing… ${Math.round(activeJob.progress * 100)}%`}
+                        </span>
+                        <div
+                          style={{
+                            flex: 1,
+                            height: 4,
+                            borderRadius: 2,
+                            background: "var(--lib-paper-2)",
+                            overflow: "hidden",
+                          }}
+                        >
+                          <div
+                            style={{
+                              width: `${Math.round(activeJob.progress * 100)}%`,
+                              height: "100%",
+                              background: "var(--lib-amber)",
+                              transition: "width 0.3s ease",
+                            }}
+                          />
+                        </div>
+                      </>
+                    )}
+                    {activeJob.status === "error" && (
+                      <>
+                        <span style={{ fontWeight: 600, color: "#B5483A" }}>
+                          Transcription failed
+                        </span>
+                        <button
+                          type="button"
+                          onClick={retryTranscription}
+                          style={{
+                            marginLeft: "auto",
+                            border: "1px solid var(--lib-line)",
+                            background: "#fff",
+                            borderRadius: 6,
+                            padding: "3px 10px",
+                            fontSize: 12,
+                            cursor: "pointer",
+                            color: "var(--lib-ink-2)",
+                            fontFamily: "var(--lib-sans)",
+                          }}
+                        >
+                          Retry
+                        </button>
+                      </>
+                    )}
+                  </div>
+                )}
+              {activeJob && activeJob.status === "complete" && (
+                <div
+                  style={{
+                    marginTop: 14,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    padding: "4px 10px",
+                    borderRadius: 99,
+                    background: "#F1F7EC",
+                    color: "#3D6B2D",
+                    fontFamily: "var(--lib-sans)",
+                    fontSize: 11.5,
+                    fontWeight: 600,
+                  }}
+                >
+                  ✓ Transcribed
+                </div>
+              )}
             </div>
           </div>
         </div>
