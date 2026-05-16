@@ -16,6 +16,7 @@ import { cn } from "@/lib/cn";
 import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import { documentDir, join } from "@tauri-apps/api/path";
 import { prefersReducedMotion } from "@/utils/gsap-fx";
+import { RecoveryPlanCard } from "./RecoveryPlanCard";
 
 /**
  * Single-screen recovery flow — replaces the previous 4-step wizard.
@@ -234,14 +235,17 @@ export function Wizard() {
           />
         )}
         {phase === "ready" && disc && (
-          <PhaseReady
-            headingRef={headlineRef}
-            disc={disc}
-            outputDir={outputDir}
-            onBrowse={browseFolder}
-            onStart={startRecovery}
-            starting={starting}
-          />
+          <>
+            <RecoveryPlanCard drivePath={pickedDrive?.path ?? null} />
+            <PhaseReady
+              headingRef={headlineRef}
+              disc={disc}
+              outputDir={outputDir}
+              onBrowse={browseFolder}
+              onStart={startRecovery}
+              starting={starting}
+            />
+          </>
         )}
 
         {/* Advanced expander — only shown once a drive is in the mix. */}

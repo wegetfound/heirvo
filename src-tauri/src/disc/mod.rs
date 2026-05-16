@@ -2,6 +2,7 @@
 
 pub mod audio_cd;
 pub mod drive;
+pub mod drive_quality;
 pub mod sector;
 
 #[cfg(test)]

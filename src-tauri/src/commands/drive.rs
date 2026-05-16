@@ -1,7 +1,48 @@
 //! Drive enumeration and disc identification commands.
 
-use crate::disc::drive::{DiscInfo, DiscType, DriveInfo};
+use crate::disc::drive::{DiscInfo, DiscProfile, DiscType, DriveAssessment, DriveInfo};
 use crate::error::{AppError, AppResult};
+use serde::{Deserialize, Serialize};
+
+/// Combined Recovery Plan briefing returned by `probe_disc_profile`.
+/// The frontend renders this as the "what we're about to do" panel before
+/// the user clicks Start Scan.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RecoveryPlanBriefing {
+    pub disc: DiscProfile,
+    pub drive_assessment: DriveAssessment,
+}
+
+#[tauri::command]
+pub async fn probe_disc_profile(drive_path: String) -> AppResult<Option<RecoveryPlanBriefing>> {
+    tokio::task::spawn_blocking(move || -> AppResult<Option<RecoveryPlanBriefing>> {
+        #[cfg(windows)]
+        {
+            let disc = match crate::disc::scsi_windows::probe_disc_profile(&drive_path) {
+                Ok(p) => p,
+                Err(e) => {
+                    tracing::warn!("probe_disc_profile failed for {drive_path}: {e}");
+                    return Ok(None);
+                }
+            };
+            let drive_assessment =
+                crate::disc::drive_quality::assess_drive(&disc.vendor, &disc.model);
+            tracing::info!(
+                "Recovery briefing — drive: {} {} ({:?}), disc: {} status={:?} sessions={}",
+                disc.vendor, disc.model, drive_assessment.quality,
+                disc.profile_name, disc.disc_status, disc.num_sessions,
+            );
+            Ok(Some(RecoveryPlanBriefing { disc, drive_assessment }))
+        }
+        #[cfg(not(windows))]
+        {
+            let _ = drive_path;
+            Ok(None)
+        }
+    })
+    .await
+    .map_err(|e| AppError::Internal(format!("join: {e}")))?
+}
 
 #[tauri::command]
 pub async fn list_drives() -> AppResult<Vec<DriveInfo>> {

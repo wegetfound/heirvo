@@ -84,6 +84,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             commands::drive::list_drives,
             commands::drive::check_disc,
+            commands::drive::probe_disc_profile,
             commands::session::create_session,
             commands::session::list_sessions,
             commands::session::resume_session,

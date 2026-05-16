@@ -4,6 +4,7 @@ import type {
   DriveInfo,
   DiscInfo,
   DiscType,
+  RecoveryPlanBriefing,
   Session,
   RecoveryProgress,
   StructureSummary,
@@ -27,6 +28,8 @@ export const ipc = {
   listDrives: () => invoke<DriveInfo[]>("list_drives"),
   checkDisc: (drivePath: string) =>
     invoke<DiscInfo | null>("check_disc", { drivePath }),
+  probeDiscProfile: (drivePath: string) =>
+    invoke<RecoveryPlanBriefing | null>("probe_disc_profile", { drivePath }),
 
   // Output destination drives (USB sticks, external HDDs — NOT optical)
   listStorageDrives: () => invoke<StorageDrive[]>("list_storage_drives"),

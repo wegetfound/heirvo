@@ -645,7 +645,7 @@ function ProUpsellBanner() {
         borderColor: "rgba(10,132,255,0.25)",
       }}
     >
-      <div className="flex items-start gap-3">
+      <div className="flex items-start gap-2">
         <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white/80">
           <Sparkles className="h-3.5 w-3.5 text-brand-600" />
         </div>
@@ -658,13 +658,13 @@ function ProUpsellBanner() {
             One-time purchase, no subscription.
           </p>
         </div>
-        <button
-          onClick={buy}
-          className="btn btn-primary self-start text-[12px]"
-        >
-          Unlock Save
-        </button>
       </div>
+      <button
+        onClick={buy}
+        className="btn btn-primary mt-2 w-full text-[12px]"
+      >
+        Unlock Save
+      </button>
 
       <div className="mt-2 flex items-center gap-3 border-t border-brand-200/40 pt-2">
         <button

@@ -56,6 +56,41 @@ export interface DiscInfo {
   has_audio_ts: boolean;
 }
 
+// Recovery Plan briefing — Heirvo's pre-scan transparency feature.
+// No other consumer recovery tool surfaces this before the user commits.
+
+export type DiscStatus = "empty" | "incomplete" | "finalized" | "other";
+export type DriveQuality =
+  | "pro"
+  | "good"
+  | "acceptable"
+  | "marginal"
+  | "avoid"
+  | "unknown";
+
+export interface DiscProfile {
+  vendor: string;
+  model: string;
+  firmware: string;
+  media_present: boolean;
+  profile_code: number;
+  profile_name: string;
+  disc_status: DiscStatus;
+  num_sessions: number;
+  erasable: boolean;
+}
+
+export interface DriveAssessment {
+  quality: DriveQuality;
+  category: string;
+  notes: string;
+}
+
+export interface RecoveryPlanBriefing {
+  disc: DiscProfile;
+  drive_assessment: DriveAssessment;
+}
+
 export type SessionStatus =
   | "created"
   | "scanning"

@@ -7,7 +7,6 @@ import { SectorMapCanvas } from "./SectorMapCanvas";
 import { OutputPanel } from "./OutputPanel";
 import { EnhancementOffer } from "./EnhancementOffer";
 import {
-  DiscVariantPicker,
   DiscVariantRenderer,
   type VariantId,
 } from "./disc-variants";
@@ -54,16 +53,10 @@ export function Dashboard() {
   // Cinematic is the default: real telemetry on the rings, drifting particles,
   // Ken Burns motion, watch-face tick marks. Premium and ambient — feels like
   // a Vision Pro / WWDC keynote backdrop.
-  const [discVariant, setDiscVariant] = useState<VariantId>(() => {
-    try {
-      const saved = localStorage.getItem("disc-variant") as VariantId | null;
-      return saved ?? "activity-cinematic";
-    } catch { return "activity-cinematic"; }
-  });
-  const onDiscVariantChange = (id: VariantId) => {
-    setDiscVariant(id);
-    try { localStorage.setItem("disc-variant", id); } catch { /* ignore */ }
-  };
+  // Single fixed dial — calm, grandma-pleasant. Was previously a picker with 10
+  // variants which felt like a tax on a grieving user. Picked "classic" because
+  // it reads as a familiar progress ring without theatrical motion.
+  const discVariant: VariantId = "default";
 
   const scopeRef = useRef<HTMLDivElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -218,6 +211,91 @@ export function Dashboard() {
     <div ref={scopeRef} className="flex flex-1 h-full overflow-hidden">
       {/* ── LEFT: recovery progress ── */}
       <div className="flex-1 overflow-y-auto px-5 py-3 min-w-0">
+      {/* HERO: Disc animation — moved to top of view so the dial stays
+          visually stable when warnings / buttons / status text below it
+          change height. Earlier order caused "bouncing" of the dial as
+          the DriveHealthBanner appeared and disappeared.
+
+          Warm peach-amber background — Memories app aesthetic, kinder to
+          older eyes than pure white, on-brand for "saving memories". */}
+      <div
+        className="mb-3 overflow-hidden relative px-5 py-5 rounded-2xl border border-ink-200/60"
+        style={{
+          background:
+            "linear-gradient(135deg, #FFF7EF 0%, #FBF7F2 60%, #FFF1E6 100%)",
+          boxShadow:
+            "0 1px 2px rgba(10,23,41,0.04), 0 10px 30px -8px rgba(255,179,122,0.18)",
+        }}
+        data-stagger="hero"
+      >
+        {/* Masthead mark — top-right corner */}
+        <div className="absolute right-5 top-5 flex items-center gap-2 text-[10px] uppercase tracking-[0.22em] text-ink-400">
+          <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden>
+            <circle cx="7" cy="7" r="6" fill="none" stroke="#0A84FF" strokeWidth="1" />
+            <circle cx="7" cy="7" r="2" fill="#0A84FF" />
+          </svg>
+          <span>No. {(id ?? "").slice(0, 6).toUpperCase() || "—"}</span>
+        </div>
+
+        <div className="relative grid grid-cols-1 gap-5 md:grid-cols-[auto,1fr] md:items-center">
+          <div className="flex flex-col items-center md:items-start gap-3">
+            <DiscVariantRenderer
+              variant={discVariant}
+              buckets={bucketRow}
+              totalSectors={total}
+              isActive={isActive}
+              pct={pct}
+              stats={
+                stats
+                  ? {
+                      good: stats.good,
+                      failed: stats.failed,
+                      skipped: stats.skipped,
+                      unknown: stats.unknown,
+                    }
+                  : null
+              }
+            />
+          </div>
+          <div className="flex flex-col gap-3">
+            <div>
+              <span className="micro-label">Pass strategy</span>
+              <p className="mt-0.5 font-display text-[18px] font-semibold tracking-[-0.025em] leading-[1.15] text-ink-900">
+                {prettyPass(stats)}
+              </p>
+            </div>
+            {/* Hairline stat row — horizontal 4-up to save vertical space */}
+            <dl className="grid grid-cols-4 gap-x-4 gap-y-2 border-t border-ink-200/70 pt-3">
+              <HairlineStat
+                label="Scanned"
+                value={`${scannedPct.toFixed(0)}%`}
+              />
+              <HairlineStat
+                label="Speed"
+                value={
+                  stats?.speed_sps !== undefined
+                    ? `${((stats.speed_sps * 2048) / 1024 / 1024).toFixed(2)}`
+                    : "—"
+                }
+                unit={stats?.speed_sps !== undefined ? "MB/s" : undefined}
+              />
+              <HairlineStat
+                label="Elapsed"
+                value={
+                  stats?.elapsed_secs !== undefined && stats.elapsed_secs > 0
+                    ? durationHuman(stats.elapsed_secs)
+                    : "—"
+                }
+              />
+              <HairlineStat
+                label="Remaining"
+                value={stats?.eta_secs != null ? durationHuman(stats.eta_secs) : "—"}
+              />
+            </dl>
+          </div>
+        </div>
+      </div>
+
       <header className="mb-3 flex items-start justify-between gap-4" data-stagger="top">
         <div>
           <span className="micro-label">Active session</span>
@@ -380,98 +458,15 @@ export function Dashboard() {
         );
       })()}
 
-      <DriveHealthBanner stats={stats} />
-
-      {/* HERO: Disc animation with editorial watermark */}
-      <div className="card mb-3 overflow-hidden relative px-4 py-3" data-stagger="hero">
-        {/* Masthead mark — top-right corner */}
-        <div className="absolute right-5 top-5 flex items-center gap-2 text-[10px] uppercase tracking-[0.22em] text-ink-400">
-          <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden>
-            <circle cx="7" cy="7" r="6" fill="none" stroke="#0A84FF" strokeWidth="1" />
-            <circle cx="7" cy="7" r="2" fill="#0A84FF" />
-          </svg>
-          <span>No. {(id ?? "").slice(0, 6).toUpperCase() || "—"}</span>
-        </div>
-
-        {/* Ghost watermark — recovered minutes as oversized number behind disc */}
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 flex items-center justify-center select-none"
-        >
-          <span
-            className="font-display tabular-nums"
-            style={{
-              fontSize: "min(28vw, 320px)",
-              lineHeight: 1,
-              fontWeight: 700,
-              letterSpacing: "-0.06em",
-              color: "transparent",
-              WebkitTextStroke: "1px rgba(10,23,41,0.04)",
-              transform: "translateX(-22%)",
-            }}
-          >
-            {sectorsToMinutes(stats?.good ?? 0)}
-          </span>
-        </div>
-
-        <div className="relative grid grid-cols-1 gap-5 md:grid-cols-[auto,1fr] md:items-center">
-          <div className="flex flex-col items-center md:items-start gap-3">
-            <DiscVariantRenderer
-              variant={discVariant}
-              buckets={bucketRow}
-              totalSectors={total}
-              isActive={isActive}
-              pct={pct}
-              stats={
-                stats
-                  ? {
-                      good: stats.good,
-                      failed: stats.failed,
-                      skipped: stats.skipped,
-                      unknown: stats.unknown,
-                    }
-                  : null
-              }
-            />
-            <DiscVariantPicker value={discVariant} onChange={onDiscVariantChange} />
-          </div>
-          <div className="flex flex-col gap-3">
-            <div>
-              <span className="micro-label">Pass strategy</span>
-              <p className="mt-0.5 font-display text-[18px] font-semibold tracking-[-0.025em] leading-[1.15] text-ink-900">
-                {prettyPass(stats)}
-              </p>
-            </div>
-            {/* Hairline stat row — horizontal 4-up to save vertical space */}
-            <dl className="grid grid-cols-4 gap-x-4 gap-y-2 border-t border-ink-200/70 pt-3">
-              <HairlineStat
-                label="Scanned"
-                value={`${scannedPct.toFixed(0)}%`}
-              />
-              <HairlineStat
-                label="Speed"
-                value={
-                  stats?.speed_sps !== undefined
-                    ? `${((stats.speed_sps * 2048) / 1024 / 1024).toFixed(2)}`
-                    : "—"
-                }
-                unit={stats?.speed_sps !== undefined ? "MB/s" : undefined}
-              />
-              <HairlineStat
-                label="Elapsed"
-                value={
-                  stats?.elapsed_secs !== undefined && stats.elapsed_secs > 0
-                    ? durationHuman(stats.elapsed_secs)
-                    : "—"
-                }
-              />
-              <HairlineStat
-                label="Remaining"
-                value={stats?.eta_secs != null ? durationHuman(stats.eta_secs) : "—"}
-              />
-            </dl>
-          </div>
-        </div>
+      {/* Fixed-height message tray — always rendered, fades content in/out as
+          drive health changes. Reserving the vertical space here is the entire
+          reason the dial above no longer "bounces" when warnings appear or
+          disappear: layout shifts happen INSIDE this region, not around it. */}
+      <div
+        className="mb-3 min-h-[80px] transition-opacity duration-300"
+        aria-live="polite"
+      >
+        <DriveHealthBanner stats={stats} />
       </div>
 
       {/* Editorial stat row — hairline dividers, no boxes */}

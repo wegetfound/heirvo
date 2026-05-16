@@ -333,6 +333,9 @@ impl RecoveryEngine {
             report_every,
         );
         let mut emitted = 0usize;
+        // Heartbeat sentinel — flipped to true when run_pass returns. The
+        // scoped heartbeat thread (spawned below) polls this and exits.
+        let pass_done = AtomicBool::new(false);
 
         // Skip-ahead state (ddrescue-style forward scout): if too many consecutive
         // blocks come back fully bad, jump past a *growing* chunk of disc to find
@@ -348,9 +351,27 @@ impl RecoveryEngine {
         const MAX_SKIP_BLOCKS: usize = 2048;
         let mut consec_fail_blocks: u32 = 0;
 
-        let mut i = 0;
-        while i < blocks.len() {
+        // Scoped heartbeat: emits progress every 2 seconds from a parallel
+        // thread, INDEPENDENT of the block-read loop. This is what fixes the
+        // "UI freezes while engine grinds bad sectors" bug — on a damaged
+        // region a single block iteration can take 60+ seconds (per-sector
+        // fallback × 32 sectors), and the inline emit-after-block can't fire
+        // during that time. With this thread, the UI shows live LBA / stats
+        // every 2 s even when the main loop is stuck deep inside a read.
+        std::thread::scope(|s| {
+            s.spawn(|| {
+                while !pass_done.load(Ordering::Relaxed) {
+                    std::thread::sleep(Duration::from_millis(2000));
+                    if pass_done.load(Ordering::Relaxed) { break; }
+                    if self.cancel_flag.load(Ordering::SeqCst) { break; }
+                    self.emit_progress(strategy);
+                }
+            });
+
+            let mut i = 0;
+            while i < blocks.len() {
             if self.cancel_flag.load(Ordering::SeqCst) {
+                pass_done.store(true, Ordering::Relaxed);
                 return;
             }
             if pass_started.elapsed() > max_pass_duration {
@@ -365,6 +386,7 @@ impl RecoveryEngine {
             while self.pause_flag.load(Ordering::SeqCst) {
                 std::thread::sleep(Duration::from_millis(200));
                 if self.cancel_flag.load(Ordering::SeqCst) {
+                    pass_done.store(true, Ordering::Relaxed);
                     return;
                 }
             }
@@ -445,6 +467,8 @@ impl RecoveryEngine {
             }
 
             emitted += 1;
+            // Inline burst emit on block-count boundaries — the scoped
+            // heartbeat thread above handles time-based emission.
             if emitted % report_every == 0 {
                 self.emit_progress(strategy);
             }
@@ -458,7 +482,12 @@ impl RecoveryEngine {
                 std::thread::sleep(delay);
             }
             i += 1;
-        }
+            }
+
+            // Tell the scoped heartbeat thread to exit. The scope's implicit
+            // join() then waits for it to finish before run_pass returns.
+            pass_done.store(true, Ordering::Relaxed);
+        });
 
         self.emit_progress(strategy);
         self.checkpoint();
@@ -520,7 +549,15 @@ impl RecoveryEngine {
             let s = map.get(lba);
             let want = match strategy {
                 PassStrategy::Triage => matches!(s, SectorState::Unknown),
-                PassStrategy::SlowRead | PassStrategy::Reverse | PassStrategy::ThermalPause => {
+                // SlowRead processes both never-attempted (Unknown) sectors and
+                // previously-failed ones. This makes Patient mode work on fresh
+                // sessions (no prior Triage), and also picks up the Unknown
+                // sectors that Triage's skip-ahead intentionally leaves behind
+                // — matching the long-standing intent in the code comments.
+                PassStrategy::SlowRead => {
+                    matches!(s, SectorState::Failed | SectorState::Unknown)
+                }
+                PassStrategy::Reverse | PassStrategy::ThermalPause => {
                     matches!(s, SectorState::Failed)
                 }
                 PassStrategy::ZeroFill => matches!(s, SectorState::Failed | SectorState::Unknown),

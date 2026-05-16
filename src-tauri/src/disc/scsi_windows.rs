@@ -34,9 +34,17 @@ struct AlignedBuffer {
 
 impl AlignedBuffer {
     fn new(len: usize, align: usize) -> Self {
+        if len == 0 {
+            // Zero-length case: don't allocate, store dummy layout. Drop is a no-op.
+            return Self {
+                ptr: std::ptr::null_mut(),
+                layout: std::alloc::Layout::from_size_align(1, 1).unwrap(),
+                len: 0,
+            };
+        }
         let layout = std::alloc::Layout::from_size_align(len, align)
             .expect("invalid layout for AlignedBuffer");
-        // SAFETY: layout has size >= 1 in practice (we never request 0); we zero-init below.
+        // SAFETY: layout has size >= 1; we zero-init below.
         let ptr = unsafe { std::alloc::alloc_zeroed(layout) };
         if ptr.is_null() {
             std::alloc::handle_alloc_error(layout);
@@ -45,11 +53,17 @@ impl AlignedBuffer {
     }
 
     fn as_mut_slice(&mut self) -> &mut [u8] {
+        if self.len == 0 {
+            return &mut [];
+        }
         // SAFETY: ptr was allocated for `len` bytes and is non-null.
         unsafe { std::slice::from_raw_parts_mut(self.ptr, self.len) }
     }
 
     fn as_slice(&self) -> &[u8] {
+        if self.len == 0 {
+            return &[];
+        }
         // SAFETY: ptr was allocated for `len` bytes and is non-null.
         unsafe { std::slice::from_raw_parts(self.ptr, self.len) }
     }
@@ -57,8 +71,10 @@ impl AlignedBuffer {
 
 impl Drop for AlignedBuffer {
     fn drop(&mut self) {
-        // SAFETY: matched alloc/dealloc with the same layout.
-        unsafe { std::alloc::dealloc(self.ptr, self.layout) };
+        if self.len > 0 && !self.ptr.is_null() {
+            // SAFETY: matched alloc/dealloc with the same layout.
+            unsafe { std::alloc::dealloc(self.ptr, self.layout) };
+        }
     }
 }
 
@@ -84,6 +100,48 @@ const SCSI_OP_READ_10: u8 = 0x28;
 const SCSI_OP_READ_CAPACITY: u8 = 0x25;
 /// SCSI INQUIRY opcode.
 const SCSI_OP_INQUIRY: u8 = 0x12;
+/// SCSI MODE SELECT(10) — configures drive parameters via mode pages.
+const SCSI_OP_MODE_SELECT_10: u8 = 0x55;
+/// MMC SET CD SPEED — sets drive read/write speed in KB/s.
+const SCSI_OP_SET_CD_SPEED: u8 = 0xBB;
+/// MMC GET CONFIGURATION — returns supported features and current disc profile.
+const SCSI_OP_GET_CONFIGURATION: u8 = 0x46;
+/// MMC READ DISC INFORMATION — returns finalized state, session count, disc type.
+const SCSI_OP_READ_DISC_INFORMATION: u8 = 0x51;
+
+// MMC current-profile codes (subset). Returned in bytes [6..8] of GET CONFIGURATION.
+const PROFILE_NO_DISC: u16 = 0x0000;
+const PROFILE_CD_ROM: u16 = 0x0008;
+const PROFILE_CD_R: u16 = 0x0009;
+const PROFILE_CD_RW: u16 = 0x000A;
+const PROFILE_DVD_ROM: u16 = 0x0010;
+const PROFILE_DVD_R: u16 = 0x0011;
+const PROFILE_DVD_RAM: u16 = 0x0012;
+const PROFILE_DVD_RW_RESTRICTED: u16 = 0x0013;
+const PROFILE_DVD_RW_SEQUENTIAL: u16 = 0x0014;
+const PROFILE_DVD_R_DL_SEQUENTIAL: u16 = 0x0015;
+const PROFILE_DVD_R_DL_JUMP: u16 = 0x0016;
+const PROFILE_DVD_PLUS_RW: u16 = 0x001A;
+const PROFILE_DVD_PLUS_R: u16 = 0x001B;
+const PROFILE_DVD_PLUS_RW_DL: u16 = 0x002A;
+const PROFILE_DVD_PLUS_R_DL: u16 = 0x002B;
+const PROFILE_BD_ROM: u16 = 0x0040;
+const PROFILE_BD_R_SRM: u16 = 0x0041;
+const PROFILE_BD_R_RRM: u16 = 0x0042;
+const PROFILE_BD_RE: u16 = 0x0043;
+const PROFILE_HD_DVD_ROM: u16 = 0x0050;
+const PROFILE_HD_DVD_R: u16 = 0x0051;
+const PROFILE_HD_DVD_RAM: u16 = 0x0052;
+
+/// MMC speed constant: 4× CD speed in KB/s.
+///
+/// On damaged or scratched discs, slow reads dramatically improve recovery
+/// chances — less spindle vibration means the laser pickup stays on track
+/// across micro-scratches. Most consumer drives accept this value verbatim
+/// for CDs; for DVDs/BDs the firmware scales it to a comparable low speed.
+/// IsoBuster, dvdisaster and DiscImageCreator all default to this range
+/// for recovery work.
+const CD_SPEED_RECOVERY_KBPS: u16 = 706;
 
 const SCSI_IOCTL_DATA_IN: u8 = 1;
 #[allow(dead_code)]
@@ -168,6 +226,10 @@ impl DriveHandle {
         }
         let new = create_handle(&self.path)?;
         *guard = new;
+        drop(guard);
+        // Recovery mode settings don't persist across handle reopens — the drive
+        // resets MODE SELECT page 01h to defaults on UNIT ATTENTION. Reapply.
+        apply_recovery_mode_settings(self);
         Ok(())
     }
 
@@ -233,11 +295,15 @@ pub fn has_media(drive: &DriveHandle) -> bool {
     result.is_ok()
 }
 
-/// Send a SCSI command via IOCTL_SCSI_PASS_THROUGH_DIRECT.
+/// Raw SCSI pass-through — issues `IOCTL_SCSI_PASS_THROUGH_DIRECT` and blocks
+/// until the kernel returns (which on a hosed drive can be **forever**).
+/// Callers should use `scsi_passthrough` (the watchdog-wrapped version) unless
+/// they explicitly know the IOCTL is fast.
 ///
-/// Returns `(scsi_status, sense_buffer)`. A `scsi_status` of 0 means success.
-fn scsi_passthrough(
-    drive: &DriveHandle,
+/// Takes a raw `HANDLE` (Copy) so it can be sent across thread boundaries —
+/// the watchdog spawns a worker thread that owns the buffer and calls this.
+fn scsi_passthrough_raw(
+    handle: HANDLE,
     cdb: &[u8],
     data_buf: &mut [u8],
     direction: u8,
@@ -263,7 +329,7 @@ fn scsi_passthrough(
     let mut bytes_returned: u32 = 0;
     let result = unsafe {
         DeviceIoControl(
-            drive.current(),
+            handle,
             IOCTL_SCSI_PASS_THROUGH_DIRECT,
             Some(&req as *const _ as *const _),
             std::mem::size_of::<ScsiPassThroughDirectWithBuffer>() as u32,
@@ -279,6 +345,86 @@ fn scsi_passthrough(
     }
 
     Ok((req.sptd.scsi_status, req.sense_buffer))
+}
+
+/// Send a SCSI command via `IOCTL_SCSI_PASS_THROUGH_DIRECT`, **wrapped in a
+/// host-side watchdog**. This is the function nearly every caller wants.
+///
+/// ## Why a watchdog is required
+///
+/// The `TimeOutValue` field in `SCSI_PASS_THROUGH_DIRECT` is a *hint to the
+/// drive* about how long the command should take. It is **not** a hard kill
+/// switch on the host side. When a USB-ATAPI bridge chip enters a hosed
+/// state (common with cheap slim drives — every consumer recovery tool sees
+/// this), the kernel I/O Request Packet keeps waiting for the device to
+/// respond, and `DeviceIoControl` blocks the caller indefinitely. We've
+/// observed real waits of tens of minutes on a single dead sector.
+///
+/// This wrapper spawns a worker thread to run the raw IOCTL, then waits at
+/// most `watchdog_secs` (≈ drive timeout + 2s) for a result via a channel.
+/// On timeout we return `ErrorKind::TimedOut`, the engine marks the block
+/// failed, skip-ahead jumps past the damaged region, and the scan keeps
+/// progressing. The orphaned worker thread eventually completes (or doesn't)
+/// when the OS gives up on the IRP — we don't care, because we've already
+/// moved on.
+///
+/// Trade-off: each call costs one thread spawn + one channel send/recv,
+/// roughly 100–200 µs of overhead. Negligible compared to even a healthy
+/// optical read (~10 ms minimum), and the alternative is infinite blocking.
+fn scsi_passthrough(
+    drive: &DriveHandle,
+    cdb: &[u8],
+    data_buf: &mut [u8],
+    direction: u8,
+    timeout_secs: u32,
+) -> io::Result<(u8, [u8; 32])> {
+    // Windows kernel handles are thread-agnostic, but `HANDLE` wraps a raw
+    // pointer so it's not auto-`Send`. Round-trip through `usize` for the
+    // ride across to the watchdog worker thread.
+    let handle_raw: usize = drive.current().0 as usize;
+    let cdb_owned: Vec<u8> = cdb.to_vec();
+    let buf_len = data_buf.len();
+
+    // Worker owns a page-aligned copy of the buffer for the duration of the
+    // call. On success the data comes back via the channel; on watchdog timeout
+    // the worker keeps the buffer until the kernel finally releases the IRP.
+    let mut worker_buf = AlignedBuffer::new(buf_len, 4096);
+    if direction == SCSI_IOCTL_DATA_OUT && buf_len > 0 {
+        worker_buf.as_mut_slice().copy_from_slice(data_buf);
+    }
+
+    // Watchdog deadline: drive-side timeout + 2 s grace, clamped to a sane
+    // range. 30 s upper bound prevents truly catastrophic stalls; 5 s lower
+    // bound covers the small-IOCTL fast path (INQUIRY, MODE SELECT, etc.).
+    let watchdog_secs = (timeout_secs as u64 + 2).clamp(5, 30);
+
+    let (tx, rx) = std::sync::mpsc::sync_channel::<io::Result<(u8, [u8; 32], AlignedBuffer)>>(1);
+    std::thread::spawn(move || {
+        let handle = HANDLE(handle_raw as *mut std::ffi::c_void);
+        let mut buf = worker_buf;
+        let outcome = scsi_passthrough_raw(handle, &cdb_owned, buf.as_mut_slice(), direction, timeout_secs);
+        let _ = tx.send(outcome.map(|(s, sense)| (s, sense, buf)));
+    });
+
+    match rx.recv_timeout(std::time::Duration::from_secs(watchdog_secs)) {
+        Ok(Ok((status, sense, buf))) => {
+            if direction == SCSI_IOCTL_DATA_IN && buf_len > 0 {
+                data_buf.copy_from_slice(buf.as_slice());
+            }
+            Ok((status, sense))
+        }
+        Ok(Err(e)) => Err(e),
+        Err(_) => {
+            tracing::warn!(
+                "SCSI watchdog tripped after {}s; declaring failure and orphaning worker thread (kernel IRP will finish on its own)",
+                watchdog_secs
+            );
+            Err(io::Error::new(
+                io::ErrorKind::TimedOut,
+                format!("SCSI watchdog: drive did not respond within {watchdog_secs}s"),
+            ))
+        }
+    }
 }
 
 /// Issue an IOCTL with auto-recover on device-disconnect. If the first try
@@ -326,6 +472,253 @@ fn sense_to_error(sense: &[u8; 32]) -> SectorError {
     }
 }
 
+/// Configure the drive for damaged-media recovery reads.
+///
+/// This is the single biggest reason IsoBuster, dvdisaster, and DiscImageCreator
+/// can recover discs where naive SCSI pass-through code stalls indefinitely.
+/// Without these commands, a DVD drive's firmware will retry each bad sector
+/// 8–16 times internally — each retry costs ~300–500 ms — so a single
+/// uncorrectable sector blocks the host for 5+ seconds with no progress.
+/// On a damaged region of 100 sectors that's ~10 minutes of frozen UI.
+///
+/// We send two MMC commands at drive-open time (and again on every reopen):
+///
+/// 1. **MODE SELECT(10) Page 01h** — Read-Write Error Recovery Parameters.
+///    Sets Read Retry Count to 1 and configures bits so the drive returns
+///    fast on errors with full sense data, letting host-side logic decide
+///    whether to retry, slow down, skip, or reverse-read.
+///
+/// 2. **SET CD SPEED** — drops the drive to ~4× CD speed (or the equivalent
+///    slow speed for DVD/BD). Reduces vibration, which is the dominant cause
+///    of failed reads on scratched media. AccurateRip / DiscImageCreator
+///    consensus is "slower = more recovery".
+///
+/// Both commands are best-effort: if the drive rejects them (older drives,
+/// USB bridges that don't pass through MMC commands), we log and continue
+/// with default behavior. The recovery engine still works without them —
+/// it's just much slower on damaged regions.
+fn apply_recovery_mode_settings(drive: &DriveHandle) {
+    // MODE SELECT(10) — 16-byte parameter list = 8-byte header + Page 01 (8 bytes)
+    let param_list: [u8; 16] = [
+        // Mode Parameter Header (8 bytes)
+        0x00, // Mode Data Length (ignored on SELECT)
+        0x00, // Medium Type
+        0x00, // Device-specific (WP/DPOFUA — 0 for read mode)
+        0x00, // Block Descriptor Length (0 = none)
+        0x00, 0x00, 0x00, 0x00,
+        // Page 01h — Read-Write Error Recovery Parameters (8 bytes)
+        0x01, // PS=0, SPF=0, Page Code=0x01
+        0x06, // Page Length = 6
+        // Byte 2 of page: error recovery bits
+        //   AWRE=0  bit7 — don't auto-reallocate writes (we don't write)
+        //   ARRE=0  bit6 — don't auto-reallocate reads (would mask defects)
+        //   TB=1    bit5 — Transfer Block despite error (we want partial data)
+        //   RC=0    bit4 — don't suppress error reporting (we need sense)
+        //   EER=0   bit3 — no Early Recovery (slower path; bad for damage)
+        //   PER=1   bit2 — Post Error — emit sense data on retry exhaustion
+        //   DTE=0   bit1 — don't Disable Transfer on Error
+        //   DCR=0   bit0 — let drive correct via ECC (we lack software ECC for now)
+        0b00100100, // = 0x24
+        0x01,       // Read Retry Count = 1 (host retries; firmware fails fast)
+        0x00,       // Correction Span
+        0x00,       // Head Offset Count
+        0x00,       // Data Strobe Offset Count
+        0x00,       // Write Retry Count
+    ];
+    let mode_select_cdb: [u8; 10] = [
+        SCSI_OP_MODE_SELECT_10,
+        0x10, // PF=1 (page format), SP=0 (don't save)
+        0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, param_list.len() as u8, // Parameter List Length MSB/LSB
+        0x00,
+    ];
+    let mut param_buf = param_list;
+    match scsi_passthrough(drive, &mode_select_cdb, &mut param_buf, SCSI_IOCTL_DATA_OUT, 5) {
+        Ok((0, _)) => {
+            tracing::info!("MODE SELECT page 01h applied: read_retries=1, fast-fail enabled");
+        }
+        Ok((status, sense)) => {
+            tracing::warn!(
+                "MODE SELECT page 01h refused: status={status:#x} sense_key={:#x} — falling back to drive defaults",
+                sense[2] & 0x0F
+            );
+        }
+        Err(e) => {
+            tracing::warn!("MODE SELECT page 01h IO error: {e} — falling back to drive defaults");
+        }
+    }
+
+    // SET CD SPEED — 12-byte CDB. Most consumer drives accept 706 KB/s and
+    // translate it to the appropriate slow speed for the inserted media.
+    let read_kbps = CD_SPEED_RECOVERY_KBPS;
+    let write_kbps: u16 = 0xFFFF; // max — irrelevant for read-only
+    let set_speed_cdb: [u8; 12] = [
+        SCSI_OP_SET_CD_SPEED,
+        0x00,
+        ((read_kbps >> 8) & 0xFF) as u8, (read_kbps & 0xFF) as u8,
+        ((write_kbps >> 8) & 0xFF) as u8, (write_kbps & 0xFF) as u8,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    ];
+    let mut empty: [u8; 0] = [];
+    match scsi_passthrough(drive, &set_speed_cdb, &mut empty, SCSI_IOCTL_DATA_IN, 10) {
+        Ok((0, _)) => {
+            tracing::info!("SET CD SPEED applied: {read_kbps} KB/s (recovery-optimized)");
+        }
+        Ok((status, sense)) => {
+            tracing::warn!(
+                "SET CD SPEED refused: status={status:#x} sense_key={:#x} — drive may use full speed",
+                sense[2] & 0x0F
+            );
+        }
+        Err(e) => {
+            tracing::warn!("SET CD SPEED IO error: {e} — drive may use full speed");
+        }
+    }
+}
+
+/// Issue GET CONFIGURATION (0x46) and return the **current** disc profile code.
+///
+/// The current-profile field at bytes [6..8] of the response identifies what
+/// kind of disc (or none) is in the drive: 0x0010 = DVD-ROM, 0x0040 = BD-ROM,
+/// 0x0008 = CD-ROM, etc. Returns `PROFILE_NO_DISC` (0x0000) if the drive has
+/// no disc OR if the command is rejected (some old or budget drives don't
+/// implement 0x46 at all — degrade gracefully).
+fn read_current_profile(drive: &DriveHandle) -> u16 {
+    // CDB: RT=0x01 (only current features), allocation = 8 bytes (header only).
+    let cdb: [u8; 10] = [
+        SCSI_OP_GET_CONFIGURATION,
+        0x01,
+        0x00, 0x00, // Starting Feature Number = 0
+        0x00, 0x00, 0x00,
+        0x00, 0x08, // Allocation Length MSB/LSB
+        0x00,
+    ];
+    let mut buf = [0u8; 8];
+    match scsi_passthrough(drive, &cdb, &mut buf, SCSI_IOCTL_DATA_IN, 5) {
+        Ok((0, _)) => ((buf[6] as u16) << 8) | (buf[7] as u16),
+        _ => PROFILE_NO_DISC,
+    }
+}
+
+/// Convert an MMC current-profile code to a human-readable name.
+fn profile_to_name(code: u16) -> &'static str {
+    match code {
+        PROFILE_NO_DISC => "No disc",
+        PROFILE_CD_ROM => "CD-ROM",
+        PROFILE_CD_R => "CD-R",
+        PROFILE_CD_RW => "CD-RW",
+        PROFILE_DVD_ROM => "DVD-ROM",
+        PROFILE_DVD_R => "DVD-R",
+        PROFILE_DVD_RAM => "DVD-RAM",
+        PROFILE_DVD_RW_RESTRICTED => "DVD-RW (restricted)",
+        PROFILE_DVD_RW_SEQUENTIAL => "DVD-RW (sequential)",
+        PROFILE_DVD_R_DL_SEQUENTIAL => "DVD-R DL (sequential)",
+        PROFILE_DVD_R_DL_JUMP => "DVD-R DL (jump)",
+        PROFILE_DVD_PLUS_RW => "DVD+RW",
+        PROFILE_DVD_PLUS_R => "DVD+R",
+        PROFILE_DVD_PLUS_RW_DL => "DVD+RW DL",
+        PROFILE_DVD_PLUS_R_DL => "DVD+R DL",
+        PROFILE_BD_ROM => "BD-ROM",
+        PROFILE_BD_R_SRM => "BD-R (SRM)",
+        PROFILE_BD_R_RRM => "BD-R (RRM)",
+        PROFILE_BD_RE => "BD-RE",
+        PROFILE_HD_DVD_ROM => "HD DVD-ROM",
+        PROFILE_HD_DVD_R => "HD DVD-R",
+        PROFILE_HD_DVD_RAM => "HD DVD-RAM",
+        _ => "Unknown profile",
+    }
+}
+
+/// Raw fields from READ DISC INFORMATION standard response.
+#[allow(dead_code)] // disc_type / last_session_state reserved for upcoming features
+#[derive(Debug, Default, Clone, Copy)]
+pub(crate) struct DiscInformationRaw {
+    /// 00=empty, 01=incomplete (appendable), 10=finalized, 11=other.
+    pub disc_status: u8,
+    /// 00=empty, 01=incomplete, 11=complete (last session).
+    pub last_session_state: u8,
+    /// True if the disc media itself is erasable (CD-RW, DVD-RW, BD-RE).
+    pub erasable: bool,
+    /// Number of recorded sessions on disc (combined MSB+LSB).
+    pub num_sessions: u16,
+    /// MMC disc type code (byte 8).
+    pub disc_type: u8,
+}
+
+/// Issue READ DISC INFORMATION (0x51), Data Type 0 (Standard).
+///
+/// Returns the parsed disc-state fields, or `None` if the drive rejects the
+/// command — older drives that only implement CD-ROM mode sometimes don't
+/// support 0x51 with the expected layout.
+fn read_disc_information(drive: &DriveHandle) -> Option<DiscInformationRaw> {
+    let cdb: [u8; 10] = [
+        SCSI_OP_READ_DISC_INFORMATION,
+        0x00, // Data Type = 0 (Standard)
+        0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x22, // Allocation = 34 bytes
+        0x00,
+    ];
+    let mut buf = [0u8; 34];
+    match scsi_passthrough(drive, &cdb, &mut buf, SCSI_IOCTL_DATA_IN, 5) {
+        Ok((0, _)) => {
+            // Byte 2 packs: disc status (bits 0-1), last session state (2-3), erasable (4).
+            let status_byte = buf[2];
+            let num_sessions = ((buf[9] as u16) << 8) | (buf[4] as u16);
+            Some(DiscInformationRaw {
+                disc_status: status_byte & 0x03,
+                last_session_state: (status_byte >> 2) & 0x03,
+                erasable: (status_byte & 0x10) != 0,
+                num_sessions,
+                disc_type: buf[8],
+            })
+        }
+        _ => None,
+    }
+}
+
+/// Run the full pre-scan disc probe: INQUIRY + GET CONFIGURATION + READ DISC INFO.
+///
+/// This is the **Recovery Plan briefing** — everything Heirvo can learn about
+/// the drive and disc before reading a single data sector. The result is fed
+/// to the UI so the user knows what they're dealing with before committing
+/// to a multi-hour scan. Best-effort: any individual probe failure falls back
+/// to sensible defaults rather than aborting the whole briefing.
+pub fn probe_disc_profile(path: &str) -> io::Result<crate::disc::drive::DiscProfile> {
+    use crate::disc::drive::{DiscProfile, DiscStatus};
+    let drive = open_drive(path)?;
+
+    let (vendor, model, firmware) = inquiry(&drive).unwrap_or_default();
+    let profile_code = read_current_profile(&drive);
+    let profile_name = profile_to_name(profile_code).to_string();
+    let info = read_disc_information(&drive);
+    let media_present = has_media(&drive);
+
+    let (status, num_sessions, erasable) = match info {
+        Some(i) => {
+            let s = match i.disc_status {
+                0 => DiscStatus::Empty,
+                1 => DiscStatus::Incomplete,
+                2 => DiscStatus::Finalized,
+                _ => DiscStatus::Other,
+            };
+            (s, i.num_sessions, i.erasable)
+        }
+        None => (DiscStatus::Other, 0, false),
+    };
+
+    Ok(DiscProfile {
+        vendor,
+        model,
+        firmware,
+        media_present,
+        profile_code,
+        profile_name,
+        disc_status: status,
+        num_sessions,
+        erasable,
+    })
+}
+
 /// Build a SCSI READ(10) CDB.
 fn build_read10_cdb(lba: u32, blocks: u16) -> [u8; 10] {
     [
@@ -342,6 +735,44 @@ fn build_read10_cdb(lba: u32, blocks: u16) -> [u8; 10] {
     ]
 }
 
+/// Per-sector fallback used when a multi-sector block read fails.
+///
+/// Uses `scsi_passthrough` directly (not the resilient reconnect variant) with
+/// a capped 2-second timeout. The resilient path adds 3-second sleep + handle
+/// reopen per sector — on a 32-sector failing block that is ~13s × 32 = 7+
+/// minutes frozen on a single bad region. Fast fallback bounds worst-case at
+/// 2s × 32 = 64 seconds per block, letting the engine mark bad sectors quickly
+/// and move on.
+fn fast_sector_fallback(
+    drive: &DriveHandle,
+    start_lba: u64,
+    count: u32,
+    block_timeout_secs: u32,
+) -> Vec<SectorReadResult> {
+    // Cap at 2s per sector — enough for the drive to respond if it's going to,
+    // short enough that a frozen drive doesn't block the engine for minutes.
+    let timeout = block_timeout_secs.min(2).max(1);
+    (0..count as u64)
+        .map(|i| {
+            let lba = start_lba + i;
+            let cdb = build_read10_cdb(lba as u32, 1);
+            let mut buf = vec![0u8; DVD_SECTOR_SIZE];
+            let started = Instant::now();
+            match scsi_passthrough(drive, &cdb, &mut buf, SCSI_IOCTL_DATA_IN, timeout) {
+                Ok((0, _)) => {
+                    SectorReadResult::ok(lba, buf, started.elapsed().as_millis() as u32)
+                }
+                Ok((_, sense)) => {
+                    SectorReadResult::err(lba, sense_to_error(&sense), 1, started.elapsed().as_millis() as u32)
+                }
+                Err(_) => {
+                    SectorReadResult::err(lba, SectorError::Timeout, 1, started.elapsed().as_millis() as u32)
+                }
+            }
+        })
+        .collect()
+}
+
 pub struct ScsiSectorReader {
     drive: DriveHandle,
     capacity_lba: u64,
@@ -350,6 +781,10 @@ pub struct ScsiSectorReader {
 impl ScsiSectorReader {
     pub fn open(path: &str) -> io::Result<Self> {
         let drive = open_drive(path)?;
+        // Configure for recovery BEFORE the first read. Order matters: the
+        // first READ CAPACITY would otherwise trigger drive spin-up at full
+        // speed and let firmware retry defaults bake in for the session.
+        apply_recovery_mode_settings(&drive);
         let capacity_lba = read_capacity(&drive)?;
         Ok(Self { drive, capacity_lba })
     }
@@ -417,7 +852,11 @@ impl SectorReader for ScsiSectorReader {
         let mut buf = AlignedBuffer::new(n as usize * DVD_SECTOR_SIZE, 4096);
         let started = Instant::now();
 
-        let result = scsi_passthrough_resilient(&self.drive, &cdb, buf.as_mut_slice(), SCSI_IOCTL_DATA_IN, timeout_secs);
+        // Use the non-resilient passthrough at block level: the 3s sleep + handle
+        // reopen on a transient error costs more than the per-sector fast fallback,
+        // and the fallback IS the recovery path. Keep resilient reopens for the
+        // sector-level reader (read_sector), where there's no other recovery option.
+        let result = scsi_passthrough(&self.drive, &cdb, buf.as_mut_slice(), SCSI_IOCTL_DATA_IN, timeout_secs);
         let elapsed_ms = started.elapsed().as_millis() as u32;
         match result {
             Ok((0, _)) => {
@@ -440,17 +879,31 @@ impl SectorReader for ScsiSectorReader {
                     "Block read non-zero status {status:#x} sense={:#x} at LBA {start_lba} n={n} took={elapsed_ms}ms; falling back to per-sector",
                     sense[2] & 0x0F
                 );
-                (0..n as u64)
-                    .map(|i| self.read_sector(start_lba + i, opts))
-                    .collect()
+                fast_sector_fallback(&self.drive, start_lba, n, timeout_secs)
             }
             Err(e) => {
+                // Drive-side timeout OR watchdog timeout OR device-disconnect:
+                // every per-sector retry in this region will hit the same wall
+                // (5s each × 32 sectors = 2.5 min per block). Short-circuit to
+                // failure, let skip-ahead jump past. This is the fix that turns
+                // a multi-hour grind through a dead zone into a few minutes.
+                //
+                // The kernel can return ERROR_SEM_TIMEOUT *before* our watchdog
+                // fires, in which case `e.kind()` is `Other` (because the
+                // windows crate doesn't map 0x80070079 → TimedOut for us).
+                // `is_drive_disconnect_error` catches those exact HRESULTs.
+                if e.kind() == io::ErrorKind::TimedOut || is_drive_disconnect_error(&e) {
+                    tracing::warn!(
+                        "Block timeout at LBA {start_lba} n={n} ({e}); skipping per-sector retry — drive is hosed in this region, skip-ahead will jump past"
+                    );
+                    return (0..n as u64)
+                        .map(|i| SectorReadResult::err(start_lba + i, SectorError::Timeout, 1, elapsed_ms))
+                        .collect();
+                }
                 tracing::warn!(
                     "Block read I/O error at LBA {start_lba} n={n} took={elapsed_ms}ms: {e}; falling back to per-sector"
                 );
-                (0..n as u64)
-                    .map(|i| self.read_sector(start_lba + i, opts))
-                    .collect()
+                fast_sector_fallback(&self.drive, start_lba, n, timeout_secs)
             }
         }
     }
