@@ -128,7 +128,23 @@ pub async fn get_preflight_status(app: AppHandle) -> AppResult<PreflightStatus> 
         critical: false,
     };
 
-    // 4. License status — placeholder until licensing lands. Always OK so
+    // 4. Whisper voice-search engine — present in production installers; dev
+    //    machines need `npm run fetch-whisper` first. Non-critical: stub backend
+    //    keeps the pipeline running with fake segments until real Whisper lands.
+    let whisper_ok = crate::transcription::whisper_cpp::whisper_available(&app);
+    let whisper_check = PreflightCheck {
+        id: "whisper".into(),
+        label: "Voice search".into(),
+        ok: Some(whisper_ok),
+        detail: if whisper_ok {
+            "Active — every spoken word in your videos will be searchable.".into()
+        } else {
+            "Preview mode — transcription is simulated. Install Heirvo Pro for the full voice search engine.".into()
+        },
+        critical: false,
+    };
+
+    // 5. License status — placeholder until licensing lands. Always OK so
     //    preflight doesn't gate users behind a feature that doesn't exist.
     let license_check = PreflightCheck {
         id: "license".into(),
@@ -138,7 +154,7 @@ pub async fn get_preflight_status(app: AppHandle) -> AppResult<PreflightStatus> 
         critical: false,
     };
 
-    let checks = vec![ffmpeg_check, onnx_check, drives_check, license_check];
+    let checks = vec![ffmpeg_check, onnx_check, drives_check, whisper_check, license_check];
     let all_critical_ok = checks.iter().all(|c| !c.critical || c.ok == Some(true));
 
     Ok(PreflightStatus {

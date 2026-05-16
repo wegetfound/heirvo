@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { useLicense } from "@/lib/useLicense";
-import { Loader2, Check, ExternalLink, LogOut, Sparkles, FolderOpen, FileText, Volume2, Play, Mail, ChevronDown, ChevronRight } from "lucide-react";
+import { Loader2, Check, ExternalLink, LogOut, Sparkles, FolderOpen, FileText, Volume2, Play, Mail, ChevronDown, ChevronRight, Mic, Film } from "lucide-react";
 import { ipc } from "@/lib/ipc";
 import { audio, type AudioPrefs } from "@/lib/audio";
+import type { PreflightStatus } from "@/lib/types";
 
 const CHECKOUT_URL = "https://heirvo.com/buy"; // placeholder — swap to Lemon Squeezy URL
 const SUPPORT_URL = "https://heirvo.com/support";
@@ -107,6 +108,9 @@ export function Settings() {
 
       {/* Sound */}
       <SoundPanel />
+
+      {/* System status */}
+      <SystemStatusPanel />
 
       {/* Need help? — promoted above footer */}
       <div className="mt-6 flex items-center justify-between rounded-2xl border border-ink-200/70 bg-white/60 px-5 py-4">
@@ -576,6 +580,92 @@ function DiagnosticLogsPanel() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// ─── System status ────────────────────────────────────────────────────────────
+
+function SystemStatusPanel() {
+  const [pf, setPf] = useState<PreflightStatus | null>(null);
+
+  useEffect(() => {
+    ipc.getPreflightStatus().then(setPf).catch(() => {});
+  }, []);
+
+  const find = (id: string) => pf?.checks.find((c) => c.id === id);
+  const whisper = find("whisper");
+  const ffmpeg  = find("ffmpeg");
+
+  return (
+    <div className="mt-6 rounded-2xl border border-ink-200/70 bg-white/60 p-5">
+      <span className="micro-label">System status</span>
+      <div className="mt-3 space-y-3">
+        <StatusRow
+          icon={<Mic className="h-4 w-4" />}
+          label="Voice search engine"
+          ok={whisper?.ok ?? null}
+          detail={whisper?.detail ?? "Checking…"}
+        />
+        <StatusRow
+          icon={<Film className="h-4 w-4" />}
+          label="Video tools (FFmpeg)"
+          ok={ffmpeg?.ok ?? null}
+          detail={ffmpeg?.detail ?? "Checking…"}
+        />
+      </div>
+    </div>
+  );
+}
+
+function StatusRow({
+  icon,
+  label,
+  ok,
+  detail,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  ok: boolean | null;
+  detail: string;
+}) {
+  return (
+    <div className="flex items-start gap-3">
+      <div
+        className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg"
+        style={{
+          background:
+            ok === true
+              ? "rgba(52,199,89,0.12)"
+              : ok === false
+              ? "rgba(255,59,48,0.10)"
+              : "rgba(0,0,0,0.05)",
+          color:
+            ok === true
+              ? "#34C759"
+              : ok === false
+              ? "#FF3B30"
+              : "#8E8E93",
+        }}
+      >
+        {icon}
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <span className="text-[13px] font-medium text-ink-900">{label}</span>
+          {ok === true && (
+            <span className="rounded-full bg-ios-green/15 px-1.5 py-0.5 text-[10px] font-semibold text-ios-green">
+              Active
+            </span>
+          )}
+          {ok === false && (
+            <span className="rounded-full bg-ios-red/10 px-1.5 py-0.5 text-[10px] font-semibold text-ios-red">
+              Not installed
+            </span>
+          )}
+        </div>
+        <p className="mt-0.5 text-[11.5px] text-ink-500">{detail}</p>
+      </div>
     </div>
   );
 }
