@@ -185,6 +185,50 @@ pub struct IsoBrowseEntry {
     pub is_damaged: bool,
 }
 
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SigScanResult {
+    pub hits: Vec<crate::dvd::sig_scan::SignatureHit>,
+    pub damaged_sectors: u64,
+    pub total_sectors: u64,
+}
+
+/// Scan a local `.iso` file for raw file-format signatures (JPEG, PNG, MP4,
+/// PDF, ZIP, etc.) without relying on the filesystem directory tree.
+///
+/// This is the "Find Missing Files" fallback: when a disc's filesystem
+/// descriptors are destroyed, raw file content sectors often survive intact.
+/// Returns one hit per magic-byte occurrence — the UI groups them by type.
+#[tauri::command]
+pub async fn scan_iso_signatures(iso_path: String) -> AppResult<SigScanResult> {
+    tokio::task::spawn_blocking(move || -> AppResult<SigScanResult> {
+        use crate::disc::iso_file::IsoFileSectorReader;
+        use crate::disc::sector::SectorReader;
+        use std::path::Path;
+
+        let path = Path::new(&iso_path);
+        if !path.exists() {
+            return Err(AppError::Internal(format!("ISO not found: {iso_path}")));
+        }
+        let reader = IsoFileSectorReader::open(path)
+            .map_err(|e| AppError::Internal(format!("open {iso_path}: {e}")))?;
+        let total_sectors = reader.capacity();
+        tracing::info!("scan_iso_signatures: scanning {iso_path} ({total_sectors} sectors)");
+
+        let (hits, damaged_sectors) =
+            crate::dvd::sig_scan::signature_scan(&reader, |_, _| {});
+
+        tracing::info!(
+            "scan_iso_signatures: {} hits, {} damaged sectors",
+            hits.len(),
+            damaged_sectors
+        );
+        Ok(SigScanResult { hits, damaged_sectors, total_sectors })
+    })
+    .await
+    .map_err(|e| AppError::Internal(format!("join: {e}")))?
+}
+
 /// Open a local `.iso` file and list every file inside via the UDF parser
 /// (with ISO 9660 fallback). Use case: a user already has a disc image
 /// (their own ddrescue dump, a friend's rip, an archive download) and wants

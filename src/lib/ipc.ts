@@ -87,6 +87,11 @@ export const ipc = {
       skipped_sectors: number;
       unknown_sectors: number;
     }>("import_rmap", { sessionId, inputPath }),
+  exportReceiptManifest: (sessionId: string, outputPath?: string) =>
+    invoke<{ manifest: string; sector_count: number }>(
+      "export_receipt_manifest",
+      { sessionId, outputPath },
+    ),
 
   // DVD
   analyzeStructure: (sessionId: string) =>
@@ -105,6 +110,12 @@ export const ipc = {
       usedUdf: boolean;
       entries: Array<{ path: string; sizeBytes: number; startLba: number; isDamaged: boolean }>;
     }>("list_files_in_iso", { isoPath }),
+  scanIsoSignatures: (isoPath: string) =>
+    invoke<{
+      hits: Array<{ file_type: string; start_lba: number; extension: string }>;
+      damagedSectors: number;
+      totalSectors: number;
+    }>("scan_iso_signatures", { isoPath }),
 
   // Media
   createIso: (sessionId: string, outputPath?: string) =>

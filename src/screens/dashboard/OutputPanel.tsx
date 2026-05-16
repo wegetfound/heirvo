@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { ipc } from "@/lib/ipc";
 import type { HealthReport, IsoResult, ExtractedFile, StorageDrive, Session, AudioToc, ExtractedAudioFile } from "@/lib/types";
-import { FileVideo, Files, Loader2, FileArchive, LifeBuoy, Save, Upload, Usb, HardDrive, Pencil, Lock, Sparkles, Music, FolderOpen, ArrowRight } from "lucide-react";
+import { FileVideo, Files, Loader2, FileArchive, LifeBuoy, Save, Upload, Usb, HardDrive, Pencil, Lock, Sparkles, Music, FolderOpen, ArrowRight, ShieldCheck } from "lucide-react";
 import { open as openDialog, save as saveDialog } from "@tauri-apps/plugin-dialog";
 import { bytesToHuman } from "@/lib/human";
 import { useLicense } from "@/lib/useLicense";
@@ -17,6 +17,7 @@ type RmapImport = {
   skipped_sectors: number;
   unknown_sectors: number;
 };
+type ReceiptManifest = { manifest: string; sector_count: number };
 
 export function OutputPanel({
   sessionId,
@@ -34,6 +35,7 @@ export function OutputPanel({
   const [diagnostic, setDiagnostic] = useState<DiagnosticBundle | null>(null);
   const [rmapExport, setRmapExport] = useState<RmapExport | null>(null);
   const [rmapImport, setRmapImport] = useState<RmapImport | null>(null);
+  const [receipt, setReceipt] = useState<ReceiptManifest | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [enrolledDiscId, setEnrolledDiscId] = useState<string | null>(null);
@@ -575,6 +577,44 @@ export function OutputPanel({
                     {rmapImport.unknown_sectors.toLocaleString()} pending
                   </div>
                 )}
+
+                <div className="border-t border-ink-200/60 pt-2">
+                  <p className="mb-1.5 text-[11px] text-ink-500">
+                    The SHA-256 receipt manifest is a chain-of-custody record — one line
+                    per recovered sector. Useful for archival / legal verification.
+                  </p>
+                  <button
+                    className="btn btn-ghost"
+                    disabled={busy !== null}
+                    onClick={() =>
+                      wrap("receipt", async () => {
+                        const target = await saveDialog({
+                          defaultPath: `receipt-${sessionId.slice(0, 8)}.txt`,
+                          filters: [
+                            { name: "Receipt manifest", extensions: ["txt"] },
+                            { name: "All files", extensions: ["*"] },
+                          ],
+                        });
+                        if (typeof target === "string") {
+                          setReceipt(await ipc.exportReceiptManifest(sessionId, target));
+                        }
+                      })
+                    }
+                  >
+                    {busy === "receipt" ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <ShieldCheck className="h-3 w-3" />
+                    )}
+                    Save SHA-256 receipt manifest
+                  </button>
+                  {receipt && (
+                    <div className="mt-1 text-[10px] text-ink-500">
+                      {receipt.sector_count.toLocaleString()} sectors verified
+                    </div>
+                  )}
+                </div>
+
                 <button
                   className="block text-[11px] text-ink-500 hover:text-ink-700"
                   disabled={busy !== null}
