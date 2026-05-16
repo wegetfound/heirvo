@@ -38,7 +38,9 @@ function Format-MB {
     return ('{0:N1} MB' -f $mb)
 }
 
-if (-not $Force -and (Test-Path $WhisperExe) -and (Test-Path $ModelFile)) {
+$exeReal   = (Test-Path $WhisperExe) -and ((Get-Item $WhisperExe).Length -gt 100KB)
+$modelReal0 = (Test-Path $ModelFile)  -and ((Get-Item $ModelFile).Length  -gt 10MB)
+if (-not $Force -and $exeReal -and $modelReal0) {
     $fmsg = 'whisper.cpp already present at {0} — skipping.' -f $TargetDir
     Write-Host $fmsg -ForegroundColor Green
     Write-Host ('  whisper-cli.exe:   {0}' -f (Format-MB $WhisperExe))
@@ -93,13 +95,23 @@ try {
     }
 
     # ----- 2. Model -----
-    if ($Force -or -not (Test-Path $ModelFile)) {
+    # Consider a file "real" if it is larger than 10 MB (guards against 0-byte
+    # placeholders in the repo AND against HuggingFace returning an HTML error
+    # page, which would typically be a few KB).
+    $ModelMinBytes = 10 * 1024 * 1024
+    $modelReal = (Test-Path $ModelFile) -and ((Get-Item $ModelFile).Length -gt $ModelMinBytes)
+    if ($Force -or -not $modelReal) {
         Write-Host "Downloading ggml-base.en model (~142 MB)..." -ForegroundColor Cyan
         Write-Host "  URL: $ModelUrl"
         Write-Host "  This may take a minute or two."
         $start = Get-Date
         Invoke-WebRequest -Uri $ModelUrl -OutFile $ModelFile -UseBasicParsing
         $elapsed = (Get-Date) - $start
+        $modelSize = (Get-Item $ModelFile).Length
+        if ($modelSize -lt $ModelMinBytes) {
+            Remove-Item $ModelFile -Force -ErrorAction SilentlyContinue
+            throw "Model download failed or returned unexpected content ($([math]::Round($modelSize/1KB,1)) KB). Re-run the script to retry."
+        }
         Write-Host ('  Model: {0} in {1:N1}s' -f (Format-MB $ModelFile), $elapsed.TotalSeconds) -ForegroundColor Green
     } else {
         Write-Host "ggml-base.en.bin already present — skipping model download." -ForegroundColor DarkGray
