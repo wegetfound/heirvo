@@ -154,13 +154,15 @@ export default function Library() {
         .replace(/\s+/g, " ")
         .trim()
         .replace(/\b\w/g, (c) => c.toUpperCase()) || "Imported Media";
-      const discId = await ipc.library.importMedia(picked, title);
-      try {
-        await ipc.transcription.enqueue(discId, picked);
-      } catch {
-        // Non-fatal — user can retry from the disc page.
+      const result = await ipc.library.importMedia(picked, title);
+      if (!result.isDuplicate) {
+        try {
+          await ipc.transcription.enqueue(result.id, picked);
+        } catch {
+          // Non-fatal — user can retry from the disc page.
+        }
       }
-      nav(`/disc/${discId}`);
+      nav(`/disc/${result.id}`);
     } catch {
       setImportMsg("Available in the desktop app");
       setTimeout(() => setImportMsg(null), 3500);

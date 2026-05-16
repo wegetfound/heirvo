@@ -416,6 +416,11 @@ export type TranscriptionStatus =
   | "error"
   | "cancelled";
 
+export interface ImportResult {
+  id: string;
+  isDuplicate: boolean;
+}
+
 export interface TranscriptionJob {
   id: number;
   discId: string;

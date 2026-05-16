@@ -6,6 +6,7 @@ use crate::library::seed;
 use crate::library::types::{Disc, SearchHit};
 use crate::state::AppState;
 use chrono::{Datelike, Utc};
+use sqlx::Row;
 use tauri::State;
 
 #[tauri::command]
@@ -76,10 +77,22 @@ pub async fn export_disc_html(
         .map_err(|e| crate::error::AppError::Internal(format!("write failed: {e}")))
 }
 
+/// Return value for `import_media_disc`.
+/// `is_duplicate = true` means a disc with the same SHA-256 hash already
+/// exists; `id` is that existing disc's id. The frontend should skip
+/// enqueueing transcription in this case.
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ImportResult {
+    pub id: String,
+    pub is_duplicate: bool,
+}
+
 /// Create a new library disc from a user-imported media file (video OR
-/// audio). Returns the new disc id. The frontend follows up with
-/// `enqueue_transcription` to kick off audio prep + transcription against
-/// the same `media_path`.
+/// audio). Returns `{ id, isDuplicate }`. When `isDuplicate` is true the
+/// disc was already in the library (same SHA-256 content hash) and `id`
+/// points to the existing entry — the frontend should navigate there
+/// without re-enqueuing transcription.
 ///
 /// Audio inputs get a distinct (moodier) gradient palette so they're
 /// visually distinguishable from video imports in the library grid.
@@ -88,7 +101,29 @@ pub async fn import_media_disc(
     state: State<'_, AppState>,
     media_path: String,
     title: String,
-) -> AppResult<String> {
+) -> AppResult<ImportResult> {
+    // Stream-hash the source file. For large video files (4 GB+) this takes
+    // ~5–10 s on an SSD — acceptable once per import, negligible vs. transcription.
+    let hash = sha256_path(&media_path).await;
+
+    // If we already have a disc with this hash, return it immediately.
+    if let Some(ref h) = hash {
+        if let Ok(Some(row)) = sqlx::query("SELECT id FROM library_discs WHERE source_hash = ? LIMIT 1")
+            .bind(h)
+            .fetch_optional(&state.db.pool)
+            .await
+        {
+            if let Ok(existing_id) = row.try_get::<String, _>("id") {
+                tracing::info!(
+                    "import_media_disc: duplicate detected (hash {}) → existing disc {}",
+                    &h[..16],
+                    existing_id
+                );
+                return Ok(ImportResult { id: existing_id, is_duplicate: true });
+            }
+        }
+    }
+
     let now = Utc::now();
     let id = format!(
         "{}-{}",
@@ -106,15 +141,10 @@ pub async fn import_media_disc(
         "winter", "spring", "graduation", "vacation", "family", "baby",
         "anniversary", "reunion",
     ];
-    // Moodier palette for audio — feels distinct in the grid.
     const AUDIO_GRADIENTS: [&str; 5] = [
         "eleanor", "christmas", "winter", "autumn", "anniversary",
     ];
-    let palette: &[&str] = if is_audio {
-        &AUDIO_GRADIENTS
-    } else {
-        &VIDEO_GRADIENTS
-    };
+    let palette: &[&str] = if is_audio { &AUDIO_GRADIENTS } else { &VIDEO_GRADIENTS };
     let gradient = palette[(now.timestamp_subsec_nanos() as usize) % palette.len()];
     let monogram_id = ((title_hash(&title) % 8) + 1) as i64;
     let source = if is_audio { "Imported audio" } else { "Imported video" };
@@ -124,10 +154,10 @@ pub async fn import_media_disc(
         "INSERT INTO library_discs
          (id, title, year, date_display, filmed_by, location, source, status,
           duration_sec, duration_formatted, recovered_at, phrases_indexed,
-          monogram_id, gradient, about, session_id, video_path,
+          monogram_id, gradient, about, session_id, video_path, source_hash,
           created_at, updated_at)
          VALUES (?, ?, ?, ?, NULL, NULL, ?, 'recovered', 0, '--:--', ?, 0,
-                 ?, ?, NULL, NULL, ?, ?, ?)",
+                 ?, ?, NULL, NULL, ?, ?, ?, ?)",
     )
     .bind(&id)
     .bind(&title)
@@ -138,12 +168,33 @@ pub async fn import_media_disc(
     .bind(monogram_id)
     .bind(gradient)
     .bind(&media_path)
+    .bind(&hash)
     .bind(now_ts)
     .bind(now_ts)
     .execute(&state.db.pool)
     .await?;
 
-    Ok(id)
+    Ok(ImportResult { id, is_duplicate: false })
+}
+
+/// SHA-256 of a file, streamed in 64 KB blocks. Returns None on any I/O error
+/// (missing file, permissions, etc.) — callers treat None as "unknown hash"
+/// and skip the dedup check rather than failing the import.
+async fn sha256_path(path: &str) -> Option<String> {
+    use sha2::{Digest, Sha256};
+    use tokio::io::AsyncReadExt;
+
+    let mut f = tokio::fs::File::open(path).await.ok()?;
+    let mut hasher = Sha256::new();
+    let mut buf = vec![0u8; 65536];
+    loop {
+        let n = f.read(&mut buf).await.ok()?;
+        if n == 0 {
+            break;
+        }
+        hasher.update(&buf[..n]);
+    }
+    Some(format!("{:x}", hasher.finalize()))
 }
 
 /// Backwards-compat: legacy IPC name still used by older builds of the UI.
@@ -153,7 +204,7 @@ pub async fn import_video_disc(
     state: State<'_, AppState>,
     video_path: String,
     title: String,
-) -> AppResult<String> {
+) -> AppResult<ImportResult> {
     import_media_disc(state, video_path, title).await
 }
 

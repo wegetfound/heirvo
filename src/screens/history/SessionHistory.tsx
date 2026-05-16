@@ -143,13 +143,18 @@ function SessionRow({
         return;
       }
       const title = s.user_label || s.disc_label || "Recovered disc";
-      const discId = await ipc.library.importMedia(picked, title);
-      try {
-        await ipc.transcription.enqueue(discId, picked);
-      } catch {
-        // Non-fatal — user can retry from the disc page.
+      const result = await ipc.library.importMedia(picked, title);
+      if (result.isDuplicate) {
+        setEnrollMsg("This disc is already in your library.");
+        setTimeout(() => setEnrollMsg(null), 4000);
+      } else {
+        try {
+          await ipc.transcription.enqueue(result.id, picked);
+        } catch {
+          // Non-fatal — user can retry from the disc page.
+        }
       }
-      nav(`/disc/${discId}`);
+      nav(`/disc/${result.id}`);
     } catch {
       setEnrollMsg("Save this disc as MP4 first (Save As… screen).");
       setTimeout(() => setEnrollMsg(null), 4500);
