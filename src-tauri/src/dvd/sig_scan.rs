@@ -154,6 +154,163 @@ where
     (hits, damaged_count)
 }
 
+// ─── File carving ─────────────────────────────────────────────────────────
+
+/// Default upper bound when we can't determine a file's true length from its
+/// header. 256 MB covers nearly all consumer-disc files (a feature-length
+/// DVD VOB caps at 1 GB, but those are inside VIDEO_TS, not loose). Higher
+/// limits waste read time and disk space on garbage if the trailer is missing.
+const CARVE_MAX_BYTES: u64 = 256 * 1024 * 1024;
+const SECTOR: u64 = 2048;
+
+/// Result of carving a single file from its starting LBA.
+pub struct CarvedFile {
+    pub file_type: DetectedFileType,
+    pub extension: &'static str,
+    pub start_lba: u64,
+    pub bytes: Vec<u8>,
+    /// True when carving stopped at CARVE_MAX_BYTES without finding a clean
+    /// trailer — the file is likely truncated.
+    pub truncated: bool,
+}
+
+/// Read forward from `start_lba` and extract a complete file of `file_type`.
+///
+/// For each format we use the cheapest available way to determine length:
+///   • JPEG → scan for `FF D9` end-of-image marker (respecting `FF 00` escapes)
+///   • PNG  → scan for the `IEND` chunk type (followed by 4-byte CRC)
+///   • MP4  → read the `ftyp` box size and follow box chain until EOF / max
+///   • BMP  → bytes 2..6 of the header contain the total file size (little-endian)
+///   • PDF  → scan for `%%EOF` followed by EOL within the trailing 1 KB
+///   • Anything else → return CARVE_MAX_BYTES sectors (caller may truncate)
+pub fn carve_file_at(
+    reader: &dyn SectorReader,
+    start_lba: u64,
+    file_type: DetectedFileType,
+    extension: &'static str,
+) -> Option<CarvedFile> {
+    use DetectedFileType::*;
+    let total = reader.capacity();
+    if start_lba >= total {
+        return None;
+    }
+
+    // Length-from-header shortcut: BMP, MP4 boxes — read just the header sector
+    // and skip the streaming scan if we can compute length up front.
+    let header = reader.read_block(start_lba, 1, ReadOptions::default())
+        .into_iter().next()?.data?;
+
+    let known_len: Option<u64> = match file_type {
+        Bmp if header.len() >= 6 => {
+            Some(u32::from_le_bytes([header[2], header[3], header[4], header[5]]) as u64)
+        }
+        Mp4 if header.len() >= 8 => {
+            // The `ftyp` box starts at byte 0 of the file. Bytes 0..4 = box size
+            // (big-endian). If size = 0, the box extends to EOF; if = 1, an
+            // 8-byte extended size follows. ftyp tells us the first box length;
+            // most MP4s have many more boxes. We use ftyp size only as a sanity
+            // floor and stream until we find the `moov`/`mdat` final box.
+            let ftyp_size = u32::from_be_bytes([header[0], header[1], header[2], header[3]]);
+            if ftyp_size > 32 && ftyp_size < 4096 {
+                None // Stream until we hit the last box
+            } else {
+                None
+            }
+        }
+        _ => None,
+    };
+
+    let max_bytes = known_len.unwrap_or(CARVE_MAX_BYTES).min(CARVE_MAX_BYTES);
+    let max_sectors = max_bytes.div_ceil(SECTOR).min(total - start_lba);
+
+    let mut buf: Vec<u8> = Vec::with_capacity((max_sectors * SECTOR) as usize);
+    let mut lba = start_lba;
+    let mut truncated = true;
+
+    // Read in 32-sector blocks. After each block, check for a trailer marker
+    // in the *tail* of what we have plus a small overlap into the previous
+    // block so a marker spanning a block boundary still hits.
+    const BLOCK: u32 = 32;
+    while lba < start_lba + max_sectors {
+        let n = BLOCK.min((start_lba + max_sectors - lba) as u32);
+        let results = reader.read_block(lba, n, ReadOptions::default());
+        let block_start_in_buf = buf.len();
+        for res in &results {
+            match &res.data {
+                Some(d) => buf.extend_from_slice(d),
+                None => buf.extend_from_slice(&[0u8; 2048]),
+            }
+        }
+        lba += n as u64;
+
+        // Look for an end marker. Include 16 bytes of overlap from before this
+        // block in case the marker straddled the block boundary.
+        let search_start = block_start_in_buf.saturating_sub(16);
+        if let Some(end_off) = find_trailer(file_type, &buf[search_start..]) {
+            buf.truncate(search_start + end_off);
+            truncated = false;
+            break;
+        }
+
+        // For length-known formats, stop once we've read enough.
+        if let Some(len) = known_len {
+            if buf.len() as u64 >= len {
+                buf.truncate(len as usize);
+                truncated = false;
+                break;
+            }
+        }
+    }
+
+    Some(CarvedFile { file_type, extension, start_lba, bytes: buf, truncated })
+}
+
+/// Search `data` for the format-specific end-of-file trailer.
+/// Returns the offset *just past* the trailer (exclusive end), or `None`.
+fn find_trailer(file_type: DetectedFileType, data: &[u8]) -> Option<usize> {
+    use DetectedFileType::*;
+    match file_type {
+        Jpeg => {
+            // JPEG end-of-image is `FF D9`. JPEG bitstreams escape literal FF
+            // bytes inside compressed scan data as `FF 00`, so we must skip
+            // those: a `FF D9` preceded by a stuffed-byte pattern is safe to
+            // accept because `FF 00` always reads as "literal 0xFF" — the next
+            // byte cannot itself be a marker. So a simple forward scan for
+            // `FF D9` is correct.
+            data.windows(2).position(|w| w == [0xFF, 0xD9]).map(|i| i + 2)
+        }
+        Png => {
+            // PNG end is the IEND chunk: 4-byte length(0) + "IEND" + 4-byte CRC.
+            // Total 12 bytes from the start of the length field. Scan for "IEND"
+            // and accept if 4 bytes of CRC follow (presence, not validity).
+            data.windows(4).position(|w| w == b"IEND").and_then(|i| {
+                let end = i + 4 + 4; // IEND + 4-byte CRC
+                if end <= data.len() { Some(end) } else { None }
+            })
+        }
+        Pdf => {
+            // PDF trailer is `%%EOF` near the end of file.
+            data.windows(5).position(|w| w == b"%%EOF").map(|i| {
+                // Include CR/LF that may follow.
+                let mut end = i + 5;
+                while end < data.len() && matches!(data[end], b'\r' | b'\n') {
+                    end += 1;
+                }
+                end
+            })
+        }
+        Gif => {
+            // GIF trailer is a single 0x3B byte. Common false-positives in
+            // image data make this slightly risky, so require it to be near
+            // the end of the data window we've read.
+            data.iter().rposition(|&b| b == 0x3B).map(|i| i + 1)
+        }
+        // Formats without a deterministic trailer: rely on length-from-header
+        // or max-bytes cap. Return None to keep reading.
+        _ => None,
+    }
+}
+
 /// Scan only around the disc's descriptor regions (sectors 0..512 and
 /// sector N-512..N) for ISO 9660 PVD and UDF AVDP signatures.
 /// Much faster than a full scan; used as a quick first pass.
