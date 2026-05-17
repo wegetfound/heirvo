@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+﻿import { Link } from "react-router-dom";
 import { Nav } from "../components/Nav";
 import { Footer } from "../components/Footer";
 import { useMeta } from "../lib/useMeta";
@@ -31,7 +31,7 @@ export default function Terms() {
           </div>
 
           <div className="grid sm:grid-cols-3 gap-3 mb-12">
-            <Highlight label="License" value="$39 one-time" />
+            <Highlight label="License" value="$49 one-time" />
             <Highlight label="Updates" value="Free, lifetime" />
             <Highlight label="Refund" value="30 days, no fuss" />
           </div>
@@ -52,7 +52,7 @@ export default function Terms() {
 
             <Section id="license" title="2. Your license">
               <p>
-                Heirvo Pro is sold as a one-time purchase of <strong>$39 USD</strong>.
+                Heirvo Pro is sold as a one-time purchase of <strong>$49 USD</strong>.
                 There is no subscription, no recurring charge, and no &ldquo;basic
                 vs. premium&rdquo; tiering of features. When you buy a license, you
                 get all current features and all future updates &mdash; for the life

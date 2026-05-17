@@ -1,4 +1,4 @@
-# Heirvo — Software Directory Submissions
+﻿# Heirvo — Software Directory Submissions
 
 ---
 
@@ -8,7 +8,7 @@
 Recover videos and photos from scratched DVDs, CDs, and Blu-ray. Free scan. Designed for families, not IT pros. Windows 10/11.
 
 ### Long Description (500 chars)
-Heirvo recovers files from damaged, scratched, or unreadable DVDs, CDs, Blu-ray, and Kodak Photo CDs on Windows 10 and 11. Unlike tools aimed at IT professionals, Heirvo is built for people trying to save family memories — home videos, holiday photos, home recordings. Scan any disc free. Pay $39 once to save everything. A built-in Memory Vault lets you browse and voice-search all your recovered videos. No account required, no subscription, no recurring fee. Mail-in service available from $89 for discs too damaged for software.
+Heirvo recovers files from damaged, scratched, or unreadable DVDs, CDs, Blu-ray, and Kodak Photo CDs on Windows 10 and 11. Unlike tools aimed at IT professionals, Heirvo is built for people trying to save family memories — home videos, holiday photos, home recordings. Scan any disc free. Pay $49 once to save everything. A built-in Memory Vault lets you browse and voice-search all your recovered videos. No account required, no subscription, no recurring fee. Mail-in service available from $89 for discs too damaged for software.
 
 ### Tags / Categories to Select
 - CD/DVD Tools
@@ -55,7 +55,7 @@ Heirvo reads each sector of your disc multiple times, varying the read speed and
 
 1. Insert your disc and open Heirvo
 2. Click Scan — completely free, no account required
-3. Preview what was found, then pay $39 once to save your files
+3. Preview what was found, then pay $49 once to save your files
 
 **Memory Vault**
 
@@ -64,7 +64,7 @@ Every recovered video and photo lands in Heirvo's Memory Vault — a browsable l
 **Pricing**
 
 - Free tier: full disc scan, file preview
-- Pro: $39 one-time, unlimited saves, no subscription
+- Pro: $49 one-time, unlimited saves, no subscription
 - Mail-in service: from $89 per disc, no-recovery/no-charge guarantee
 
 **Requirements:** Windows 10 or Windows 11 (64-bit), 200 MB disk space, any USB or internal disc drive.
@@ -75,7 +75,7 @@ Every recovered video and photo lands in Heirvo's Memory Vault — a browsable l
 - Data Recovery
 
 ### License
-Freeware (scan tier) / Commercial — $39 one-time (save tier)
+Freeware (scan tier) / Commercial — $49 one-time (save tier)
 
 ### OS
 Windows 10, Windows 11 (64-bit)
@@ -88,7 +88,7 @@ Windows 10, Windows 11 (64-bit)
 Heirvo
 
 ### Short Description (max 250 chars)
-Disc recovery software for Windows 10 and 11. Recovers videos, photos, and data from scratched or damaged DVDs, CDs, Blu-ray, and Kodak Photo CDs. Free to scan; one-time $39 fee to save recovered files. No subscription required.
+Disc recovery software for Windows 10 and 11. Recovers videos, photos, and data from scratched or damaged DVDs, CDs, Blu-ray, and Kodak Photo CDs. Free to scan; one-time $49 fee to save recovered files. No subscription required.
 
 ### Full Description (600–1000 words, formal tone)
 
@@ -155,7 +155,7 @@ It's a Windows app that recovers files from damaged DVDs, CDs, Blu-ray, and Koda
 
 **What makes it different from IsoBuster / CDRoller**
 
-Those are excellent tools for people who know what they're doing. Heirvo is for the person whose dad's funeral video is on a scratched disc and who has never heard the word "sector." Three clicks: insert disc, scan (free), save ($39 one-time). That's it.
+Those are excellent tools for people who know what they're doing. Heirvo is for the person whose dad's funeral video is on a scratched disc and who has never heard the word "sector." Three clicks: insert disc, scan (free), save ($49 one-time). That's it.
 
 There's also a Memory Vault — a browsable library for all your recovered videos with voice search, so you can find footage by describing it rather than scrolling through filenames like `VTS_01_1.VOB`.
 
@@ -185,6 +185,6 @@ Sending a MODE SELECT command with the Read-Write Error Recovery page (page 01h)
 
 There's a watchdog process that monitors drive responsiveness — some drives (the GT80N in particular) reject MODE SELECT entirely and need to be handled separately. If the drive stops responding mid-scan the watchdog resets the connection and resumes rather than restarting.
 
-On top of this engine there's a consumer-friendly UI: insert disc, scan free, pay $39 to save. The goal is to give someone recovering their family's home videos the same depth of recovery as a lab tool, without requiring them to understand what a sector is.
+On top of this engine there's a consumer-friendly UI: insert disc, scan free, pay $49 to save. The goal is to give someone recovering their family's home videos the same depth of recovery as a lab tool, without requiring them to understand what a sector is.
 
 Anyone else working at this level — curious what behaviour you've seen from drives that reject page 01h, and whether you've found speed variation strategies that outperform what I'm doing. Link: **heirvo.com**

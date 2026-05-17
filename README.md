@@ -1,4 +1,4 @@
-# Heirvo
+﻿# Heirvo
 
 > *Retrieving memories before they are lost forever.*
 
@@ -13,7 +13,7 @@ Recover files from scratched, damaged, or aging DVDs, photo CDs, audio CDs, and 
 | Tier | Price | Capabilities |
 |---|---|---|
 | **Heirvo Free** | $0 | Recover any disc · multi-pass sector recovery · resumable sessions · view what was recovered |
-| **Heirvo Pro** | $39 one-time | Save as MP4 (lossless) · save as ISO · extract chapters · recover all data files · AI restoration · priority support |
+| **Heirvo Pro** | $49 one-time | Save as MP4 (lossless) · save as ISO · extract chapters · recover all data files · AI restoration · priority support |
 | **Mail-in service** | $89+ | Ship us the disc — we handle everything. For users without a DVD drive. |
 
 ## Repository layout

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+﻿import { useEffect, useRef } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
@@ -27,7 +27,7 @@ const items: Item[] = [
     icon: <SparkleIcon />,
   },
   {
-    title: "$39 once, no subscription",
+    title: "$49 once, no subscription",
     body: "Pay once, keep forever. Free updates. Three of your devices, lifetime.",
     icon: <PriceIcon />,
   },

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+﻿import { useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -223,7 +223,7 @@ export default function Gift() {
               fontFamily: SORA, fontSize: 12, color: C.textFaint,
               maxWidth: 480, margin: "0 auto",
             }}>
-              Free to scan · $39 one-time to save · Works on Windows 10 / 11 · No subscription, ever
+              Free to scan · $49 one-time to save · Works on Windows 10 / 11 · No subscription, ever
             </p>
           </div>
         </section>
@@ -527,7 +527,7 @@ export default function Gift() {
               fontFamily: SORA, fontSize: 12, color: C.textFaint,
               lineHeight: 1.6,
             }}>
-              Free forever to scan and preview. $39 one-time unlocks save
+              Free forever to scan and preview. $49 one-time unlocks save
               + AI restoration. If your disc is too damaged for software,
               we offer mail-in recovery from $89 — and credit your Heirvo
               purchase toward it.

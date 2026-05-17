@@ -1,4 +1,4 @@
-export interface GuideSection {
+﻿export interface GuideSection {
   id: string;
   heading?: string;
   level?: 2 | 3;
@@ -92,7 +92,7 @@ const GUIDES: Guide[] = [
           "Open Heirvo and select your disc drive from the dropdown. Heirvo detects the disc type automatically.",
           "Click Scan. Heirvo begins reading sector by sector, making up to 16 passes over unreadable areas. You can watch the recovery map fill in as it progresses.",
           "When the scan finishes, Heirvo shows you every recoverable file — video, photos, documents, or raw ISO data. The scan is completely free.",
-          "Activate Heirvo Pro ($39 one-time) to save the recovered files to your hard drive. If nothing was recovered, you pay nothing.",
+          "Activate Heirvo Pro ($49 one-time) to save the recovered files to your hard drive. If nothing was recovered, you pay nothing.",
         ],
       },
       {
@@ -145,7 +145,7 @@ const GUIDES: Guide[] = [
       },
       {
         q: "Is Heirvo really free to scan?",
-        a: "The scan is completely free with no time limit. You only pay ($39 one-time) when you choose to save the recovered files. If nothing is recoverable, you never need to pay anything.",
+        a: "The scan is completely free with no time limit. You only pay ($49 one-time) when you choose to save the recovered files. If nothing is recoverable, you never need to pay anything.",
       },
     ],
     cta: {
@@ -255,7 +255,7 @@ const GUIDES: Guide[] = [
       },
       {
         q: "How much does it cost to recover home videos?",
-        a: "The scan is free. If Heirvo successfully finds your videos, you pay $39 once to save them — no subscription. If you need to use the mail-in service because the disc is too damaged for software recovery, pricing starts at $89 per disc.",
+        a: "The scan is free. If Heirvo successfully finds your videos, you pay $49 once to save them — no subscription. If you need to use the mail-in service because the disc is too damaged for software recovery, pricing starts at $89 per disc.",
       },
     ],
     cta: {
@@ -423,7 +423,7 @@ const GUIDES: Guide[] = [
         table: {
           headers: ["Software", "Price", "Best for", "Formats", "Preview before buy"],
           rows: [
-            ["Heirvo", "Free scan / $39 save", "Home users, beginners", "DVD, CD, Blu-ray, Photo CD", "Yes"],
+            ["Heirvo", "Free scan / $49 save", "Home users, beginners", "DVD, CD, Blu-ray, Photo CD", "Yes"],
             ["IsoBuster", "$39.95+/yr", "Technical users, IT pros", "All optical formats", "Limited (demo mode)"],
             ["CDCheck", "Free / $25 Pro", "Data CD/DVD integrity", "CD, DVD", "Yes (free version)"],
             ["PhotoRec", "Free (open-source)", "Raw file carving", "All (no GUI)", "No"],
@@ -441,7 +441,7 @@ const GUIDES: Guide[] = [
         ],
         callout: {
           label: "Free to try",
-          text: "The full scan is free. You only pay $39 if you want to save the recovered files. If nothing was recoverable, you pay nothing.",
+          text: "The full scan is free. You only pay $49 if you want to save the recovered files. If nothing was recoverable, you pay nothing.",
           color: "green",
         },
       },
@@ -660,7 +660,7 @@ const GUIDES: Guide[] = [
         items: [
           "A Windows 10 or Windows 11 PC (64-bit)",
           "A DVD/CD drive — internal or USB external; older drives sometimes read better than newer ones",
-          "Disc recovery software (Heirvo is free to scan; you pay $39 only if files are found)",
+          "Disc recovery software (Heirvo is free to scan; you pay $49 only if files are found)",
           "Enough free disk space to hold the recovered files (same size as the disc's content)",
           "5 minutes to 3 hours depending on disc condition — worse discs take longer",
         ],
@@ -676,7 +676,7 @@ const GUIDES: Guide[] = [
           "Open Heirvo and select your CD/DVD drive from the drive list.",
           "Click 'Scan Disc.' Heirvo performs a sector-by-sector pass, logging errors and retrying failed sectors multiple times. A moderately damaged disc takes 30–90 minutes.",
           "Review the scan results. Heirvo shows which files were fully recovered, partially recovered, or unreadable.",
-          "Click 'Save Recovered Files' and choose a destination folder on your hard drive. You pay $39 at this step — only if there are files to save.",
+          "Click 'Save Recovered Files' and choose a destination folder on your hard drive. You pay $49 at this step — only if there are files to save.",
         ],
       },
       {
@@ -733,7 +733,7 @@ const GUIDES: Guide[] = [
     ],
     cta: {
       heading: "Start with the free scan",
-      body: "Heirvo scans your CD for free and shows exactly what can be recovered. You only pay $39 if there are files worth saving.",
+      body: "Heirvo scans your CD for free and shows exactly what can be recovered. You only pay $49 if there are files worth saving.",
       primaryLabel: "Download Free — Windows",
       primaryHref: "/download",
       secondaryLabel: "Learn about mail-in recovery",
@@ -765,7 +765,7 @@ const GUIDES: Guide[] = [
           caption: "Heirvo vs IsoBuster feature comparison (2026)",
           headers: ["Feature", "Heirvo", "IsoBuster"],
           rows: [
-            ["Price", "$39 one-time (free to scan)", "$49.95/year subscription"],
+            ["Price", "$49 one-time (free to scan)", "$49.95/year subscription"],
             ["Pricing model", "Pay only if files recovered", "Subscription regardless of results"],
             ["Supported formats", "DVD, CD, Blu-ray, Kodak Photo CD", "DVD, CD, Blu-ray, HD DVD, and many more"],
             ["Ease of use", "Beginner-friendly, guided workflow", "Advanced — requires disc knowledge"],
@@ -781,7 +781,7 @@ const GUIDES: Guide[] = [
         id: "pricing",
         heading: "Pricing: one-time vs subscription",
         paragraphs: [
-          "Heirvo charges $39 as a one-time payment, and only when files are successfully found and saved. If the scan finds nothing recoverable, you pay nothing. This makes it low-risk for someone with one or two discs to recover.",
+          "Heirvo charges $49 as a one-time payment, and only when files are successfully found and saved. If the scan finds nothing recoverable, you pay nothing. This makes it low-risk for someone with one or two discs to recover.",
           "IsoBuster uses an annual subscription model starting at $49.95/year. This makes more sense for IT professionals or labs that process many discs regularly. For a home user with a handful of old family DVDs, the subscription model means paying annually for something you may use once.",
         ],
         callout: {
@@ -822,7 +822,7 @@ const GUIDES: Guide[] = [
           "Choose Heirvo if: you want the option of mail-in recovery if software fails, all from the same company",
           "Choose IsoBuster if: you're an IT professional recovering discs regularly and need forensic-level controls",
           "Choose IsoBuster if: you need support for obscure or legacy disc formats beyond DVD/CD/Blu-ray",
-          "Try both: Heirvo's free scan costs nothing — scan your disc first, and if results look complete, save the files for $39",
+          "Try both: Heirvo's free scan costs nothing — scan your disc first, and if results look complete, save the files for $49",
         ],
       },
     ],
@@ -833,7 +833,7 @@ const GUIDES: Guide[] = [
       },
       {
         q: "Does IsoBuster have a free trial?",
-        a: "IsoBuster has a free version with limited functionality — it can scan and show file structure but restricts saving files without a paid licence. Heirvo's free tier scans completely and shows exactly which files are recoverable, and you only pay $39 if you choose to save them.",
+        a: "IsoBuster has a free version with limited functionality — it can scan and show file structure but restricts saving files without a paid licence. Heirvo's free tier scans completely and shows exactly which files are recoverable, and you only pay $49 if you choose to save them.",
       },
       {
         q: "Can both tools recover from Kodak Photo CDs?",
@@ -1461,7 +1461,7 @@ const GUIDES: Guide[] = [
           "Open Heirvo and select your disc drive. Heirvo detects the disc type automatically — including single-layer (DVD-5) and dual-layer (DVD-9) transfer discs.",
           "Click Scan. Heirvo reads every sector up to 16 times at variable speeds, forwards and backwards, before marking a sector as unreadable. A badly degraded disc can take 2–4 hours.",
           "When the scan completes, Heirvo shows every recoverable file — typically the main video file and any chapter markers the transfer shop added. Review what was recovered before paying anything.",
-          "Activate Heirvo Pro ($39 one-time) to save the recovered footage as MP4 to your hard drive. Back it up to at least two locations immediately.",
+          "Activate Heirvo Pro ($49 one-time) to save the recovered footage as MP4 to your hard drive. Back it up to at least two locations immediately.",
         ],
       },
       {
@@ -1628,7 +1628,7 @@ const GUIDES: Guide[] = [
         ],
         callout: {
           label: "Free to try",
-          text: "Heirvo scans your disc completely free — you only pay ($39 one-time) if you choose to save the recovered files. If nothing is recoverable, you pay nothing.",
+          text: "Heirvo scans your disc completely free — you only pay ($49 one-time) if you choose to save the recovered files. If nothing is recoverable, you pay nothing.",
           color: "blue",
         },
       },
@@ -1666,7 +1666,7 @@ const GUIDES: Guide[] = [
     ],
     cta: {
       heading: "Disc reads in the drive but the data looks damaged?",
-      body: "Heirvo scans every sector up to 16 times — recovering data that Windows and media players give up on. Free to scan, $39 to save.",
+      body: "Heirvo scans every sector up to 16 times — recovering data that Windows and media players give up on. Free to scan, $49 to save.",
       primaryLabel: "Download Free — Windows",
       primaryHref: "/download",
       secondaryLabel: "Learn about mail-in recovery",
@@ -1710,12 +1710,12 @@ const GUIDES: Guide[] = [
         heading: "Heirvo — free scan, pay only to save",
         level: 2,
         paragraphs: [
-          "Heirvo is free to download, install, and scan. You can see exactly what files are recoverable — with previews of video and photos — before paying anything. The $39 one-time Pro licence unlocks saving the recovered files.",
+          "Heirvo is free to download, install, and scan. You can see exactly what files are recoverable — with previews of video and photos — before paying anything. The $49 one-time Pro licence unlocks saving the recovered files.",
           "This model is specifically designed so you don't pay for a recovery that didn't work. If the scan recovers nothing, you owe nothing.",
         ],
         items: [
           "Free: full scan, full result preview, recovery map",
-          "Pro ($39 one-time): save recovered files as MP4, ISO, or individual chapters",
+          "Pro ($49 one-time): save recovered files as MP4, ISO, or individual chapters",
           "Works on: scratched DVDs, disc rot, unfinalized discs, camcorder DVDs, Blu-ray, CDs",
           "Platform: Windows 10 and 11 only",
         ],
@@ -1787,7 +1787,7 @@ const GUIDES: Guide[] = [
         heading: "Which free option to use",
         level: 2,
         paragraphs: [
-          "For most people recovering a home video, wedding, or family photo DVD on Windows: start with Heirvo. The scan is completely free, you'll see exactly what's recoverable within a few hours, and you only pay $39 if the recovery succeeded and you want the files.",
+          "For most people recovering a home video, wedding, or family photo DVD on Windows: start with Heirvo. The scan is completely free, you'll see exactly what's recoverable within a few hours, and you only pay $49 if the recovery succeeded and you want the files.",
           "If you find IsoBuster's free tier covers your file type and you don't mind the interface, it's a legitimate option for specific technical use cases.",
           "If you're comfortable with Linux and dealing with severe disc damage, ddrescue combined with Heirvo (ddrescue to image the disc, Heirvo to decode the VIDEO_TS structure from the image) is the highest-recovery-rate free approach — but it's a multi-hour technical process.",
         ],
@@ -1795,7 +1795,7 @@ const GUIDES: Guide[] = [
           caption: "Free DVD recovery software comparison (2026)",
           headers: ["Tool", "Cost to recover", "Home video support", "Windows"],
           rows: [
-            ["Heirvo", "Free scan / $39 to save", "Excellent", "Yes"],
+            ["Heirvo", "Free scan / $49 to save", "Excellent", "Yes"],
             ["IsoBuster", "Free tier limited / €39.95", "Good (paid)", "Yes"],
             ["CDCheck", "Free", "Basic", "Yes"],
             ["GNU ddrescue", "Free", "Imaging only (no decode)", "Linux only"],
@@ -1811,7 +1811,7 @@ const GUIDES: Guide[] = [
       },
       {
         q: "Heirvo says 'free to scan' — what does that mean exactly?",
-        a: "The entire scan process — sector reading, recovery mapping, file reconstruction, and preview — is free. You can see every recoverable file and preview the video before paying anything. The $39 Pro licence unlocks saving those files to your hard drive. If the scan recovers nothing, you pay nothing.",
+        a: "The entire scan process — sector reading, recovery mapping, file reconstruction, and preview — is free. You can see every recoverable file and preview the video before paying anything. The $49 Pro licence unlocks saving those files to your hard drive. If the scan recovers nothing, you pay nothing.",
       },
       {
         q: "Can I use IsoBuster free to recover a home video DVD?",
@@ -1828,7 +1828,7 @@ const GUIDES: Guide[] = [
     ],
     cta: {
       heading: "Free to scan — pay only if it works",
-      body: "Heirvo scans your disc completely free. See every recoverable file before paying anything. $39 one-time if you choose to save.",
+      body: "Heirvo scans your disc completely free. See every recoverable file before paying anything. $49 one-time if you choose to save.",
       primaryLabel: "Download Free — Windows",
       primaryHref: "/download",
       secondaryLabel: "Compare all features",
@@ -2425,7 +2425,7 @@ const GUIDES: Guide[] = [
           "Open Heirvo and select your disc drive from the dropdown. Heirvo detects the disc type and format automatically, including DVD-5 (single-layer) and DVD-9 (dual-layer) transfer discs.",
           "Click Scan. Heirvo reads every sector up to 16 times at variable speeds, both forwards and backwards, before marking a sector as unrecoverable. A degraded transfer disc typically takes 1 to 4 hours depending on the severity of the damage.",
           "When the scan completes, review the results. Heirvo shows every recoverable file — typically the VIDEO_TS folder containing VOB video files, plus any chapter markers the transfer service added. The scan is completely free.",
-          "Activate Heirvo Pro ($39 one-time) to save the recovered footage to your hard drive. Heirvo can save the raw VIDEO_TS structure (playable in any DVD player software) or convert to MP4 for easy playback on phones, tablets, and smart TVs. If nothing was recovered, you pay nothing.",
+          "Activate Heirvo Pro ($49 one-time) to save the recovered footage to your hard drive. Heirvo can save the raw VIDEO_TS structure (playable in any DVD player software) or convert to MP4 for easy playback on phones, tablets, and smart TVs. If nothing was recovered, you pay nothing.",
         ],
       },
       {
@@ -2612,7 +2612,7 @@ const GUIDES: Guide[] = [
           "Open Heirvo and select your disc drive. Heirvo detects the disc type and condition automatically.",
           "Click Scan. Heirvo makes up to 16 passes over problem sectors, reading at different speeds and directions. A heat-damaged disc typically scans in 1–3 hours.",
           "Review the results. Heirvo shows every recoverable file — video, photos, documents, or a full ISO image. The scan is completely free.",
-          "Activate Heirvo Pro ($39 one-time) to save recovered files to your hard drive. If nothing is recoverable, you pay nothing.",
+          "Activate Heirvo Pro ($49 one-time) to save recovered files to your hard drive. If nothing is recoverable, you pay nothing.",
         ],
         callout: {
           label: "Tip",
@@ -2880,7 +2880,7 @@ const GUIDES: Guide[] = [
           "Download and install Heirvo on your Windows 10 or 11 PC. The scan is completely free.",
           "Insert the disc gently into your drive. If you hear any unusual vibration, grinding, or rattling, eject the disc immediately.",
           "Open Heirvo and select your disc drive. Click Scan — Heirvo reads sector by sector with multiple retry passes over damaged areas.",
-          "When the scan completes, review the recovered files. Activate Heirvo Pro ($39 one-time) to save them to your hard drive.",
+          "When the scan completes, review the recovered files. Activate Heirvo Pro ($49 one-time) to save them to your hard drive.",
         ],
         callout: {
           label: "Important",
@@ -3301,7 +3301,7 @@ const GUIDES: Guide[] = [
     ],
     cta: {
       heading: "Save the files VLC can only play",
-      body: "Heirvo recovers the actual files from your damaged DVD — bit-perfect MP4s, ISO images, photos, documents — not a one-time stream. Free scan to see what's recoverable. Pay $39 only to save the files. If nothing's recoverable, you pay nothing.",
+      body: "Heirvo recovers the actual files from your damaged DVD — bit-perfect MP4s, ISO images, photos, documents — not a one-time stream. Free scan to see what's recoverable. Pay $49 only to save the files. If nothing's recoverable, you pay nothing.",
       primaryLabel: "Download Heirvo Free",
       primaryHref: "/download",
       secondaryLabel: "Mail-In Recovery — from $89",
@@ -3455,7 +3455,7 @@ const GUIDES: Guide[] = [
     ],
     cta: {
       heading: "Got a powered hub? Now use it with Heirvo",
-      body: "A powered hub fixes the disconnect problem. Heirvo gets the most out of every sector your drive can read — MODE SELECT, watchdog timeouts, skip-ahead through dead regions. Free to scan, $39 only when you save the files.",
+      body: "A powered hub fixes the disconnect problem. Heirvo gets the most out of every sector your drive can read — MODE SELECT, watchdog timeouts, skip-ahead through dead regions. Free to scan, $49 only when you save the files.",
       primaryLabel: "Download Heirvo Free",
       primaryHref: "/download",
       secondaryLabel: "Mail-In Recovery — from $89",
@@ -3621,7 +3621,7 @@ const GUIDES: Guide[] = [
       },
       {
         q: "Should I just send everything to mail-in recovery instead?",
-        a: "If you have 1–2 important discs, mail-in is excellent — no hardware decision, no learning curve, no-recovery-no-charge guarantee. If you have 5+ discs, buying a Pioneer BDR-212 + enclosure for $130 and using Heirvo Pro ($39) is cheaper per disc and you keep the equipment.",
+        a: "If you have 1–2 important discs, mail-in is excellent — no hardware decision, no learning curve, no-recovery-no-charge guarantee. If you have 5+ discs, buying a Pioneer BDR-212 + enclosure for $130 and using Heirvo Pro ($49) is cheaper per disc and you keep the equipment.",
       },
       {
         q: "Why do recovery professionals all seem to use the same handful of drives?",
@@ -3743,7 +3743,7 @@ const GUIDES: Guide[] = [
         numbered: true,
         items: [
           "**Review the Health Score** on the dashboard. It's a 0–100 number based on coverage, critical structures (IFO/BUP files), and damage distribution. 95+ means excellent recovery; 50–80 means partial; below 50 means severe damage with limited recovery.",
-          "**Activate Heirvo Pro ($39) to save the files** if recovery succeeded. If nothing's recoverable, no charge — close the app and you've spent zero dollars.",
+          "**Activate Heirvo Pro ($49) to save the files** if recovery succeeded. If nothing's recoverable, no charge — close the app and you've spent zero dollars.",
           "**Choose your output format** — MP4 (compressed, smaller, plays anywhere), ISO (raw disc image, preserves everything), or both. For wedding videos and family movies, MP4 is usually the right choice.",
           "**Verify the recovered files** play back in VLC or your media player of choice. If they play, the recovery is durable — those files will outlast the disc itself.",
           "**Keep the session in Heirvo's history.** If you later upgrade your drive and want to re-attempt the failed sectors, you can import the session and continue from the existing sector map — Heirvo only re-reads the sectors that failed previously, so the second-drive pass is much faster.",
@@ -4146,7 +4146,7 @@ const GUIDES: Guide[] = [
           "Press the eject button on the drive. When the tray opens, locate the smaller inner ring — it is a circular depression inside the standard disc ring. Place the mini-DVD in this inner ring, label side up. The disc should sit flat and centred.",
           "Download and install Heirvo on your Windows 10 or 11 PC. Open Heirvo and select your disc drive from the dropdown. Heirvo will detect the disc type automatically, including whether it is finalized or unfinalized.",
           "Click Scan. Heirvo reads the disc sector by sector. For mini-DVDs from camcorders, Heirvo prioritises recovering the VIDEO_TS folder and will attempt to reconstruct the directory from raw sector data even if the disc was never finalized.",
-          "When the scan completes, Heirvo shows you what was recovered. For a DVD-Video disc, you will see the VIDEO_TS folder with individual VOB video files. Activate Heirvo Pro ($39) to save the recovered files. You can save the full VIDEO_TS folder or extract individual titles as MP4 files.",
+          "When the scan completes, Heirvo shows you what was recovered. For a DVD-Video disc, you will see the VIDEO_TS folder with individual VOB video files. Activate Heirvo Pro ($49) to save the recovered files. You can save the full VIDEO_TS folder or extract individual titles as MP4 files.",
         ],
       },
       {
@@ -4289,7 +4289,7 @@ const GUIDES: Guide[] = [
           "Insert the DVD-RAM disc into the drive. Windows may show an error, 'unsupported filesystem', or an empty disc — this is expected and does not mean the data is gone.",
           "Download and install Heirvo on Windows 10 or 11. Open Heirvo and select the drive. Heirvo detects DVD-RAM format automatically and reads the sparing table directly from the sectors, bypassing the Windows UDF driver entirely.",
           "Click Scan. Heirvo maps the disc's logical block addresses through the sparing table, recovers any remapped sectors from the spare area, and lists all recoverable files — video clips, DCIM photo folders, or raw MPEG-2 streams depending on what was recorded.",
-          "When the scan completes, review the recovered files. Activate Heirvo Pro ($39) to save them to your hard drive. DVD-RAM footage is typically in .MOD, .MOI, or .MPG format depending on the Panasonic model.",
+          "When the scan completes, review the recovered files. Activate Heirvo Pro ($49) to save them to your hard drive. DVD-RAM footage is typically in .MOD, .MOI, or .MPG format depending on the Panasonic model.",
         ],
       },
       {
@@ -4408,7 +4408,7 @@ const GUIDES: Guide[] = [
           "Insert the PS2 disc into a standard USB or internal DVD drive. PS2 discs are standard DVD-ROMs and read in any DVD drive — you do not need a PlayStation console or a modded drive.",
           "Open Heirvo and select the disc drive. Choose 'Save as ISO image' from the scan options — this creates a sector-accurate image of the entire disc, including the copy protection sectors, the full directory, and every game file.",
           "Click Scan. Heirvo reads each sector in order. On scratched areas, Heirvo retries up to 16 times at different speeds. The recovery map shows which sectors were read cleanly, which were recovered after retry, and which could not be recovered. For dual-layer discs, Heirvo manages the layer break automatically.",
-          "When the scan completes, Heirvo shows the size of the recovered ISO and which sectors (if any) could not be read. Activate Heirvo Pro ($39) to save the ISO image to your hard drive. The resulting .ISO file can be mounted with any virtual drive tool (PowerISO, WinCDEmu, Daemon Tools) or written back to a blank DVD with ImgBurn.",
+          "When the scan completes, Heirvo shows the size of the recovered ISO and which sectors (if any) could not be read. Activate Heirvo Pro ($49) to save the ISO image to your hard drive. The resulting .ISO file can be mounted with any virtual drive tool (PowerISO, WinCDEmu, Daemon Tools) or written back to a blank DVD with ImgBurn.",
         ],
       },
       {
@@ -4441,7 +4441,7 @@ const GUIDES: Guide[] = [
     ],
     cta: {
       heading: "Back up your PS2 collection before the discs fail",
-      body: "Heirvo creates sector-accurate ISO images from scratched PS2 game discs — compatible with PCSX2 and all major emulators. Free scan to see what's readable. $39 to save.",
+      body: "Heirvo creates sector-accurate ISO images from scratched PS2 game discs — compatible with PCSX2 and all major emulators. Free scan to see what's readable. $49 to save.",
       primaryLabel: "Download Free — Windows",
       primaryHref: "/download",
       secondaryLabel: "Mail-in recovery service",

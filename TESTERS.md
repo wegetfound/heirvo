@@ -1,4 +1,4 @@
-# Heirvo — Tester quick-start
+﻿# Heirvo — Tester quick-start
 
 Welcome. Thank you for trying Heirvo on a real damaged disc — your feedback is what shapes v1.
 
@@ -50,7 +50,7 @@ If your drive keeps disconnecting in Standard mode, switch to Patient. If everyt
 
 ## License (pre-launch tester mode)
 
-The Save buttons are gated behind Heirvo Pro ($39 one-time, no subscription).
+The Save buttons are gated behind Heirvo Pro ($49 one-time, no subscription).
 **For testing:** paste any license key matching `XXXX-XXXX-XXXX` (8+ chars, at least one dash). Example: `TEST-PRO-1234`. This is a development gate — the production build will validate against the real license server.
 
 To activate:

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+﻿import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { gsap } from "gsap";
 import { splitReveal, clipReveal, magneticHover, parallaxLayer } from "../../lib/gsap-fx";
@@ -154,7 +154,7 @@ export default function Hero() {
                 <span className="text-ink-700 font-medium">DVDs, photo CDs, data CDs, audio CDs, and Blu-ray</span>{" "}
                 — discs other software gives up on.{" "}
                 <span className="text-ink-700 font-medium">Free to scan.</span>{" "}
-                $39 to save.
+                $49 to save.
               </p>
 
               {/* CTAs */}

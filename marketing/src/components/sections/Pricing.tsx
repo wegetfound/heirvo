@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+﻿import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import gsap from "gsap";
 import {
@@ -92,7 +92,7 @@ export default function Pricing() {
             className="font-display font-bold tracking-tightest text-ink-900"
             style={{ fontSize: "clamp(32px,4.6vw,52px)", lineHeight: 1.04 }}
           >
-            $39 one-time. <span className="gradient-text">Yours forever.</span>
+            $49 one-time. <span className="gradient-text">Yours forever.</span>
           </h2>
           <p className="mt-5 text-[17px] leading-relaxed text-ink-500">
             No subscription, no upsells. Pay once, unlock saving and AI
@@ -139,7 +139,7 @@ export default function Pricing() {
                 className="font-display font-bold tabular-nums tracking-tightest gradient-text leading-none"
                 style={{ fontSize: "clamp(64px, 9vw, 88px)" }}
               >
-                $39
+                $49
               </span>
               <div className="pb-3">
                 <div className="text-[14px] font-medium text-ink-900">
@@ -191,7 +191,7 @@ export default function Pricing() {
                 type="button"
                 onClick={handleBuy}
                 disabled={loading}
-                aria-label="Buy Heirvo Pro for $39"
+                aria-label="Buy Heirvo Pro for $49"
                 className="btn btn-primary w-full !text-[16px] !py-4 disabled:opacity-70 disabled:cursor-wait"
               >
                 {loading ? (

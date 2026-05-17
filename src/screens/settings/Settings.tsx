@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { useLicense } from "@/lib/useLicense";
 import { useTheme } from "@/lib/theme";
@@ -291,7 +291,7 @@ function FreeTierPanel() {
         <div className="mt-auto pt-5">
           <div className="flex items-baseline gap-1.5 mb-3">
             <span className="font-display text-[32px] font-bold tabular-nums leading-none text-white">
-              $39
+              $49
             </span>
             <span className="text-[12px]" style={{ color: "rgba(255,255,255,0.42)" }}>
               one-time

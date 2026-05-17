@@ -1,4 +1,4 @@
-# Release Prep — Code Signing & Benchmark Plan
+﻿# Release Prep — Code Signing & Benchmark Plan
 
 Two release-critical items that can't be fully automated from this codebase
 but have concrete, scoped next steps.
