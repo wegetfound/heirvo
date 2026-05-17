@@ -6632,6 +6632,568 @@ const GUIDES: Guide[] = [
       secondaryHref: "/recover",
     },
   },
+  {
+  slug: "dvd-player-wont-read-disc-windows",
+  title: "DVD Drive Won't Read Disc on Windows 10/11: Causes and Fixes",
+  metaTitle: "DVD Drive Won't Read Disc on Windows 10/11 (2026 Guide)",
+  metaDescription: "DVD drive not reading discs on Windows 10 or 11? This guide covers every cause — dirty lens, missing drive letter, region lock, cable failure — and how to fix each one.",
+  datePublished: "2026-05-17",
+  dateModified: "2026-05-17",
+  readTime: "8 min read",
+  category: "Hardware Guide",
+  intro: "A DVD drive that won't read a disc on Windows 10 or 11 usually has one of six causes: a dirty or scratched disc, a dirty optical lens, a missing drive letter, an unrecognized file system, a loose cable, or a region code mismatch. Work through each fix in order — most people resolve the problem within the first three steps. If the drive still can't read the disc after all fixes, the data is almost always still physically present and recoverable with a sector-by-sector tool like Heirvo.",
+  related: [
+    "recover-files-scratched-dvd",
+    "dvd-drive-disconnects-mid-scan",
+    "powered-usb-hub-dvd-recovery",
+  ],
+  sections: [
+    {
+      id: "clean-disc-first",
+      heading: "Step 1: Clean the Disc First",
+      level: 2,
+      paragraphs: [
+        "Before touching any software setting, inspect the disc under a light. Fingerprints, smudges, and fine dust scatter the laser beam enough to make a perfectly intact disc unreadable. Hold the disc by its edges and look for haze across the data surface.",
+        "Wipe from the center hub outward in straight radial strokes using a lint-free microfiber cloth. Never wipe in circles — circular scratches follow the data tracks and cause far more read errors than radial scratches do. For stubborn grime, dampen the cloth with distilled water or isopropyl alcohol (70% or higher) and let the disc dry completely before reinserting.",
+        "Shallow scratches on the label side are usually harmless. Deep scratches on the shiny data side — especially if they run in circles — can cause permanent read failures that no software fix will solve. If you can feel the scratch with a fingernail, consider a disc-resurfacing service before attempting a rip.",
+      ],
+    },
+    {
+      id: "clean-lens",
+      heading: "Step 2: Clean the Optical Lens",
+      level: 2,
+      paragraphs: [
+        "Dust accumulates on the drive's laser lens over time, especially on drives that sit in a dusty tower or have been stored. A dirty lens produces the same symptom as a scratched disc: the drive spins up, clicks, and then either ejects or shows no media. The disc itself is fine — the laser simply cannot focus.",
+        "The quickest fix is a lens-cleaning disc. These look like a standard CD but have tiny soft brushes on the data side that sweep the lens as the disc spins. Run the cleaning disc twice, then test your original disc. Cleaning discs are available at most electronics retailers for under a few dollars.",
+        "If a cleaning disc is not available, you can open the drive tray (power off first), locate the small glass or plastic lens, and gently wipe it with a dry cotton swab. Use almost no pressure — the lens sits on a spring-loaded sled and can be damaged by force.",
+      ],
+    },
+    {
+      id: "missing-drive-letter",
+      heading: "Step 3: Drive Letter Missing in Windows",
+      level: 2,
+      paragraphs: [
+        "Windows occasionally drops the drive letter assigned to an optical drive, making it invisible in File Explorer even though the drive hardware is working correctly. Open Device Manager (Win + X, then Device Manager) and expand the DVD/CD-ROM drives section. If your drive appears there without a yellow warning icon, the hardware is fine — the problem is just the missing letter.",
+        "To reassign the letter, open Disk Management (Win + X, then Disk Management). Find the DVD drive in the lower panel, right-click it, and choose Change Drive Letter and Paths. Click Add, pick a letter such as D or E, and confirm. The drive should appear in File Explorer immediately.",
+      ],
+      callout: {
+        label: "Tip",
+        text: "If the drive shows a yellow exclamation mark in Device Manager, right-click it and choose Update driver, then Uninstall device. Reboot — Windows will reinstall the driver automatically on startup.",
+      },
+    },
+    {
+      id: "unrecognized-file-system",
+      heading: "Step 4: Disc File System Not Recognized (UDF vs CDFS)",
+      level: 2,
+      paragraphs: [
+        "Windows supports two common optical disc file systems: CDFS (ISO 9660), used on older CDs and DVDs, and UDF (Universal Disc Format), used on most modern DVDs, Blu-rays, and packet-written discs. If Windows shows the disc in the drive but cannot open it, an incompatible UDF version is often the cause.",
+        "Windows 10 and 11 natively support UDF 1.02 through 2.60. Discs written by older packet-writing software (such as DirectCD or InCD) may use UDF 1.5 in a way that Windows cannot mount. In these cases, File Explorer shows the drive with media present but refuses to display files, or prompts you to format the disc.",
+        "The workaround is to use a third-party reader such as IsoBuster or VLC, which implement their own UDF parser and can often read discs that Windows cannot. If the file system is the only problem, these tools will list your files immediately. You can then copy the files to your hard drive through the third-party application.",
+      ],
+    },
+    {
+      id: "drive-not-detected",
+      heading: "Step 5: Drive Not Detected at All",
+      level: 2,
+      paragraphs: [
+        "If the drive does not appear in Device Manager at all — not even with an error — the problem is physical. On a desktop PC, open the case and check that the SATA data cable is firmly seated at both ends (drive and motherboard) and that the power connector is fully inserted. A half-seated SATA cable is a surprisingly common cause of total drive disappearance.",
+        "For USB external drives, try a different USB cable and a different USB port, preferably a port directly on the motherboard rather than a hub. Some external drives draw more power than a single USB 2.0 port can supply — use a powered USB hub or a USB 3.0 port, which delivers more current.",
+        "After reseating cables, power the PC on and check Device Manager again. If the drive still does not appear, test the drive in another machine. If it also fails there, the drive itself has likely failed and needs replacement.",
+      ],
+    },
+    {
+      id: "region-code",
+      heading: "Step 6: Region Code Mismatch",
+      level: 2,
+      paragraphs: [
+        "Commercial DVD-Video and Blu-ray discs are encoded with a region number (1–8 for DVD, A/B/C for Blu-ray). Your drive is set to match the region where it was sold. If you insert a disc from a different region, the drive will mount it but the playback software will refuse to play it, and some drives will report the disc as unreadable.",
+        "Most DVD drives allow you to change the region code up to five times using the drive's firmware, after which the last selected region is locked permanently. To check and change the region, open Device Manager, right-click your DVD drive, and choose Properties. Go to the DVD Region tab and select the region matching your disc.",
+      ],
+      callout: {
+        label: "Warning", color: "amber",
+        text: "You have a maximum of five region changes before the drive locks permanently. If you regularly use discs from multiple regions, use region-free playback software such as VLC, which ignores region checks entirely during playback.",
+      },
+    },
+    {
+      id: "when-nothing-works",
+      heading: "When None of These Fixes Work — Your Data Is Still There",
+      level: 2,
+      paragraphs: [
+        "If you have worked through every step above and the drive still cannot read the disc, it does not mean the data is gone. DVD and CD media stores data as microscopic pits pressed or burned into a reflective layer. A drive that cannot mount a disc through the normal Windows file system path can often still read the raw sectors underneath — it just needs a tool designed to work at that level.",
+        "Consumer DVD drives read discs by asking Windows to mount the file system and then reading files through it. When the file system is corrupt, partially unreadable, or uses an unsupported format, the whole disc appears blank. A sector-by-sector recovery tool bypasses the file system entirely, reading each 2,048-byte block directly from the disc surface and assembling whatever data can be retrieved, even when large portions of the disc are damaged.",
+        "Heirvo is built for exactly this situation. It performs a low-level sector scan across the entire disc, marks each block as good, degraded, or unreadable, and extracts files from the readable regions without needing the file system to be intact. Run the free scan to see what is recoverable before committing to anything.",
+      ],
+      callout: {
+        label: "Info",
+        text: "Heirvo supports DVD, CD, Blu-ray, and CD-R/RW media. The free scan shows you exactly which files are intact, degraded, or lost before you decide whether to recover.",
+      },
+    },
+  ],
+  faq: [
+    {
+      q: "Why does my DVD drive spin up and then eject the disc?",
+      a: "This usually means the drive cannot read the Table of Contents (TOC) at the inner edge of the disc. The two most common causes are a very dirty or scratched disc near the hub, or a dirty optical lens. Clean the disc first, then try a lens-cleaning disc. If the drive still ejects immediately, the disc may have physical damage too close to the hub to recover normally.",
+    },
+    {
+      q: "My DVD drive shows up in Device Manager but not in File Explorer. What do I do?",
+      a: "The drive has lost its assigned drive letter. Open Disk Management (Win + X, Disk Management), find the DVD drive in the lower panel, right-click it, and choose Change Drive Letter and Paths, then Add. Assign any available letter and click OK. The drive will reappear in File Explorer immediately without requiring a reboot.",
+    },
+    {
+      q: "Windows says 'Please insert a disc' even though a disc is already inside. Why?",
+      a: "This message appears when Windows can detect the drive but cannot read any data from the disc. The most likely causes are a dirty lens, a heavily scratched disc, or a UDF file system version that Windows does not support. Try cleaning the lens with a cleaning disc, and if the problem persists on a specific disc, open it in IsoBuster or VLC to test whether a third-party reader can see the files.",
+    },
+    {
+      q: "How many times can I change the region code on my DVD drive?",
+      a: "Most drives allow exactly five region changes. The counter is stored in the drive's firmware and counts down each time you switch regions in Device Manager. Once you reach zero changes remaining, the drive permanently locks to the last region you selected. If you frequently use discs from multiple regions, use VLC for playback — it ignores region codes entirely and does not consume any of your region-change allowances.",
+    },
+    {
+      q: "Can Heirvo recover files from a disc that Windows says is blank or unformatted?",
+      a: "Yes, in most cases. When Windows shows a disc as blank or prompts you to format it, the file system index is usually damaged but the underlying data blocks are often still intact. Heirvo reads the disc sector by sector without relying on the file system, so it can locate and extract files even when Windows cannot see them. Run the free scan first — it will show you exactly which files are readable before you commit to a full recovery.",
+    },
+    {
+      q: "My external USB DVD drive is not being detected at all. What should I check?",
+      a: "Start by trying a different USB cable, since USB cables for optical drives fail more often than the drives themselves. Then try a different USB port, preferring a USB 3.0 port directly on the motherboard rather than a hub or front-panel port. Some external drives require more power than a single USB 2.0 port provides — a powered USB hub solves this reliably. If the drive still does not appear after these steps, test it on another computer to determine whether the drive itself has failed.",
+    },
+    {
+      q: "Is a disc that is scratched on the label side recoverable?",
+      a: "Usually yes. The label side of a DVD or CD is the top printed surface, which sits directly above the reflective data layer with very little protective plastic between them. Scratches on the label side can penetrate through to the data layer and cause permanent data loss — unlike scratches on the shiny underside, which pass through a thick polycarbonate layer first. If you can see a deep scratch through the label, attempt a sector-by-sector scan immediately before the scratch worsens.",
+    },
+  ],
+  cta: {
+    heading: "Drive Can't Read It — Heirvo Can",
+    body: "If Windows has given up on your disc, Heirvo's sector-by-sector engine reads beneath the file system to recover what's still there. Run a free scan in minutes and see exactly which files are intact before you commit to anything.",
+    primaryLabel: "Download Heirvo Free",
+    primaryHref: "/#download",
+    secondaryLabel: "See How Recovery Works",
+    secondaryHref: "/recover",
+  },
+  },
+  {
+  slug: "how-to-clean-scratched-dvd-disc",
+  title: "How to Clean a Scratched DVD: What Actually Works (and What Doesn't)",
+  metaTitle: "How to Clean a Scratched DVD: What Works (2026 Guide)",
+  metaDescription: "Scratched DVD? Learn which cleaning methods actually work, which viral tricks cause more damage, and when the data is still recoverable even after cleaning fails.",
+  datePublished: "2026-05-17",
+  dateModified: "2026-05-17",
+  readTime: "7 min read",
+  category: "Hardware Guide",
+  intro: "Cleaning a scratched DVD can restore readability if done correctly, but most popular methods — toothpaste, peanut butter, banana peel — actually make things worse by adding new abrasions. The only safe home approach is isopropyl alcohol on a microfibre cloth, wiping in straight lines from the center hub outward to the edge. If cleaning doesn't help, the data is often still intact on the disc; the drive simply can't reach it — and software like Heirvo can recover it by reading sector-by-sector and retrying damaged areas.",
+  related: [
+    "recover-files-scratched-dvd",
+    "recover-water-damaged-dvd",
+    "dvd-drive-not-reading-disc-windows-11",
+  ],
+  sections: [
+    {
+      id: "understanding-scratches",
+      heading: "Understanding DVD Scratches: Radial vs Circular",
+      level: 2,
+      paragraphs: [
+        "Not all scratches are equal. The direction of a scratch determines how much damage it actually causes to your data. A DVD stores data in a spiral track that runs from the inner hub outward to the edge, so a scratch that crosses that track at a right angle is far more dangerous than one that runs along it.",
+        "Circular scratches — those that follow the disc's rings — tend to damage a narrow band of the spiral track and are the most likely to cause a disc to skip or fail entirely. Radial scratches, running from the center toward the edge, cross many tracks but only nick a tiny bit of each one. These are more recoverable because error-correction built into the DVD format can often reconstruct the missing data.",
+        "Deep gouges in any direction are a different story. If you can feel a scratch catch your fingernail, the physical layer beneath the lacquer coating may be compromised. In those cases, no amount of cleaning will help — but data recovery software may still succeed where the drive's basic read attempt fails.",
+      ],
+    },
+    {
+      id: "myths-what-not-to-do",
+      heading: "What NOT to Do: Toothpaste, Peanut Butter, and Banana Peel",
+      level: 2,
+      callout: {
+        label: "Warning", color: "amber",
+        text: "If this disc holds wedding footage, a child's first steps, or any irreplaceable family memory, skip every viral home remedy. One wrong move can permanently destroy data that was otherwise recoverable.",
+      },
+      paragraphs: [
+        "Toothpaste is the most widely repeated DVD cleaning myth on the internet. Some formulas contain mild abrasives designed to polish tooth enamel — not optical media. Rubbing toothpaste on a disc introduces hundreds of tiny new scratches in random directions, compounding the original damage. The disc may look shinier afterward, but it is more likely to fail than before.",
+        "Peanut butter and banana peel are variations on the same flawed idea. The oils in peanut butter can temporarily fill micro-scratches and fool the eye, but they leave a residue that attracts dust, gums up your DVD drive's laser lens, and evaporates unevenly over time. Banana peel contains fruit acids and sugars that have no place near precision optical media.",
+        "The circular wiping motion is another mistake that seems intuitive but is exactly wrong. Wiping in circles adds circular scratches — the most damaging kind. Always wipe in straight lines from the center of the disc outward to the edge, never around the disc.",
+      ],
+    },
+    {
+      id: "what-actually-works",
+      heading: "What Actually Works: Isopropyl Alcohol and the Right Technique",
+      level: 2,
+      paragraphs: [
+        "The safest and most effective home cleaning method is 90% or higher isopropyl alcohol applied with a lint-free microfibre cloth. Isopropyl alcohol evaporates cleanly without leaving residue and dissolves fingerprint oils, dust, and smudges that are the cause of most playback problems.",
+        "Dampen — do not soak — a corner of the cloth with the alcohol. Hold the disc by its edges, or place it flat on a clean surface. Wipe from the center hub straight out to the rim in one stroke, then lift the cloth and repeat around the disc. Never drag the cloth back in the other direction and never wipe in circles.",
+        "Plain distilled water works for surface dust if isopropyl alcohol is not available. Tap water can leave mineral deposits, so avoid it. After cleaning, let the disc air-dry completely in a clean, dust-free spot before attempting to play or rip it.",
+      ],
+      callout: {
+        label: "Tip",
+        text: "90%+ isopropyl alcohol is sold at pharmacies and electronics stores. Avoid 70% rubbing alcohol — the extra water content can leave streaks and takes longer to evaporate.",
+      },
+    },
+    {
+      id: "professional-resurfacing",
+      heading: "Professional Disc Resurfacing: When to Go to a Machine",
+      level: 2,
+      paragraphs: [
+        "If cleaning removes smudges but the disc still skips or won't read, the problem is physical scratches in the polycarbonate layer — and a resurfacing machine is the next step. These machines use a fine abrasive compound to shave a thin, uniform layer from the disc's underside, removing the scratch entirely rather than just filling it.",
+        "GameStop stores offer disc resurfacing for a small fee and are one of the most accessible options. Many public libraries that circulate DVDs and video games also maintain resurfacing machines, sometimes available free to cardholders. Independent video game and media shops are another source. A single resurfacing pass often restores a disc that was completely unreadable.",
+        "Resurfacing works best on shallow to moderate scratches. Very deep gouges that reach the data layer cannot be corrected mechanically. Each resurfacing also thins the disc slightly, so it is not a method you can repeat indefinitely — but for a disc holding irreplaceable footage, one professional pass is well worth trying before giving up.",
+      ],
+    },
+    {
+      id: "when-cleaning-fails",
+      heading: "When Cleaning Doesn't Work: The Data Is Probably Still There",
+      level: 2,
+      paragraphs: [
+        "A disc that refuses to play after cleaning is not necessarily a disc whose data is gone. A standard DVD player or computer drive reads a disc by following its spiral track at a fixed speed. When the laser hits a damaged sector, the drive retries a few times and then gives up, reporting a read error. The data encoded in that sector is almost always still present on the disc — the drive's firmware simply isn't designed to work hard enough to get it.",
+        "Dedicated data recovery software takes a completely different approach. Heirvo reads your disc sector-by-sector at a low level, retrying each damaged area multiple times and at varying speeds, using every error-correction technique available before moving on. It builds a map of which sectors succeeded and which failed, and can often reconstruct a complete, playable video file even from a disc a drive has already rejected.",
+        "This means cleaning and software recovery are complementary, not competing. Clean the disc first to remove any surface contamination that is causing unnecessary read errors. Then, if the disc still won't play, use Heirvo to retrieve the data that is still encoded beneath the scratches. Many discs that appear destroyed yield complete recoveries this way.",
+      ],
+      callout: {
+        label: "Info",
+        text: "Heirvo's sector-by-sector engine is the same approach professional data recovery labs use — without the lab price tag. It works on DVDs, CDs, and Blu-rays, including home-burned discs with family footage.",
+      },
+    },
+    {
+      id: "scratch-type-table",
+      heading: "Quick Reference: Scratch Type and Best Action",
+      level: 2,
+      paragraphs: [
+        "Use this table to decide on the right approach for your disc before you try anything that could make the situation worse.",
+      ],
+      table: {
+        headers: ["Scratch Type", "Likely Cause", "Recommended Action"],
+        rows: [
+          ["Radial (center to edge)", "Storage, handling", "IPA + microfibre cloth, radial wipes"],
+          ["Circular (ring-shaped)", "Improper cleaning, spinning on surface", "Professional resurfacing, then Heirvo"],
+          ["Deep gouge (catches fingernail)", "Impact, sharp object", "Professional resurfacing + Heirvo recovery"],
+          ["Surface haze, smudges", "Fingerprints, dust", "IPA + microfibre cloth — usually resolves fully"],
+          ["Disc reads but skips", "Shallow scratch or dirty laser", "IPA clean first; if persists, resurfacing"],
+          ["Disc not recognized at all", "Severe damage or dirty drive lens", "Heirvo sector scan; consider drive lens cleaning"],
+        ],
+      },
+    },
+  ],
+  faq: [
+    {
+      q: "Does toothpaste really fix scratched DVDs?",
+      a: "No — this is one of the most persistent myths about disc repair. Toothpaste contains abrasive particles meant to polish teeth, and when applied to a DVD it creates hundreds of new microscopic scratches across the disc's surface. Your disc may look cleaner, but it will be harder for a drive's laser to read than before. Stick to isopropyl alcohol and a microfibre cloth for safe cleaning.",
+    },
+    {
+      q: "Which direction should I wipe a scratched DVD?",
+      a: "Always wipe in straight lines from the center hub outward to the outer edge, never in circles. Circular wiping adds ring-shaped scratches, which are the most damaging kind because they run across the DVD's data spiral at a right angle. Radial wipes from center to edge cross many tracks but only nick a tiny bit of each one, which is far easier for the disc's error-correction to handle.",
+    },
+    {
+      q: "Can a badly scratched DVD still have recoverable data?",
+      a: "Yes — in most cases the data is still physically encoded on the disc even when a player or computer drive refuses to read it. Standard drives give up quickly when they hit a bad sector. Recovery software like Heirvo reads the disc sector-by-sector at a low level, retrying damaged areas many times and at different speeds, often retrieving a complete file from a disc a regular drive has already rejected.",
+    },
+    {
+      q: "How much does professional disc resurfacing cost?",
+      a: "GameStop typically charges around $1 to $5 per disc for resurfacing, depending on location. Many public libraries offer the service free to cardholders since they routinely repair their circulating disc collections. Independent game and media shops vary widely but are generally in the same $2 to $6 range. For a disc containing wedding video or childhood footage, the cost is almost always worth it before considering the disc a total loss.",
+    },
+    {
+      q: "What is the difference between a scratched disc and a cracked disc?",
+      a: "A scratch damages only the outer polycarbonate layer or the lacquer coating and leaves the data layer beneath it structurally intact — which is why cleaning and recovery software can often help. A crack, especially one near the hub or running across the disc, physically separates the layers and destroys the data encoded along the crack's path. Cracked discs are far more serious and should not be spun in a drive, as they can shatter and damage the drive mechanism.",
+    },
+    {
+      q: "Is it safe to clean a DVD that has home video footage on it?",
+      a: "Yes, if you use the right method. Isopropyl alcohol (90% or higher) on a lint-free microfibre cloth, wiped in straight radial lines from the center outward, is safe for all types of DVDs including home-burned discs. Avoid anything abrasive, any food-based remedies, and any circular wiping motion. If the disc holds truly irreplaceable footage, consider attempting a Heirvo recovery scan before any physical cleaning, since the data may already be retrievable without touching the disc at all.",
+    },
+    {
+      q: "My DVD drive says 'no disc' even after cleaning. What should I do?",
+      a: "A 'no disc' error after cleaning usually means the damage is beyond what surface cleaning can fix, or the drive's laser lens itself is dirty. Try the disc in a different drive first — drives vary in how hard they work to read a marginal disc. If a second drive also rejects it, run Heirvo's sector-level scan, which is specifically designed to push past the point where a drive's normal read behavior gives up and can often recover the full contents of a disc a drive won't mount.",
+    },
+  ],
+  cta: {
+    heading: "Disc Still Won't Read? Heirvo Can Reach What Cleaning Can't",
+    body: "If your scratched DVD won't play after cleaning, the data is likely still on the disc — your drive just can't get to it. Heirvo reads sector-by-sector, retrying every damaged area, to recover your family videos and memories even from discs your computer has already given up on.",
+    primaryLabel: "Download Heirvo Free",
+    primaryHref: "/#download",
+    secondaryLabel: "See How Recovery Works",
+    secondaryHref: "/recover",
+  },
+  },
+  {
+  slug: "recover-photo-dvd-slideshow-windows",
+  title: "How to Recover Photos from a DVD Slideshow on Windows",
+  metaTitle: "Recover Photos from a DVD Slideshow on Windows (2026 Guide)",
+  metaDescription: "Photo slideshow DVDs store MPEG-2 video, not loose JPEGs. Learn how to extract frames and recover .VOB files from scratched or unreadable discs on Windows.",
+  datePublished: "2026-05-17",
+  dateModified: "2026-05-17",
+  readTime: "7 min read",
+  category: "DVD Recovery",
+  intro: "Photo slideshow DVDs from Kodak kiosks, Walgreens, and CVS do not store your original JPEG photos — they encode them into MPEG-2 video inside .VOB files. To get images back, you either extract frames from that video or, if the disc is damaged, first recover the .VOB files sector by sector before extracting. Heirvo handles both the recovery and gives you the .VOB files you need to pull frames from.",
+  related: [
+    "recover-files-scratched-dvd",
+    "kodak-photo-cd-recovery",
+    "recover-home-videos-dvd",
+  ],
+  sections: [
+    {
+      id: "what-slideshow-dvds-contain",
+      heading: "What Photo Slideshow DVDs Actually Contain",
+      level: 2,
+      paragraphs: [
+        "When a Kodak kiosk, Walgreens photo center, or a family member created a slideshow DVD, the machine took your original photos and encoded them into a continuous MPEG-2 video stream. That video is stored inside .VOB files in a VIDEO_TS folder on the disc — the same format used by commercial movie DVDs.",
+        "There are no loose JPEGs anywhere on the disc. The original image data was compressed and baked into the video during encoding. What you see when the disc plays is a sequence of still frames inside a video file, not individual photo files being displayed one by one.",
+        "This means recovering your photos is a two-step process: first get the .VOB files off the disc intact, then extract frames from the video. If your disc reads fine, step one is just a file copy. If the disc is scratched or degraded, step one requires sector-level recovery.",
+      ],
+    },
+    {
+      id: "video-ts-folder-structure",
+      heading: "VIDEO_TS Folder Structure",
+      level: 2,
+      items: [
+        "VIDEO_TS.IFO — the disc menu and navigation index file",
+        "VIDEO_TS.VOB — disc menu video, usually small or empty",
+        "VTS_01_0.IFO — title set information for the first title",
+        "VTS_01_1.VOB through VTS_01_9.VOB — the actual slideshow video, split into 1 GB chunks",
+        "VTS_01_0.BUP — backup copy of the .IFO file",
+      ],
+      callout: {
+        label: "Info",
+        text: "The .VOB files containing your slideshow are typically named VTS_01_1.VOB and VTS_01_2.VOB. For a 30-photo slideshow at 5 seconds per photo, expect one .VOB file of roughly 150-300 MB.",
+      },
+    },
+    {
+      id: "two-approaches-readable-disc",
+      heading: "If the Disc Reads Normally: Copy the VOB Files First",
+      level: 2,
+      paragraphs: [
+        "If Windows can read the disc without errors, open File Explorer, navigate to the VIDEO_TS folder, and copy all .VOB files to a folder on your hard drive. Do this before attempting any frame extraction — working from a local copy is faster and avoids re-reading a potentially fragile disc repeatedly.",
+        "Once copied, you can play the .VOB files directly in VLC Media Player. VLC also has a built-in frame snapshot feature under Video > Take Snapshot (Shift+S) that saves the current frame as a PNG. For a 20-photo slideshow this manual approach works fine.",
+        "For systematic extraction of every frame, ffmpeg is the most reliable tool. The command ffmpeg -i VTS_01_1.VOB -r 1 frame_%04d.jpg extracts one frame per second and saves them as numbered JPEGs. Adjust the -r value to match how long each photo appears on screen — if photos display for 5 seconds each, -r 0.2 gives you one frame per photo.",
+      ],
+    },
+    {
+      id: "scratched-disc-recovery",
+      heading: "When the Disc Is Scratched or Won't Read",
+      level: 2,
+      paragraphs: [
+        "A scratched or degraded disc often causes Windows to report a cyclic redundancy check error or simply freeze during the copy. The file system layer fails before it can deliver the file, even though most of the underlying data sectors are still intact and readable.",
+        "Heirvo bypasses the file system entirely and reads the disc sector by sector, skipping and retrying individual bad sectors instead of aborting the entire transfer. It reassembles the .VOB files from the recovered sectors and saves them to your hard drive.",
+        "Even a disc that Windows cannot copy at all will often yield 95-99% of its data through sector-level recovery. A small number of corrupted sectors in a .VOB file typically means a brief visual glitch in the extracted frames — not missing photos. Run the free scan first to see exactly which sectors are readable before committing to full recovery.",
+      ],
+      callout: {
+        label: "Tip",
+        text: "Discs degrade from the outside edge inward. If your slideshow is long, the later photos encoded near the outer edge are most at risk. Start recovery as soon as you notice read errors rather than waiting.",
+      },
+    },
+    {
+      id: "extract-frames-after-recovery",
+      heading: "Extracting Frames from Recovered VOB Files",
+      level: 2,
+      paragraphs: [
+        "Once you have the .VOB files on your hard drive, open them in VLC to confirm the slideshow plays. If the video plays cleanly, proceed to frame extraction. If you see brief glitches from corrupted sectors, the surrounding frames will still be clean — extract everything and delete the damaged frames afterward.",
+        "Using ffmpeg for batch extraction: install ffmpeg from ffmpeg.org, open a command prompt in the folder containing your .VOB file, and run ffmpeg -i VTS_01_1.VOB -vf fps=1/5 -q:v 2 photo_%04d.jpg. The fps=1/5 filter extracts one frame every 5 seconds, matching a typical 5-second-per-photo slideshow. Change the denominator to match your slideshow timing.",
+        "Using VLC manually: open the .VOB file, pause on a photo, press Shift+S to save a snapshot. VLC saves snapshots to your Pictures folder by default. This method works well for a small number of photos but becomes tedious for more than a dozen.",
+      ],
+      callout: {
+        label: "Warning", color: "amber",
+        text: "If multiple .VOB files exist (VTS_01_1.VOB, VTS_01_2.VOB, etc.), concatenate them before extracting: ffmpeg -i concat:VTS_01_1.VOB|VTS_01_2.VOB -vf fps=1/5 photo_%04d.jpg. Extracting from each file separately will cause numbering gaps and missed frames at the split points.",
+      },
+    },
+    {
+      id: "resolution-expectations",
+      heading: "Managing Expectations: Resolution of Extracted Frames",
+      level: 2,
+      paragraphs: [
+        "Standard DVD video is encoded at 720x480 pixels (NTSC) or 720x576 pixels (PAL). If your original photos were 4-megapixel or higher — common for any digital camera from 2004 onward — the slideshow encoding discarded most of that resolution. Extracted frames will be 720x480, not the full original resolution.",
+        "This is a fundamental limitation of how slideshow DVDs work, not a limitation of the recovery process. The original high-resolution image data was never written to the disc. What Heirvo recovers is everything that was actually recorded — the full MPEG-2 video stream at DVD resolution.",
+        "For prints at 4x6 inches, 720x480 is adequate at 120 dpi. For larger prints or digital display, the images will appear soft. If you have any chance of finding the original digital files on an old computer, memory card, or another backup, that is always worth pursuing alongside disc recovery.",
+      ],
+    },
+    {
+      id: "kodak-photo-cd-vs-slideshow-dvd",
+      heading: "Kodak Photo CD vs. Photo Slideshow DVD: Key Differences",
+      level: 2,
+      table: {
+        headers: ["Feature", "Kodak Photo CD (.PCD)", "Photo Slideshow DVD (.VOB)"],
+        rows: [
+          ["Era", "1992–2004", "2000–2015"],
+          ["File format", ".PCD image files (5 resolutions each)", "MPEG-2 video inside .VOB files"],
+          ["Original resolution preserved?", "Yes — up to 3072x2048 stored on disc", "No — encoded to 720x480 DVD video"],
+          ["Recovery approach", "Copy .PCD files, convert with ImageMagick or Photoshop", "Recover .VOB files, extract video frames"],
+          ["Heirvo support", "Full — reads sector by sector, exports .PCD files", "Full — recovers .VOB files for frame extraction"],
+        ],
+      },
+      paragraphs: [
+        "True Kodak Photo CDs used a completely different format called PCD, which stored your photos at multiple resolutions — including up to 3072x2048 — as actual image files. If you have an older orange-spine Kodak disc labeled Photo CD rather than a slideshow DVD, Heirvo handles those as well and the recovered files will contain your full original image data.",
+      ],
+    },
+  ],
+  faq: [
+    {
+      q: "Can I get my original high-resolution photos back from a slideshow DVD?",
+      a: "No — the original high-resolution files were never stored on the slideshow DVD. The kiosk or software that created the disc encoded your photos into MPEG-2 video at 720x480 DVD resolution. Extracting frames gives you images at that DVD resolution, which is lower than most digital camera originals. The only way to get the original resolution back is to find the source files on an old computer, memory card, or other backup.",
+    },
+    {
+      q: "My computer shows a cyclic redundancy check error when I try to copy the disc. Is my data gone?",
+      a: "Not necessarily. A CRC error means Windows encountered a sector it could not read cleanly, but the rest of the disc is often intact. Heirvo reads the disc sector by sector, skipping individual bad sectors and recovering everything else. Most scratched discs yield 90-99% of their data through this approach. Run the free scan to see a map of readable versus damaged sectors before deciding on full recovery.",
+    },
+    {
+      q: "How do I know how long each photo appears in the slideshow so I can set the right ffmpeg frame rate?",
+      a: "Open the .VOB file in VLC and watch the slideshow while watching the timestamp. Note how many seconds pass between photo changes — Walgreens and CVS slideshows commonly used 4 or 5 seconds per photo, Kodak kiosks often used 3 seconds. Once you know the interval, set ffmpeg fps to 1 divided by that number. For 5-second intervals use fps=1/5, for 3-second intervals use fps=1/3.",
+    },
+    {
+      q: "I have multiple VOB files — VTS_01_1.VOB, VTS_01_2.VOB, and so on. How do I handle them?",
+      a: "DVD video is split into 1 GB chunks automatically, so a long slideshow will span multiple .VOB files. In ffmpeg you can concatenate them on the fly using the concat demuxer: ffmpeg -i concat:VTS_01_1.VOB|VTS_01_2.VOB -vf fps=1/5 photo_%04d.jpg. List all .VOB files in order separated by pipe characters inside the concat: prefix. This treats them as a single continuous video and numbers the output frames correctly.",
+    },
+    {
+      q: "Does Heirvo also recover Kodak Photo CDs, not just slideshow DVDs?",
+      a: "Yes. Kodak Photo CDs used a different format called PCD that stored actual image files at multiple resolutions — quite different from slideshow DVDs. Heirvo reads both disc types sector by sector and recovers the underlying files. For Photo CDs it recovers the .PCD files which you can then convert to JPEG or TIFF using tools like ImageMagick, Photoshop, or IrfanView.",
+    },
+    {
+      q: "The disc plays fine in a DVD player but Windows cannot read it. Why?",
+      a: "DVD players are purpose-built to stream video from discs with minor read errors — they use aggressive error correction and simply interpolate over bad sectors without stopping. Windows file system drivers are more strict and will abort a file copy when they encounter sectors they cannot read cleanly. This is exactly the scenario Heirvo is built for: the drive hardware can physically read most of the disc, but the operating system refuses to complete the transfer.",
+    },
+    {
+      q: "What if I only have a few bad frames after extraction — is there any way to improve them?",
+      a: "If only a few frames are corrupted, the simplest approach is to discard them and use the clean frame from a second before or after — in a 5-second static photo segment, dozens of identical clean frames surround any single bad one. For more serious damage, AI upscaling and restoration tools like Topaz Video AI can sometimes reduce visible artifacts. The underlying data loss from bad sectors cannot be reversed, but cosmetic improvement is often possible.",
+    },
+  ],
+  cta: {
+    heading: "Recover Your Slideshow DVD with Heirvo",
+    body: "Run a free scan on your photo slideshow DVD to see exactly which sectors are readable. Heirvo recovers the .VOB files from scratched and unreadable discs so you can extract your photos as frames. It also handles true Kodak Photo CDs with full resolution file recovery.",
+    primaryLabel: "Download Free Scanner",
+    primaryHref: "/#download",
+    secondaryLabel: "See Recovery Options",
+    secondaryHref: "/recover",
+  },
+  },
+  {
+  slug: "recover-vcd-video-cd-windows",
+  title: "How to Recover Files from a VCD (Video CD) on Windows",
+  metaTitle: "Recover VCD Video CD Files on Windows (2026 Guide)",
+  metaDescription: "VCD discs store video as .DAT files Windows often can't read. Learn how to recover MPEG-1 footage from VCD and SVCD discs, including scratched or damaged discs.",
+  datePublished: "2026-05-17",
+  dateModified: "2026-05-17",
+  readTime: "7 min read",
+  category: "Legacy Media Recovery",
+  intro: "VCD (Video CD) stores video as .DAT files in an MPEGAV folder using the CD-i Bridge format, which Windows Explorer often cannot read or copy correctly. You can recover the footage by renaming .DAT files to .mpg, using VLC Media Player, or running a sector-level recovery tool when the disc is scratched. Heirvo supports both VCD and SVCD formats and recovers .DAT files even from physically damaged discs.",
+  related: [
+    "recover-music-from-scratched-cd",
+    "recover-data-from-cd-rom-windows",
+    "kodak-photo-cd-recovery",
+  ],
+  sections: [
+    {
+      id: "what-is-vcd",
+      heading: "What Is a VCD and How Is the Video Stored?",
+      level: 2,
+      paragraphs: [
+        "VCD stands for Video CD, a format standardized in 1993 that stores video as MPEG-1 encoded content on a standard 74- or 80-minute CD. The format was enormously popular in Asia and parts of Europe through the late 1990s and early 2000s, used for commercial films, home recordings, concerts, and family videos.",
+        "The video files are not stored as ordinary .avi or .mpg files. Instead they use a proprietary container called .DAT, located inside a folder named MPEGAV on the disc. The disc itself uses a filesystem called CD-i Bridge, a hybrid format that combines ISO 9660 with CD-i extensions. This is why Windows File Explorer sometimes shows the disc as empty or refuses to copy files from it.",
+        "A VCD holds roughly 74 minutes of video at 352x240 resolution (NTSC) or 352x288 (PAL) at about 1.15 Mbit/s. The quality is comparable to a worn VHS tape. For many families, VCD is the only surviving format of home footage from that era.",
+      ],
+    },
+    {
+      id: "svcd-format",
+      heading: "SVCD: The Higher-Quality Successor",
+      level: 2,
+      paragraphs: [
+        "Super Video CD (SVCD) was introduced in 1998 as a significant upgrade over VCD. It uses MPEG-2 video encoding at up to 2.6 Mbit/s, with resolutions of 480x480 (NTSC) or 480x576 (PAL). The improvement in image quality is substantial — SVCD footage looks noticeably sharper than VCD and closer to DVD quality.",
+        "SVCD discs use a similar folder structure to VCD, but the video files are stored in a folder called SVCD rather than MPEGAV. The container format is still .DAT. If you are unsure whether you have a VCD or SVCD, look at the folder name on the disc root — MPEGAV means VCD, SVCD means Super Video CD.",
+        "Recovery of SVCD discs follows exactly the same process as VCD. Both formats are supported by Heirvo's sector-level disc reader.",
+      ],
+    },
+    {
+      id: "why-windows-fails",
+      heading: "Why Windows Explorer Shows an Empty Disc or Won't Copy Files",
+      level: 2,
+      paragraphs: [
+        "Windows has never fully implemented the CD-i Bridge filesystem that VCD discs use. When you insert a VCD into a Windows PC, Explorer may show the disc as blank, show an empty folder, or display the MPEGAV folder but fail silently when you try to drag files to your desktop. This is not a sign that the disc is damaged — it is a filesystem compatibility gap.",
+        "Even when Windows does recognize the files, copying .DAT files through Explorer often produces a truncated or corrupted result. The CD-i interleaved sectors that carry audio and video together are not handled correctly by the standard Windows file copy path.",
+      ],
+      callout: {
+        label: "Info",
+        text: "If Windows says the disc is blank but you can see a light reflecting off the recorded surface, the disc almost certainly has content. Use a tool that reads raw sectors rather than relying on Windows Explorer.",
+      },
+    },
+    {
+      id: "reading-dat-files",
+      heading: "How to Read and Play .DAT Files from a VCD",
+      level: 2,
+      items: [
+        "Rename the file: If you can copy the .DAT file to your hard drive, rename it from AVSEQ01.DAT to AVSEQ01.mpg. Most media players will then recognize and play it correctly, because the content is standard MPEG-1 wrapped in the .DAT container.",
+        "Use VLC Media Player: VLC reads .DAT files natively without renaming. Open VLC, go to Media > Open File, and select the .DAT file directly from the disc or your hard drive. VLC handles the CD-i container transparently.",
+        "Use the disc path directly in VLC: You can also point VLC at the disc drive itself. Go to Media > Open Disc, select CD, and VLC will detect the VCD structure and play the first track automatically.",
+        "Avoid Windows Media Player: WMP does not support the .DAT container and will either refuse to open the file or play only audio without video.",
+      ],
+    },
+    {
+      id: "scratched-disc-recovery",
+      heading: "Recovering Files from a Scratched or Unreadable VCD",
+      level: 2,
+      paragraphs: [
+        "VCDs are pressed or burned onto standard CD media and suffer the same physical degradation as any CD. Scratches, disc rot, delamination, and fingerprint contamination all cause read errors. Because the .DAT files on a VCD span a large portion of the disc surface, even moderate scratching can make conventional copy attempts fail entirely.",
+        "Heirvo reads VCD discs sector by sector using low-level SCSI commands, bypassing the filesystem layer entirely. It reads the raw sectors that make up the .DAT files in the MPEGAV or SVCD folder and assembles them into recoverable files on your hard drive. Sectors that cannot be read on the first pass are retried with adjusted read speed and error recovery settings before being marked as unrecoverable.",
+        "Partial recovery is common and still valuable. A .DAT file with a small number of unreadable sectors will play back with brief visual artifacts but the majority of the footage will be intact. Heirvo shows you exactly which sectors were recovered and which were lost so you can assess the result before purchasing.",
+      ],
+      callout: {
+        label: "Tip",
+        text: "Before running a recovery scan, clean the disc with a soft lint-free cloth wiping radially from the center hub outward — never in circular motions. Even light dust can cause read errors that recovery software cannot overcome.",
+      },
+    },
+    {
+      id: "converting-to-mp4",
+      heading: "Converting .DAT and MPEG-1 Files to MP4 After Recovery",
+      level: 2,
+      paragraphs: [
+        "Once the .DAT files are on your hard drive, you will likely want to convert them to MP4 so they can be played on any modern device, shared online, or stored in a family archive. MPEG-1 at VCD resolution is not well supported by phones, smart TVs, or cloud storage platforms.",
+        "Heirvo includes a built-in conversion step that converts recovered .DAT files to H.264 MP4 automatically after the scan completes. The output is a standard MP4 file at the original resolution, with the audio track preserved. No separate software is required.",
+        "If you prefer to convert manually, ffmpeg handles .DAT files directly with the command: ffmpeg -i AVSEQ01.DAT -c:v libx264 -c:a aac output.mp4. For SVCD footage encoded in MPEG-2, the same command applies — ffmpeg detects the codec automatically.",
+      ],
+    },
+    {
+      id: "vcd-format-summary",
+      heading: "VCD vs SVCD: Quick Format Reference",
+      level: 2,
+      table: {
+        headers: ["Property", "VCD", "SVCD"],
+        rows: [
+          ["Video codec", "MPEG-1", "MPEG-2"],
+          ["Max bitrate", "1.15 Mbit/s", "2.6 Mbit/s"],
+          ["Resolution (NTSC)", "352x240", "480x480"],
+          ["Resolution (PAL)", "352x288", "480x576"],
+          ["Folder on disc", "MPEGAV", "SVCD"],
+          ["File extension", ".DAT", ".DAT"],
+          ["Approximate quality", "VHS equivalent", "Near-DVD quality"],
+        ],
+      },
+    },
+  ],
+  faq: [
+    {
+      q: "Why does my VCD show as a blank disc in Windows?",
+      a: "Windows does not fully support the CD-i Bridge filesystem that VCD discs use. Explorer may show the disc as empty even when the disc contains data. This is a compatibility gap, not disc damage. Use VLC Media Player to open the disc directly, or use Heirvo to read the raw sectors and extract the .DAT files regardless of how Windows reports the filesystem.",
+    },
+    {
+      q: "Can I play .DAT files without converting them?",
+      a: "Yes. VLC Media Player plays .DAT files natively without any conversion or renaming. You can also rename a .DAT file to .mpg and most media players will recognize it. Windows Media Player does not support .DAT files and should be avoided for VCD playback.",
+    },
+    {
+      q: "Will Heirvo recover a VCD that skips or freezes when I play it?",
+      a: "Skipping and freezing during playback usually indicates surface damage that is causing read errors. Heirvo reads the disc sector by sector with multiple retry passes, which recovers data that normal playback cannot read through. Many discs that are unplayable in a standalone player or Windows can still yield a majority of their content through sector-level recovery.",
+    },
+    {
+      q: "What is the difference between a VCD and a DVD with MPEG-1 content?",
+      a: "A DVD stores video in the VIDEO_TS folder using the UDF filesystem, which Windows reads natively. A VCD stores video in the MPEGAV folder as .DAT files using the CD-i Bridge filesystem, which Windows handles poorly. The video content on a VCD is MPEG-1, while DVDs typically use MPEG-2. The disc format and filesystem are the key differences, not just the video quality.",
+    },
+    {
+      q: "How do I know if my disc is a VCD or an SVCD?",
+      a: "Insert the disc and open it in a file manager that can read CD-i discs, such as the one built into VLC. Look at the folders in the root of the disc. If you see a folder named MPEGAV, it is a VCD. If you see a folder named SVCD, it is a Super Video CD. Both formats store video as .DAT files and both are supported by Heirvo.",
+    },
+    {
+      q: "Can Heirvo recover VCDs that were burned at home, not commercially pressed?",
+      a: "Yes. Burned CD-R and CD-RW discs formatted as VCD are recovered using the same sector-level process as commercially pressed VCDs. Home-burned discs are often more susceptible to disc rot and dye degradation over time, which can make them harder to read, but Heirvo's multi-pass retry logic is specifically designed to handle partially degraded burned media.",
+    },
+    {
+      q: "After recovery, what resolution will the MP4 file be?",
+      a: "The output MP4 will be at the same resolution as the original recording — typically 352x240 for NTSC VCD or 352x288 for PAL VCD. SVCD footage recovers at 480x480 or 480x576. Heirvo does not upscale the video during conversion. If you want to upscale to a higher resolution, tools like Topaz Video AI can process the recovered MP4 afterward.",
+    },
+  ],
+  cta: {
+    heading: "Recover Your VCD and SVCD Footage with Heirvo",
+    body: "Heirvo reads VCD and SVCD discs sector by sector, recovering .DAT files from the MPEGAV and SVCD folders even when Windows Explorer can't see the disc. Run a free scan to see exactly what's recoverable before you pay anything.",
+    primaryLabel: "Download Heirvo Free",
+    primaryHref: "/#download",
+    secondaryLabel: "See How Recovery Works",
+    secondaryHref: "/recover",
+  },
+  },
 ];
 
 export default GUIDES;
