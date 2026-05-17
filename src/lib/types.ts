@@ -114,6 +114,14 @@ export interface LicenseStatus {
   plan: Plan;
   holder: string | null;
   can_save: boolean;
+  exports_used: number;
+}
+
+/** Whisper model info returned by get_whisper_model_info. */
+export interface WhisperModelInfo {
+  current: string;         // e.g. "ggml-base.en.bin" or "ggml-tiny.en.bin"
+  base_en_present: boolean;
+  tiny_en_present: boolean;
 }
 
 /** A local storage destination (for picking output drives). NOT optical drives. */

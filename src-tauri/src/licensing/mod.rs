@@ -37,11 +37,13 @@ pub struct LicenseStatus {
     pub holder: Option<String>,
     /// Whether the SAVE features are unlocked.
     pub can_save: bool,
+    /// How many MP4 exports this device has made (free tier gets 1 lifetime).
+    pub exports_used: u32,
 }
 
 impl Default for LicenseStatus {
     fn default() -> Self {
-        Self { plan: Plan::Free, holder: None, can_save: false }
+        Self { plan: Plan::Free, holder: None, can_save: true, exports_used: 0 }
     }
 }
 
@@ -75,6 +77,30 @@ fn license_path(app_data_dir: &PathBuf) -> PathBuf {
 
 // ─── Validation ───────────────────────────────────────────────────────────────
 
+// ─── Export counter (free tier: 1 lifetime MP4 export) ───────────────────────
+
+fn exports_path(app_data_dir: &PathBuf) -> PathBuf {
+    app_data_dir.join("exports.count")
+}
+
+pub fn get_exports_used(app_data_dir: &PathBuf) -> u32 {
+    std::fs::read_to_string(exports_path(app_data_dir))
+        .ok()
+        .and_then(|s| s.trim().parse().ok())
+        .unwrap_or(0)
+}
+
+/// Called after every successful MP4 export. Increments the on-disk counter
+/// and invalidates the in-memory cache so the next status read is fresh.
+pub fn record_export(app_data_dir: &PathBuf) {
+    let count = get_exports_used(app_data_dir) + 1;
+    let _ = std::fs::create_dir_all(app_data_dir);
+    let _ = std::fs::write(exports_path(app_data_dir), count.to_string());
+    *CACHE.lock().unwrap() = None;
+}
+
+// ─── Validation ───────────────────────────────────────────────────────────────
+
 /// Dev-mode stub: accepts any non-empty key with at least one `-` and ≥8 chars.
 /// Used when `HEIRVO_LS_PRODUCT_ID` is not set at build time.
 pub fn validate_key(key: &str) -> Option<LicenseStatus> {
@@ -86,6 +112,7 @@ pub fn validate_key(key: &str) -> Option<LicenseStatus> {
         plan: Plan::Pro,
         holder: Some(trimmed.split('-').next().unwrap_or("").to_string()),
         can_save: true,
+        exports_used: 0,
     })
 }
 
@@ -137,6 +164,7 @@ pub async fn validate_online(key: &str) -> Option<LicenseStatus> {
         plan: Plan::Pro,
         holder: v.meta.customer_email,
         can_save: true,
+        exports_used: 0,
     })
 }
 
@@ -149,9 +177,16 @@ pub fn current(app_data_dir: &PathBuf) -> LicenseStatus {
         return c;
     }
     let p = license_path(app_data_dir);
-    let status = match std::fs::read_to_string(&p) {
+    let base = match std::fs::read_to_string(&p) {
         Ok(key) => validate_key(&key).unwrap_or_default(),
         Err(_) => LicenseStatus::default(),
+    };
+    let exports_used = get_exports_used(app_data_dir);
+    let status = LicenseStatus {
+        exports_used,
+        // Pro users always save; free users get exactly 1 lifetime export.
+        can_save: base.plan == Plan::Pro || exports_used == 0,
+        ..base
     };
     *CACHE.lock().unwrap() = Some(status.clone());
     status
@@ -172,9 +207,8 @@ pub async fn activate(app_data_dir: &PathBuf, key: &str) -> AppResult<LicenseSta
 /// Remove the license (sign-out / refund). Returns the new (Free) status.
 pub fn deactivate(app_data_dir: &PathBuf) -> LicenseStatus {
     let _ = std::fs::remove_file(license_path(app_data_dir));
-    let s = LicenseStatus::default();
-    *CACHE.lock().unwrap() = Some(s.clone());
-    s
+    *CACHE.lock().unwrap() = None;
+    current(app_data_dir)
 }
 
 // ─── Tests ────────────────────────────────────────────────────────────────────

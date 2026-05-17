@@ -27,6 +27,7 @@ import type {
   TranscriptionJob,
   TranscriptionProgress,
   ImportResult,
+  WhisperModelInfo,
 } from "./types";
 
 export const ipc = {
@@ -189,6 +190,9 @@ export const ipc = {
       invoke<TranscriptionJob[]>("jobs_for_disc", { discId }),
     cancel: (jobId: number) => invoke<void>("cancel_transcription", { jobId }),
     retry: (jobId: number) => invoke<number>("retry_transcription", { jobId }),
+    getModelInfo: () => invoke<WhisperModelInfo>("get_whisper_model_info"),
+    setModel: (model: "tiny.en" | "base.en") =>
+      invoke<WhisperModelInfo>("set_whisper_model", { model }),
   },
 
   // Diagnostics

@@ -1,10 +1,12 @@
-//! Transcription IPC commands: enqueue, list, query-by-disc, cancel, retry.
+//! Transcription IPC commands: enqueue, list, query-by-disc, cancel, retry,
+//! and model-preference management.
 
 use crate::error::{AppError, AppResult};
 use crate::state::AppState;
 use crate::transcription::queue;
 use crate::transcription::types::{JobStatus, TranscriptionJob};
-use tauri::State;
+use crate::transcription::whisper_cpp::{model_info, set_preferred_model, WhisperModelInfo};
+use tauri::{AppHandle, State};
 
 #[tauri::command]
 pub async fn enqueue_transcription(
@@ -34,6 +36,22 @@ pub async fn jobs_for_disc(
 pub async fn cancel_transcription(state: State<'_, AppState>, job_id: i64) -> AppResult<()> {
     queue::cancel(&state.db.pool, job_id).await
 }
+
+// ─── Model preference ─────────────────────────────────────────────────────────
+
+#[tauri::command]
+pub async fn get_whisper_model_info(app: AppHandle) -> AppResult<WhisperModelInfo> {
+    Ok(model_info(&app))
+}
+
+#[tauri::command]
+pub async fn set_whisper_model(app: AppHandle, model: String) -> AppResult<WhisperModelInfo> {
+    set_preferred_model(&app, &model)
+        .map_err(|e| AppError::Internal(format!("failed to save model preference: {e}")))?;
+    Ok(model_info(&app))
+}
+
+// ─── Queue management ─────────────────────────────────────────────────────────
 
 /// Re-enqueue a failed (or cancelled) job using the same disc + video.
 /// Returns the new job id.

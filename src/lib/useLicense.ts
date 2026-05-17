@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { ipc } from "./ipc";
 import type { LicenseStatus } from "./types";
 
-const DEFAULT: LicenseStatus = { plan: "free", holder: null, can_save: false };
+const DEFAULT: LicenseStatus = { plan: "free", holder: null, can_save: true, exports_used: 0 };
 
 /**
  * useLicense — read + mutate the freemium license state.
@@ -35,5 +35,11 @@ export function useLicense() {
     return next;
   }, []);
 
-  return { status, loaded, activate, deactivate };
+  const refresh = useCallback(async () => {
+    const next = await ipc.getLicenseStatus();
+    setStatus(next);
+    return next;
+  }, []);
+
+  return { status, loaded, activate, deactivate, refresh };
 }

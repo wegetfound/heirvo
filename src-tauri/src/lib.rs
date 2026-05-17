@@ -145,6 +145,8 @@ pub fn run() {
             commands::transcription::jobs_for_disc,
             commands::transcription::cancel_transcription,
             commands::transcription::retry_transcription,
+            commands::transcription::get_whisper_model_info,
+            commands::transcription::set_whisper_model,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

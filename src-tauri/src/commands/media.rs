@@ -9,7 +9,7 @@ use chrono::Utc;
 use serde::Serialize;
 use std::path::PathBuf;
 use std::sync::Arc;
-use tauri::{AppHandle, Emitter, State};
+use tauri::{AppHandle, Emitter, Manager, State};
 use tokio::sync::watch;
 use uuid::Uuid;
 
@@ -228,6 +228,13 @@ pub async fn save_as_mp4(
     .bind(now)
     .execute(&state.db.pool)
     .await?;
+
+    // Bump the free-tier export counter (invalidates license cache).
+    let data_dir = app
+        .path()
+        .app_data_dir()
+        .unwrap_or_else(|_| std::path::PathBuf::from("."));
+    crate::licensing::record_export(&data_dir);
 
     Ok(result)
 }

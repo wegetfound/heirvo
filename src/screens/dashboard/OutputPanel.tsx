@@ -41,7 +41,7 @@ export function OutputPanel({
   const [error, setError] = useState<string | null>(null);
   const [enrolledDiscId, setEnrolledDiscId] = useState<string | null>(null);
 
-  const { status: license } = useLicense();
+  const { status: license, refresh: refreshLicense } = useLicense();
   const canSave = license.can_save;
 
   // Paywall modal — shown when free user clicks a save action
@@ -346,6 +346,8 @@ export function OutputPanel({
                   const r = await ipc.saveAsMp4(sessionId);
                   setMp4(r);
                   onMp4Saved?.(r.output_path);
+                  // Refresh license so the next click reflects updated exports_used.
+                  refreshLicense().catch(() => {});
                   // Auto-enroll: import into Library + kick off transcription.
                   try {
                     const label = session?.user_label || session?.disc_label || null;
@@ -684,12 +686,14 @@ export function OutputPanel({
 
       <ProPaywallModal
         open={paywallOpen}
+        exportsUsed={license.exports_used}
         onClose={() => {
           setPaywallOpen(false);
           pendingSaveRef.current = null;
         }}
         onUnlocked={() => {
           setPaywallOpen(false);
+          refreshLicense().catch(() => {});
           const action = pendingSaveRef.current;
           pendingSaveRef.current = null;
           if (action) wrap("mp4", action);

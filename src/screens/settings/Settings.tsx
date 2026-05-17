@@ -2,10 +2,10 @@ import { useEffect, useState } from "react";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { useLicense } from "@/lib/useLicense";
 import { useTheme } from "@/lib/theme";
-import { Loader2, Check, ExternalLink, LogOut, Sparkles, FolderOpen, FileText, Volume2, Play, Mail, ChevronDown, ChevronRight, Mic, Film, Sun, Moon } from "lucide-react";
+import { Loader2, Check, ExternalLink, LogOut, Sparkles, FolderOpen, FileText, Volume2, Play, Mail, ChevronDown, ChevronRight, Mic, Film, Sun, Moon, Zap } from "lucide-react";
 import { ipc } from "@/lib/ipc";
 import { audio, type AudioPrefs } from "@/lib/audio";
-import type { PreflightStatus } from "@/lib/types";
+import type { PreflightStatus, WhisperModelInfo } from "@/lib/types";
 
 const CHECKOUT_URL = "https://heirvo.com/buy"; // placeholder — swap to Lemon Squeezy URL
 const SUPPORT_URL = "https://heirvo.com/support";
@@ -115,6 +115,9 @@ export function Settings() {
 
       {/* System status */}
       <SystemStatusPanel />
+
+      {/* Transcription model */}
+      <TranscriptionModelPanel />
 
       {/* Need help? — promoted above footer */}
       <div className="mt-6 flex items-center justify-between rounded-2xl border border-ink-200/70 bg-white/60 px-5 py-4">
@@ -724,6 +727,120 @@ function StatusRow({
           )}
         </div>
         <p className="mt-0.5 text-[11.5px] text-ink-500">{detail}</p>
+      </div>
+    </div>
+  );
+}
+
+// ─── Transcription model panel ────────────────────────────────────────────────
+
+function TranscriptionModelPanel() {
+  const [info, setInfo] = useState<WhisperModelInfo | null>(null);
+  const [switching, setSwitching] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  useEffect(() => {
+    ipc.transcription.getModelInfo().then(setInfo).catch(() => {});
+  }, []);
+
+  const switchModel = async (model: "tiny.en" | "base.en") => {
+    setSwitching(true);
+    setErr(null);
+    try {
+      const next = await ipc.transcription.setModel(model);
+      setInfo(next);
+    } catch (e) {
+      setErr(String(e));
+    } finally {
+      setSwitching(false);
+    }
+  };
+
+  const isTiny = info?.current.includes("tiny");
+  const isBase = !isTiny;
+
+  return (
+    <div className="mt-4 rounded-2xl border border-ink-200/70 bg-white/60 p-5">
+      <div className="flex items-start gap-3">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-ink-100">
+          <Zap className="h-4 w-4 text-ink-600" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <span className="micro-label">Transcription quality</span>
+          <p className="mt-1 text-[12px] text-ink-500">
+            Choose between faster (tiny) and more accurate (base) voice search.
+            Both models run entirely on your computer — nothing leaves this machine.
+          </p>
+
+          <div className="mt-4 grid grid-cols-2 gap-3">
+            {/* tiny.en option */}
+            <button
+              disabled={switching || isTiny}
+              onClick={() => switchModel("tiny.en")}
+              className="rounded-xl border p-3 text-left transition"
+              style={{
+                borderColor: isTiny ? "rgba(0,122,255,0.40)" : "rgba(0,0,0,0.10)",
+                background: isTiny ? "rgba(0,122,255,0.06)" : "white",
+              }}
+            >
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[13px] font-semibold text-ink-900">Tiny</span>
+                {isTiny && (
+                  <span className="rounded-full bg-brand-100 px-1.5 py-0.5 text-[10px] font-semibold text-brand-700">
+                    Active
+                  </span>
+                )}
+                {!isTiny && !info?.tiny_en_present && (
+                  <span className="rounded-full bg-ink-100 px-1.5 py-0.5 text-[10px] font-medium text-ink-500">
+                    75 MB
+                  </span>
+                )}
+              </div>
+              <p className="text-[11px] text-ink-500 leading-relaxed">
+                Fast · smaller installer · works on any PC
+              </p>
+            </button>
+
+            {/* base.en option */}
+            <button
+              disabled={switching || isBase}
+              onClick={() => switchModel("base.en")}
+              className="rounded-xl border p-3 text-left transition"
+              style={{
+                borderColor: isBase ? "rgba(0,122,255,0.40)" : "rgba(0,0,0,0.10)",
+                background: isBase ? "rgba(0,122,255,0.06)" : "white",
+              }}
+            >
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[13px] font-semibold text-ink-900">Base</span>
+                {isBase && (
+                  <span className="rounded-full bg-brand-100 px-1.5 py-0.5 text-[10px] font-semibold text-brand-700">
+                    Active
+                  </span>
+                )}
+                {!isBase && !info?.base_en_present && (
+                  <span className="rounded-full bg-ink-100 px-1.5 py-0.5 text-[10px] font-medium text-ink-500">
+                    142 MB
+                  </span>
+                )}
+              </div>
+              <p className="text-[11px] text-ink-500 leading-relaxed">
+                More accurate · better names & dates
+              </p>
+            </button>
+          </div>
+
+          {switching && (
+            <p className="mt-2 flex items-center gap-1.5 text-[12px] text-ink-500">
+              <Loader2 className="h-3 w-3 animate-spin" />
+              Switching model…
+            </p>
+          )}
+          {err && <p className="mt-2 text-[12px] text-ios-red">{err}</p>}
+          <p className="mt-3 text-[11px] text-ink-400">
+            Takes effect on the next transcription job — already-running jobs finish with the current model.
+          </p>
+        </div>
       </div>
     </div>
   );

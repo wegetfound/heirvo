@@ -28,7 +28,35 @@ const WHISPER_BIN: &str = "whisper-cli.exe";
 #[cfg(not(windows))]
 const WHISPER_BIN: &str = "whisper-cli";
 
-const MODEL_FILE: &str = "ggml-base.en.bin";
+const MODEL_BASE_EN: &str = "ggml-base.en.bin";
+const MODEL_TINY_EN: &str = "ggml-tiny.en.bin";
+const MODEL_PREF_FILE: &str = "model.pref";
+
+// ─── Model preference ─────────────────────────────────────────────────────────
+
+/// Read the user's preferred model filename from app data.
+/// Defaults to "ggml-base.en.bin" if no preference is saved.
+pub fn preferred_model(app: &AppHandle) -> &'static str {
+    let pref = app
+        .path()
+        .app_data_dir()
+        .ok()
+        .and_then(|d| std::fs::read_to_string(d.join(MODEL_PREF_FILE)).ok());
+    match pref.as_deref().map(str::trim) {
+        Some("tiny.en") => MODEL_TINY_EN,
+        _ => MODEL_BASE_EN,
+    }
+}
+
+pub fn set_preferred_model(app: &AppHandle, model: &str) -> std::io::Result<()> {
+    let dir = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
+    std::fs::create_dir_all(&dir)?;
+    let label = if model == "tiny.en" { "tiny.en" } else { "base.en" };
+    std::fs::write(dir.join(MODEL_PREF_FILE), label)
+}
 
 /// Mirror of `media::ffmpeg::locate`, scoped to whisper.
 pub fn locate(app: &AppHandle, filename: &str) -> Option<PathBuf> {
@@ -76,10 +104,8 @@ pub fn whisper_available(app: &AppHandle) -> bool {
     // placeholder files (~1 KB of zeros) in resources/whisper/ so Tauri's
     // bundler — which validates that every resource path exists at build
     // time — is happy on dev machines that haven't run `npm run fetch-whisper`
-    // yet. Real whisper-cli.exe is several MB and the base.en model is ~142 MB,
-    // so a 100 KB threshold cleanly separates real binaries from placeholders
-    // without false-positive matching some tiny stub the user might leave in
-    // by accident.
+    // yet. Real whisper-cli.exe is several MB and models are tens of MB,
+    // so a 100 KB threshold cleanly separates real binaries from placeholders.
     const MIN_REAL_SIZE: u64 = 100_000;
     fn ok_with_min(p: Option<PathBuf>, min: u64) -> bool {
         match p {
@@ -89,8 +115,30 @@ pub fn whisper_available(app: &AppHandle) -> bool {
             None => false,
         }
     }
+    let model = preferred_model(app);
     ok_with_min(locate(app, WHISPER_BIN), MIN_REAL_SIZE)
-        && ok_with_min(locate(app, MODEL_FILE), MIN_REAL_SIZE)
+        && ok_with_min(locate(app, model), MIN_REAL_SIZE)
+}
+
+/// Return info about installed models (used by the Settings panel).
+pub fn model_info(app: &AppHandle) -> WhisperModelInfo {
+    const MIN: u64 = 100_000;
+    fn present(p: Option<PathBuf>) -> bool {
+        p.map(|path| std::fs::metadata(path).map(|m| m.len() >= MIN).unwrap_or(false))
+            .unwrap_or(false)
+    }
+    WhisperModelInfo {
+        current: preferred_model(app).to_string(),
+        base_en_present: present(locate(app, MODEL_BASE_EN)),
+        tiny_en_present: present(locate(app, MODEL_TINY_EN)),
+    }
+}
+
+#[derive(serde::Serialize, Clone, Debug)]
+pub struct WhisperModelInfo {
+    pub current: String,
+    pub base_en_present: bool,
+    pub tiny_en_present: bool,
 }
 
 pub struct WhisperCppTranscriber {
@@ -105,9 +153,10 @@ impl WhisperCppTranscriber {
                 "{WHISPER_BIN} not found in resources/whisper/"
             ))
         })?;
-        let model = locate(app, MODEL_FILE).ok_or_else(|| {
+        let model_file = preferred_model(app);
+        let model = locate(app, model_file).ok_or_else(|| {
             AppError::Internal(format!(
-                "{MODEL_FILE} not found in resources/whisper/"
+                "{model_file} not found in resources/whisper/ or app data"
             ))
         })?;
         Ok(Self { bin, model })
@@ -117,7 +166,11 @@ impl WhisperCppTranscriber {
 #[async_trait]
 impl Transcriber for WhisperCppTranscriber {
     fn name(&self) -> &'static str {
-        "whisper.cpp/base.en"
+        if self.model.to_string_lossy().contains("tiny") {
+            "whisper.cpp/tiny.en"
+        } else {
+            "whisper.cpp/base.en"
+        }
     }
 
     async fn transcribe(

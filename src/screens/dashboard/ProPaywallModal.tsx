@@ -7,6 +7,8 @@ interface Props {
   onClose: () => void;
   /** After a successful key activation the parent can proceed with the save. */
   onUnlocked: () => void;
+  /** How many exports the free user has already made (drives copy). */
+  exportsUsed?: number;
 }
 
 const BUY_URL = "https://heirvo.com/download";
@@ -18,7 +20,7 @@ const BUY_URL = "https://heirvo.com/download";
  * their video is ready, run a fake progress bar to 94%, then freeze it there.
  * The wall feels earned, not hostile.
  */
-export function ProPaywallModal({ open, onClose, onUnlocked }: Props) {
+export function ProPaywallModal({ open, onClose, onUnlocked, exportsUsed = 0 }: Props) {
   const [progress, setProgress] = useState(0);
   const [frozen, setFrozen] = useState(false);
   const [showActivate, setShowActivate] = useState(false);
@@ -117,11 +119,14 @@ export function ProPaywallModal({ open, onClose, onUnlocked }: Props) {
             id="paywall-title"
             className="font-display text-[22px] font-bold tracking-[-0.02em] text-ink-900"
           >
-            Your video is ready to save.
+            {exportsUsed === 0
+              ? "Your video is ready to save."
+              : "You've used your free export."}
           </h2>
           <p className="mt-2 text-[15px] leading-[1.55] text-ink-600">
-            Heirvo finished processing. Unlock Pro once to download your
-            recovered video — MP4, disc image, all files. No subscription, ever.
+            {exportsUsed === 0
+              ? "Heirvo finished processing. Unlock Pro once to download your recovered video — MP4, disc image, all files. No subscription, ever."
+              : "Free plan includes 1 lifetime export — yours is already saved. Upgrade once to recover and export as many discs as you like, forever."}
           </p>
 
           {/* Fake progress bar — frozen at 94 % */}

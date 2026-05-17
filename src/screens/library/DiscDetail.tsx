@@ -18,6 +18,8 @@ export default function DiscDetail() {
   const [exportMsg, setExportMsg] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
   const [activeJob, setActiveJob] = useState<TranscriptionJob | null>(null);
+  const [shareOpen, setShareOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   // Poll for the latest transcription job for this disc + subscribe to
   // progress events so the status block updates live.
@@ -345,7 +347,11 @@ export default function DiscDetail() {
                     {exportMsg}
                   </span>
                 )}
-                <button type="button" className="lib-btn lib-btn-ghost">
+                <button
+                  type="button"
+                  className="lib-btn lib-btn-ghost"
+                  onClick={() => setShareOpen(true)}
+                >
                   <Share2 size={14} />
                   Share with family
                 </button>
@@ -722,6 +728,201 @@ export default function DiscDetail() {
             </div>
           </aside>
         </div>
+      </div>
+
+      {/* Share with family modal */}
+      {shareOpen && disc && (
+        <ShareModal
+          disc={disc}
+          onExport={() => { setShareOpen(false); handleExport(); }}
+          onClose={() => setShareOpen(false)}
+          copied={copied}
+          onCopy={() => {
+            const msg = [
+              `I recovered "${disc.title}" from an old ${disc.source} using Heirvo.`,
+              ``,
+              `I'm sharing it as a single HTML file — open it in any browser to watch the video and read the full searchable transcript. No account needed.`,
+              ``,
+              `(Made with Heirvo · heirvo.com)`,
+            ].join("\n");
+            navigator.clipboard.writeText(msg).then(() => {
+              setCopied(true);
+              setTimeout(() => setCopied(false), 2500);
+            });
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+// ─── Share modal ──────────────────────────────────────────────────────────────
+
+function ShareModal({
+  disc,
+  onExport,
+  onClose,
+  copied,
+  onCopy,
+}: {
+  disc: import("./data/types").Disc;
+  onExport: () => void;
+  onClose: () => void;
+  copied: boolean;
+  onCopy: () => void;
+}) {
+  return (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 100,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: "rgba(30,20,10,0.55)",
+        backdropFilter: "blur(6px)",
+        padding: 24,
+      }}
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Share with family"
+    >
+      <div
+        style={{
+          background: "var(--lib-paper)",
+          borderRadius: 20,
+          width: "100%",
+          maxWidth: 440,
+          padding: "32px 28px",
+          boxShadow: "0 32px 80px rgba(30,20,10,0.30)",
+          border: "1px solid var(--lib-line)",
+          position: "relative",
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Close */}
+        <button
+          type="button"
+          onClick={onClose}
+          style={{
+            position: "absolute",
+            top: 14,
+            right: 14,
+            background: "transparent",
+            border: 0,
+            cursor: "pointer",
+            color: "var(--lib-muted)",
+            fontSize: 20,
+            lineHeight: 1,
+            padding: 4,
+          }}
+          aria-label="Close"
+        >
+          ×
+        </button>
+
+        <h2
+          style={{
+            fontFamily: "var(--lib-serif)",
+            fontWeight: 500,
+            fontSize: 22,
+            letterSpacing: "-0.015em",
+            color: "var(--lib-ink)",
+            margin: "0 0 6px",
+          }}
+        >
+          Share with family
+        </h2>
+        <p
+          style={{
+            fontFamily: "var(--lib-sans)",
+            fontSize: 13.5,
+            color: "var(--lib-ink-2)",
+            lineHeight: 1.5,
+            margin: "0 0 24px",
+          }}
+        >
+          Send <em>{disc.title}</em> to siblings or parents — they can open it
+          in any browser with no account, no app, and no cloud storage.
+        </p>
+
+        {/* Option 1 — export HTML */}
+        <button
+          type="button"
+          onClick={onExport}
+          style={{
+            display: "flex",
+            alignItems: "flex-start",
+            gap: 14,
+            width: "100%",
+            background: "rgba(0,0,0,0.03)",
+            border: "1px solid var(--lib-line)",
+            borderRadius: 12,
+            padding: "14px 16px",
+            cursor: "pointer",
+            marginBottom: 10,
+            textAlign: "left",
+          }}
+        >
+          <Download size={18} style={{ color: "var(--lib-amber)", flexShrink: 0, marginTop: 1 }} />
+          <div>
+            <div
+              style={{
+                fontFamily: "var(--lib-sans)",
+                fontWeight: 600,
+                fontSize: 13.5,
+                color: "var(--lib-ink)",
+                marginBottom: 2,
+              }}
+            >
+              Export standalone page
+            </div>
+            <div style={{ fontFamily: "var(--lib-sans)", fontSize: 12.5, color: "var(--lib-muted)", lineHeight: 1.45 }}>
+              One self-contained HTML file. They can open it in Chrome, Safari,
+              or Edge — offline, forever.
+            </div>
+          </div>
+        </button>
+
+        {/* Option 2 — copy message */}
+        <button
+          type="button"
+          onClick={onCopy}
+          style={{
+            display: "flex",
+            alignItems: "flex-start",
+            gap: 14,
+            width: "100%",
+            background: copied ? "rgba(52,199,89,0.07)" : "rgba(0,0,0,0.03)",
+            border: `1px solid ${copied ? "rgba(52,199,89,0.35)" : "var(--lib-line)"}`,
+            borderRadius: 12,
+            padding: "14px 16px",
+            cursor: "pointer",
+            textAlign: "left",
+            transition: "all 0.2s",
+          }}
+        >
+          <Share2 size={18} style={{ color: copied ? "#34C759" : "var(--lib-amber)", flexShrink: 0, marginTop: 1 }} />
+          <div>
+            <div
+              style={{
+                fontFamily: "var(--lib-sans)",
+                fontWeight: 600,
+                fontSize: 13.5,
+                color: "var(--lib-ink)",
+                marginBottom: 2,
+              }}
+            >
+              {copied ? "Message copied!" : "Copy a share message"}
+            </div>
+            <div style={{ fontFamily: "var(--lib-sans)", fontSize: 12.5, color: "var(--lib-muted)", lineHeight: 1.45 }}>
+              Paste into email, WhatsApp, or iMessage — explains what the file
+              is and how to open it.
+            </div>
+          </div>
+        </button>
       </div>
     </div>
   );
