@@ -5502,6 +5502,469 @@ const GUIDES: Guide[] = [
       secondaryHref: "/recover",
     },
   },
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 43. Restoring a deceased parent's home videos (high-emotion cluster)
+  // ─────────────────────────────────────────────────────────────────────────────
+  {
+    slug: "restore-deceased-parents-home-videos",
+    title: "Restoring a Deceased Parent's Home Videos: A Step-by-Step Guide",
+    metaTitle: "Restore a Deceased Parent's Home Videos: Step-by-Step Guide (2026)",
+    metaDescription:
+      "Practical, gentle guide to recovering and restoring a deceased parent's old home video DVDs. Works on Windows. Most discs are still readable, even after 20+ years.",
+    datePublished: "2026-05-17",
+    dateModified: "2026-05-17",
+    readTime: "9 min read",
+    category: "DVD Recovery",
+    intro:
+      "If you've inherited a box of your mom or dad's home video DVDs, most of them are probably still recoverable — even discs that have been sitting in an attic for 20 years, even ones that won't play in any DVD player you own. This guide walks you through what to do, in order, without assuming you're technical. Take it at the pace that works for you; the discs aren't going anywhere now.",
+    related: [
+      "recover-home-videos-dvd",
+      "recover-files-scratched-dvd",
+      "memorial-video-from-old-dvds",
+      "how-long-do-dvds-last-disc-rot",
+      "searchable-family-video-archive-windows",
+      "recover-vhs-converted-dvd",
+      "kodak-photo-cd-recovery",
+    ],
+    sections: [
+      {
+        id: "before-you-start",
+        heading: "A few words before you start",
+        paragraphs: [
+          "There is no rush. The discs in that box have already survived ten, twenty, sometimes thirty years; another week will not change anything. If you opened this guide because someone died recently, it is completely reasonable to put it down again and come back to it in a month.",
+          "When you are ready, the process is not technical. Anyone who can install a piece of software and plug in a USB drive can recover an old home video DVD. You do not need to know what an ISO file is. You do not need to call a nephew who is good with computers.",
+          "One practical note. The first time you hear their voice coming out of your laptop, do it alone, with the volume low, and somewhere you can close the lid quickly if you need to. Most people are not prepared for how present someone can sound on a recording. That is a good thing, but it is a thing.",
+        ],
+      },
+      {
+        id: "what-youll-find",
+        heading: "What's probably in the box",
+        paragraphs: [
+          "Most boxes of parents' home recordings contain a mix of formats. Knowing what each one is tells you what you can do with it.",
+        ],
+        table: {
+          headers: ["What it looks like", "What it is", "What you can do"],
+          rows: [
+            ["Silver disc, paper label, often handwritten dates", "DVD-R home recording (1998 onward)", "Recover with Heirvo on Windows"],
+            ["Pressed disc with printed artwork, often a company name", "VHS-to-DVD transfer (commercial service, 2000–2015)", "Recover the same way"],
+            ["Small 8 cm disc", "Mini-DVD from a Sony or Panasonic camcorder", "Recover with Heirvo, optional MP4 export"],
+            ["Yellow Kodak disc with a number on it", "Kodak Photo CD — photos, not video", "Recover with Heirvo's Photo CD support"],
+            ["Black plastic VHS or Hi8 tape", "Tape — needs a separate transfer", "Send to a transfer service before scanning"],
+          ],
+        },
+      },
+      {
+        id: "sort-into-three-piles",
+        heading: "Step 1 — Sort the discs into three piles",
+        paragraphs: [
+          "Spend an hour going through the box once. Do not try to play anything yet. You are just sorting.",
+        ],
+        items: [
+          "Pile A — clean and clearly labelled. These are your easy wins; start here.",
+          "Pile B — readable label but visible scratches, fingerprints, or sticky residue. These are recoverable but will take longer per disc.",
+          "Pile C — milky, bronze-tinted, delaminating around the edge, or with the label half-peeled off. These are the ones to recover last, and the ones most likely to need professional help.",
+        ],
+        callout: {
+          label: "Label the piles",
+          text: "Use sticky notes or a marker on the spindle box. After 50 discs the piles blur together, and you do not want to redo the sorting at midnight.",
+          color: "blue",
+        },
+      },
+      {
+        id: "recover-at-home",
+        heading: "Step 2 — Recover the discs at home",
+        paragraphs: [
+          "Install Heirvo on a Windows 10 or 11 laptop. The installer is small and takes about a minute. No account, no email — you just open it and it works.",
+          "Insert the first disc from Pile A. Heirvo will detect the drive and the disc automatically. Click Scan. For a healthy disc the scan finishes in 15 to 30 minutes; for a scratched one it can take a few hours. You can leave it running overnight and come back in the morning.",
+          "When the scan finishes you see exactly what is on the disc — every video file, every photo, every audio clip — and you can preview them right in the app before saving anything. The scan is free; you only pay if you want to save the recovered files to your hard drive.",
+        ],
+        callout: {
+          label: "If you do not have a disc drive",
+          text: "Any external USB DVD drive ($20–$30 on Amazon) works. A full-size desktop drive reads damaged discs better than a slim laptop drive — if you have an old desktop tower in a closet, the drive inside it is usually a good one.",
+          color: "blue",
+        },
+      },
+      {
+        id: "what-recovery-feels-like",
+        heading: "Step 3 — Watching the first one",
+        paragraphs: [
+          "Most people pick a disc with a familiar date on it for the first playback — a Christmas, a birthday, a holiday they remember being filmed. Sometimes the date is wrong. Sometimes what is on the disc is not what is on the label. Both are common; nothing is broken.",
+          "It is also common for the first disc you recover to contain something you have not seen since you were a child — your mom in the kitchen, your dad before he was sick, a grandparent who died when you were small. There is no preparing for this. Take breaks. The discs will still be here tomorrow.",
+        ],
+      },
+      {
+        id: "back-it-up",
+        heading: "Step 4 — Back everything up immediately",
+        paragraphs: [
+          "Once a disc is recovered, copy the files to at least two places. The classic rule is 3-2-1: three copies, on two different types of storage, with one copy off-site.",
+        ],
+        items: [
+          "Copy 1 — your laptop's main drive.",
+          "Copy 2 — an external USB hard drive that lives in a different room. A 2 TB drive is around $60 and holds hundreds of hours of recovered home video.",
+          "Copy 3 — cloud backup. Backblaze, iDrive, or Google Drive all work. This is the copy that survives a house fire.",
+        ],
+        callout: {
+          label: "Do this before recovering the next disc",
+          text: "It is tempting to power through the whole box first and back up later. Do not. If your laptop drive fails halfway through, you lose the work you have already done. Recover, back up, then move on.",
+          color: "amber",
+        },
+      },
+      {
+        id: "make-it-searchable",
+        heading: "Step 5 — Make it searchable",
+        paragraphs: [
+          "Once you have ten or twenty hours of recovered video sitting on a drive, you will run into a new problem: you cannot find anything. Nobody is going to scrub through 90 minutes of birthday footage to find the moment their dad said something specific.",
+          "Heirvo solves this with local transcription. It listens to the audio of every recovered video and turns the spoken words into a searchable index — entirely on your laptop, with nothing uploaded. You can type a phrase you half-remember (\"I told you so\", a nickname, a place name) and the app jumps to the exact second it was spoken.",
+          "For inherited footage this is the difference between an archive that gets opened twice and one that becomes a living record of who someone was.",
+        ],
+      },
+      {
+        id: "share-with-siblings",
+        heading: "Step 6 — Share with the rest of the family",
+        paragraphs: [
+          "Once everything is recovered and backed up, the practical question is how to share it. The wrong answer is to email a 4 GB MP4 to your sister; it will not send.",
+        ],
+        items: [
+          "Make a USB copy for each sibling — a 64 GB stick is around $10 and holds most family archives.",
+          "Use Heirvo Family ($149, three seats) so two siblings can also recover their own discs and add to the shared archive.",
+          "For a single clip you want to send right now, use Heirvo's clip-and-share feature — trim 30 seconds, add a caption, share a private link.",
+        ],
+      },
+      {
+        id: "when-to-mail-in",
+        heading: "When to send discs in instead",
+        paragraphs: [
+          "Some discs in Pile C will not yield to home recovery. If a disc is milky across its entire surface, has visible pinholes, or has the reflective layer peeling away from the edge inward, software cannot read what is no longer physically there. A professional lab can often still recover these using equipment that re-polishes the surface and reads with a more powerful laser.",
+          "For an irreplaceable disc — your parents' wedding, the only recording of a grandparent — the mail-in option is worth the cost. The guarantee is the same as the software: if nothing is recoverable, you pay nothing.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "Some of the discs are from the 1990s. Are they too old?",
+        a: "Probably not. Commercial pressed DVDs from that era often outlast their owners. Home-burned DVD-R and DVD+R discs degrade faster, but a disc stored in a cool, dark place for 20–25 years is often still 80–95% recoverable. Try the easy ones first — you'll know within an hour whether the data is still there.",
+      },
+      {
+        q: "I'm not technical. Can I really do this myself?",
+        a: "Yes. Heirvo is built for people who do not normally recover discs. The whole interface is one button: insert disc, click Scan, see what comes back. There is no command line, no settings to configure. If you can install a printer driver, you can recover a DVD.",
+      },
+      {
+        q: "I started recovering and found something I wasn't expecting to see. What do I do?",
+        a: "Stop and close the laptop. The disc has been on the shelf for a long time; another day will not change anything. Some inherited footage is harder than people expect — old arguments, ex-partners, parents who looked very different. Call someone if you need to. There is no right pace for this.",
+      },
+      {
+        q: "Can my siblings access the recovered videos?",
+        a: "Yes — either copy the files to a USB stick for each sibling, or use Heirvo Family ($149 for three seats), which lets each person on the licence access the shared archive and add their own recovered discs to it.",
+      },
+      {
+        q: "What if the disc plays in one drive but not another?",
+        a: "That is normal and a good sign — it means the data is mostly intact and the disc is just marginal. Use a full-size external USB drive rather than a slim laptop drive; the bigger drives have better error correction. If a disc plays partially in any drive, Heirvo can usually recover most of it.",
+      },
+      {
+        q: "Can Heirvo recover photos as well as video?",
+        a: "Yes. Heirvo recovers any file type on the disc — JPEG, PNG, RAW, MP4, MOV, MP3, PDF — and it handles Kodak Photo CDs (the yellow discs) natively. One scan, all files.",
+      },
+    ],
+    cta: {
+      heading: "When you're ready, scan the first disc",
+      body: "Free to download, free to scan. You'll know within an hour what's still recoverable from the box.",
+      primaryLabel: "Download Free — Windows",
+      primaryHref: "/download",
+      secondaryLabel: "Or mail us the difficult ones",
+      secondaryHref: "/recover",
+    },
+  },
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 44. Memorial video from old family DVDs
+  // ─────────────────────────────────────────────────────────────────────────────
+  {
+    slug: "memorial-video-from-old-dvds",
+    title: "How to Make a Memorial Video from Old Family DVDs",
+    metaTitle: "How to Make a Memorial Video from Old Family DVDs (2026 Guide)",
+    metaDescription:
+      "A practical step-by-step guide to making a memorial video from old home DVDs — including recovery, finding the right clips fast, trimming, and formatting for a service.",
+    datePublished: "2026-05-17",
+    dateModified: "2026-05-17",
+    readTime: "8 min read",
+    category: "DVD Recovery",
+    intro:
+      "You can make a meaningful 5–10 minute memorial video from a stack of old family DVDs in about a day of focused work, even if some of the discs are damaged. The workflow that takes the longest is finding the right moments inside hours of footage — this guide shows you how to skip that step by transcribing the audio and searching it for specific phrases, names, and moments.",
+    related: [
+      "restore-deceased-parents-home-videos",
+      "recover-home-videos-dvd",
+      "recover-files-scratched-dvd",
+      "searchable-family-video-archive-windows",
+      "find-specific-moment-in-old-family-video",
+      "caption-old-wedding-video-automatically",
+      "recover-vhs-converted-dvd",
+    ],
+    sections: [
+      {
+        id: "how-much-time",
+        heading: "How much time do you actually need?",
+        paragraphs: [
+          "Two timelines, depending on what you are working with:",
+        ],
+        table: {
+          headers: ["Situation", "Realistic timeline", "Path"],
+          rows: [
+            ["Discs are readable, you know roughly which clips you want", "4–6 hours over one or two evenings", "Recover, transcribe, trim, export"],
+            ["Discs need recovery, you have not watched them in years", "2–4 days at relaxed pace", "Sort, recover overnight, transcribe, choose clips, edit"],
+            ["Service is in 48 hours and discs are damaged", "Mail-in priority recovery + same-day edit", "Send Pile C to lab while editing Pile A clips"],
+          ],
+        },
+      },
+      {
+        id: "step-1-recover",
+        heading: "Step 1 — Get the footage off the discs",
+        paragraphs: [
+          "If the source video lives on DVDs, you need it on your laptop's hard drive before you can edit. Heirvo handles this with a free scan: insert the disc, click Scan, and the software extracts the playable video as an MP4. A healthy disc takes 15–30 minutes; a scratched one runs in the background while you do something else.",
+          "Scan the discs you remember as the best sources first — the holidays, the milestones, anything with speech you want to include. Save those MP4 files to a single folder named something simple like memorial-source.",
+        ],
+        callout: {
+          label: "Tip for service deadlines",
+          text: "If you only need a few clips for a service, recover just those discs first. You do not need to recover the whole box before you start editing.",
+          color: "blue",
+        },
+      },
+      {
+        id: "step-2-find-moments",
+        heading: "Step 2 — Find the moments that matter (without scrubbing)",
+        paragraphs: [
+          "This is the step where most people get stuck. You know there is a clip somewhere of grandma singing happy birthday, or dad giving a toast, or your mom laughing at her own joke — but it is buried inside three hours of footage and you do not have time to watch all of it.",
+          "Heirvo's transcription feature solves this. Drop the recovered MP4s into the app and it transcribes every spoken word locally on your laptop — no upload, no internet required after the first model download. Then you can search the whole archive by phrase: type happy birthday, a nickname, a place name, and the app jumps the player to the second the words were spoken.",
+          "This typically turns an evening of scrubbing into 30 minutes of finding exactly what you need.",
+        ],
+      },
+      {
+        id: "step-3-trim-clips",
+        heading: "Step 3 — Trim and order the clips",
+        numbered: true,
+        items: [
+          "Inside Heirvo, use the clip-and-share feature to mark in and out points for each moment you found. Keep clips short — 10 to 30 seconds is usually right. A memorial video that runs longer than 8 minutes loses the room.",
+          "Save each clip as a separate MP4 file. Name them in the order you want them to play (01-firstdance.mp4, 02-grandkids.mp4, and so on).",
+          "Build a simple sequence in any free editor. Windows 11's built-in Clipchamp app handles this with no learning curve; if you have more time, DaVinci Resolve is free and professional.",
+          "If a clip has bad audio, mute it and let the music carry it. If a clip has bad video but great audio (a toast, a song), use it as voiceover under photos.",
+        ],
+      },
+      {
+        id: "step-4-music-captions",
+        heading: "Step 4 — Add music and gentle captions",
+        paragraphs: [
+          "Choose one piece of music that runs underneath the whole video; switching songs is jarring. Acoustic instrumentals work better than anything with lyrics. Sites like Artlist, Epidemic Sound, or YouTube's Audio Library have memorial-appropriate tracks.",
+          "Captions can help when audio is poor or when the person speaks softly. Heirvo's caption feature uses the transcription it already generated, so you can burn accurate subtitles directly into a clip in seconds. Use them sparingly — captions on every clip is overwhelming, captions on the spoken moments are perfect.",
+        ],
+      },
+      {
+        id: "step-5-format",
+        heading: "Step 5 — Export for the service",
+        paragraphs: [
+          "Export the final video as an MP4 at 1080p H.264. This format plays on every laptop, projector, and smart TV without converting, and it is universally supported by hotels, churches, and funeral homes.",
+        ],
+        items: [
+          "Container: MP4",
+          "Video codec: H.264",
+          "Resolution: 1920×1080 (1080p)",
+          "Audio: AAC, 192 kbps",
+          "Bitrate: 8–12 Mbps for projection",
+        ],
+        callout: {
+          label: "Bring a backup",
+          text: "Put the final video on two USB sticks and email a copy to yourself. AV setups fail in unexpected ways at exactly the wrong moment.",
+          color: "amber",
+        },
+      },
+      {
+        id: "tight-deadline",
+        heading: "If you have less than 48 hours",
+        paragraphs: [
+          "If the service is in two days and the source discs are damaged, send them to Heirvo's mail-in service with priority shipping. We can usually return playable MP4 files within 24 hours of arrival. While the discs are in transit, recover anything you have at home first and start choosing clips so you can drop the new material straight into the timeline when it arrives.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "How long should a memorial video be?",
+        a: "Five to eight minutes is the sweet spot. Longer than ten and the room loses focus; shorter than three and it feels rushed. Quality over quantity — three perfect clips beats twenty mediocre ones.",
+      },
+      {
+        q: "Can I make this in one evening?",
+        a: "Yes, if the source discs are already recovered and you know which clips you want. Realistically: 45 minutes to find the clips (using transcription search), 90 minutes to trim and sequence in Clipchamp or a similar editor, 30 minutes to render and copy to USB. Plan for double that the first time.",
+      },
+      {
+        q: "What if the only footage is on VHS or 8mm tape?",
+        a: "You need a tape transfer service first — Legacybox, iMemories, or a local camera shop. Once the tapes are on DVD or as digital files, the workflow is the same as for DVDs.",
+      },
+      {
+        q: "Can I add photos and music to the same video?",
+        a: "Yes. Most editors let you mix video clips, still photos, and music on the same timeline. Hold each photo for 4–6 seconds with a slow zoom (the Ken Burns effect) so it feels alive rather than static.",
+      },
+      {
+        q: "Will the video play on a hotel or church projector?",
+        a: "If you export as 1080p H.264 MP4, yes — that is the format every modern projector handles. Bring an HDMI cable and a USB stick; do not rely on the venue's wifi or cloud playback.",
+      },
+      {
+        q: "What if the discs are scratched or won't play?",
+        a: "Heirvo recovers them. Free scan, $59 to save. If a disc is badly degraded and software cannot read it, the mail-in service handles those — useful for the irreplaceable ones you cannot afford to lose.",
+      },
+    ],
+    cta: {
+      heading: "Start with the discs you already have",
+      body: "Recover, search, and clip in one app. Free to scan, free to try the transcription search on your own footage.",
+      primaryLabel: "Download Free — Windows",
+      primaryHref: "/download",
+      secondaryLabel: "Priority mail-in for tight deadlines",
+      secondaryHref: "/recover",
+    },
+  },
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 45. Wedding videographer went out of business
+  // ─────────────────────────────────────────────────────────────────────────────
+  {
+    slug: "wedding-videographer-went-out-of-business",
+    title: "My Wedding Videographer Went Out of Business — Can I Still Get My Video?",
+    metaTitle: "Wedding Videographer Went Out of Business — How to Get Your Video (2026)",
+    metaDescription:
+      "Step-by-step paths to recovering your wedding video when the videographer has gone out of business, disappeared, or stopped responding. Includes DVD recovery and legal next steps.",
+    datePublished: "2026-05-17",
+    dateModified: "2026-05-17",
+    readTime: "8 min read",
+    category: "DVD Recovery",
+    intro:
+      "Yes — in most cases you can still get your wedding video even when the videographer has disappeared, gone bankrupt, or stopped returning your messages. The best chance is almost always the DVD copy they sent you at delivery, even if it now skips or refuses to play. This guide walks through every realistic recovery path, in order of effort, ending with the option most people do not know exists: sector-level recovery of a degraded disc that no DVD player can read anymore.",
+    related: [
+      "recover-wedding-dvd",
+      "recover-unfinalized-dvd",
+      "recover-files-scratched-dvd",
+      "recover-home-videos-dvd",
+      "caption-old-wedding-video-automatically",
+      "searchable-family-video-archive-windows",
+      "heirvo-vs-isobuster",
+    ],
+    sections: [
+      {
+        id: "start-with-the-disc",
+        heading: "Step 1 — Look for the original disc first",
+        paragraphs: [
+          "Most wedding videographers between 2000 and 2018 delivered the final video on one or two DVDs in a labelled case. Before doing anything else, find that disc. Check the wedding album box, the in-laws' bookshelf, the cupboard with the photo albums, and any safety deposit box. The disc is the single most likely path to your footage.",
+          "If you find it and it plays normally in any DVD player or laptop, copy the contents to your computer immediately — both the VIDEO_TS folder (which holds the actual video) and any extra files. Burn a second copy to a new disc, copy a third to the cloud, and only then start watching. Discs that work today do not necessarily work next year.",
+        ],
+        callout: {
+          label: "If you only got a USB stick or hard drive",
+          text: "Same rule, even more urgent. USB sticks fail without warning, and external hard drives from a decade ago are on borrowed time. Copy the files to a current laptop and a cloud backup before doing anything else.",
+          color: "amber",
+        },
+      },
+      {
+        id: "disc-wont-play",
+        heading: "Step 2 — If the disc is scratched, hazy, or refuses to play",
+        paragraphs: [
+          "A disc that will not play in any DVD player is not necessarily dead. Wedding DVDs delivered 5–25 years ago commonly fail for three recoverable reasons:",
+        ],
+        items: [
+          "Surface scratches from handling, paper sleeves, or being passed around the family.",
+          "Disc rot — the dye layer in a burned DVD-R oxidises over time, making the disc hazy or bronze-tinted.",
+          "Unfinalised burn — some videographers (especially ones who delivered on DVD-R rather than pressed copies) skipped the finalisation step. The data is fully present but no normal player can read it.",
+        ],
+      },
+      {
+        id: "recover-with-software",
+        heading: "Step 3 — Run a sector-level recovery scan",
+        paragraphs: [
+          "Standard file copy gives up the first time a sector fails to read. Sector-level recovery software does the opposite — it retries each unreadable sector dozens of times at variable speeds, builds a map of what it managed to read, and rebuilds the video from whatever it recovered.",
+          "Install Heirvo on a Windows 10 or 11 laptop, insert your wedding DVD, and click Scan. The scan is free; for a scratched wedding DVD it typically runs 30 minutes to 3 hours depending on damage. When it finishes you see exactly what is recoverable before you pay anything. Most wedding discs that will not play normally yield 85–95% of the original footage — usually the full ceremony or the full reception, sometimes both.",
+        ],
+        callout: {
+          label: "Use a desktop USB drive if you can",
+          text: "Slim laptop drives are the worst hardware for marginal discs. A full-size external USB DVD drive ($25–$35) reads degraded wedding discs significantly better. If your scan stalls on a slim drive, this is the cheapest fix.",
+          color: "blue",
+        },
+      },
+      {
+        id: "unfinalised-burn",
+        heading: "Step 4 — If the disc was never finalised",
+        paragraphs: [
+          "If the disc will not play in any DVD player but the videographer told you it should — or if you remember it played once and never again — there is a good chance it was delivered unfinalised. This was alarmingly common from small videography businesses that closed in the 2010s.",
+          "An unfinalised DVD-R contains every byte of the video data; it is missing only the closing table-of-contents that DVD players use to navigate the disc. Heirvo handles unfinalised discs natively by reading the raw disc structure directly. Run the scan; the footage is almost always fully intact.",
+        ],
+      },
+      {
+        id: "contact-former-employees",
+        heading: "Step 5 — Hunt down a former employee",
+        paragraphs: [
+          "If you do not have a disc copy and need the raw footage from the studio's archive, the practical path is finding a former employee or the studio owner directly. The legal entity is gone, but the people often kept hard drives.",
+        ],
+        items: [
+          "Search the studio's old business name on LinkedIn — former employees often list it in their work history.",
+          "Check Google reviews, wedding wire, and the Knot for old client comments — sometimes the comments mention the owner's first name.",
+          "If the business was a sole proprietorship, search the owner's name + nearby city on Facebook and Instagram.",
+          "Be polite when you reach out. Frame it as a request, not a demand — even small studios kept client footage for sentimental reasons, and many former owners will dig through old drives if asked nicely.",
+        ],
+      },
+      {
+        id: "cloud-and-email",
+        heading: "Step 6 — Check old cloud links and email",
+        paragraphs: [
+          "Search your email inbox for the studio name, the videographer's first name, the words wedding video, your wedding venue, and any phrase from the contract. Many videographers between 2012 and 2020 delivered an unlisted Vimeo or YouTube link in addition to the disc. If the account is still active, the link may still work — even if the studio is gone.",
+          "If the link is dead, copy the URL and try the Wayback Machine (web.archive.org). It does not preserve videos, but it sometimes preserves the thumbnail and metadata, which can help you prove a video existed in case you need to make a claim.",
+        ],
+      },
+      {
+        id: "who-owns-the-footage",
+        heading: "Who owns the raw footage after a studio closes?",
+        paragraphs: [
+          "This depends on your country and your contract, but in the US and UK the general default is: the videographer owns the copyright in the footage; the client has a licence to use the delivered video. When a business dissolves, the copyright typically transfers to the owner personally (sole proprietorship) or to whoever buys the assets in bankruptcy (corporation).",
+          "In practice, the people who acquire the assets in a wedding-business bankruptcy almost never have any interest in the footage — they want the gear. Asking the bankruptcy trustee or successor business for a copy of your specific files is usually granted as a courtesy, often for free or for a nominal handling fee.",
+          "This is general information, not legal advice. If meaningful money is involved (a destination wedding with no other coverage), a one-hour consultation with a media lawyer is usually worth it.",
+        ],
+      },
+      {
+        id: "mail-in-recovery",
+        heading: "Step 7 — When to send the disc to a lab",
+        paragraphs: [
+          "If the software scan recovers less than half of the disc, or if the disc has visible delamination (layers peeling apart) or pinholes when held to light, professional recovery is the next step. The hardware in a recovery lab can read what consumer drives cannot — both because the lasers are tunable and because the surface can be re-polished in a controlled environment.",
+          "For wedding footage with no other copy, professional recovery is almost always worth it. Heirvo's mail-in service tells you exactly what is recoverable before you pay anything, and you pay nothing if nothing comes back.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "The videographer went out of business and I only have an unfinalised DVD-R. Can I still get my video?",
+        a: "Almost certainly yes. Unfinalised DVD-Rs contain the full video data — they just lack the navigation table that DVD players need. Heirvo reads the raw disc structure and extracts the footage as MP4 directly. Free scan first, so you know exactly what is recoverable before paying.",
+      },
+      {
+        q: "Can I sue the videographer or studio to get my footage?",
+        a: "Possibly, but it is rarely the fastest path. If the business has formally closed, you would typically file a claim in the bankruptcy proceeding rather than a separate lawsuit. In practice, recovering the disc copy you already have or finding a former employee is faster, cheaper, and more reliable. Consult a lawyer if substantial damages are involved.",
+      },
+      {
+        q: "What if the DVD plays but freezes halfway through?",
+        a: "Classic symptom of partial disc damage — the early sectors are fine, later ones have errors. This is exactly what sector-level recovery is built for. Heirvo will scan past the freeze point, recover whatever sectors it can read, and stitch the footage together. Expect to recover most of the disc, sometimes all of it.",
+      },
+      {
+        q: "All I have is a low-res YouTube link from 10 years ago. Can the original quality be reconstructed?",
+        a: "No — once footage has been compressed and uploaded, the higher-quality original cannot be recovered from the compressed version. AI upscaling can improve the look somewhat, but it is interpolation, not recovery. Your best chance for the original quality is still the DVD or the studio's hard drive.",
+      },
+      {
+        q: "Should I pay a professional recovery lab if my DVD is the only copy?",
+        a: "If the home software scan recovers most of the footage, no — you are done. If it recovers less than half, or the disc has visible physical damage like delamination, yes, the lab option is worth the cost for irreplaceable footage. Heirvo's mail-in service charges nothing if nothing is recoverable.",
+      },
+      {
+        q: "Can I make the recovered wedding video searchable by speech?",
+        a: "Yes. Heirvo transcribes the audio of recovered footage entirely locally on your laptop and lets you search every word — vows, toasts, speeches — to jump to any moment. Useful when you want to clip a specific line for an anniversary gift or memorial.",
+      },
+    ],
+    cta: {
+      heading: "Start with the disc you have",
+      body: "Free to scan, free to see exactly what's recoverable. Most wedding discs that won't play normally still yield the ceremony or reception in full.",
+      primaryLabel: "Download Free — Windows",
+      primaryHref: "/download",
+      secondaryLabel: "Send us the disc instead",
+      secondaryHref: "/recover",
+    },
+  },
 ];
 
 export default GUIDES;

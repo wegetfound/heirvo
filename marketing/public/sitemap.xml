@@ -312,4 +312,22 @@
     <changefreq>monthly</changefreq>
     <priority>0.3</priority>
   </url>
+  <url>
+    <loc>https://heirvo.com/guides/restore-deceased-parents-home-videos</loc>
+    <lastmod>2026-05-17</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://heirvo.com/guides/memorial-video-from-old-dvds</loc>
+    <lastmod>2026-05-17</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://heirvo.com/guides/wedding-videographer-went-out-of-business</loc>
+    <lastmod>2026-05-17</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.85</priority>
+  </url>
 </urlset>
