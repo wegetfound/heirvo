@@ -21,6 +21,7 @@ pub mod recovery;
 pub mod session;
 pub mod state;
 pub mod transcription;
+pub mod util;
 
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 

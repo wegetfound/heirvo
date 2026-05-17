@@ -292,8 +292,16 @@ pub async fn import_rmap(
         return Err(AppError::RecoveryInProgress(session_id));
     }
 
-    let text = std::fs::read_to_string(&input_path)
-        .map_err(|e| AppError::Internal(format!("read {input_path}: {e}")))?;
+    // Defense in depth: validate the path the renderer handed us before
+    // touching the filesystem. `.rmap` files are typically <1 MB; cap at 100 MB
+    // to avoid OOM on a malicious or malformed input.
+    let safe_input = crate::util::path_safety::validate_read_path(
+        &input_path,
+        &["rmap", "map"],
+        100 * 1024 * 1024,
+    )?;
+    let text = std::fs::read_to_string(&safe_input)
+        .map_err(|e| AppError::Internal(format!("read {}: {}", safe_input.display(), e)))?;
     let map = crate::recovery::rmap::decode(&text, session.total_sectors)
         .map_err(|e| AppError::Internal(format!("parse rmap: {e}")))?;
 
@@ -332,11 +340,12 @@ pub async fn export_receipt_manifest(
     let sector_count = manager::count_receipts(&state.db, id).await?;
 
     if let Some(path) = output_path {
-        if let Some(parent) = std::path::Path::new(&path).parent() {
-            std::fs::create_dir_all(parent)?;
-        }
-        std::fs::write(&path, manifest.as_bytes())?;
-        tracing::info!("receipt manifest exported to {path} ({sector_count} sectors)");
+        // Frontend supplies the path — validate it. We do NOT create arbitrary
+        // parent directories; the renderer's file picker is expected to point
+        // at an existing folder.
+        let safe = crate::util::path_safety::validate_write_path(&path, &["txt", "sha256", "manifest"])?;
+        std::fs::write(&safe, manifest.as_bytes())?;
+        tracing::info!("receipt manifest exported to {} ({sector_count} sectors)", safe.display());
     }
 
     Ok(ReceiptManifestResult { manifest, sector_count })

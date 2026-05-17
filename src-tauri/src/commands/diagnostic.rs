@@ -141,21 +141,22 @@ pub async fn export_diagnostic_bundle(
         "system": system_info,
     });
 
-    // Decide output path
+    // Decide output path. If the frontend provides one, validate it (must be
+    // absolute, .zip, parent must already exist — we don't create arbitrary
+    // directory trees on behalf of the renderer). If none provided, fall back
+    // to a known-safe location under the user's Documents folder.
     let target = match output_path {
-        Some(p) => PathBuf::from(p),
+        Some(p) => crate::util::path_safety::validate_write_path(&p, &["zip"])?,
         None => {
             let docs = app
                 .path()
                 .document_dir()
                 .map_err(|e| AppError::Internal(format!("document_dir: {e}")))?;
+            std::fs::create_dir_all(&docs)?;
             let stamp = Utc::now().format("%Y%m%d-%H%M%S");
             docs.join(format!("dvd-rescue-diagnostic-{stamp}.zip"))
         }
     };
-    if let Some(parent) = target.parent() {
-        std::fs::create_dir_all(parent)?;
-    }
 
     // Write the zip
     let file = std::fs::File::create(&target)?;

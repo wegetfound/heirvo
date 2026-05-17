@@ -15,16 +15,10 @@
  * synthesised plate-style reverb so they read as "expensive" rather than
  * "Windows ding".
  *
- * TODO(wiring): Other modules should call `audio.play("milestone" | …)` from:
- *   - Dashboard.tsx: when `pct` crosses each 10% boundary (track previous pct
- *     in a ref and fire on threshold transitions). Likely near the existing
- *     `pct` calc around src/screens/dashboard/Dashboard.tsx:161.
- *   - Dashboard.tsx: inside the `events.onComplete` handler (~line 73) →
- *     audio.play("recovery_done").
- *   - ActivityRing variants (src/screens/dashboard/disc-variants/ActivityRing.tsx
- *     and disc-variants/index.tsx): fire "ring_complete" when a ring's value
- *     transitions from <1 to >=1.
- *   - Drive-health watcher: fire "drive_warning" when health flips to Suspect.
+ * Wiring: all four events are dispatched from Dashboard.tsx — milestones at
+ * each 10% boundary, ring_complete when goodFrac/damagedFrac/scannedFrac cross
+ * 0.999, recovery_done in events.onComplete, drive_warning when health flips
+ * to "suspect".
  */
 
 export type AudioEvent =
