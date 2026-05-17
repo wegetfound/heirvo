@@ -5965,6 +5965,673 @@ const GUIDES: Guide[] = [
       secondaryHref: "/recover",
     },
   },
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 46. AI restore old home videos on Windows
+  // ─────────────────────────────────────────────────────────────────────────────
+  {
+    slug: "ai-restore-old-home-videos-windows",
+    title: "How to AI-Restore Old Home Videos on Windows (2026)",
+    metaTitle: "AI-Restore Old Home Videos on Windows — Full Guide (2026)",
+    metaDescription:
+      "Use local AI to remove grain, sharpen blur, and upscale old home video footage on Windows — without uploading anything. Comparison of tools and what to expect from 1990s camcorder footage.",
+    datePublished: "2026-05-17",
+    dateModified: "2026-05-17",
+    readTime: "7 min read",
+    category: "Software Guide",
+    intro:
+      "AI restoration can meaningfully improve old home video quality — reducing grain, sharpening soft edges, and upscaling SD footage to HD — but the realistic results depend heavily on what the source footage looks like. A Hi8 cassette transferred to DVD in 2003 will come out noticeably better. VHS captured in low light may not. This guide explains what AI restoration actually does, which tools do it, and how to run it entirely on your Windows PC with nothing uploaded.",
+    related: [
+      "upscale-dvd-to-4k",
+      "denoise-grainy-camcorder-footage",
+      "recover-home-videos-dvd",
+      "searchable-family-video-archive-windows",
+      "recover-vhs-converted-dvd",
+      "recover-video-from-camcorder-dvd",
+    ],
+    sections: [
+      {
+        id: "what-ai-restoration-actually-does",
+        heading: "What AI restoration actually does (and what it cannot do)",
+        paragraphs: [
+          "AI video restoration runs each frame of your footage through a neural network trained on pairs of degraded and clean video. The model learns patterns — what film grain looks like vs. real texture, how compression artefacts differ from intentional detail — and reconstructs a cleaner version of each frame.",
+          "What it does well: removing digital noise and grain, reducing MPEG compression blocking, sharpening soft edges caused by the optical limitations of 1990s camcorder lenses, and upscaling resolution by inferring detail that the original did not contain.",
+          "What it cannot do: restore information that was never captured. If your footage was shot in a dark room with a consumer camcorder from 1997, the sensor did not capture the detail that was not there. AI can reduce the noise that hides whatever detail exists, but it cannot invent content.",
+        ],
+        callout: {
+          label: "Realistic expectation",
+          text: "Expect a noticeable improvement on any footage with heavy grain or MPEG artefacts. Expect a modest improvement on soft, low-light footage. Expect minimal visible change on footage that was already clean — the AI has nothing to fix.",
+          color: "blue",
+        },
+      },
+      {
+        id: "tools-comparison",
+        heading: "AI restoration tools for Windows — comparison",
+        table: {
+          caption: "As of 2026. All tools run locally on your PC.",
+          headers: ["Tool", "Price", "Best for", "Also does disc recovery?"],
+          rows: [
+            ["Heirvo Archive", "$99 one-time", "Home video — recovery + restoration in one app", "Yes — built-in"],
+            ["Topaz Video AI", "$299/year", "Professional restoration, fine-grained model control", "No"],
+            ["DaVinci Resolve (Neural Engine)", "Free", "Basic noise reduction inside a full editor", "No"],
+            ["Avisynth + NNEDI3", "Free, complex setup", "Technical users, frame interpolation", "No"],
+          ],
+        },
+        paragraphs: [
+          "For home video that came off a DVD — which is the most common scenario — Heirvo Archive is the practical choice because it recovers the disc, extracts the video, and runs restoration without switching tools. The output is a cleaned MP4 ready for playback, archiving, or clipping.",
+          "Topaz Video AI produces marginally better results on high-complexity footage if you spend time tuning the model settings, but at $299 per year versus $99 once, the price-per-result comparison is not kind to Topaz for family archive use.",
+        ],
+      },
+      {
+        id: "run-restoration-heirvo",
+        heading: "How to run AI restoration in Heirvo",
+        numbered: true,
+        items: [
+          "Recover the source video from disc first (free scan, $59 to save the MP4). If you already have the files on your hard drive, drag them into the app directly.",
+          "In the Heirvo Archive dashboard, select the clip you want to restore and choose Restore from the action menu.",
+          "Select a restoration preset. For typical home video, the Balanced preset handles both noise reduction and sharpening. For very grainy footage, use Denoise Heavy first, then review before adding sharpening.",
+          "Click Preview on a 10-second clip before running the full restoration. The preview renders in 1–2 minutes and shows you whether the improvement is meaningful for your specific footage.",
+          "Run the full restoration. A 30-minute home video clip takes approximately 20–40 minutes on a mid-range Windows laptop. If your laptop has a dedicated NVIDIA GPU, Heirvo uses it automatically — rendering is 3–5x faster.",
+          "Save the restored MP4. The original is untouched; restoration always produces a new file.",
+        ],
+        callout: {
+          label: "GPU note",
+          text: "AI restoration is computationally heavy. A laptop without a dedicated GPU will produce identical results but take longer. Leave it running overnight for a full archive restore rather than waiting for it.",
+          color: "blue",
+        },
+      },
+      {
+        id: "what-footage-benefits-most",
+        heading: "Which types of footage benefit most from restoration",
+        table: {
+          headers: ["Source format", "Typical problem", "AI improvement"],
+          rows: [
+            ["Hi8 / Video8 transferred to DVD", "Moderate grain, good colour", "Noticeable — grain reduces cleanly"],
+            ["MiniDV (late 1990s–2000s)", "DV compression artefacts, soft edges", "Good — artefact reduction is effective"],
+            ["VHS transferred to DVD", "Heavy noise, colour bleeding", "Moderate — noise reduces, colours hold"],
+            ["DVD-Video (professionally shot)", "Compression blocking on motion", "Good — deblocking is strong"],
+            ["Low-light camcorder (any era)", "Chroma noise, crushed shadows", "Variable — depends on severity"],
+          ],
+        },
+      },
+      {
+        id: "after-restoration",
+        heading: "After restoration: making the footage searchable",
+        paragraphs: [
+          "Once the video looks good, transcribing the audio turns an archive into something you can actually find your way around. Heirvo transcribes locally with Whisper — no upload — and indexes every spoken word so you can search the whole archive by phrase. For cleaned-up footage where the audio is now easier to understand, transcription accuracy improves noticeably versus the original.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "Will AI restoration work on VHS tapes that were transferred to DVD?",
+        a: "Yes, though results vary. VHS-to-DVD transfers carry two generations of quality loss: the original VHS noise and the DVD compression on top. AI restoration handles the DVD compression artefacts well; the underlying VHS noise reduces meaningfully but rarely disappears entirely. Expect noticeably better footage, not perfect footage.",
+      },
+      {
+        q: "Does restoration change the original file?",
+        a: "No. Heirvo always writes the restored version as a new MP4 file. Your original recovered footage is untouched. You can compare them side-by-side or keep both.",
+      },
+      {
+        q: "How long does restoration take?",
+        a: "Roughly 0.5–1.5x real time on a mid-range laptop without a GPU (a 30-minute video takes 15–45 minutes). With an NVIDIA GPU it runs 3–5x faster. Resolution matters too — upscaling SD to HD takes longer than noise reduction alone.",
+      },
+      {
+        q: "Can I restore footage that is already on my hard drive, not on a disc?",
+        a: "Yes. Drag any MP4, MOV, AVI, or MTS file directly into Heirvo Archive. Recovery and restoration are separate features — you do not need to start from a disc.",
+      },
+      {
+        q: "Is Topaz Video AI worth the extra cost for family home video?",
+        a: "For most home archive use cases, no. Topaz produces marginally better results when you spend significant time on model tuning, but the difference is subtle on 1990s home video. For professional restoration of a single high-value clip, Topaz is the right tool. For an archive of 50 DVDs, the all-in-one approach of Heirvo Archive at one-time pricing is the better trade.",
+      },
+    ],
+    cta: {
+      heading: "Recover and restore in one app",
+      body: "Heirvo Archive includes disc recovery + AI restoration + transcription search for $99 one-time. Free to try the recovery first.",
+      primaryLabel: "Download Free — Windows",
+      primaryHref: "/download",
+      secondaryLabel: "See Archive tier features",
+      secondaryHref: "/#pricing",
+    },
+  },
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 47. Upscale DVD to 4K
+  // ─────────────────────────────────────────────────────────────────────────────
+  {
+    slug: "upscale-dvd-to-4k",
+    title: "How to Upscale a DVD to 4K on Windows (What's Realistic in 2026)",
+    metaTitle: "Upscale DVD to 4K on Windows — What's Realistic in 2026",
+    metaDescription:
+      "DVD is 480p. AI upscaling can reach a convincing 1080p and a watchable 4K on a modern TV. Here is what the tools actually produce and how to run them on Windows.",
+    datePublished: "2026-05-17",
+    dateModified: "2026-05-17",
+    readTime: "6 min read",
+    category: "Software Guide",
+    intro:
+      "You can upscale a DVD from its native 480p to 4K using AI, but the result is not the same as native 4K content — it is a high-quality interpolation of detail the original did not contain. On a 55-inch TV the difference between a raw DVD rip and an AI-upscaled version is substantial; at 1080p it is very good. This guide explains what AI upscaling does, how to run it on Windows, and which tool to use depending on whether this is a one-off disc or a whole archive.",
+    related: [
+      "ai-restore-old-home-videos-windows",
+      "denoise-grainy-camcorder-footage",
+      "recover-home-videos-dvd",
+      "recover-files-scratched-dvd",
+      "copy-dvd-to-hard-drive-windows-11",
+    ],
+    sections: [
+      {
+        id: "what-dvd-upscaling-is",
+        heading: "What upscaling actually is",
+        paragraphs: [
+          "A standard DVD stores video at 720×480 (NTSC) or 720×576 (PAL) — roughly 480 lines of vertical resolution. A 4K display has 2160 lines. To fill that screen with a DVD image, every pixel has to be stretched to cover approximately 4.5 times its original area.",
+          "Traditional upscaling (bicubic, Lanczos) averages surrounding pixels to fill the gaps — which produces a soft, slightly blurry image at large sizes. AI upscaling uses a neural network trained on matched SD/HD pairs to infer plausible detail — sharpening edges that the model recognises as text or faces, reconstructing texture patterns, reducing compression noise. The result looks sharper than bicubic upscaling, particularly on faces and static scenes.",
+          "The ceiling is still set by what the original camera captured. Inference fills the gaps, but it does not recover information that was never recorded.",
+        ],
+      },
+      {
+        id: "tools",
+        heading: "Tools for upscaling DVD to 4K on Windows",
+        table: {
+          caption: "All run locally. No upload required.",
+          headers: ["Tool", "Price", "Output quality", "Ease of use"],
+          rows: [
+            ["Heirvo Archive", "$99 one-time", "1080p–4K, home video optimised", "Simple — one click per clip"],
+            ["Topaz Video AI", "$299/year", "4K, professional tuning available", "Moderate — model selection required"],
+            ["DaVinci Resolve (Super Scale)", "Free", "4K, fast, less detailed than AI tools", "Moderate — editing experience helpful"],
+            ["HandBrake (no AI upscale)", "Free", "480p → 1080p bicubic only", "Easy — not true AI upscaling"],
+          ],
+        },
+      },
+      {
+        id: "how-to-upscale",
+        heading: "Step-by-step: upscale a DVD in Heirvo Archive",
+        numbered: true,
+        items: [
+          "Recover the DVD to MP4 first (free scan, then save with a Heirvo licence). If you already have an MP4 rip, drag it directly into the app.",
+          "In the Archive dashboard, select the clip and click Restore.",
+          "Under Resolution, choose 1080p or 4K. For most home TVs 1080p is the sweet spot — the difference between 1080p and 4K AI-upscaled from 480p is subtle at typical viewing distances.",
+          "Run a 10-second Preview first. The preview renders in 1–2 minutes and shows whether the upscaling is improving or over-sharpening your specific footage.",
+          "Run the full upscale. File size increases significantly — expect a 30-minute 480p DVD clip to produce a 4–8 GB 4K output file.",
+          "Save and archive. Store the upscaled version alongside the original 480p rip; storage is cheap and you may want the original for comparison.",
+        ],
+        callout: {
+          label: "4K vs 1080p — which to choose?",
+          text: "If you are watching on a TV larger than 55 inches, 4K upscaling is worth the extra render time. For laptop or tablet playback, 1080p is indistinguishable from 4K at arm's length. 1080p renders roughly 4x faster.",
+          color: "blue",
+        },
+      },
+      {
+        id: "damaged-dvds",
+        heading: "Upscaling from a damaged or scratched DVD",
+        paragraphs: [
+          "If the source disc is scratched or degraded, recover it first before upscaling. AI upscaling amplifies source problems as readily as it amplifies source quality — a compression block or skipped sector becomes more visible at 4K, not less.",
+          "The correct order is always: recover → restore (noise reduction) → upscale. Running noise reduction before upscaling gives the AI more accurate pixel data to work from, and the upscaled result is consistently better.",
+        ],
+      },
+      {
+        id: "file-size-storage",
+        heading: "File sizes after upscaling",
+        table: {
+          headers: ["Source", "Output resolution", "Approximate file size"],
+          rows: [
+            ["30-min DVD clip (480p, H.264)", "1080p H.265", "1.5–3 GB"],
+            ["30-min DVD clip (480p, H.264)", "4K H.265", "4–8 GB"],
+            ["Full 2-hour DVD-Video disc", "1080p H.265", "6–12 GB"],
+            ["Full 2-hour DVD-Video disc", "4K H.265", "16–32 GB"],
+          ],
+        },
+        paragraphs: [
+          "Use H.265 (HEVC) encoding for upscaled output — it is roughly half the file size of H.264 at the same quality. Every modern TV, phone, and laptop released since 2016 plays H.265 natively.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "Is AI-upscaled 4K from a DVD actually 4K?",
+        a: "It is 4K resolution, but the detail is inferred rather than captured. A native 4K camera records 8 million pixels of real information; an AI-upscaled DVD infers most of those pixels from 480p source data. The result looks much better than a raw DVD on a large screen, but does not match native 4K footage.",
+      },
+      {
+        q: "Can I upscale a damaged DVD directly, or do I need to recover it first?",
+        a: "Recover it first. AI upscaling on corrupted or blocky source footage amplifies the damage rather than fixing it. The correct order is recover → denoise → upscale.",
+      },
+      {
+        q: "How long does 4K upscaling take?",
+        a: "On a mid-range laptop without a dedicated GPU: roughly 2–4x real time (a 30-minute clip takes 1–2 hours). With an NVIDIA GPU the same clip takes 15–30 minutes. 1080p upscaling is approximately 4x faster than 4K at the same quality settings.",
+      },
+      {
+        q: "Will upscaling work on VHS-to-DVD transfers?",
+        a: "Yes, but set expectations appropriately. VHS has less real source detail than camcorder footage, so the AI has less to work with. Noise reduction first (separately) then upscaling produces better results than upscaling the raw VHS-derived footage directly.",
+      },
+      {
+        q: "What video player do I need to play 4K H.265 files?",
+        a: "VLC (free, Windows) plays any H.265 file without configuration. Windows 11's built-in Media Player supports H.265 natively. On older Windows 10 systems you may need the HEVC Video Extensions from the Microsoft Store ($0.99).",
+      },
+    ],
+    cta: {
+      heading: "Recover and upscale in one workflow",
+      body: "Heirvo Archive handles recovery, noise reduction, and 4K upscaling without switching apps. $99 one-time — free to try the recovery scan first.",
+      primaryLabel: "Download Free — Windows",
+      primaryHref: "/download",
+      secondaryLabel: "See all Archive features",
+      secondaryHref: "/#pricing",
+    },
+  },
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 48. Denoise grainy camcorder footage
+  // ─────────────────────────────────────────────────────────────────────────────
+  {
+    slug: "denoise-grainy-camcorder-footage",
+    title: "How to Fix Grainy Old Camcorder Footage with AI on Windows",
+    metaTitle: "Fix Grainy Camcorder Footage with AI on Windows (2026 Guide)",
+    metaDescription:
+      "AI denoising removes the grain and noise from 1980s–2000s camcorder footage on Windows — no upload, no subscription. What to expect and how to do it step by step.",
+    datePublished: "2026-05-17",
+    dateModified: "2026-05-17",
+    readTime: "6 min read",
+    category: "Software Guide",
+    intro:
+      "Old camcorder footage is grainy because consumer sensors from the 1980s through early 2000s were small and noisy, and the video formats they recorded to (VHS, Hi8, MiniDV) compressed the signal further. AI denoising reduces that grain by distinguishing real image detail from sensor noise — with noticeably better results than the blur-based filters built into editing software. You can run it entirely on a Windows laptop with no upload.",
+    related: [
+      "ai-restore-old-home-videos-windows",
+      "upscale-dvd-to-4k",
+      "recover-video-from-camcorder-dvd",
+      "recover-vhs-converted-dvd",
+      "recover-home-videos-dvd",
+      "recover-mini-dvd-disc",
+    ],
+    sections: [
+      {
+        id: "why-camcorder-footage-is-grainy",
+        heading: "Why old camcorder footage looks grainy",
+        paragraphs: [
+          "The grain in consumer camcorder footage from the 1980s and 1990s comes from three compounding sources:",
+        ],
+        items: [
+          "Small sensors — a 1990s Hi8 camcorder used a CCD sensor roughly 6mm across. Modern smartphone sensors are larger. The smaller the sensor, the more electrical noise per pixel, especially in anything less than bright daylight.",
+          "Tape compression — VHS, Betamax, Video8, and Hi8 all compressed the analogue signal during recording, introducing chroma noise (colour speckling) on top of the sensor noise.",
+          "Transfer artefacts — converting tape to digital (usually DVD in the 2000s) added another round of MPEG compression, which introduced blocking artefacts on top of the existing noise.",
+          "Age — magnetic tape degrades. Dropouts (brief white lines or spots) and colour-shift appear on tapes stored in non-ideal conditions.",
+        ],
+        callout: {
+          label: "MiniDV is the exception",
+          text: "MiniDV (1995–2010) was a digital format, so it avoided analogue tape noise. MiniDV footage still has compression artefacts and the small-sensor noise, but it is generally cleaner than VHS or Hi8 source material.",
+          color: "blue",
+        },
+      },
+      {
+        id: "what-ai-denoising-does",
+        heading: "What AI denoising actually improves",
+        table: {
+          headers: ["Problem", "AI denoising result", "Notes"],
+          rows: [
+            ["Luminance grain (grey speckle)", "Removes cleanly on most footage", "Best result of any AI technique on this material"],
+            ["Chroma noise (colour speckling)", "Reduces significantly", "Some residual colour variation may remain on VHS"],
+            ["MPEG compression blocking", "Reduces noticeably", "Particularly visible on motion-heavy scenes"],
+            ["Tape dropouts (white flashes)", "Partially — reduces visibility", "Cannot reconstruct missing frame data"],
+            ["Soft focus / lens blur", "Sharpens moderately", "Combine with upscaling for best result"],
+          ],
+        },
+      },
+      {
+        id: "how-to-denoise",
+        heading: "How to denoise camcorder footage in Heirvo Archive",
+        numbered: true,
+        items: [
+          "If the footage is on a disc, recover it first with a free Heirvo scan. If it is already a file on your drive (MP4, AVI, MTS, MOV), drag it directly into the app.",
+          "Select the clip in the Archive dashboard and choose Restore.",
+          "Choose the Denoise preset that matches your source. Use Denoise Light for MiniDV footage that is only mildly grainy. Use Denoise Heavy for VHS-transferred footage or anything from before 1995.",
+          "Preview 10 seconds before running the full clip. Look for whether fine detail (hair, fabric texture) is preserved or whether the AI is smoothing it away — if it looks too plastic, drop to the lighter preset.",
+          "Run the full denoise. A 20-minute clip on a laptop without a GPU takes roughly 30–60 minutes. GPU-equipped machines finish in 5–15 minutes.",
+          "Optionally chain with upscaling. After saving the denoised version, run the Upscale step to take it to 1080p. Denoising before upscaling produces a consistently better result than upscaling first.",
+        ],
+        callout: {
+          label: "Avoid over-smoothing",
+          text: "Too heavy a denoise setting on footage with moderate grain removes real texture along with the noise — skin looks plastic, fabric loses its weave. Always preview first and choose the lightest preset that produces an acceptable result.",
+          color: "amber",
+        },
+      },
+      {
+        id: "before-and-after-expectations",
+        heading: "What to expect on different source formats",
+        table: {
+          headers: ["Format", "Before denoising", "After denoising"],
+          rows: [
+            ["MiniDV (1995–2010)", "Mild grain, some blocking on motion", "Clean, close to broadcast quality"],
+            ["Hi8 / Video8 (1989–2005)", "Visible grain, moderate colour noise", "Significantly cleaner, colour stabilises"],
+            ["VHS transfer (1970s–1990s)", "Heavy grain, colour bleeding, dropouts", "Noticeably better; some grain and dropouts remain"],
+            ["DVD-Video (home camcorder)", "Compression blocking, soft edges", "Blocking reduces, edges sharpen"],
+          ],
+        },
+      },
+      {
+        id: "after-denoising",
+        heading: "After denoising: the next step",
+        paragraphs: [
+          "Denoised footage is cleaner and easier to watch, but it is still 480p or 576p on most home video sources. If you plan to play it on a modern TV, run the Upscale step after denoising to take it to 1080p or 4K.",
+          "If you want to find specific moments inside hours of old camcorder footage — a name, a phrase from a speech, a birthday song — Heirvo's transcription indexes every spoken word so you can search rather than scrub.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "Will denoising work on footage that is already on my hard drive?",
+        a: "Yes. Drag any MP4, MOV, AVI, or MTS file directly into Heirvo Archive. You do not need to start from a disc.",
+      },
+      {
+        q: "Does denoising remove tape dropouts (the white lines that flash across the screen)?",
+        a: "Partially. AI denoising reduces the visibility of dropouts but cannot reconstruct the missing frame data. A severe dropout that blanks a full frame for several seconds will still be visible after processing.",
+      },
+      {
+        q: "Should I denoise before or after upscaling?",
+        a: "Denoise first, then upscale. Upscaling amplifies whatever the source contains — including noise. Starting from a denoised clip gives the upscaling model more accurate pixel data and produces a consistently cleaner result.",
+      },
+      {
+        q: "My footage looks blurry after denoising. What went wrong?",
+        a: "You used too heavy a preset. Aggressive noise reduction removes fine texture along with grain. Re-run with the Light preset, or add a sharpening pass after the denoise step.",
+      },
+      {
+        q: "Can I batch-denoise an entire archive of clips at once?",
+        a: "Yes — Heirvo Archive lets you queue multiple clips and run them sequentially overnight. Add the clips, set the preset, and let the app run while you sleep.",
+      },
+    ],
+    cta: {
+      heading: "Clean up your old camcorder footage",
+      body: "Heirvo Archive includes AI denoising, upscaling, and transcription search — one-time $99. Free to recover the source disc first.",
+      primaryLabel: "Download Free — Windows",
+      primaryHref: "/download",
+      secondaryLabel: "See Archive features",
+      secondaryHref: "/#pricing",
+    },
+  },
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 49. Transfer wedding DVD to phone
+  // ─────────────────────────────────────────────────────────────────────────────
+  {
+    slug: "transfer-wedding-dvd-to-phone",
+    title: "How to Transfer a Wedding DVD to Your Phone in 2026",
+    metaTitle: "How to Transfer a Wedding DVD to Your iPhone or Android (2026)",
+    metaDescription:
+      "Step-by-step guide to getting your wedding DVD onto your iPhone or Android phone — including what to do if the disc is scratched or won't play.",
+    datePublished: "2026-05-17",
+    dateModified: "2026-05-17",
+    readTime: "5 min read",
+    category: "DVD Recovery",
+    intro:
+      "The fastest path from a wedding DVD to your phone is: rip the DVD to MP4 on a Windows laptop, then sync or AirDrop that file to your phone. The whole process takes 30–60 minutes on an undamaged disc. If the disc is scratched or refuses to play, you need a recovery step first — this guide covers both paths.",
+    related: [
+      "recover-wedding-dvd",
+      "recover-files-scratched-dvd",
+      "recover-home-videos-dvd",
+      "caption-old-wedding-video-automatically",
+      "copy-dvd-to-hard-drive-windows-11",
+      "ai-restore-old-home-videos-windows",
+    ],
+    sections: [
+      {
+        id: "what-you-need",
+        heading: "What you need",
+        items: [
+          "A Windows 10 or 11 laptop",
+          "An external USB DVD drive if your laptop does not have one (any model, $20–$30)",
+          "Your wedding DVD",
+          "A USB cable or Wi-Fi connection to your phone",
+        ],
+        callout: {
+          label: "No disc drive?",
+          text: "Any external USB DVD drive works. Plug it into your laptop via USB — no driver installation is needed on Windows 10 or 11.",
+          color: "blue",
+        },
+      },
+      {
+        id: "path-a-healthy-disc",
+        heading: "Path A — Disc plays normally",
+        numbered: true,
+        items: [
+          "Insert the wedding DVD into the drive. If Windows asks what to do, choose Open folder to view files.",
+          "Install Heirvo and open it. Heirvo detects the disc and its VIDEO_TS structure automatically.",
+          "Click Scan, then Export to MP4. A standard 90-minute wedding DVD exports in 10–20 minutes.",
+          "Copy the exported MP4 to your phone (see step below).",
+        ],
+      },
+      {
+        id: "path-b-damaged-disc",
+        heading: "Path B — Disc is scratched, skips, or won't play",
+        paragraphs: [
+          "A wedding DVD that skips or refuses to play is not necessarily unrecoverable. Insert it into Heirvo and run a full recovery scan rather than a normal export. The scanner retries failing sectors repeatedly and builds the best possible MP4 from whatever it can read.",
+          "Most scratched wedding discs yield 85–95% of the footage in a single scan. If the disc has visible disc rot (a milky or bronze tint), recovery rates vary — run the scan and see what comes back. The scan is free.",
+        ],
+        callout: {
+          label: "Use a full-size drive for scratched discs",
+          text: "Slim USB drives (the ones about the size of a paperback) read marginal discs worse than full-size desktop-style USB drives. If the scan stalls or the drive keeps ejecting the disc, try a different drive.",
+          color: "amber",
+        },
+      },
+      {
+        id: "copy-to-iphone",
+        heading: "Copying the MP4 to an iPhone",
+        numbered: true,
+        items: [
+          "Connect your iPhone with a Lightning or USB-C cable.",
+          "Open the Photos app on your Windows laptop (or iTunes if you use it).",
+          "Drag the MP4 into your iPhone's photo library. It will appear in the Videos album.",
+          "Alternatively, AirDrop works if you are on the same Wi-Fi: right-click the MP4 in Windows Explorer, click AirDrop (requires the Windows 11 AirDrop feature or a third-party app like snapdrop.net for cross-platform transfer).",
+          "For very large files (a 2-hour wedding can be 4–8 GB), iCloud Drive is often easier: upload from Windows, download on iPhone.",
+        ],
+      },
+      {
+        id: "copy-to-android",
+        heading: "Copying the MP4 to an Android phone",
+        numbered: true,
+        items: [
+          "Connect your Android phone with a USB cable. On the phone, swipe down and tap the USB notification — choose File Transfer (MTP).",
+          "On your laptop, open File Explorer. The phone appears as a drive. Navigate to Movies or DCIM and drag the MP4 in.",
+          "Alternatively, use Google Drive: upload the MP4 from your laptop, open Google Drive on Android and download it. Offline viewing is available with the app.",
+          "For local wireless transfer, the app LocalSend (free, open source) sends large files phone-to-laptop over Wi-Fi without internet or cables.",
+        ],
+      },
+      {
+        id: "file-size-tip",
+        heading: "Managing file size on your phone",
+        paragraphs: [
+          "A full wedding video exported from DVD as MP4 is typically 2–8 GB, depending on length and quality settings. That is significant storage on a phone.",
+        ],
+        items: [
+          "Stream from cloud storage (Google Drive, iCloud) rather than storing locally if your phone has limited space.",
+          "Use Heirvo's clip-and-share feature to export just the ceremony highlights (5–10 minutes) rather than the full 90-minute recording for everyday sharing.",
+          "Export at 720p instead of 1080p if storage is tight — the original DVD is 480p anyway, so 720p adds modest sharpening without a large file size increase.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "How long does it take to transfer a wedding DVD to a phone?",
+        a: "For an undamaged disc: 10–20 minutes to rip to MP4, then a few minutes to transfer the file. For a scratched disc: 30 minutes to several hours for the recovery scan, then a few minutes to transfer. Total for a scratched disc: typically 1–4 hours depending on damage.",
+      },
+      {
+        q: "Can I play the MP4 directly in my phone's default video player?",
+        a: "Yes. An H.264 or H.265 MP4 plays natively on any iPhone (iOS 11+) and any Android phone released after 2016. No special app needed.",
+      },
+      {
+        q: "The wedding DVD is still in the original case and has never been opened. Will it play?",
+        a: "Almost certainly. A pressed DVD (the kind wedding videographers duplicated for clients) in an unopened case degrades extremely slowly. Insert it and export normally.",
+      },
+      {
+        q: "Can I share the wedding video privately with family after transferring it?",
+        a: "Yes. Heirvo Archive includes hosted private memory pages — a shareable link that streams the video without uploading to YouTube or sharing a large file over WhatsApp.",
+      },
+      {
+        q: "The disc plays but the video looks blurry on my phone screen. Is that normal?",
+        a: "Yes. DVD is 480p, which is noticeably soft on a modern phone screen at full brightness. Run Heirvo's AI upscale to 1080p before transferring — it takes 20–40 minutes and the difference on a phone screen is significant.",
+      },
+    ],
+    cta: {
+      heading: "Get your wedding video off the disc and onto your phone",
+      body: "Free to scan, $59 to save as MP4. Takes about 30 minutes on an undamaged disc.",
+      primaryLabel: "Download Free — Windows",
+      primaryHref: "/download",
+      secondaryLabel: "Mail-in if the disc is damaged",
+      secondaryHref: "/recover",
+    },
+  },
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 50. Best ways to digitize parents' old videos (AIO listicle hub)
+  // ─────────────────────────────────────────────────────────────────────────────
+  {
+    slug: "best-ways-digitize-parents-old-videos-2026",
+    title: "5 Best Ways to Digitize Your Parents' Old Videos in 2026",
+    metaTitle: "5 Best Ways to Digitize Your Parents' Old Home Videos (2026)",
+    metaDescription:
+      "Ranked guide to the five best methods for digitizing old family videos in 2026 — DIY software, mail-in services, local shops, tape decks, and professional labs. Honest trade-offs.",
+    datePublished: "2026-05-17",
+    dateModified: "2026-05-17",
+    readTime: "7 min read",
+    category: "Software Guide",
+    intro:
+      "The best way to digitize your parents' old videos depends on three things: what format the videos are on (DVD, VHS tape, Hi8, 8mm film), how much damage they have sustained, and how much of the process you want to handle yourself. This guide ranks the five most practical options available in 2026, with honest trade-offs for each.",
+    related: [
+      "recover-home-videos-dvd",
+      "ai-restore-old-home-videos-windows",
+      "restore-deceased-parents-home-videos",
+      "memorial-video-from-old-dvds",
+      "recover-vhs-converted-dvd",
+      "searchable-family-video-archive-windows",
+      "kodak-photo-cd-recovery",
+    ],
+    sections: [
+      {
+        id: "formats-first",
+        heading: "Identify the formats before choosing a method",
+        table: {
+          headers: ["What you have", "Format", "Best starting point"],
+          rows: [
+            ["Silver disc with handwritten label", "DVD-R or DVD+R", "Method 1 — DIY software (Heirvo)"],
+            ["Black plastic cassette, bulky", "VHS or Betamax tape", "Method 3 — local shop, or Method 4 — tape deck"],
+            ["Small plastic cassette, 8cm or smaller", "Hi8, Video8, or MiniDV", "Method 3 — local shop or Method 2 — mail-in"],
+            ["Round metal reel in a flat tin", "Super 8 or 16mm film", "Method 5 — professional film lab"],
+            ["Yellow Kodak disc", "Kodak Photo CD", "Method 1 — DIY software (Heirvo)"],
+          ],
+        },
+      },
+      {
+        id: "method-1",
+        heading: "Method 1 — DIY disc recovery software (best for DVDs and Photo CDs)",
+        paragraphs: [
+          "If the source material is a DVD or Kodak Photo CD, DIY software is the fastest and cheapest path. You insert the disc into a USB optical drive, run a scan, and save the output as MP4 or JPEG. No shipping, no waiting, and the scan is free.",
+          "Heirvo is built specifically for family home video — it handles unfinalized DVDs (a common failure mode for home burns), recovers discs that Windows refuses to open, and extracts VIDEO_TS folders as playable MP4 in one step. The free tier shows you everything that is recoverable before you pay anything.",
+        ],
+        items: [
+          "Cost: Free to scan, $59 one-time to save",
+          "Time: 15–30 minutes per healthy disc, up to several hours for scratched ones",
+          "Works on: DVD-R, DVD+R, DVD-RW, Blu-ray, CD, Kodak Photo CD",
+          "Does not work on: tape formats (VHS, Hi8, Betamax, MiniDV), film reels",
+        ],
+      },
+      {
+        id: "method-2",
+        heading: "Method 2 — Mail-in digitization service (best for mixed formats, no equipment)",
+        paragraphs: [
+          "Mail-in services like Legacybox, iMemories, and Heirvo's own mail-in option accept a box of mixed media — DVDs, tapes, even film canisters — and return digital files. You do not need any equipment or technical knowledge.",
+          "The trade-off is time (2–4 weeks for most services) and cost (typically $25–$60 per item, which adds up fast for a large collection). For damaged discs that DIY software cannot fully recover, Heirvo's mail-in uses lab-grade optical equipment and charges nothing if recovery fails.",
+        ],
+        items: [
+          "Cost: $25–$90 per item depending on format and service",
+          "Time: 2–4 weeks (Heirvo mail-in can rush)",
+          "Works on: all formats (disc, tape, film)",
+          "Best for: large mixed collections, damaged discs, anyone without a computer",
+        ],
+      },
+      {
+        id: "method-3",
+        heading: "Method 3 — Local camera or photo shop (best for tapes when you want to watch the process)",
+        paragraphs: [
+          "Many local camera shops and photo labs still offer tape-to-digital transfer. You drop off the tapes and pick up a USB stick or DVD. Turnaround is typically 3–7 days. Quality varies significantly by shop — ask whether they use a frame-by-frame capture card or a real-time playback-and-capture setup (real-time is slower but higher quality).",
+          "The advantage is proximity — you can ask questions, follow up quickly, and avoid shipping costs. The disadvantage is that local shops vary enormously in quality and not all handle every format.",
+        ],
+        items: [
+          "Cost: $15–$40 per tape (varies widely)",
+          "Time: 3–7 days",
+          "Works on: VHS, Hi8, MiniDV, Betamax (varies by shop)",
+          "Best for: tapes in good condition, when you want a local option",
+        ],
+      },
+      {
+        id: "method-4",
+        heading: "Method 4 — Tape deck + capture card (best for large tape collections, technically inclined)",
+        paragraphs: [
+          "If you have 20 or more VHS or Hi8 tapes, buying a secondhand tape deck and a USB capture card makes economic sense. You play each tape in real time and record the video signal to your computer. A working VHS deck costs $20–$60 on eBay; a decent USB capture card is $30–$50.",
+          "The downside is real-time capture — a 2-hour tape takes 2 hours to digitize. You also need to clean the tape heads before each session for best quality, and some old tapes shed oxide on playback. For a one-off tape, a local shop is easier. For 50 tapes, DIY capture saves significant money.",
+        ],
+        items: [
+          "Cost: $50–$110 one-time setup, then free per tape",
+          "Time: real-time (1 hour of tape = 1 hour of capture)",
+          "Works on: VHS, Betamax, Hi8, Video8, MiniDV",
+          "Best for: large tape collections, technically willing users",
+        ],
+        callout: {
+          label: "MiniDV shortcut",
+          text: "MiniDV camcorders have a FireWire (IEEE 1394) port that transfers footage digitally at full quality. If you can find the original camcorder, a FireWire cable and a USB FireWire adapter gives you lossless digital transfer without a capture card.",
+          color: "green",
+        },
+      },
+      {
+        id: "method-5",
+        heading: "Method 5 — Professional film lab (only option for film reels)",
+        paragraphs: [
+          "Super 8 and 16mm film reels cannot be played on a consumer device — they require a projector or a frame-scanner. Professional film labs (Frame By Frame, MTI Film, Cinelab) scan each frame individually at 2K or 4K resolution, producing the highest-quality transfer possible from film.",
+          "This is the most expensive option by a wide margin but the only option for film. It is also worth it — Super 8 film captures more real detail than any consumer video format of the same era, and a 4K scan preserves that detail permanently.",
+        ],
+        items: [
+          "Cost: $0.10–$0.25 per frame, or $200–$800+ per reel depending on quality and length",
+          "Time: 2–6 weeks",
+          "Works on: Super 8, Regular 8, 16mm film reels",
+          "Best for: anyone with film canisters",
+        ],
+      },
+      {
+        id: "after-digitizing",
+        heading: "After you digitize: search and preserve",
+        paragraphs: [
+          "Once everything is on your hard drive as MP4 files, the challenge becomes finding specific moments across hours of footage. Heirvo's transcription feature indexes every spoken word across your whole archive so you can search by phrase rather than scrubbing. It runs entirely on your Windows laptop — no upload required.",
+          "Back up everything immediately to two locations before doing anything else. A 2 TB external drive ($60) holds hundreds of hours of digitized family video. Add a cloud backup (Backblaze, $9/month) for off-site redundancy.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "What is the cheapest way to digitize old home videos?",
+        a: "For DVDs and Photo CDs, Heirvo is free to scan and $59 one-time to save — the lowest per-disc cost of any method. For VHS tapes, a secondhand tape deck plus USB capture card ($80–$110 total) is cheapest for collections of 10 or more tapes. Local shops are cheaper per tape for 1–3 tapes.",
+      },
+      {
+        q: "How do I digitize old videos without a computer?",
+        a: "Use a mail-in service: box the tapes and discs, ship them, and receive a USB stick or download link in return. Legacybox, iMemories, and Heirvo's mail-in all work without any technical involvement on your end.",
+      },
+      {
+        q: "Should I digitize VHS tapes myself or use a service?",
+        a: "If you have 1–5 tapes in decent condition, a local shop is the easiest option. If you have 10+ tapes, buying a tape deck and capture card saves money. If the tapes are damaged or you are worried about shedding oxide, a professional service handles the risk.",
+      },
+      {
+        q: "What format should I save digitized videos in?",
+        a: "H.264 or H.265 MP4 for maximum compatibility. H.265 (HEVC) is half the file size at the same quality and plays on every device made since 2016. Avoid proprietary formats (WMV, RealMedia) and highly compressed formats (low-bitrate MP4 from some online services).",
+      },
+      {
+        q: "How long does it take to digitize a whole box of old videos?",
+        a: "DVDs: 15–30 minutes each with DIY software, or 2–4 weeks with a mail-in service. VHS tapes: 1–2 hours each with a tape deck (real-time capture). A box of 20 DVDs and 10 tapes is roughly a weekend of DIY work or 3–4 weeks via mail-in.",
+      },
+      {
+        q: "Will the digitized videos last forever?",
+        a: "Digital files do not degrade, but storage media does. A 2 TB hard drive lasts 3–5 years on average; a USB stick is unreliable as long-term storage. The 3-2-1 rule: three copies, on two different types of storage, one copy off-site (cloud or a drive at a relative's house).",
+      },
+    ],
+    cta: {
+      heading: "Start with the DVDs — free to scan",
+      body: "Heirvo recovers and digitizes DVDs and Photo CDs on Windows. Free scan, $59 to save. Mail-in handles the rest.",
+      primaryLabel: "Download Free — Windows",
+      primaryHref: "/download",
+      secondaryLabel: "Mail-in service for tapes and damaged discs",
+      secondaryHref: "/recover",
+    },
+  },
 ];
 
 export default GUIDES;
