@@ -168,12 +168,12 @@ const GUIDES: Guide[] = [
     metaDescription:
       "Recover family home videos from old, scratched, or deteriorating DVDs on Windows. Extract VOB files or convert to MP4 with Heirvo — free to scan.",
     datePublished: "2026-05-14",
-    dateModified: "2026-05-14",
+    dateModified: "2026-05-17",
     readTime: "8 min read",
     category: "DVD Recovery",
     intro:
       "Home video DVDs burned between 2000 and 2015 are now reaching the end of their reliable lifespan. The organic dye in DVD-R and DVD+R discs oxidises over time, turning the reflective layer hazy and causing read errors even on undamaged discs. The good news is that the video data is usually still recoverable — you just need software that reads below the surface errors rather than giving up.",
-    related: ["recover-files-scratched-dvd", "recover-vhs-converted-dvd", "recover-wedding-dvd", "recover-8mm-film-dvd-transfer", "dvd-drive-freezing-mid-recovery-fix", "vlc-plays-dvd-recovery-fails"],
+    related: ["recover-files-scratched-dvd", "recover-vhs-converted-dvd", "recover-wedding-dvd", "recover-8mm-film-dvd-transfer", "searchable-family-video-archive-windows", "search-old-home-videos-by-words-spoken", "dvd-drive-freezing-mid-recovery-fix", "vlc-plays-dvd-recovery-fails"],
     sections: [
       {
         id: "why-home-dvds-fail",
@@ -235,8 +235,25 @@ const GUIDES: Guide[] = [
           "For irreplaceable home videos, a professional recovery lab is worth considering. Heirvo's mail-in service uses optical disc recovery equipment that can sometimes read discs that no consumer drive can detect. The no-recovery, no-charge guarantee means there's no risk in trying.",
         ],
       },
+      {
+        id: "make-it-searchable",
+        heading: "After recovery: search every word your family said",
+        paragraphs: [
+          "Once your videos are saved, Heirvo can transcribe everything spoken on them — locally, on your machine, with nothing uploaded. The built-in Whisper engine writes a full transcript for each video and indexes it for instant search.",
+          "Type \"happy birthday\" or a person's name and click straight to the moment in the timeline. For a home video archive that took years to record, this is the difference between a folder of unlabelled files and a family archive you can actually browse — without paying a subscription or sending anything to the cloud.",
+        ],
+        callout: {
+          label: "Why local matters",
+          text: "Cloud transcription services (Otter, Rev, Trint) upload your family videos to their servers. Heirvo runs Whisper.cpp entirely on your laptop — the audio never leaves the machine. No accounts, no uploads, no data retention.",
+          color: "blue",
+        },
+      },
     ],
     faq: [
+      {
+        q: "Can I search inside the recovered home videos for words people said?",
+        a: "Yes. After recovery, Heirvo transcribes every video with a local Whisper engine and indexes the transcripts for full-text search. Type a phrase like \"happy birthday\" or a person's name and click straight to the moment. Transcription runs entirely on your machine — nothing is uploaded.",
+      },
       {
         q: "My DVD plays fine in a DVD player but Windows won't read it — can Heirvo help?",
         a: "Possibly. Standalone DVD players often have better error correction and are more tolerant of disc damage than PC drives. However, Heirvo can try the same recovery approach — reading sectors multiple times at varying speeds. The results depend on how much of the disc surface is damaged.",
@@ -400,7 +417,7 @@ const GUIDES: Guide[] = [
     category: "Software Guide",
     intro:
       "The best DVD recovery software for Windows reads failing discs sector by sector — not once, but in multiple passes at variable speeds, forwards and backwards — to rescue data that a standard file copy would miss entirely. In 2026 there are a handful of tools that do this well. Here is an honest comparison based on what each tool is actually good at.",
-    related: ["heirvo-vs-isobuster", "free-dvd-recovery-software", "recover-corrupted-iso-file", "dvd-r-vs-dvd-plus-r-recovery", "mode-select-page-01h-scsi-dvd-recovery", "slim-vs-desktop-dvd-drive-recovery", "powered-usb-hub-dvd-recovery", "vlc-plays-dvd-recovery-fails"],
+    related: ["heirvo-vs-isobuster", "free-dvd-recovery-software", "recover-corrupted-iso-file", "dvd-r-vs-dvd-plus-r-recovery", "mode-select-page-01h-scsi-dvd-recovery", "slim-vs-desktop-dvd-drive-recovery", "powered-usb-hub-dvd-recovery", "best-software-to-search-old-home-videos-2026", "heirvo-vs-isobuster-transcription", "vlc-plays-dvd-recovery-fails"],
     sections: [
       {
         id: "what-to-look-for",
@@ -756,7 +773,7 @@ const GUIDES: Guide[] = [
     category: "Software Comparison",
     intro:
       "Heirvo and IsoBuster are both Windows disc recovery tools, but they target different users. Heirvo is built for people who just need to get files off a damaged disc quickly, with a free-scan-then-pay model. IsoBuster is a deep forensic tool with more technical controls, a steeper learning curve, and a subscription pricing model. The right choice depends on whether you need simplicity or maximum control.",
-    related: ["best-dvd-recovery-software", "recover-files-scratched-dvd", "free-dvd-recovery-software", "dvd-r-vs-dvd-plus-r-recovery", "mode-select-page-01h-scsi-dvd-recovery", "slim-vs-desktop-dvd-drive-recovery", "dvd-drive-disconnects-mid-scan"],
+    related: ["heirvo-vs-isobuster-transcription", "best-dvd-recovery-software", "recover-files-scratched-dvd", "free-dvd-recovery-software", "dvd-r-vs-dvd-plus-r-recovery", "mode-select-page-01h-scsi-dvd-recovery", "slim-vs-desktop-dvd-drive-recovery", "dvd-drive-disconnects-mid-scan"],
     sections: [
       {
         id: "quick-comparison",
@@ -867,12 +884,12 @@ const GUIDES: Guide[] = [
     metaTitle: "How to Recover a Wedding DVD That Won't Play (2026 Guide)",
     metaDescription: "Wedding DVDs stop playing for three reasons: scratches, disc rot, or an unfinalized burn. This guide covers all three and shows you how to recover the footage on Windows.",
     datePublished: "2026-05-14",
-    dateModified: "2026-05-14",
+    dateModified: "2026-05-17",
     readTime: "7 min read",
     category: "DVD Recovery",
     intro:
       "A wedding DVD that won't play is one of the most emotionally urgent disc recovery situations there is. The good news is that most wedding DVDs fail for recoverable reasons — surface scratches, early-stage disc rot, or an unfinalized burn by the videographer — rather than catastrophic physical damage. This guide explains what's likely wrong and exactly how to get your footage back on Windows.",
-    related: ["recover-files-scratched-dvd", "recover-unfinalized-dvd", "recover-video-from-camcorder-dvd", "recover-dvd-car-heat-damage", "dvd-drive-freezing-mid-recovery-fix", "slim-vs-desktop-dvd-drive-recovery"],
+    related: ["recover-files-scratched-dvd", "recover-unfinalized-dvd", "recover-video-from-camcorder-dvd", "recover-dvd-car-heat-damage", "caption-old-wedding-video-automatically", "searchable-family-video-archive-windows", "dvd-drive-freezing-mid-recovery-fix", "slim-vs-desktop-dvd-drive-recovery"],
     sections: [
       {
         id: "why-wedding-dvds-fail",
@@ -947,8 +964,25 @@ const GUIDES: Guide[] = [
           "For wedding footage specifically, professional recovery is worth the cost — this is footage that cannot be recreated. Post the disc and we'll tell you exactly what's recoverable before you pay anything.",
         ],
       },
+      {
+        id: "make-it-searchable",
+        heading: "After recovery: search the speeches and toasts",
+        paragraphs: [
+          "Wedding video is the single best use case for transcription. Hours of speeches, vows, toasts and side-conversations — most of it never re-watched because nobody wants to scrub through 90 minutes to find one line. Heirvo transcribes everything spoken on the recovered footage locally on your machine, and indexes it for full-text search.",
+          "Type \"to my best friend\" or your father's name and Heirvo opens the clip at the exact second the line was spoken. The whole wedding becomes a searchable transcript that plays back the source video. Nothing uploaded — the transcription engine runs in the app on your laptop.",
+        ],
+        callout: {
+          label: "Anniversary gift idea",
+          text: "Run the transcription, export a few standout moments as short clips with captions, and send them to family on the anniversary. The recovered wedding DVD stops being a dead disc and starts being a living archive.",
+          color: "blue",
+        },
+      },
     ],
     faq: [
+      {
+        q: "Can I search the wedding video for specific speeches or vows?",
+        a: "Yes. After recovery, Heirvo transcribes the full audio with a local Whisper engine and indexes every word. Type a phrase from a vow or toast — \"to my best friend\", a name, a date — and Heirvo jumps the player to that moment. Transcription runs entirely on your laptop; nothing is uploaded.",
+      },
       {
         q: "Can a wedding DVD be recovered if it has never played at all?",
         a: "Yes — a disc that has never played successfully is often an unfinalized burn, which is fully recoverable with the right software. Insert it and run a scan; Heirvo will read the raw disc structure regardless of whether the disc finalised correctly.",
@@ -985,12 +1019,12 @@ const GUIDES: Guide[] = [
     metaTitle: "How to Recover an Unfinalized DVD on Windows (2026 Guide)",
     metaDescription: "An unfinalized DVD won't play in any player, but the video data is usually 100% intact. Here's how to extract the footage on Windows without losing a single frame.",
     datePublished: "2026-05-14",
-    dateModified: "2026-05-14",
+    dateModified: "2026-05-17",
     readTime: "5 min read",
     category: "DVD Recovery",
     intro:
       "An unfinalized DVD-R is one of the most misunderstood disc problems — people assume the footage is lost because the disc won't play anywhere. In reality, the video data is almost always completely intact. The disc simply lacks the closing index that DVD players need to navigate it. This guide explains what an unfinalized disc is and exactly how to extract the footage on Windows.",
-    related: ["recover-wedding-dvd", "recover-home-videos-dvd", "recover-video-from-camcorder-dvd", "recover-8mm-film-dvd-transfer", "vlc-plays-dvd-recovery-fails", "dvd-drive-freezing-mid-recovery-fix"],
+    related: ["recover-wedding-dvd", "recover-home-videos-dvd", "recover-video-from-camcorder-dvd", "recover-8mm-film-dvd-transfer", "searchable-family-video-archive-windows", "search-old-home-videos-by-words-spoken", "vlc-plays-dvd-recovery-fails", "dvd-drive-freezing-mid-recovery-fix"],
     sections: [
       {
         id: "what-is-unfinalized",
@@ -1050,8 +1084,25 @@ const GUIDES: Guide[] = [
           "More practically: stop burning to DVD-R for archiving. Copy your recovered footage to an external hard drive and a cloud backup. Optical media is a poor long-term archival format for personal use.",
         ],
       },
+      {
+        id: "make-it-searchable",
+        heading: "After recovery: make the rescued footage searchable",
+        paragraphs: [
+          "An unfinalized DVD usually represents one taping session — a recital, a graduation, a birthday party. Once Heirvo recovers the raw recording, it can transcribe the audio locally and index every word, so you can search for a name or a phrase and jump straight to the moment.",
+          "The transcription engine (Whisper.cpp) runs entirely on your machine. For family footage you'd rather not upload to a cloud service, this matters — there's no account, no upload, no retention. The transcript and search index live in the app on your laptop alongside the recovered video.",
+        ],
+        callout: {
+          label: "Tip for noisy recordings",
+          text: "Camcorder-recorded DVDs often have ambient noise and overlapping voices. The Whisper engine handles this surprisingly well — it was trained on millions of hours of imperfect speech. Expect usable transcripts even from a chaotic birthday party.",
+          color: "green",
+        },
+      },
     ],
     faq: [
+      {
+        q: "Can I search the recovered video for words people said?",
+        a: "Yes. After recovery, Heirvo transcribes every video with a local Whisper engine and indexes the transcripts. Type a name or a phrase and the player jumps to the moment it was spoken. Transcription runs on your machine — nothing is uploaded.",
+      },
       {
         q: "Can an unfinalized DVD be finalized after the fact?",
         a: "Technically yes — some burning software (ImgBurn, Nero) can finalise an unfinalized disc if it was burned on the same drive type. In practice this is unreliable and can make the disc worse. It's safer to extract the data with recovery software rather than attempting to finalise.",
@@ -1317,12 +1368,12 @@ const GUIDES: Guide[] = [
     metaTitle: "How to Recover Video from a Camcorder DVD on Windows (2026 Guide)",
     metaDescription: "Mini DVD camcorder discs are some of the most failure-prone media ever made. This guide covers the three most common problems — unfinalized, cracked spindle, and format issues — and how to recover your footage on Windows.",
     datePublished: "2026-05-14",
-    dateModified: "2026-05-14",
+    dateModified: "2026-05-17",
     readTime: "7 min read",
     category: "DVD Recovery",
     intro:
       "Camcorder DVDs — the small 8cm discs used in Sony, Canon, and Panasonic DVD camcorders from 2003 to 2012 — are some of the most failure-prone optical media ever made. The combination of small size, frequent handling, and the fact that most were never finalized properly means a huge proportion simply won't play or import on a computer. The good news: the video is almost always still there.",
-    related: ["recover-unfinalized-dvd", "recover-home-videos-dvd", "recover-vhs-converted-dvd", "dvd-drive-freezing-mid-recovery-fix", "vlc-plays-dvd-recovery-fails"],
+    related: ["recover-unfinalized-dvd", "recover-home-videos-dvd", "recover-vhs-converted-dvd", "find-specific-moment-in-old-family-video", "searchable-family-video-archive-windows", "dvd-drive-freezing-mid-recovery-fix", "vlc-plays-dvd-recovery-fails"],
     sections: [
       {
         id: "why-camcorder-dvds-fail",
@@ -1379,8 +1430,25 @@ const GUIDES: Guide[] = [
           "If chapters were recorded separately (each recording session is its own chapter), Heirvo recovers each chapter as a separate file so you don't get one long merged video.",
         ],
       },
+      {
+        id: "make-it-searchable",
+        heading: "After recovery: find the moment, not just the disc",
+        paragraphs: [
+          "A typical camcorder DVD holds an hour of footage with no chapter markers and no labels — finding one specific recording is normally a 60-minute scrub. Heirvo can transcribe the recovered video locally and index every word spoken, so you can search for a name, a phrase, or a place and jump straight to the clip.",
+          "This matters most for the discs that are decades old and unlabelled. \"Disc 14 of 23, unmarked, holiday somewhere\" becomes searchable in a few minutes — and the transcription runs on your laptop with nothing uploaded to a cloud service.",
+        ],
+        callout: {
+          label: "Why local matters",
+          text: "Cloud transcription (Otter, Rev, Trint) uploads your family footage to a third-party server. Heirvo's Whisper.cpp engine runs entirely on your machine — the audio never leaves your laptop. No account, no upload, no retention.",
+          color: "blue",
+        },
+      },
     ],
     faq: [
+      {
+        q: "Can I search the recovered camcorder footage for a specific moment?",
+        a: "Yes. Heirvo transcribes every video with a local Whisper engine after recovery and indexes the transcripts. Type a phrase or a name and the player jumps to the second it was spoken. Transcription is entirely offline — nothing is uploaded.",
+      },
       {
         q: "My camcorder says the disc is full but my computer shows it as empty. Why?",
         a: "This is the classic unfinalized disc symptom. The camera can read its own unfinalized disc because it knows the internal structure. A computer needs the finalized index to navigate the disc. Heirvo bypasses this requirement and reads the raw recording directly.",
@@ -1418,12 +1486,12 @@ const GUIDES: Guide[] = [
     metaDescription:
       "Your VHS-to-DVD conversion is damaged or won't play — here's how to recover the footage before it's gone for good. Works on scratched, rotted, and unfinalized transfer DVDs.",
     datePublished: "2026-05-14",
-    dateModified: "2026-05-14",
+    dateModified: "2026-05-17",
     readTime: "6 min read",
     category: "DVD Recovery",
     intro:
       "A VHS-to-DVD transfer that won't play is one of the most heartbreaking disc problems — those tapes often no longer exist, making the DVD the only copy of irreplaceable footage. The good news is that most damaged transfer DVDs are recoverable. Because the footage was professionally encoded and pressed (or burned) in a single session, the data is usually intact even when the disc surface has degraded.",
-    related: ["recover-home-videos-dvd", "recover-files-scratched-dvd", "recover-8mm-film-dvd-transfer", "recover-unfinalized-dvd", "dvd-drive-freezing-mid-recovery-fix"],
+    related: ["recover-home-videos-dvd", "recover-files-scratched-dvd", "recover-8mm-film-dvd-transfer", "recover-unfinalized-dvd", "searchable-family-video-archive-windows", "search-old-home-videos-by-words-spoken", "dvd-drive-freezing-mid-recovery-fix"],
     sections: [
       {
         id: "why-transfer-dvds-fail",
@@ -1498,8 +1566,25 @@ const GUIDES: Guide[] = [
           "Post the disc to us and we'll tell you exactly what's recoverable before you pay anything. For VHS-to-DVD transfers — often the last surviving copy of irreplaceable family footage — the mail-in service is worth it.",
         ],
       },
+      {
+        id: "make-it-searchable",
+        heading: "After recovery: search across decades of footage",
+        paragraphs: [
+          "A VHS-to-DVD transfer usually represents years of recordings dumped onto one disc. Birthdays, school plays, holidays, side-conversations — all on a single VOB with no chapters and no labels. Heirvo can transcribe the recovered video locally and index every word, so you can search for a year, a name, or a one-line phrase and jump straight to that clip.",
+          "Because the transcription engine runs on your laptop (not in the cloud), you can put highly personal footage through it without any privacy trade-off. Nothing is uploaded; nothing is retained anywhere except your own machine.",
+        ],
+        callout: {
+          label: "Pro tip",
+          text: "Old VHS audio is often muffled or noisy. Heirvo's Whisper engine handles low-fidelity audio surprisingly well — it was trained on millions of hours of imperfect speech. Expect usable transcripts even on 1980s family camcorder recordings.",
+          color: "green",
+        },
+      },
     ],
     faq: [
+      {
+        q: "Can I search through the recovered VHS-to-DVD footage for specific moments?",
+        a: "Yes. After recovery, Heirvo transcribes the audio with a local Whisper engine and indexes every word. Type a phrase, a name, or a year and the player jumps to that exact moment. The transcription runs entirely on your machine — useful for personal footage you don't want to send to a cloud service.",
+      },
       {
         q: "The DVD won't play in any player and Windows says 'insert a disc'. Is the footage gone?",
         a: "Not necessarily. 'Insert a disc' usually means the drive can't read the disc's table of contents — this happens with disc rot, scratches, or an unfinalized burn. Sector-level recovery software bypasses the navigation layer and reads the raw video data directly. Run a free scan with Heirvo to find out what's recoverable.",
@@ -2105,12 +2190,12 @@ const GUIDES: Guide[] = [
     metaDescription:
       "Step-by-step guide to copying your personal DVDs to your hard drive on Windows 11 — as an ISO image or as MP4 video files. Includes what to do with damaged discs.",
     datePublished: "2026-05-14",
-    dateModified: "2026-05-14",
+    dateModified: "2026-05-17",
     readTime: "6 min read",
     category: "DVD Recovery",
     intro:
       "Copying a DVD to your hard drive preserves the content before the disc degrades — DVD-R and DVD+R discs have a typical lifespan of 10–25 years, and many burned in the early 2000s are already showing signs of disc rot. This guide covers two approaches: copying as an ISO image (a perfect byte-for-byte copy of the disc) and copying as an MP4 video file (smaller, plays anywhere). Both work on Windows 11 with free software.",
-    related: ["how-long-do-dvds-last-disc-rot", "recover-files-scratched-dvd", "dvd-drive-not-reading-disc-windows-11", "recover-corrupted-iso-file", "vlc-plays-dvd-recovery-fails"],
+    related: ["how-long-do-dvds-last-disc-rot", "recover-files-scratched-dvd", "dvd-drive-not-reading-disc-windows-11", "recover-corrupted-iso-file", "searchable-family-video-archive-windows", "how-to-make-old-family-videos-searchable", "vlc-plays-dvd-recovery-fails"],
     sections: [
       {
         id: "iso-vs-mp4",
@@ -2198,8 +2283,25 @@ const GUIDES: Guide[] = [
           "A 2 TB external hard drive ($50–$70) holds roughly 400 single-layer ISOs or 800+ high-quality MP4 files — more than enough for a large home video collection. Pair it with a cloud backup (Backblaze B2 is $6/month for unlimited storage) for genuine redundancy.",
         ],
       },
+      {
+        id: "make-it-searchable",
+        heading: "After copying: make your whole DVD library searchable",
+        paragraphs: [
+          "Most people who copy one DVD to their hard drive end up copying their whole shelf. That's where the real problem starts: a folder of 80 unlabelled MP4 or ISO files is barely more useful than a stack of plastic discs in a drawer. Heirvo transcribes each video locally and indexes every spoken word, so the entire library becomes searchable by phrase, name, or year.",
+          "The transcription is one click per video and runs entirely on your machine — Whisper.cpp, no cloud upload, no account. For an archive of home videos and family footage, this is the difference between a backup nobody opens and an archive that actually gets watched.",
+        ],
+        callout: {
+          label: "Why local matters",
+          text: "Cloud transcription services upload your files to a third-party server. Heirvo runs the Whisper engine on your laptop — the audio never leaves the machine. No accounts, no uploads, no retention.",
+          color: "blue",
+        },
+      },
     ],
     faq: [
+      {
+        q: "Can I search inside the copied DVD videos for words people said?",
+        a: "Yes. After the DVD is on your hard drive, Heirvo can transcribe every video with a local Whisper engine and indexes the transcripts for full-text search. Type a name or phrase and the player jumps to that moment. The transcription runs entirely on your machine.",
+      },
       {
         q: "Does Windows 11 have a built-in way to copy a DVD to the hard drive?",
         a: "Not really. Windows can copy individual files from a data DVD using File Explorer, but it has no built-in tool for creating an ISO image or converting VIDEO_TS home video to MP4. ImgBurn (for ISO) and HandBrake (for MP4) are the standard free tools for this.",
@@ -2376,12 +2478,12 @@ const GUIDES: Guide[] = [
     metaDescription:
       "Your 8mm film was transferred to DVD years ago — now the disc won't play. Recover irreplaceable family footage from degraded transfer DVDs with Heirvo. Free scan, pay only to save.",
     datePublished: "2026-05-14",
-    dateModified: "2026-05-14",
+    dateModified: "2026-05-17",
     readTime: "7 min read",
     category: "DVD Recovery",
     intro:
       "Between the late 1990s and early 2010s, millions of families had their 8mm, Super 8, and Hi8 film reels transferred to DVD. It felt like the responsible thing to do — preserve those irreplaceable memories on a modern format. But DVD-R discs have a limited lifespan, and many of those transfers are now 15 to 25 years old. The dye layer is fading, the disc won't play, and the original film reels were often discarded years ago. That DVD may be the only surviving copy of your grandparents' wedding, your first steps, or a summer at the lake house in 1974. The footage is usually still recoverable — but the window is closing.",
-    related: ["recover-home-videos-dvd", "recover-vhs-converted-dvd", "recover-video-from-camcorder-dvd", "recover-wedding-dvd", "dvd-drive-freezing-mid-recovery-fix"],
+    related: ["recover-home-videos-dvd", "recover-vhs-converted-dvd", "recover-video-from-camcorder-dvd", "recover-wedding-dvd", "find-specific-moment-in-old-family-video", "searchable-family-video-archive-windows", "dvd-drive-freezing-mid-recovery-fix"],
     sections: [
       {
         id: "why-8mm-transfers-at-risk",
@@ -2497,8 +2599,25 @@ const GUIDES: Guide[] = [
           color: "green",
         },
       },
+      {
+        id: "make-it-searchable",
+        heading: "After recovery: catalogue the footage you just rescued",
+        paragraphs: [
+          "8mm transfers usually arrive as one long, undivided video — multiple reels concatenated with no chapter markers and no notes about who's in each frame. Heirvo transcribes whatever audio is present (narration, ambient speech from the transfer studio, any voice-over a relative added) and indexes it locally, so you can search for a name or a phrase and skip to that segment.",
+          "Even without audio, the transcript step doubles as a way to verify which reel ended up where. Combined with the timeline scrubbing in the player, it's the fastest way to turn a 90-minute mystery transfer into a labelled, searchable archive — all on your laptop with nothing uploaded.",
+        ],
+        callout: {
+          label: "If your reels were silent",
+          text: "Most 8mm and Super 8 home reels were filmed without sound, so the transfer DVD has no audio to transcribe. The recovered footage still gets full-quality MP4 export and in-app playback — and if a relative recorded narration over the transfer later, Heirvo will transcribe and index that too.",
+          color: "amber",
+        },
+      },
     ],
     faq: [
+      {
+        q: "If my 8mm transfer has narration, can I search it for specific moments?",
+        a: "Yes. Any audible speech on the recovered video — original narration, voice-over added during transfer, or ambient room sound from a family viewing — is transcribed by Heirvo's local Whisper engine and indexed for full-text search. Type a name or phrase and the player jumps to that timestamp.",
+      },
       {
         q: "The original 8mm film reels are gone. Is the DVD my only hope?",
         a: "If the original film reels were discarded after the transfer, yes — the DVD is the sole surviving copy. The good news is that most transfer DVDs are recoverable even when they won't play normally. Run a free scan with Heirvo to see exactly what footage can be saved. Act soon: disc rot is progressive and the recovery rate drops over time.",
@@ -2540,12 +2659,12 @@ const GUIDES: Guide[] = [
     metaDescription:
       "Recover files and home videos from a DVD warped or damaged by heat in a car. Assess the damage, try software recovery, or use Heirvo's mail-in lab service.",
     datePublished: "2026-05-14",
-    dateModified: "2026-05-14",
+    dateModified: "2026-05-17",
     readTime: "6 min read",
     category: "DVD Recovery",
     intro:
       "A DVD left on a car dashboard in summer can warp in under an hour. The polycarbonate substrate starts deforming around 70 °C (158 °F), and a parked car in direct sunlight routinely hits 80–90 °C on the dash — more than enough to ruin a disc. If you've found a warped DVD in your car and it holds irreplaceable family videos, graduation footage, or wedding memories, don't panic. Depending on the severity, the data is often still recoverable — either with software or through a professional mail-in service.",
-    related: ["recover-files-scratched-dvd", "recover-water-damaged-dvd", "recover-data-cracked-dvd", "how-long-do-dvds-last-disc-rot", "dvd-drive-disconnects-mid-scan", "powered-usb-hub-dvd-recovery"],
+    related: ["recover-files-scratched-dvd", "recover-water-damaged-dvd", "recover-data-cracked-dvd", "how-long-do-dvds-last-disc-rot", "searchable-family-video-archive-windows", "search-old-home-videos-by-words-spoken", "dvd-drive-disconnects-mid-scan", "powered-usb-hub-dvd-recovery"],
     sections: [
       {
         id: "why-heat-damages-dvds",
@@ -2643,8 +2762,25 @@ const GUIDES: Guide[] = [
           "If you must transport discs in a car, carry them in an insulated bag and bring them inside with you at every stop.",
         ],
       },
+      {
+        id: "make-it-searchable",
+        heading: "After recovery: turn the rescued disc into a searchable archive",
+        paragraphs: [
+          "A heat-damaged DVD is rarely just one thing — it's usually a representative sample of a larger box of family discs that lived in the same car or attic. Once Heirvo recovers the footage, it can transcribe every video locally and build a searchable index, so the entire archive (this disc and the rest of the box) becomes findable by name, phrase, or year.",
+          "The transcription engine runs on your machine — Whisper.cpp, no cloud upload. For irreplaceable footage you'd rather not put through a third-party service, this is the privacy-safe way to make it searchable.",
+        ],
+        callout: {
+          label: "Pair with mail-in",
+          text: "If a few discs in the box are too far gone for software recovery, the mail-in service handles those — and the recovered video files come back ready to drop into Heirvo for transcription and search alongside the discs you saved yourself.",
+          color: "blue",
+        },
+      },
     ],
     faq: [
+      {
+        q: "Can I search the recovered video for specific moments?",
+        a: "Yes. Heirvo transcribes every recovered video with a local Whisper engine and indexes the transcripts for full-text search. Type a name or phrase and the player jumps to that moment. Transcription runs entirely on your laptop — nothing is uploaded.",
+      },
       {
         q: "Can a heat-warped DVD be flattened and reused?",
         a: "No. Even if you could flatten the polycarbonate (which risks further damage), the dye layer and reflective coating have likely been compromised by the heat. Focus on recovering the data, not restoring the physical disc. Once recovered, back up your files digitally.",
@@ -4445,6 +4581,924 @@ const GUIDES: Guide[] = [
       primaryLabel: "Download Free — Windows",
       primaryHref: "/download",
       secondaryLabel: "Mail-in recovery service",
+      secondaryHref: "/recover",
+    },
+  },
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // HUB: Searchable family video archive (Whisper transcription cluster)
+  // ─────────────────────────────────────────────────────────────────────────────
+  {
+    slug: "searchable-family-video-archive-windows",
+    title: "How to Build a Searchable Family Video Archive on Windows",
+    metaTitle: "Searchable Family Video Archive on Windows (Local AI Transcription, 2026)",
+    metaDescription:
+      "Turn a shelf of old DVDs and home video files into a searchable, captioned archive on Windows. Local Whisper transcription, full-text search, MP4 + SRT export. Free to try.",
+    datePublished: "2026-05-17",
+    dateModified: "2026-05-17",
+    readTime: "9 min read",
+    category: "Searchable Archive",
+    intro:
+      "A searchable family video archive is a folder of recovered home videos (from DVDs, VHS transfers, or camcorder files) where every spoken word has been transcribed and indexed — so you can type a name, a phrase, or a year and jump straight to the moment in the footage. On Windows, Heirvo does this end-to-end in one app: disc recovery, local Whisper transcription, full-text search, MP4 and subtitle export. Nothing is uploaded; the transcription engine runs entirely on your laptop.",
+    related: ["search-old-home-videos-by-words-spoken", "transcribe-old-dvd-home-videos-offline", "find-specific-moment-in-old-family-video", "add-subtitles-to-recovered-dvd-video", "caption-old-wedding-video-automatically", "how-to-make-old-family-videos-searchable", "recover-home-videos-dvd"],
+    sections: [
+      {
+        id: "why-searchable",
+        heading: "Why an unsearchable archive is barely an archive",
+        paragraphs: [
+          "Most family video collections end up in the same state: 50–200 unlabelled MP4 or VOB files sitting in a folder. Birthdays, weddings, school plays, holidays — all there, none findable. People scroll past the folder for years because the cost of locating one specific moment is 90 minutes of scrubbing.",
+          "Transcription changes the cost. Once every video has a transcript and every transcript is indexed, you can type \"to my best friend\" or \"happy birthday grandma\" and Heirvo jumps the player to the exact second the line was spoken. The archive stops being storage and starts being a record people actually use.",
+        ],
+      },
+      {
+        id: "what-you-need",
+        heading: "What you need",
+        items: [
+          "A Windows 10 or 11 PC (64-bit)",
+          "Your old DVDs, VHS-to-DVD transfers, or home video files (MP4, MOV, MKV, AVI all work)",
+          "A USB DVD drive if you have discs (around $20–$30) — Heirvo can also work directly with video files already on disk",
+          "Heirvo (free download). The whisper.cpp transcription engine is bundled — no separate install",
+        ],
+        callout: {
+          label: "No cloud account, no upload",
+          text: "Heirvo runs Whisper.cpp locally. Your home video audio is processed on your laptop's CPU and never leaves the machine. This matters for family footage — cloud services (Otter, Rev, Trint) require uploading every video to their servers.",
+          color: "blue",
+        },
+      },
+      {
+        id: "step-by-step",
+        heading: "Step-by-step: build the archive",
+        numbered: true,
+        items: [
+          "Download and install Heirvo. The installer is around 60 MB.",
+          "Recover your DVDs first (one-time step). Insert each disc, click Scan, then Save — the recovered video files land in the Library.",
+          "Drop any existing home video files (MP4, MOV, MKV from old camcorders or VHS transfers) into the Library by drag-and-drop.",
+          "On each video, click Transcribe. Heirvo runs Whisper locally on the audio. Expect roughly 0.5x–1x realtime depending on your CPU (an hour of video takes 30–60 minutes the first time).",
+          "Once transcribed, every video is searchable. Type a phrase in the Library search bar — results show matching clips across every video at once, with the player ready to jump to the moment.",
+          "Export anything you want to share: a single moment as a captioned MP4 clip, the full transcript as a text file, or subtitles as an .SRT file for the recipient's video player.",
+        ],
+      },
+      {
+        id: "model-choice",
+        heading: "Choosing a transcription model",
+        paragraphs: [
+          "Heirvo ships with two Whisper models. The choice trades speed for accuracy:",
+        ],
+        table: {
+          caption: "Whisper model options in Heirvo",
+          headers: ["Model", "Size", "Speed (relative)", "Best for"],
+          rows: [
+            ["tiny.en", "75 MB", "~3x faster", "Quick first-pass, clean modern audio, low-power laptops"],
+            ["base.en (default)", "142 MB", "Baseline", "Old camcorder audio, accented speech, family videos with background noise"],
+          ],
+        },
+        callout: {
+          label: "Which to pick",
+          text: "For most family video work, base.en is the better default — old camcorder audio is rarely clean and the accuracy uplift is worth the time. Switch to tiny.en in Settings if you're running on a low-power laptop or batch-processing many hours of footage. Both models are English-only; multilingual models can be added later.",
+          color: "blue",
+        },
+      },
+      {
+        id: "what-you-get",
+        heading: "What you actually end up with",
+        items: [
+          "Every recovered video saved as MP4 + the original VIDEO_TS structure (preserved separately)",
+          "A searchable transcript per video, stored as plain text alongside the file",
+          "Full-text search across the whole library — type once, see matching moments in every video",
+          "Click-to-jump playback: clicking a search hit moves the player to the exact second",
+          "Subtitle export (.SRT) for any video — drops into VLC, Premiere, DaVinci Resolve, YouTube",
+          "Clip-and-share: cut a 30-second highlight with burned-in captions to send to family",
+        ],
+      },
+      {
+        id: "privacy",
+        heading: "Privacy: why local transcription matters here",
+        paragraphs: [
+          "Family video is the highest-stakes audio you'll ever transcribe. It includes children's names, addresses, medical conversations, family arguments — content nobody should be uploading to a third-party server with vague retention policies.",
+          "Heirvo's whisper.cpp engine runs entirely on your CPU. There's no account, no API key, no upload, no telemetry on the audio content. The transcript and index live in your Heirvo Library folder on your local disk. Deleting the video deletes the transcript.",
+        ],
+        callout: {
+          label: "Verify this yourself",
+          text: "If you want to confirm no audio leaves your machine, run Heirvo with your network disconnected — transcription works identically. The whisper.cpp binary is bundled in the install and runs as a local subprocess.",
+          color: "green",
+        },
+      },
+    ],
+    faq: [
+      {
+        q: "Does Heirvo transcribe my videos in the cloud?",
+        a: "No. Heirvo uses whisper.cpp, a local C++ port of OpenAI's Whisper model that runs entirely on your CPU. The audio never leaves your machine. You can verify this by disconnecting from the internet — transcription works the same offline.",
+      },
+      {
+        q: "How accurate is the transcription on old camcorder audio?",
+        a: "Whisper handles low-fidelity audio remarkably well — it was trained on a huge corpus of imperfect speech. Expect ~85–95% word accuracy on typical 1990s–2000s camcorder DVDs with the base.en model, lower on heavily distorted or very quiet recordings. Even imperfect transcripts are very useful for search: you need to find the moment, not publish a court record.",
+      },
+      {
+        q: "How long does transcription take?",
+        a: "Roughly 0.5x to 1x real-time on a modern laptop with the base.en model. A 1-hour video takes 30–60 minutes the first time, then it's indexed permanently. The faster tiny.en model is about 3x quicker, useful for batch jobs.",
+      },
+      {
+        q: "Can I search across all my videos at once, or one at a time?",
+        a: "Across all of them at once. Heirvo indexes the transcripts of every video in your Library and the search bar returns hits from anywhere — so typing a name returns every clip where that name was spoken, sorted by best match. Clicking a result opens the source video at the right timestamp.",
+      },
+      {
+        q: "Can I export the transcripts or subtitles?",
+        a: "Yes. Transcripts export as plain text (.txt), subtitles as .SRT (compatible with VLC, Premiere, DaVinci, YouTube, every modern player). You can also export short clips with burned-in captions for sharing on phones or social.",
+      },
+    ],
+    cta: {
+      heading: "Build the archive your family will actually use",
+      body: "Recover the DVDs, transcribe the footage, search every word — all on your laptop, nothing uploaded. Free to try; pay $49 once if you decide to save.",
+      primaryLabel: "Download Free — Windows",
+      primaryHref: "/download",
+      secondaryLabel: "Mail-in recovery service",
+      secondaryHref: "/recover",
+    },
+  },
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Search old home videos by words spoken
+  // ─────────────────────────────────────────────────────────────────────────────
+  {
+    slug: "search-old-home-videos-by-words-spoken",
+    title: "How to Search Old Home Videos by What Was Said",
+    metaTitle: "Search Old Home Videos by Words Spoken (Local AI, Windows 2026)",
+    metaDescription:
+      "Type a phrase your family said and jump straight to the moment. Local Whisper transcription indexes your old home videos so you can search them like documents. Free on Windows.",
+    datePublished: "2026-05-17",
+    dateModified: "2026-05-17",
+    readTime: "6 min read",
+    category: "Searchable Archive",
+    intro:
+      "You can search old home videos by what was said using local AI transcription: a tool like Heirvo writes a transcript of every video on your machine, indexes the words, and lets you type a phrase to jump to the exact moment it was spoken. No cloud uploads, no subscription — the audio stays on your laptop and the search runs locally.",
+    related: ["searchable-family-video-archive-windows", "find-specific-moment-in-old-family-video", "transcribe-old-dvd-home-videos-offline", "caption-old-wedding-video-automatically", "recover-home-videos-dvd", "how-to-make-old-family-videos-searchable"],
+    sections: [
+      {
+        id: "why-search-spoken-words",
+        heading: "Why this is the right way to find old footage",
+        paragraphs: [
+          "Old home videos almost never have useful filenames. VHS-to-DVD transfers, camcorder dumps, recovered DVDs — they end up as VTS_01_1.VOB or Disc_14.mp4 in a folder you never open. The actual content is hidden inside the audio: \"grandma's 80th\", \"first day of school\", \"the cabin trip\".",
+          "Transcribing the audio and indexing the words turns the archive into something you can grep. You type a phrase you remember someone saying, and the player jumps to the second it was spoken. It's the single most useful thing you can do to a large home video collection.",
+        ],
+      },
+      {
+        id: "how-it-works",
+        heading: "How it works in Heirvo",
+        numbered: true,
+        items: [
+          "Open Heirvo and drag your home video files into the Library (or recover them from DVD first).",
+          "Click Transcribe on each video. Heirvo runs Whisper.cpp on your CPU and writes a full transcript locally.",
+          "Type a phrase in the Library search bar — \"happy birthday\", a name, a place, a year.",
+          "Search results show every clip across every video where the phrase appears, with timestamps.",
+          "Click a result. The player opens the source video at the exact second.",
+        ],
+      },
+      {
+        id: "what-it-finds",
+        heading: "What kinds of searches actually work",
+        items: [
+          "Names of people (\"Sarah\", \"Uncle Mike\")",
+          "Places and events (\"the cabin\", \"the wedding\", \"first day of school\")",
+          "Phrases you remember someone saying (\"to my best friend\", \"don't drop it\")",
+          "Years and dates (\"two thousand and three\")",
+          "Songs and toasts (the audio is enough — instrumental sections aren't searchable, but lyrics and speech are)",
+        ],
+        callout: {
+          label: "What doesn't work",
+          text: "Pure visuals — there's no point typing \"red dress\" or \"birthday cake\" because the search runs on the spoken audio, not video frames. For visual search, you'd need a separate model. Heirvo focuses on speech because it's the highest-signal track in family video.",
+          color: "amber",
+        },
+      },
+      {
+        id: "accuracy",
+        heading: "How accurate is it on old audio?",
+        paragraphs: [
+          "Old camcorder and VHS-transfer audio is noisy by today's standards — wind, background TV, overlapping voices, low bitrate. Whisper handles all of this surprisingly well; it was trained on millions of hours of imperfect real-world recordings.",
+          "Expect 85–95% word accuracy on typical 1990s–2000s family footage with the default model. That's more than enough for search: a misspelled name in the transcript still surfaces when you type its correct form, because the search is fuzzy by design.",
+        ],
+      },
+      {
+        id: "privacy",
+        heading: "Why local transcription matters for this",
+        paragraphs: [
+          "Family audio is the kind of recording you don't want on someone else's server. Children, addresses, medical chatter, arguments, money talk — all the things you'd never type into ChatGPT but happily spoke into a camcorder in 1998.",
+          "Heirvo runs the transcription engine on your laptop. No account, no upload, no telemetry on the audio. You can verify it by transcribing with the network disconnected.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "Do I need an account or internet connection to search my home videos?",
+        a: "No. Heirvo's transcription and search both run locally. You can use the feature with your network disconnected — verify it yourself by going offline before transcribing.",
+      },
+      {
+        q: "What if the speech in my old videos is unclear or muffled?",
+        a: "Whisper performs well on low-fidelity audio because it was trained on imperfect speech. You'll get a usable transcript even on 1980s camcorder recordings. Heavily distorted audio (very low volume, severe wind noise) will produce more errors, but search is forgiving — close-match results still surface.",
+      },
+      {
+        q: "Can I search across my whole collection at once?",
+        a: "Yes. Heirvo indexes every transcribed video in your Library, so a search returns matches from all of them. Each hit shows the timestamp and lets you click-to-play at that second.",
+      },
+      {
+        q: "How long does it take to transcribe a video?",
+        a: "Roughly 0.5x–1x real-time on a modern laptop with the default base.en model (so a 1-hour video takes 30–60 minutes). It's a one-time cost — after transcription the video is indexed permanently.",
+      },
+      {
+        q: "Does this work on videos I didn't recover with Heirvo?",
+        a: "Yes. Drag any MP4, MOV, MKV, or AVI file into the Heirvo Library and transcription works the same way. You don't have to recover the file from disc — Heirvo also works as a transcription/search tool for existing video files.",
+      },
+    ],
+    cta: {
+      heading: "Find any moment, in any home video, by typing what was said",
+      body: "Local AI transcription. Full-text search across your archive. No cloud upload. Free to try.",
+      primaryLabel: "Download Free — Windows",
+      primaryHref: "/download",
+      secondaryLabel: "See the full archive workflow",
+      secondaryHref: "/guides/searchable-family-video-archive-windows",
+    },
+  },
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Transcribe old DVD home videos offline (privacy angle)
+  // ─────────────────────────────────────────────────────────────────────────────
+  {
+    slug: "transcribe-old-dvd-home-videos-offline",
+    title: "How to Transcribe Old DVD Home Videos Offline (No Cloud Upload)",
+    metaTitle: "Transcribe Old DVD Home Videos Offline on Windows — No Cloud Upload (2026)",
+    metaDescription:
+      "Transcribe old home videos from DVD entirely offline on Windows. Local Whisper engine, no account, no upload, no subscription. Built-in to Heirvo. Free to try.",
+    datePublished: "2026-05-17",
+    dateModified: "2026-05-17",
+    readTime: "6 min read",
+    category: "Searchable Archive",
+    intro:
+      "Transcribing old DVD home videos offline means running a speech-to-text model locally on your computer instead of uploading the audio to a cloud service. Heirvo bundles whisper.cpp — a local C++ implementation of OpenAI's Whisper — so the transcription happens on your laptop's CPU. No account, no upload, no API key. This is the only privacy-safe way to put family footage through automatic transcription.",
+    related: ["searchable-family-video-archive-windows", "search-old-home-videos-by-words-spoken", "find-specific-moment-in-old-family-video", "recover-home-videos-dvd", "recover-wedding-dvd", "how-to-make-old-family-videos-searchable"],
+    sections: [
+      {
+        id: "why-offline",
+        heading: "Why offline transcription is the only safe option for family video",
+        paragraphs: [
+          "Family video is exceptionally personal. It contains children's names and faces, family addresses, medical situations, financial conversations, arguments, and identifiable home interiors. Uploading hours of this to a third-party transcription service — Otter, Rev, Trint, AssemblyAI — means trusting that company's data retention policy, breach record, and future ownership.",
+          "Offline transcription removes that question entirely. The audio is processed by a model running on your own CPU and never crosses the network. The transcript file lives on your hard drive next to the video. If you delete the video, the transcript goes with it.",
+        ],
+      },
+      {
+        id: "how",
+        heading: "How to transcribe a DVD home video offline with Heirvo",
+        numbered: true,
+        items: [
+          "Recover the DVD with Heirvo (or drop an existing MP4 file into the Library if you already have it on disk).",
+          "Open the video in the Library. Click Transcribe.",
+          "The first time, Heirvo downloads the Whisper model file (~142 MB for base.en, one-time). After that, transcription is fully offline.",
+          "The whisper.cpp engine runs on your CPU. A 1-hour video takes 30–60 minutes on a typical laptop.",
+          "Once finished, the transcript is saved next to the video and indexed for search.",
+        ],
+        callout: {
+          label: "Verify it's offline",
+          text: "After the model is downloaded, disconnect your network and transcribe a video. It works identically — proof that the audio never leaves your machine.",
+          color: "green",
+        },
+      },
+      {
+        id: "what-runs-locally",
+        heading: "What's actually running on your machine",
+        paragraphs: [
+          "Heirvo bundles whisper.cpp — Georgi Gerganov's open-source C++ port of OpenAI's Whisper. The binary runs as a subprocess of the Heirvo app, takes an audio file as input, and produces a transcript with per-segment timestamps. The model weights are a single file on disk (~75 MB for tiny.en, ~142 MB for base.en).",
+          "There is no telemetry on the audio content. The only network calls Heirvo makes are model downloads (first time only) and licence verification — neither involves your video files.",
+        ],
+      },
+      {
+        id: "vs-cloud",
+        heading: "Local Whisper vs cloud transcription services",
+        table: {
+          caption: "Local transcription vs cloud services for family video",
+          headers: ["", "Heirvo (local whisper.cpp)", "Otter / Rev / Trint (cloud)"],
+          rows: [
+            ["Audio leaves your machine", "No", "Yes (uploaded to their servers)"],
+            ["Account required", "No", "Yes"],
+            ["Subscription", "No", "Typically $10–$30/mo"],
+            ["Works offline", "Yes", "No"],
+            ["Per-minute pricing", "None", "Often $0.10–$0.25/minute"],
+            ["Speed", "0.5x–1x real-time", "Cloud GPU, often faster"],
+            ["Accuracy", "Strong (Whisper base.en)", "Comparable or slightly better"],
+          ],
+        },
+        paragraphs: [
+          "For business meeting transcription, cloud services have an edge: faster turnaround, higher per-call accuracy, integrations. For family video, none of that matters and the privacy gap is too wide. Local Whisper wins by default.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "Is my home video audio ever uploaded?",
+        a: "No. Heirvo's transcription is whisper.cpp running locally on your CPU. The only network activity is a one-time model download (~142 MB) the first time you transcribe. Audio content is never sent anywhere.",
+      },
+      {
+        q: "Do I need a beefy computer?",
+        a: "No GPU required. The whisper.cpp engine runs on the CPU. A modern laptop (any 2019+ Intel/AMD/Apple Silicon) handles base.en at 0.5x–1x real-time. Older machines work too, just more slowly.",
+      },
+      {
+        q: "Does Heirvo collect any telemetry?",
+        a: "No telemetry on audio content. The app makes network calls only for model downloads and licence verification. You can run with no network and transcription works the same.",
+      },
+      {
+        q: "Can I use a stronger Whisper model?",
+        a: "Heirvo ships with tiny.en (75 MB) and base.en (142 MB). Larger Whisper models (small, medium, large) can be added in a future release. For family video, base.en is the sweet spot — large enough for accuracy, small enough to run on a laptop.",
+      },
+      {
+        q: "What about videos I don't want to keep but want a transcript of?",
+        a: "Transcribe, export the transcript to .txt or .srt, then delete the video. Everything stays on your machine — no service to delete from, no servers to email.",
+      },
+    ],
+    cta: {
+      heading: "Transcribe your family DVDs without sending the audio anywhere",
+      body: "Local Whisper, no account, no upload, free to try. $49 to save recovered videos and unlimited exports.",
+      primaryLabel: "Download Free — Windows",
+      primaryHref: "/download",
+      secondaryLabel: "Mail-in recovery for damaged discs",
+      secondaryHref: "/recover",
+    },
+  },
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Find specific moment in old family video
+  // ─────────────────────────────────────────────────────────────────────────────
+  {
+    slug: "find-specific-moment-in-old-family-video",
+    title: "How to Find a Specific Moment in an Old Family Video",
+    metaTitle: "How to Find a Specific Moment in an Old Family Video (Windows, 2026)",
+    metaDescription:
+      "Stop scrubbing through 90 minutes of footage. Local AI transcription indexes every word in your old home videos so you can find any moment in seconds. Free on Windows.",
+    datePublished: "2026-05-17",
+    dateModified: "2026-05-17",
+    readTime: "5 min read",
+    category: "Searchable Archive",
+    intro:
+      "To find a specific moment in an old family video — a particular speech, a child's first words, one line someone said — you can transcribe the audio with a local AI model and search the transcript like a document. Heirvo does this on Windows with no cloud upload: every video in your Library becomes searchable, and clicking a search result jumps the player to the exact second the phrase was spoken.",
+    related: ["search-old-home-videos-by-words-spoken", "searchable-family-video-archive-windows", "transcribe-old-dvd-home-videos-offline", "caption-old-wedding-video-automatically", "recover-home-videos-dvd", "recover-wedding-dvd"],
+    sections: [
+      {
+        id: "the-problem",
+        heading: "The problem with long, unlabelled home videos",
+        paragraphs: [
+          "Most home video footage is recorded continuously — an hour-long camcorder tape, an unbroken VHS, a wedding video with no chapter markers. The moment you actually want is 47 minutes in. Finding it normally means scrubbing the timeline, watching at 4x speed, hoping you don't blow past it.",
+          "Worse, families typically have dozens of these videos. The moment you're looking for could be in any of them. Without an index, locating a specific recollection is a multi-evening project — so most people give up and the moment stays buried.",
+        ],
+      },
+      {
+        id: "the-fix",
+        heading: "The fix: transcribe once, search forever",
+        paragraphs: [
+          "Transcribe each video with Heirvo's local Whisper engine. The engine produces a full transcript with per-segment timestamps. The Library indexes all those transcripts together. From then on, finding a moment is a search query, not a scrub session.",
+          "Search across the whole library, not one video at a time. Type a phrase you remember someone saying and you get a list of every clip across every video where it appears. Click the best hit, the player opens at that timestamp.",
+        ],
+      },
+      {
+        id: "search-tips",
+        heading: "What to type when you can't quite remember",
+        items: [
+          "Distinctive phrases — wedding toast lines, a teacher's introduction, a song lyric. The more unusual the phrase, the better the hit.",
+          "Names — people, places, pets. Even nicknames usually transcribe correctly.",
+          "Years and dates — \"nineteen ninety eight\", \"the year we moved\".",
+          "Events — \"birthday\", \"graduation\", \"the cabin\". Combine with a name for the best result.",
+          "Approximate phrases — if you don't remember the exact wording, try the closest match. Search is fuzzy enough to surface variations.",
+        ],
+        callout: {
+          label: "When you really can't remember",
+          text: "Open one of the longer videos and skim the transcript text view in the Library. Reading a transcript at 1,000+ words per minute is much faster than watching the video, and you can jump to any line by clicking it.",
+          color: "blue",
+        },
+      },
+      {
+        id: "example",
+        heading: "Worked example: finding grandma's 80th birthday toast",
+        paragraphs: [
+          "Say you remember grandma's 80th birthday toast included the line \"if you can dream it, you can do it\" and you have 14 unlabelled home video files from that decade. Without transcription, that's a weekend of scrubbing.",
+          "With transcription: type \"if you can dream it\" in the Library search bar. Heirvo returns one match — the file labelled \"Disc 06\", at 41:23. Click. The player opens to the toast. Total time: 10 seconds.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "What if I only remember the gist of what was said?",
+        a: "Type the closest phrase you remember. Whisper transcribes natural speech the way it was spoken, so most everyday phrasing surfaces. If your first try misses, try a name or a distinctive word from the same conversation.",
+      },
+      {
+        q: "Does it work on videos with no speech, like silent home movies?",
+        a: "Search only works on what was spoken. Silent 8mm transfers and home movies without audio can't be searched by content this way — though Heirvo will still play them and let you label/organise them manually.",
+      },
+      {
+        q: "Can I find a moment if I only remember the date or year?",
+        a: "Often yes — if someone said the date aloud (\"happy new year, two thousand and three\"), it'll be in the transcript. Otherwise, file modification dates from the original DVD/recovery are preserved in the Library, so you can filter by approximate era.",
+      },
+      {
+        q: "What if my videos are still on DVD and not on my hard drive yet?",
+        a: "Heirvo recovers them first (free scan, $49 to save), then transcribes them in the same app. Recovery, transcription, and search are all in one place.",
+      },
+    ],
+    cta: {
+      heading: "Stop scrubbing. Search.",
+      body: "Transcribe your home videos locally and find any moment in seconds. Free to try on Windows.",
+      primaryLabel: "Download Free — Windows",
+      primaryHref: "/download",
+      secondaryLabel: "How to build the full archive",
+      secondaryHref: "/guides/searchable-family-video-archive-windows",
+    },
+  },
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Add subtitles to recovered DVD video
+  // ─────────────────────────────────────────────────────────────────────────────
+  {
+    slug: "add-subtitles-to-recovered-dvd-video",
+    title: "How to Add Subtitles to a Recovered DVD Video",
+    metaTitle: "Add Subtitles to a Recovered DVD Video (Auto-Generated, Local AI) — 2026",
+    metaDescription:
+      "Add auto-generated subtitles to your recovered DVD videos on Windows. Local Whisper transcription, SRT export, no cloud upload. Free to try with Heirvo.",
+    datePublished: "2026-05-17",
+    dateModified: "2026-05-17",
+    readTime: "5 min read",
+    category: "Searchable Archive",
+    intro:
+      "You can add subtitles to a recovered DVD video by transcribing the audio with a local AI model and exporting the result as a .SRT subtitle file. Heirvo on Windows does this end-to-end: recover the DVD, transcribe locally, export subtitles. The .SRT file works in VLC, Premiere, DaVinci Resolve, YouTube, and every modern video player — and the transcription runs entirely on your machine.",
+    related: ["caption-old-wedding-video-automatically", "searchable-family-video-archive-windows", "search-old-home-videos-by-words-spoken", "transcribe-old-dvd-home-videos-offline", "recover-home-videos-dvd", "recover-wedding-dvd"],
+    sections: [
+      {
+        id: "why-subtitles",
+        heading: "Why add subtitles to old home video",
+        items: [
+          "Accessibility — older relatives with hearing loss can follow the speech",
+          "Clarity — old camcorder audio is often muffled, subtitles make speech intelligible",
+          "Search — once captioned, you can also search the video by what was said",
+          "Sharing — YouTube and Vimeo accept .SRT and burn captions for mobile viewing",
+          "Archival — a separate transcript file outlives the video format and helps future indexing",
+        ],
+      },
+      {
+        id: "how",
+        heading: "Step-by-step: subtitle a recovered DVD",
+        numbered: true,
+        items: [
+          "Recover the DVD with Heirvo, or open an already-recovered MP4/VOB file in the Library.",
+          "Click Transcribe. Heirvo runs whisper.cpp locally and produces a transcript with per-segment timestamps.",
+          "Once finished, click Export → Subtitles (.SRT). Choose where to save.",
+          "Drop the .SRT next to the MP4 with a matching filename (e.g. wedding.mp4 + wedding.srt) — VLC and most players auto-load it.",
+          "For burned-in captions (visible without a sidecar file), use the Clip & Share option to export a captioned MP4.",
+        ],
+      },
+      {
+        id: "srt-format",
+        heading: "What an .SRT file looks like",
+        paragraphs: [
+          "SubRip Subtitle (.SRT) is the universal subtitle format — plain text with timestamps. Heirvo's export looks like this:",
+        ],
+        items: [
+          "1\\n00:00:02,400 --> 00:00:05,800\\nHappy birthday, grandma — eighty years young.",
+          "2\\n00:00:06,100 --> 00:00:09,200\\nIf you can dream it, you can do it.",
+        ],
+        callout: {
+          label: "Editing subtitles",
+          text: "If a name or word transcribed wrong, open the .SRT in any text editor (Notepad, VS Code) and fix it. The format is human-readable. Re-save and your player picks up the change next time it loads.",
+          color: "blue",
+        },
+      },
+      {
+        id: "burn-in",
+        heading: "Burned-in captions vs sidecar .SRT",
+        table: {
+          caption: "Subtitle delivery options for old home video",
+          headers: ["Approach", "Pros", "Cons"],
+          rows: [
+            ["Sidecar .SRT next to MP4", "Editable, toggleable on/off, supports multiple languages later", "Recipient needs a player that loads SRT (VLC does; iPhone Photos doesn't)"],
+            ["Burned-in captions (export with Clip & Share)", "Always visible, works in any player, ideal for phone sharing and social", "Permanent — can't toggle off, can't edit without re-rendering"],
+            ["YouTube upload + .SRT", "YouTube auto-loads captions, viewers can translate", "Requires uploading the video — privacy trade-off"],
+          ],
+        },
+      },
+    ],
+    faq: [
+      {
+        q: "Are the auto-generated subtitles accurate?",
+        a: "On clear modern speech, very accurate. On old camcorder audio with background noise, expect ~85–95% word accuracy with the default model — usable for most footage. You can edit the .SRT in any text editor to fix names or unclear words.",
+      },
+      {
+        q: "Can I subtitle a video that I didn't recover with Heirvo?",
+        a: "Yes. Drop any MP4, MOV, MKV, or AVI file into the Heirvo Library and transcription + subtitle export work the same way.",
+      },
+      {
+        q: "Will the .SRT work on a smart TV / iPhone / DVD player?",
+        a: "Smart TVs and VLC on any device load .SRT sidecar files when they're named to match the video. iPhone Photos does not — for iPhone sharing, use Heirvo's Clip & Share with burned-in captions instead. Most old DVD players don't read .SRT — for those, you'd need to burn a new DVD with embedded subtitles.",
+      },
+      {
+        q: "Can I generate subtitles in a language other than English?",
+        a: "The current shipped models (tiny.en, base.en) are English-only. Multilingual Whisper models work with whisper.cpp and may be added in a later release. For now, English audio is the supported path.",
+      },
+      {
+        q: "Does this work offline?",
+        a: "Yes. Transcription runs locally; subtitle export is just writing a text file. No internet required after the one-time model download.",
+      },
+    ],
+    cta: {
+      heading: "Caption every old home video — locally, in minutes",
+      body: "Recover, transcribe, export .SRT — all on your machine, nothing uploaded. Free to try.",
+      primaryLabel: "Download Free — Windows",
+      primaryHref: "/download",
+      secondaryLabel: "Build a searchable family archive",
+      secondaryHref: "/guides/searchable-family-video-archive-windows",
+    },
+  },
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Caption old wedding video automatically (gift angle)
+  // ─────────────────────────────────────────────────────────────────────────────
+  {
+    slug: "caption-old-wedding-video-automatically",
+    title: "How to Caption an Old Wedding Video Automatically",
+    metaTitle: "Auto-Caption an Old Wedding Video on Windows (Local AI, 2026)",
+    metaDescription:
+      "Add auto-generated captions to an old wedding DVD using local AI. Privacy-safe (no cloud upload), exports as .SRT or burned-in captions. Free to try with Heirvo.",
+    datePublished: "2026-05-17",
+    dateModified: "2026-05-17",
+    readTime: "5 min read",
+    category: "Searchable Archive",
+    intro:
+      "To caption an old wedding video automatically, transcribe the audio with a local AI model and export the result as a subtitle file. Heirvo on Windows does this end-to-end — recover the wedding DVD if it's still on disc, transcribe locally with whisper.cpp, and export either an .SRT sidecar or a captioned MP4 clip to share. The transcription engine runs on your laptop, so the speeches and vows never get uploaded to a cloud service.",
+    related: ["add-subtitles-to-recovered-dvd-video", "recover-wedding-dvd", "searchable-family-video-archive-windows", "find-specific-moment-in-old-family-video", "transcribe-old-dvd-home-videos-offline", "search-old-home-videos-by-words-spoken"],
+    sections: [
+      {
+        id: "why-caption-wedding",
+        heading: "Why caption a wedding video at all",
+        paragraphs: [
+          "Wedding video has the worst audio-to-importance ratio of any home footage. Long speeches, distant microphones, clinking glasses, overlapping table chatter — and yet the speeches are the parts people most want to re-watch decades later.",
+          "Captions solve this in two ways. First, they make speech intelligible when the original audio is muffled or accented. Second, they convert the wedding into a giftable, shareable artefact: clip a 60-second toast with burned-in captions and send it to family on the anniversary. The dead DVD becomes a live moment again.",
+        ],
+        callout: {
+          label: "Anniversary gift idea",
+          text: "Recover the wedding DVD → transcribe → pull out 3 standout moments → export each as a captioned MP4 → send. The whole project is one evening of work and lands as a genuinely surprising gift.",
+          color: "blue",
+        },
+      },
+      {
+        id: "step-by-step",
+        heading: "Step-by-step",
+        numbered: true,
+        items: [
+          "Recover the wedding DVD with Heirvo if it's still on disc (free scan, $49 to save).",
+          "Open the recovered video in the Heirvo Library and click Transcribe.",
+          "Heirvo runs whisper.cpp locally on your CPU. A typical 90-minute wedding takes 45–90 minutes the first time.",
+          "Once transcribed, you have three options: export .SRT (sidecar subtitle file), export the transcript as plain text, or use Clip & Share to produce a captioned MP4 of a specific moment.",
+          "For sharing on phones and social: use Clip & Share — captions are burned in and always visible. For watching at home: export .SRT and let VLC overlay them.",
+        ],
+      },
+      {
+        id: "accuracy-on-wedding-audio",
+        heading: "Accuracy on typical wedding audio",
+        paragraphs: [
+          "Wedding audio is challenging — distant mic, reverb, background noise, multiple speakers. Whisper handles it better than you'd expect (the model was trained on huge amounts of imperfect speech), typically 80–95% word accuracy depending on how good the original recording was.",
+          "Names are the most common error — unusual names transcribe as the closest common word. The .SRT file is plain text, so you can open it in Notepad and fix names in 30 seconds. The fix carries through to every export from that transcript.",
+        ],
+      },
+      {
+        id: "privacy",
+        heading: "Why local matters for wedding video specifically",
+        paragraphs: [
+          "Wedding speeches include children's names, family addresses, financial gifts, in-law dynamics, and often very personal anecdotes. Uploading hours of this to a cloud transcription service is a category of risk most people would never accept if they thought about it.",
+          "Heirvo transcribes everything on your laptop. No account, no upload, no API key. The audio of the toasts stays where it belongs — on your machine.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "Can the captions be turned off when watching at home?",
+        a: "Yes if you export as .SRT — most players (VLC, Plex, smart TVs) let you toggle subtitles on and off. If you export with burned-in captions (Clip & Share), the captions are permanent and always visible. Use .SRT for home viewing, burned-in for phone sharing.",
+      },
+      {
+        q: "Will the captions work on YouTube if I upload the wedding clip?",
+        a: "Yes. Upload the MP4 and the .SRT separately on YouTube and the platform auto-loads them. Viewers can toggle captions and even auto-translate.",
+      },
+      {
+        q: "How long does it take to caption a 90-minute wedding video?",
+        a: "Roughly 45–90 minutes on a typical modern laptop with the default base.en model. Faster on newer CPUs, slower on older. It's a one-time cost — once transcribed, the video is permanently captioned and searchable.",
+      },
+      {
+        q: "What if names are misspelled in the transcript?",
+        a: "Open the .SRT file in Notepad (it's plain text), find/replace the misspelling, save. The corrected captions load automatically next time you play the video. Fixing the 5–10 unique names in a typical wedding takes a couple of minutes.",
+      },
+      {
+        q: "Is the audio uploaded anywhere?",
+        a: "No. Heirvo uses whisper.cpp, a local C++ Whisper implementation that runs on your laptop's CPU. The audio never leaves your machine. You can verify by transcribing with the network disconnected.",
+      },
+    ],
+    cta: {
+      heading: "Auto-caption your wedding video and send it for the anniversary",
+      body: "Local transcription, .SRT or burned-in captions, no cloud upload. Free to try.",
+      primaryLabel: "Download Free — Windows",
+      primaryHref: "/download",
+      secondaryLabel: "Give it as a gift",
+      secondaryHref: "/gift",
+    },
+  },
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // COMPARISON: Heirvo vs IsoBuster (transcription)
+  // ─────────────────────────────────────────────────────────────────────────────
+  {
+    slug: "heirvo-vs-isobuster-transcription",
+    title: "Heirvo vs IsoBuster for Transcription & Search: What's the Difference?",
+    metaTitle: "Heirvo vs IsoBuster: Transcription & Search Compared (2026)",
+    metaDescription:
+      "Comparing Heirvo and IsoBuster on transcription, search, and post-recovery features. IsoBuster recovers data; Heirvo recovers, transcribes, and indexes for search.",
+    datePublished: "2026-05-17",
+    dateModified: "2026-05-17",
+    readTime: "5 min read",
+    category: "Software Comparison",
+    intro:
+      "Heirvo and IsoBuster are both well-regarded Windows disc recovery tools, but they serve different jobs after the data comes off the disc. IsoBuster stops at file extraction — it's a recovery utility. Heirvo continues into transcription, full-text search, and subtitle export. If your goal is rescuing a single damaged data disc, IsoBuster is solid. If your goal is turning a shelf of home video DVDs into a searchable archive, Heirvo is the only Windows option that does it in one app, locally.",
+    related: ["heirvo-vs-isobuster", "best-software-to-search-old-home-videos-2026", "searchable-family-video-archive-windows", "transcribe-old-dvd-home-videos-offline", "best-dvd-recovery-software", "search-old-home-videos-by-words-spoken"],
+    sections: [
+      {
+        id: "feature-table",
+        heading: "Feature comparison at a glance",
+        table: {
+          caption: "Heirvo vs IsoBuster (2026) — post-recovery features",
+          headers: ["Capability", "Heirvo", "IsoBuster"],
+          rows: [
+            ["DVD/CD/Blu-ray recovery", "Yes", "Yes"],
+            ["VIDEO_TS → MP4 conversion", "Built-in", "Manual (external tool)"],
+            ["Local AI transcription (Whisper)", "Built-in", "No"],
+            ["Full-text search across library", "Yes", "No"],
+            ["Subtitle (.SRT) export", "Yes", "No"],
+            ["Clip & share with captions", "Yes", "No"],
+            ["Kodak Photo CD native support", "Yes", "Limited"],
+            ["Free scan with preview", "Yes", "Demo mode only"],
+            ["Pricing", "$49 one-time", "$39.95/year"],
+            ["Privacy (transcription)", "Local, no upload", "N/A (no transcription)"],
+          ],
+        },
+      },
+      {
+        id: "isobuster-strengths",
+        heading: "Where IsoBuster wins",
+        paragraphs: [
+          "IsoBuster has been the recovery tool of choice for IT pros and forensic users for over two decades. It supports more obscure filesystems (CDi, UDF variants, HFS hybrids) and exposes more low-level controls than Heirvo does. If you're recovering a 1996 CDi disc, an old Mac hybrid, or anything legal-evidence-related where chain-of-custody matters, IsoBuster has the longer track record.",
+          "IsoBuster is also drive-agnostic in a way that suits highly technical users — you can throw it at almost any optical filesystem and get something back, even if it requires manual interpretation afterwards.",
+        ],
+      },
+      {
+        id: "heirvo-strengths",
+        heading: "Where Heirvo wins",
+        paragraphs: [
+          "Heirvo is built for the use case IsoBuster doesn't address: turning recovered home video into a usable archive. After recovery, Heirvo transcribes every video locally with whisper.cpp and indexes the transcripts for full-text search across the whole library. You can type \"happy birthday grandma\" and jump to the moment. IsoBuster gives you the file; Heirvo gives you the archive.",
+          "Heirvo also handles Kodak Photo CDs natively (with .PCD → JPEG/TIFF conversion) and converts DVD-Video VIDEO_TS folders to MP4 automatically. Both of these are common needs for family memory recovery and require separate tools alongside IsoBuster.",
+          "Pricing is a smaller difference but worth noting: Heirvo is a one-time $49 purchase with no subscription; IsoBuster Pro is $39.95/year recurring.",
+        ],
+      },
+      {
+        id: "which-should-you-pick",
+        heading: "Which should you pick?",
+        items: [
+          "**Pick IsoBuster if:** you're an IT pro or forensic user, you need obscure filesystem support, or you're working with non-video data discs and chain-of-custody matters.",
+          "**Pick Heirvo if:** you have home video DVDs, you want to transcribe and search the footage, you'd rather pay once than subscribe, or you value local-only AI for personal recordings.",
+          "**Use both if:** you have an unusual recovery case that needs IsoBuster's low-level access, then drop the recovered files into Heirvo for transcription and search. The .ISO/.VOB files IsoBuster outputs work directly in Heirvo's Library.",
+        ],
+        callout: {
+          label: "On price",
+          text: "IsoBuster's subscription works out cheaper in year one. By year two, Heirvo is cheaper. By year three, Heirvo is significantly cheaper — and you get the AI features IsoBuster doesn't have.",
+          color: "blue",
+        },
+      },
+    ],
+    faq: [
+      {
+        q: "Does IsoBuster have any AI or transcription features?",
+        a: "No. IsoBuster is a pure recovery tool — it extracts files and ISO images from optical discs. Transcription, search, and subtitle export are not part of its scope. For those features alongside recovery, Heirvo is currently the only Windows option that does it all in one app.",
+      },
+      {
+        q: "Can I use IsoBuster to recover and then Heirvo to transcribe?",
+        a: "Yes — this is a sensible workflow if you already own IsoBuster. Recover the disc to .ISO or extract the VOB/MP4 files with IsoBuster, then drop those files into Heirvo's Library. Heirvo handles transcription, search, and subtitle export from there.",
+      },
+      {
+        q: "Is Heirvo's transcription as good as IsoBuster's?",
+        a: "IsoBuster has no transcription, so there's no comparison to make. Heirvo's transcription uses whisper.cpp (a local port of OpenAI's Whisper) and produces accuracy comparable to cloud Whisper services for clear modern audio, with 85–95% word accuracy on typical home video.",
+      },
+      {
+        q: "Which one is better for damaged discs?",
+        a: "On recovery itself, both are competitive — both do sector-level scanning with retry logic. IsoBuster has more granular controls; Heirvo has a more guided interface with a recovery map and free preview before purchase. For home users, Heirvo's UX is gentler. For technical users, IsoBuster's controls are deeper.",
+      },
+    ],
+    cta: {
+      heading: "If you want recovery + search in one app, Heirvo is the only option",
+      body: "Free to try. Recover, transcribe, search — all on your machine, no upload.",
+      primaryLabel: "Download Free — Windows",
+      primaryHref: "/download",
+      secondaryLabel: "Full Heirvo vs IsoBuster comparison",
+      secondaryHref: "/guides/heirvo-vs-isobuster",
+    },
+  },
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Best software to search old home videos 2026 (list/AIO)
+  // ─────────────────────────────────────────────────────────────────────────────
+  {
+    slug: "best-software-to-search-old-home-videos-2026",
+    title: "Best Software to Search Old Home Videos in 2026",
+    metaTitle: "Best Software to Search Old Home Videos in 2026 (Local AI, Windows)",
+    metaDescription:
+      "The best 2026 options for searching old home video footage by spoken words — local AI transcription, full-text search, privacy-safe. Heirvo, MacWhisper, and what to know.",
+    datePublished: "2026-05-17",
+    dateModified: "2026-05-17",
+    readTime: "6 min read",
+    category: "Software Guide",
+    intro:
+      "The best software to search old home videos in 2026 transcribes the audio locally with a Whisper-class model and indexes the transcripts for full-text search. On Windows, Heirvo is currently the only single-app option that does this together with DVD/CD recovery and subtitle export — and runs entirely offline. This guide compares the main options.",
+    related: ["search-old-home-videos-by-words-spoken", "searchable-family-video-archive-windows", "transcribe-old-dvd-home-videos-offline", "heirvo-vs-isobuster-transcription", "best-dvd-recovery-software", "how-to-make-old-family-videos-searchable"],
+    sections: [
+      {
+        id: "what-to-look-for",
+        heading: "What to look for",
+        items: [
+          "**Local AI transcription** — runs on your CPU, no cloud upload. Critical for family video privacy.",
+          "**Whisper-quality accuracy** — anything weaker than Whisper struggles on low-fidelity old audio.",
+          "**Full-text search across multiple videos** — searching one file at a time defeats the point for a real archive.",
+          "**Click-to-jump playback** — search results that take you straight to the moment.",
+          "**Subtitle export** — .SRT for accessibility and sharing.",
+          "**No subscription** — disc recovery and transcription are one-time tasks; ongoing fees don't fit.",
+        ],
+      },
+      {
+        id: "comparison-table",
+        heading: "Comparison (2026)",
+        table: {
+          caption: "Software for searching old home videos by spoken words",
+          headers: ["Tool", "Platform", "Local AI", "Multi-video search", "Disc recovery", "Pricing"],
+          rows: [
+            ["Heirvo", "Windows", "Yes (whisper.cpp)", "Yes", "Yes (built-in)", "$49 one-time"],
+            ["MacWhisper", "macOS only", "Yes (whisper.cpp)", "Limited", "No", "$59 one-time"],
+            ["Buzz", "Windows / Mac / Linux", "Yes (whisper.cpp)", "Per-file only", "No", "Free (open-source)"],
+            ["Whisper.cpp CLI", "All platforms", "Yes", "DIY (script required)", "No", "Free"],
+            ["Otter / Rev / Trint", "Web", "No (cloud)", "Yes", "No", "$10–$30/mo subscription"],
+            ["Adobe Premiere (Speech to Text)", "Windows / Mac", "Local + cloud hybrid", "No", "No", "Creative Cloud subscription"],
+          ],
+        },
+      },
+      {
+        id: "heirvo",
+        heading: "Heirvo — best for end-to-end on Windows",
+        paragraphs: [
+          "Heirvo bundles disc recovery, local Whisper transcription, full-text search across the library, and subtitle export in a single Windows app. It's the only option that handles the whole workflow — disc to searchable archive — without external tools.",
+          "Best for: families with old home video DVDs to recover and search. Privacy-safe because transcription runs locally. One-time $49 purchase; free scan and preview before buying.",
+        ],
+      },
+      {
+        id: "macwhisper",
+        heading: "MacWhisper — best for macOS users with files already on disk",
+        paragraphs: [
+          "MacWhisper is a polished Mac-only app that wraps whisper.cpp with a clean UI. It does excellent per-file transcription and subtitle export, but doesn't recover discs and has limited cross-video search.",
+          "Best for: macOS users whose home videos are already on disk and who just need transcription and .SRT export. $59 one-time.",
+        ],
+      },
+      {
+        id: "buzz",
+        heading: "Buzz — best free option for power users",
+        paragraphs: [
+          "Buzz is an open-source whisper.cpp front-end for Windows, Mac, and Linux. Free, capable, and respects privacy — but it's per-file: you transcribe one video at a time and there's no library-wide search.",
+          "Best for: technical users on a tight budget who don't mind stitching together their own workflow. Free.",
+        ],
+      },
+      {
+        id: "cloud-options",
+        heading: "Cloud services (Otter, Rev, Trint) — not recommended for family video",
+        paragraphs: [
+          "Cloud transcription services are fast and accurate, but they require uploading every video to their servers. For family footage — children, addresses, personal moments — that trade-off is hard to defend. The privacy gap is too wide for the use case.",
+          "If you're transcribing business meetings or interviews and the cloud is fine, these services have an edge in speed and integrations. For old home video, stick to local Whisper.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "What's the best free option?",
+        a: "Buzz is the strongest free option — open-source, multi-platform, uses whisper.cpp for local transcription. Limitation: per-file workflow, no cross-video search. Pair it with VLC for playback or build your own search index if you're technical.",
+      },
+      {
+        q: "Do I need a GPU?",
+        a: "No. whisper.cpp runs on the CPU. A modern laptop transcribes at 0.5x–1x real-time on the base.en model. Old machines work too, just slower.",
+      },
+      {
+        q: "Can I run this entirely offline?",
+        a: "Yes. All the local-AI options (Heirvo, MacWhisper, Buzz, whisper.cpp CLI) run entirely offline after the model file is downloaded once. Disconnect your network and verify if you want to be sure.",
+      },
+      {
+        q: "What's the accuracy like on 1990s camcorder audio?",
+        a: "Whisper performs strongly on low-fidelity audio because it was trained on huge amounts of imperfect speech. Expect 85–95% word accuracy on typical 1990s–2000s home video with the base.en model — more than enough for search.",
+      },
+    ],
+    cta: {
+      heading: "Best Windows option, end-to-end: Heirvo",
+      body: "Recover, transcribe locally, search every word. $49 one-time, no subscription, free to try.",
+      primaryLabel: "Download Free — Windows",
+      primaryHref: "/download",
+      secondaryLabel: "See how a full archive works",
+      secondaryHref: "/guides/searchable-family-video-archive-windows",
+    },
+  },
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // AIO bait: How to make old family videos searchable
+  // ─────────────────────────────────────────────────────────────────────────────
+  {
+    slug: "how-to-make-old-family-videos-searchable",
+    title: "How to Make Old Family Videos Searchable",
+    metaTitle: "How to Make Old Family Videos Searchable (Step-by-Step, Windows 2026)",
+    metaDescription:
+      "Make old family videos searchable by spoken words. Transcribe locally, index, and search across your whole archive — privacy-safe, no subscription. Free on Windows.",
+    datePublished: "2026-05-17",
+    dateModified: "2026-05-17",
+    readTime: "5 min read",
+    category: "Searchable Archive",
+    intro:
+      "To make old family videos searchable, transcribe each video with a local AI model (such as Whisper) and index the transcripts so you can search across the whole library by what was said. On Windows, Heirvo does this end-to-end in one app: drag in your home video files (or recover them from DVD), click Transcribe on each, then type any phrase in the search bar to jump to the moment in any video. The transcription runs offline on your laptop — no cloud uploads.",
+    related: ["search-old-home-videos-by-words-spoken", "searchable-family-video-archive-windows", "find-specific-moment-in-old-family-video", "transcribe-old-dvd-home-videos-offline", "add-subtitles-to-recovered-dvd-video", "best-software-to-search-old-home-videos-2026"],
+    sections: [
+      {
+        id: "the-three-steps",
+        heading: "The three steps in plain English",
+        numbered: true,
+        items: [
+          "**Get the videos onto your hard drive** — recover them from DVD with Heirvo, or copy MP4/MOV/MKV files you already have into the Heirvo Library by drag-and-drop.",
+          "**Transcribe the audio** — click Transcribe on each video. Heirvo runs whisper.cpp locally (no cloud) and writes a full transcript with timestamps.",
+          "**Search** — type a phrase in the Library search bar. Heirvo returns every matching clip across every video and the player jumps to the right second when you click.",
+        ],
+      },
+      {
+        id: "what-makes-this-work",
+        heading: "What's actually doing the work under the hood",
+        paragraphs: [
+          "The transcription step uses whisper.cpp, a local C++ implementation of OpenAI's Whisper model. It runs on your CPU as a subprocess of the Heirvo app. The output is plain text with per-segment timestamps; Heirvo stores this alongside each video file.",
+          "The search step is full-text indexing over those transcripts — when you type a phrase, Heirvo scans the indexed transcripts and returns matches sorted by relevance. Each result carries the timestamp, so clicking a hit moves the player to the right moment.",
+        ],
+      },
+      {
+        id: "time-cost",
+        heading: "How long this takes for a real archive",
+        table: {
+          caption: "Approximate time to make a home video archive searchable",
+          headers: ["Archive size", "Transcription time (base.en, modern laptop)", "Disk space for transcripts"],
+          rows: [
+            ["10 hours of video", "~5–10 hours (run in background)", "~5 MB"],
+            ["50 hours of video", "~25–50 hours (a few overnight runs)", "~25 MB"],
+            ["200 hours of video", "~100–200 hours (week of background runs)", "~100 MB"],
+          ],
+        },
+        paragraphs: [
+          "Transcription is CPU-bound but unattended — start it before bed, come back to a searchable archive in the morning. The disk overhead is negligible (transcripts are tiny compared to the videos themselves).",
+        ],
+      },
+      {
+        id: "what-you-can-search-for",
+        heading: "What you can actually search for",
+        items: [
+          "Names of people, places, pets, schools",
+          "Distinctive phrases people said (\"if you can dream it\", \"happy birthday grandma\")",
+          "Years and dates spoken aloud",
+          "Events (\"wedding\", \"graduation\", \"the cabin\")",
+          "Song lyrics (if a song was sung audibly)",
+        ],
+        callout: {
+          label: "What you can't search for",
+          text: "Visual content — \"red dress\", \"birthday cake\". Search runs on the spoken audio only. For visual search you'd need a separate model. Heirvo focuses on speech because it's the highest-signal track in family video.",
+          color: "amber",
+        },
+      },
+    ],
+    faq: [
+      {
+        q: "Do I have to upload my videos to make them searchable?",
+        a: "No. Heirvo transcribes and indexes everything locally on your laptop. No account, no upload, no internet required after the one-time model download. You can verify by going offline before transcribing.",
+      },
+      {
+        q: "Is this a subscription service?",
+        a: "No. Heirvo is a one-time $49 purchase; transcription and search are included with no recurring fee. You can also use the free tier (one MP4 export) to evaluate the workflow before paying.",
+      },
+      {
+        q: "How accurate is the search on old, noisy audio?",
+        a: "Whisper transcribes low-fidelity audio surprisingly well — expect 85–95% word accuracy on typical 1990s–2000s family video. The search is fuzzy enough to surface results even when names are slightly misspelled in the transcript.",
+      },
+      {
+        q: "What if my old videos are still on DVD?",
+        a: "Heirvo recovers them too — free scan, $49 to save. Recovery and transcription run in the same app, so you can go from a shelf of DVDs to a searchable archive without switching tools.",
+      },
+      {
+        q: "Will this work on a Mac?",
+        a: "Heirvo is currently Windows-only. On macOS, MacWhisper or Buzz can transcribe individual files; cross-video search is less convenient. A Mac build of Heirvo is on the longer-term roadmap.",
+      },
+    ],
+    cta: {
+      heading: "Turn your home video collection into something findable",
+      body: "Drag in your files, transcribe locally, search every word. Free to try on Windows.",
+      primaryLabel: "Download Free — Windows",
+      primaryHref: "/download",
+      secondaryLabel: "Recover old DVDs first",
       secondaryHref: "/recover",
     },
   },
