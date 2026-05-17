@@ -7194,6 +7194,539 @@ const GUIDES: Guide[] = [
     secondaryHref: "/recover",
   },
   },
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // DivX disc recovery
+  // ─────────────────────────────────────────────────────────────────────────────
+  {
+    slug: "recover-divx-disc",
+    title: "How to Recover Files from a DivX Disc on Windows",
+    metaTitle: "Recover Files from a DivX Disc on Windows (2026 Guide)",
+    metaDescription:
+      "DivX discs store AVI or MKV files as data DVDs, not VIDEO_TS. Learn how to recover DivX and XviD video files from scratched or unreadable DVD-R discs on Windows.",
+    datePublished: "2026-05-17",
+    dateModified: "2026-05-17",
+    readTime: "6 min read",
+    category: "DVD Recovery",
+    intro:
+      "A DivX disc is a DVD-R or DVD+R burned with DivX or XviD encoded AVI files stored as a plain data disc — not in the VIDEO_TS format used by commercial movies. Millions of these discs were burned between 2000 and 2010 before streaming made file-sharing obsolete. Recovering the AVI, MKV, or MP4 files from a scratched or degraded DivX disc uses the same sector-level techniques as any DVD recovery, with a few important differences in what you are extracting.",
+    related: [
+      "recover-files-scratched-dvd",
+      "recover-home-videos-dvd",
+      "recover-data-from-cd-rom-windows",
+      "how-long-do-dvds-last-disc-rot",
+    ],
+    sections: [
+      {
+        id: "what-is-divx-disc",
+        heading: "What Is a DivX Disc?",
+        level: 2,
+        paragraphs: [
+          "DivX is a video codec — a compression algorithm that encodes video into AVI container files at much smaller sizes than DVD-Video. A typical two-hour film compressed with DivX fits on a single 700 MB CD-R or a 4.7 GB DVD-R alongside other files. XviD is an open-source variant of the same codec that was equally popular during the same era.",
+          "The disc itself is just a standard DVD-R or DVD+R burned with a UDF or ISO 9660 filesystem, the same way you would burn a folder of documents. The video files sit in the root or a subfolder as ordinary .avi, .mkv, or .mp4 files. This means the disc does not need a special player to read the files — any device that can read a data DVD and play AVI files will work.",
+          "DivX-certified DVD players (identifiable by the DivX logo on the front) could play these discs directly on a television. Millions of these players were sold from roughly 2003 to 2012. Many families burned home video recordings, downloaded films, or holiday footage onto DivX discs as an economical way to store video before cheap hard drives became universal.",
+        ],
+      },
+      {
+        id: "divx-vs-dvd-video",
+        heading: "DivX Discs vs. DVD-Video: Key Differences for Recovery",
+        level: 2,
+        paragraphs: [
+          "This distinction matters because it changes what recovery software needs to find. A DVD-Video disc has a specific folder structure (VIDEO_TS containing .VOB, .IFO, and .BUP files) that recovery tools look for explicitly. A DivX disc has no such structure — the .avi files can be anywhere on the disc, named anything, possibly inside subfolders.",
+        ],
+        table: {
+          headers: ["Property", "DVD-Video", "DivX data disc"],
+          rows: [
+            ["File format", ".VOB files in VIDEO_TS/", ".avi, .mkv, .mp4 anywhere on disc"],
+            ["Plays in standard DVD player", "Yes", "Only on DivX-certified players"],
+            ["Plays in VLC on Windows", "Yes", "Yes, natively"],
+            ["Recovery approach", "Recover VIDEO_TS folder", "Recover individual video files"],
+            ["File size per hour", "~4 GB", "~700 MB–1.5 GB"],
+          ],
+        },
+        callout: {
+          label: "Quick check",
+          text: "Insert the disc and open it in File Explorer (if your drive can read it at all). If you see a VIDEO_TS folder, it is a DVD-Video disc. If you see .avi, .mkv, or .divx files directly, it is a DivX data disc. If the disc is unreadable, Heirvo's sector-level scan will identify the file types during recovery.",
+          color: "blue",
+        },
+      },
+      {
+        id: "why-divx-discs-fail",
+        heading: "Why DivX Discs Become Unreadable",
+        level: 2,
+        paragraphs: [
+          "DivX discs are home-burned DVD-R or DVD+R media, which means they share every failure mode of consumer recordable discs. The organic dye layer used in DVD-R recording degrades with exposure to UV light, heat, and humidity. Discs burned between 2000 and 2010 on inexpensive media — Princo, CMC, Ritek — are especially prone to early dye oxidation. The reflective gold or silver layer can also delaminate from the polycarbonate substrate, starting as small bubbles near the hub or outer edge and spreading inward.",
+          "Physical scratches are the other common failure. DivX discs were often handled without cases, stacked in spindle towers, or carried loose in bags. Fine circular scratches across the data surface scatter the read laser across multiple tracks simultaneously, causing the drive to report uncorrectable read errors even when the underlying data is largely intact.",
+          "Because a single AVI file on a DivX disc can span hundreds of thousands of sectors, a small cluster of bad sectors in the middle of the disc can interrupt the file at that point. Recovery software that retries those sectors — rather than abandoning the file — can often recover the file with only a brief artifact at the damaged point.",
+        ],
+      },
+      {
+        id: "recover-divx-step-by-step",
+        heading: "Step-by-Step: Recovering DivX Files from a Damaged Disc",
+        level: 2,
+        numbered: true,
+        items: [
+          "Insert the disc into a USB or internal DVD drive. If Windows shows a cyclic redundancy check error or the drive fails to recognise the disc, this is expected — proceed anyway.",
+          "Download and install Heirvo. Open the application and select your DVD drive from the dropdown.",
+          "Click Scan. Heirvo reads the disc sector by sector, mapping every readable and unreadable area. It identifies file boundaries in the UDF/ISO 9660 filesystem even when many sectors are damaged.",
+          "Review the file list. Heirvo shows you the recovered .avi, .mkv, or .mp4 files with a colour-coded health indicator for each. Files shown in green recovered with no missing sectors. Files in amber recovered with some data loss — they will likely play with brief visual artifacts.",
+          "Activate Heirvo to save the recovered files. Files are saved to a folder on your hard drive with their original filenames preserved.",
+          "Verify the recovered files in VLC Media Player. VLC is more tolerant of minor AVI corruption than Windows Media Player and will play files that WMP refuses.",
+        ],
+        callout: {
+          label: "Drive matters",
+          text: "Slot-loading laptop drives often struggle with degraded discs. If recovery stalls or the drive disconnects, try a USB desktop drive — Asus, Pioneer, and LG tray-loading drives generally have better error correction hardware for damaged media.",
+          color: "amber",
+        },
+      },
+      {
+        id: "repairing-partial-avi",
+        heading: "Repairing Partially Recovered AVI Files",
+        level: 2,
+        paragraphs: [
+          "If a recovered AVI file has missing sectors, the file structure may be broken in a way that prevents it playing past the damaged point. Two free tools address this: DivFix++ can repair the AVI index, allowing the file to seek past the corrupted segment and play the rest. VirtualDub2 can open a broken AVI and re-export only the frames it can decode, discarding the corrupted segment cleanly.",
+          "For MKV files with structural damage, MKVToolNix's mkvmerge utility can often read the undamaged portions and remux them into a clean file, skipping the sectors that could not be recovered.",
+          "In practice, a DivX file recovered from a disc with moderate scratching (20–30 bad sectors) will play from start to finish with one or two brief glitches at the exact damaged points. Only severe physical damage — deep gouges or extensive delamination — causes large unrecoverable gaps.",
+        ],
+      },
+      {
+        id: "when-to-try-mail-in",
+        heading: "When to Consider Professional Recovery",
+        level: 2,
+        paragraphs: [
+          "If the disc surface shows visible bubbling, milky delamination, or the disc is physically warped, software recovery may retrieve only a fraction of the data. Professional optical recovery involves re-polishing the disc surface in a controlled environment and reading it on a custom drive with a higher-power laser and finer focus control.",
+          "Heirvo's mail-in recovery service handles these cases. You post the disc, the lab attempts recovery, and you are only charged if files are successfully retrieved. If your Heirvo purchase credit already covers the cost, there is nothing additional to pay.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "Can Heirvo recover DivX files from a disc that Windows says has a cyclic redundancy check error?",
+        a: "Yes. A CRC error means Windows encountered a bad sector and stopped. Heirvo bypasses the Windows file copy path and reads sectors directly, retrying each bad sector multiple times at different read speeds before marking it unrecoverable.",
+      },
+      {
+        q: "What is the difference between DivX and XviD? Does it matter for recovery?",
+        a: "DivX and XviD are both MPEG-4 Part 2 codecs that produce AVI files. For disc recovery purposes they are identical — both store video as .avi files on a plain data disc. The codec choice only matters for playback after recovery.",
+      },
+      {
+        q: "My DivX disc plays in a DVD player but Windows can't copy the files. Why?",
+        a: "Some DivX-certified players have better error correction hardware than PC drives and can compensate for moderate disc damage that causes PC drives to fail. This is common with older, slightly degraded discs. Heirvo's sector-level scan often bridges this gap by retrying sectors the PC drive initially fails to read.",
+      },
+      {
+        q: "Can Heirvo recover files from a DivX disc burned with Nero or ImgBurn?",
+        a: "Yes. The burning software does not affect recovery. Heirvo reads the underlying sector data regardless of which software created the disc or which filesystem (UDF, ISO 9660, or Joliet) was used.",
+      },
+      {
+        q: "The recovered AVI file plays but has a glitch partway through. Is the rest of the video intact?",
+        a: "Almost certainly yes. A glitch indicates one or more sectors that could not be fully recovered. The video before and after that point is intact. You can use VirtualDub2 to cut out the damaged segment and export the clean portions as separate files.",
+      },
+    ],
+    cta: {
+      heading: "Recover Your DivX Files with Heirvo",
+      body: "Heirvo reads DivX data discs sector by sector, recovering AVI and MKV files even when Windows reports a CRC error or the disc appears blank. Scan for free — pay only when you save.",
+      primaryLabel: "Download Heirvo Free",
+      primaryHref: "/#download",
+      secondaryLabel: "Or mail us the disc",
+      secondaryHref: "/recover",
+    },
+  },
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Camcorder mini CD recovery
+  // ─────────────────────────────────────────────────────────────────────────────
+  {
+    slug: "recover-camcorder-mini-cd",
+    title: "How to Recover Video from a Camcorder Mini CD on Windows",
+    metaTitle: "Recover Video from a Camcorder Mini CD on Windows (2026 Guide)",
+    metaDescription:
+      "8cm mini CDs from CD camcorders store video in VCD format and require a tray-loading drive to read. Learn how to recover footage from scratched or unreadable mini CDs on Windows.",
+    datePublished: "2026-05-17",
+    dateModified: "2026-05-17",
+    readTime: "7 min read",
+    category: "Legacy Media Recovery",
+    intro:
+      "Camcorder mini CDs — the 8-centimetre discs used by Hitachi, Sony, and Samsung CD camcorders from the late 1990s to mid-2000s — store video in VCD or SVCD format on standard 185 MB recordable CD media. They require a tray-loading drive to read (slot-loading drives will jam) and are now fragile after two decades of storage. Heirvo can recover the video from these discs even when Windows can no longer copy the files.",
+    related: [
+      "recover-vcd-video-cd-windows",
+      "recover-data-from-cd-rom-windows",
+      "recover-music-from-scratched-cd",
+      "recover-home-videos-dvd",
+    ],
+    sections: [
+      {
+        id: "what-is-mini-cd",
+        heading: "What Is a Camcorder Mini CD?",
+        level: 2,
+        paragraphs: [
+          "The 8cm mini CD (also called CD single size) is a physically smaller version of the standard 120mm CD. It holds approximately 185 MB of data on a 21-minute disc, or up to 210 MB on extended-capacity blanks. Several camcorder manufacturers used this format in the late 1990s and early 2000s as an alternative to Hi8 tape, MiniDV tape, and DVD camcorders.",
+          "Notable models that used mini CDs include the Hitachi DZ-MV100, Samsung VP-MC100, and several early Sony Handycam CD variants. These camcorders typically recorded video in VCD format (MPEG-1 at 1.15 Mbit/s) or SVCD format (MPEG-2 at up to 2.6 Mbit/s), stored in the standard MPEGAV or SVCD folder structure used by VCD and SVCD discs.",
+          "A single 185 MB mini CD holds approximately 20 minutes of VCD-quality video. Families who owned these camcorders in the early 2000s often have boxes of these small discs containing birthday parties, holidays, and first steps — footage that has never been transferred to any other format.",
+        ],
+      },
+      {
+        id: "drive-compatibility",
+        heading: "The Most Important Thing: You Need a Tray-Loading Drive",
+        level: 2,
+        paragraphs: [
+          "Standard tray-loading optical drives have a recessed inner ring on the disc tray that holds 8cm discs correctly. You place the mini CD in the inner ring of the tray — not the outer ring — and the drive reads it normally.",
+          "Slot-loading drives (common in slim laptops, some desktop Macs, and many car stereos) will physically accept an 8cm disc but cannot eject it afterward. The disc gets stuck inside the drive mechanism. Never attempt to insert a mini CD into a slot-loading drive.",
+          "If your computer does not have a tray-loading drive, a USB external tray-loading drive (available for $20–$35) is the solution. Models from Asus (SDRW-08D2S-U), LG (GP65NB60), and Pioneer (BDR-XD08) all support 8cm discs.",
+        ],
+        callout: {
+          label: "Warning",
+          text: "Do not insert a mini CD into a slot-loading drive. The disc will jam inside the mechanism and may require the drive to be disassembled to remove it. Only use tray-loading drives — those with a pull-out tray and an inner recessed ring.",
+          color: "amber",
+        },
+      },
+      {
+        id: "video-format-on-mini-cd",
+        heading: "Understanding the Video Format on Camcorder Mini CDs",
+        level: 2,
+        paragraphs: [
+          "Most camcorder mini CDs recorded in VCD format. You can verify this by inserting the disc in a tray-loading drive and looking for a folder named MPEGAV in the root. Inside that folder are files named AVSEQ01.DAT, AVSEQ02.DAT, and so on — each one is a segment of video encoded as MPEG-1 inside a .DAT container.",
+          "Some higher-end camcorders used SVCD format, which stores video in a folder named SVCD with the same .DAT extension but MPEG-2 encoding at higher quality. SVCD footage is noticeably sharper than VCD.",
+          "A third possibility is MPEG data disc format, where the camcorder recorded .mpg files directly into a DATA or MPGFILES folder without the VCD structure. This is less common but simpler to recover since the files are standard MPEG-1 or MPEG-2 that any player can open.",
+        ],
+        table: {
+          headers: ["Format", "Folder on disc", "File type", "Quality"],
+          rows: [
+            ["VCD", "MPEGAV/", "AVSEQ01.DAT", "~VHS quality, 352×240"],
+            ["SVCD", "SVCD/", "AVSEQ01.DAT", "Near-DVD, 480×480"],
+            ["MPEG data", "DATA/ or MPGFILES/", ".mpg or .mpeg", "Varies"],
+          ],
+        },
+      },
+      {
+        id: "reading-mini-cd-windows",
+        heading: "Reading a Mini CD on Windows",
+        level: 2,
+        paragraphs: [
+          "If the disc and drive are in good condition, Windows will detect the mini CD as a standard CD when you close the tray. Autoplay may prompt you to open a media player. You can also open the disc in File Explorer, navigate to the MPEGAV folder, and copy the .DAT files to your hard drive.",
+          "Once on your hard drive, rename AVSEQ01.DAT to AVSEQ01.mpg and play it in VLC Media Player. Alternatively, open VLC directly, go to Media > Open Disc, select CD as the disc type, and VLC will navigate the VCD structure automatically and play the first title.",
+          "If you want to convert the footage to MP4 for sharing or archiving, ffmpeg handles this well. The command ffmpeg -i AVSEQ01.mpg -c:v libx264 -crf 18 -c:a aac output.mp4 produces a high-quality MP4 from the MPEG-1 source without further quality loss.",
+        ],
+      },
+      {
+        id: "recovering-damaged-mini-cd",
+        heading: "Recovering Video from a Scratched or Degraded Mini CD",
+        level: 2,
+        paragraphs: [
+          "Mini CDs share the same physical vulnerabilities as standard CDs: scratches, disc rot (a brown or gold discolouration spreading from the hub or edge), fingerprint contamination, and delamination of the reflective aluminium layer. Because mini CDs are small, a single significant scratch across the recording area affects a proportionally large fraction of the disc content.",
+          "Heirvo reads mini CDs sector by sector using low-level SCSI commands, bypassing Windows' file system layer. It identifies the VCD structure, locates the .DAT files in the MPEGAV folder, and recovers the MPEG-1 video data sector by sector. Bad sectors are retried at adjusted read speeds before being marked unrecoverable.",
+          "The practical outcome of most mini CD recoveries is that the majority of the footage is intact with brief visual artifacts at the exact locations of damaged sectors. A disc with moderate scratching typically yields 90–98% of its content. Even a disc that Windows reports as blank or unreadable will often yield recoverable data through sector-level scanning.",
+        ],
+        callout: {
+          label: "Before scanning",
+          text: "Clean the mini CD with a microfibre cloth, wiping radially from the centre hub outward. Even light dust on a small disc like this causes a disproportionate number of read errors. Hold the disc by the edge — fingerprints on the data surface are a common cause of read failures.",
+          color: "green",
+        },
+      },
+      {
+        id: "no-camcorder-needed",
+        heading: "You Do Not Need the Original Camcorder",
+        level: 2,
+        paragraphs: [
+          "A common misconception is that you need the original camcorder to read its discs. You do not. The mini CD is a standard recordable CD with a standard VCD filesystem. Any compatible tray-loading PC drive can read it. The camcorder was simply a convenient VCD burner and player — the disc itself is a universal format.",
+          "If the camcorder still works, you could connect it to a television and play the disc that way. But for archiving the footage digitally — or for recovering a damaged disc — a PC with Heirvo is both more capable and more practical.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "My mini CD gets stuck in the drive. How do I remove it?",
+        a: "This means you used a slot-loading drive, which physically cannot release an 8cm disc. Do not force it. Most slot-loading drives have a small manual eject hole on the front panel where you can insert a straightened paperclip to force the mechanism open. If not, the drive may need to be opened to retrieve the disc. Going forward, only use tray-loading drives with 8cm mini CDs.",
+      },
+      {
+        q: "Windows says the disc is blank but the camcorder played it fine. Why?",
+        a: "Windows does not fully implement the CD-i Bridge filesystem that VCD discs use, so it sometimes shows the disc as empty even when content is present. VLC Media Player can often read the disc directly. Heirvo's sector-level scan bypasses the filesystem entirely and finds the .DAT files regardless.",
+      },
+      {
+        q: "Can I convert the VCD footage to MP4 after recovery?",
+        a: "Yes. Once Heirvo saves the .DAT files to your hard drive, rename them to .mpg and use ffmpeg or Handbrake to convert to MP4. The VCD source is 352×240 (NTSC) or 352×288 (PAL), so the MP4 will be at the same resolution. Upscaling tools like Topaz Video AI can increase the resolution with AI interpolation afterward if needed.",
+      },
+      {
+        q: "How many minutes of footage fit on one mini CD?",
+        a: "A standard 185 MB mini CD holds approximately 20 minutes of VCD-quality video (MPEG-1 at 1.15 Mbit/s). Extended 210 MB blanks hold about 23 minutes. SVCD-format camcorders fit 10–12 minutes per disc because SVCD uses a higher bitrate.",
+      },
+      {
+        q: "Is there any way to improve the video quality of recovered VCD footage?",
+        a: "The original recording was MPEG-1 at 352×240 — that resolution and quality is fixed. However, after recovery you can use AI upscaling tools (Topaz Video AI, DaVinci Resolve with Super Scale) to increase the resolution to 1080p or 4K with AI interpolation. This does not recover detail that was never recorded, but it does make the footage look significantly better on modern screens.",
+      },
+    ],
+    cta: {
+      heading: "Recover Your Camcorder Mini CD Footage",
+      body: "Heirvo reads 8cm mini CDs sector by sector, recovering VCD and SVCD footage even from scratched or degraded discs. Run a free scan to see exactly what's recoverable before you pay anything.",
+      primaryLabel: "Download Heirvo Free",
+      primaryHref: "/#download",
+      secondaryLabel: "Or mail us the disc",
+      secondaryHref: "/recover",
+    },
+  },
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // DVD heat damage recovery
+  // ─────────────────────────────────────────────────────────────────────────────
+  {
+    slug: "recover-dvd-from-car-heat-damage",
+    title: "How to Recover a DVD Damaged by Heat (Car, Attic, or Storage)",
+    metaTitle: "Recover a Heat-Damaged DVD — Car, Attic, or Storage (2026 Guide)",
+    metaDescription:
+      "Heat warps DVD polycarbonate, bubbles the reflective layer, and accelerates dye oxidation. Learn what heat damage is recoverable, what is not, and how to extract footage from a heat-damaged disc.",
+    datePublished: "2026-05-17",
+    dateModified: "2026-05-17",
+    readTime: "7 min read",
+    category: "Hardware Guide",
+    intro:
+      "DVDs left in cars, attics, garages, or tropical storage can suffer heat damage ranging from minor dye degradation to full polycarbonate warping. The recoverable range is wider than most people expect: discs that look obviously damaged often still yield the majority of their data through sector-level recovery. The key is understanding which types of heat damage are recoverable with software and which require professional intervention.",
+    related: [
+      "recover-files-scratched-dvd",
+      "how-long-do-dvds-last-disc-rot",
+      "recover-water-damaged-dvd",
+      "recover-home-videos-dvd",
+      "dvd-player-wont-read-disc-windows",
+    ],
+    sections: [
+      {
+        id: "types-of-heat-damage",
+        heading: "Types of Heat Damage and What They Mean for Recovery",
+        level: 2,
+        paragraphs: [
+          "Heat affects a DVD through several different mechanisms, and each one has a different impact on what is recoverable. Understanding which type of damage your disc has helps you decide whether to attempt software recovery, seek professional help, or accept that the data is gone.",
+        ],
+        table: {
+          headers: ["Damage type", "Appearance", "Typical cause", "Recoverable?"],
+          rows: [
+            ["Dye oxidation", "Milky or yellowish tint, faint ring patterns", "Prolonged moderate heat (40–60°C)", "Often yes — 70–95%"],
+            ["Reflective layer bubbling", "Small blisters or domes on disc surface", "Sustained heat above 60°C", "Partially — bubbles = data loss"],
+            ["Delamination", "Layers visibly separating, edges peeling", "High heat + humidity cycles", "Partially — edge delamination recoverable, full delamination is not"],
+            ["Polycarbonate warp", "Disc no longer lies flat, visible curvature", "Brief very high heat (80°C+)", "Depends on warp severity"],
+            ["Hub crack", "Hairline crack from centre hole outward", "Thermal expansion stress", "Often yes — hub data tracks differ from content tracks"],
+          ],
+        },
+      },
+      {
+        id: "car-heat-damage",
+        heading: "Cars: The Most Common Source of Heat Damage",
+        level: 2,
+        paragraphs: [
+          "The interior of a parked car in summer can reach 70–80°C (160–180°F) within an hour on a sunny day. DVD polycarbonate begins to soften at around 70°C and warps noticeably above 80°C. A disc left on a dashboard or rear parcel shelf in direct sunlight for an afternoon can warp significantly.",
+          "Discs stored in a centre console, glovebox, or sun visor holder receive less direct radiation but still experience ambient temperatures well above the 50°C threshold at which organic DVD-R dye accelerates its oxidation process. A disc kept in a car through a full summer may show dye degradation even without any visible physical damage.",
+          "The most important variable is duration. A disc that got very hot for a short time (an afternoon) often survives better than one stored in moderate heat for months. Periodic heat cycling — hot in the day, cool at night — causes the reflective layer and polycarbonate to expand and contract repeatedly, which can initiate delamination over time.",
+        ],
+        callout: {
+          label: "Temperature guide",
+          text: "DVD-R dye begins degrading faster above 50°C. Polycarbonate softens around 70°C. The interior of a parked car in direct sun routinely reaches 70–80°C in summer. Discs left in cars for more than a few hours on hot days are at genuine risk of permanent data loss.",
+          color: "amber",
+        },
+      },
+      {
+        id: "assessing-your-disc",
+        heading: "Assessing Your Disc Before Attempting Recovery",
+        level: 2,
+        paragraphs: [
+          "Hold the disc at an angle under a bright light and examine the data surface (the bottom, non-label side). Healthy recorded DVD-R media has a uniform purple, blue, or gold sheen with no blemishes. Here is what different findings suggest:",
+          "A uniform milky or slightly yellowed tint across the disc indicates dye oxidation — the data is degraded but likely partially recoverable. Sector-level recovery software often retrieves 70–95% of the content even from significantly oxidised discs.",
+          "Small blisters or domes scattered across the surface are reflective layer bubbles. Each bubble represents a spot where the aluminium layer has separated from the dye layer and the polycarbonate. Data beneath a bubble is typically unrecoverable because the laser cannot reach it. Scattered bubbles mean partial data loss; if the bubbles are dense or cover large areas, significant data loss is likely.",
+          "If the disc is noticeably curved — it rocks when laid flat on a table — it has warped. Mild warping (the disc rocks slightly but lies mostly flat) often still reads in a drive with good error correction. Significant warping (visible curve when held up) will usually cause the drive to reject the disc or generate read errors across the entire surface.",
+        ],
+      },
+      {
+        id: "can-you-flatten-a-warped-dvd",
+        heading: "Can You Flatten a Warped DVD?",
+        level: 2,
+        paragraphs: [
+          "The short answer is: sometimes, slightly, but it is risky. DVD polycarbonate has a glass transition temperature around 70°C. If you apply gentle, even heat just below that threshold and then apply uniform pressure as the disc cools, mild warps sometimes partially correct.",
+          "The standard method involves placing the disc between two flat glass plates or ceramic tiles, putting the assembly in an oven at exactly 60°C (140°F) for 15 minutes, then placing heavy books on top as it cools over two hours. This sometimes reduces a mild warp enough for the drive to read the disc.",
+          "The risks are significant: too much heat warps the disc further, and uneven pressure creates new distortions. We recommend attempting this only if the disc is otherwise unreadable and you have nothing to lose. Attempt the recovery scan first on the disc in its current state — drives with good error correction sometimes read mildly warped discs without intervention.",
+        ],
+        callout: {
+          label: "Try recovery first",
+          text: "Run a Heirvo scan on the warped disc before attempting any heat flattening. Many mildly warped discs are still partially readable, and attempting to flatten can make a partially recoverable disc worse. Get what you can from the disc in its current state first.",
+          color: "blue",
+        },
+      },
+      {
+        id: "software-recovery-heat-damaged",
+        heading: "Running a Recovery Scan on a Heat-Damaged Disc",
+        level: 2,
+        paragraphs: [
+          "Insert the disc into a tray-loading desktop DVD drive — not a slim laptop drive. Desktop drives have more robust error correction hardware and are better able to compensate for the increased read error rates from heat-damaged media. If your computer only has a slim drive, a USB desktop drive (Asus, Pioneer, or LG tray-loading models) will significantly improve recovery chances.",
+          "Open Heirvo and select the disc drive. Click Scan. Heirvo will begin reading sector by sector. A heat-damaged disc with moderate dye degradation will show a high error rate — expect the scan to take two to four hours as Heirvo retries degraded sectors multiple times at different read speeds.",
+          "The recovery map that builds during the scan tells you exactly which areas of the disc were readable. Green sectors recovered cleanly. Red sectors could not be recovered after multiple retries — these correspond to either reflective layer bubbles or areas of complete dye oxidation. The spatial pattern of red sectors often maps to the physical damage pattern visible on the disc surface.",
+        ],
+      },
+      {
+        id: "professional-recovery-heat",
+        heading: "When Professional Recovery Is the Next Step",
+        level: 2,
+        paragraphs: [
+          "If software recovery yields less than 50% of the disc content and the footage is irreplaceable, professional optical recovery may retrieve more. A professional lab can re-polish the disc surface to reduce surface irregularities that impede the read laser, and can use drives with more powerful lasers and finer focus adjustment than consumer hardware.",
+          "In cases of partial delamination where one edge of the disc is peeling, a professional lab can sometimes stabilise the delamination with optical-grade adhesive before attempting a read — a procedure that is not viable at home. This is most relevant for discs with severe heat and humidity cycling damage.",
+          "Heirvo's mail-in service handles these cases. Post the disc, the lab attempts recovery, and you are charged only if files are successfully retrieved.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "My DVD was left in a hot car for one afternoon. Is it likely still readable?",
+        a: "Probably yes, especially if it was in a case or storage rather than direct sunlight. A single afternoon of heat exposure rarely causes catastrophic damage unless the disc was in direct sun on a dashboard. Try a standard read first — if Windows can copy the files, do so immediately. If not, a sector-level scan is the next step.",
+      },
+      {
+        q: "The disc has small bubbles on the surface. How much data is lost?",
+        a: "Each bubble represents a localized spot of delamination where the reflective layer has separated. The data directly beneath each bubble is typically unrecoverable. If the bubbles are scattered sparsely, most of the disc data is still intact. If bubbles cover 20% or more of the surface, expect proportionally significant data loss. Heirvo's scan will map exactly which sectors are affected.",
+      },
+      {
+        q: "Can I use a hairdryer to warm a warped disc before scanning?",
+        a: "We do not recommend it. Uneven heat from a hairdryer can introduce new warps and surface stress. If you want to attempt thermal flattening, use the oven-and-pressure method described above with a precisely controlled 60°C temperature. Better still, try the recovery scan first on the disc as-is.",
+      },
+      {
+        q: "Does heat damage affect pressed commercial DVDs and home-burned DVD-R discs differently?",
+        a: "Yes, significantly. Pressed commercial DVDs have a stamped aluminium reflective layer that is far more heat-resistant than the organic dye layer in home-burned DVD-R and DVD+R discs. A commercial DVD can often survive temperatures that would permanently damage a home-burned disc. If your heat-damaged disc is a home-burned DVD-R, the risk of dye degradation is much higher.",
+      },
+      {
+        q: "The disc looks fine visually but won't read. Could heat still be the cause?",
+        a: "Yes. Dye oxidation from moderate sustained heat (storage in a hot garage over months or years) often produces no visible surface blemish — the disc looks normal but the organic dye layer has degraded enough to scatter the read laser. This is sometimes called 'DVD rot.' Sector-level recovery software can often extract most of the data even when the disc appears undamaged.",
+      },
+    ],
+    cta: {
+      heading: "Scan Your Heat-Damaged DVD for Free",
+      body: "Heirvo reads damaged DVDs sector by sector, recovering footage from discs that have warped, delaminated, or oxidised from heat. Run a free scan to see exactly what's still on the disc before you decide on next steps.",
+      primaryLabel: "Download Heirvo Free",
+      primaryHref: "/#download",
+      secondaryLabel: "Or mail us the disc",
+      secondaryHref: "/recover",
+    },
+  },
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 8mm film DVD transfer recovery
+  // ─────────────────────────────────────────────────────────────────────────────
+  {
+    slug: "recover-8mm-film-dvd-transfer",
+    title: "How to Recover 8mm Film Footage from a DVD Transfer Disc",
+    metaTitle: "Recover 8mm Film Footage from a DVD Transfer Disc (2026 Guide)",
+    metaDescription:
+      "8mm and Super 8 film transfers were burned to DVD by Costco, Walgreens, and local labs. Learn how to recover the footage from these discs — including scratched, degraded, or unreadable DVDs.",
+    datePublished: "2026-05-17",
+    dateModified: "2026-05-17",
+    readTime: "8 min read",
+    category: "Legacy Media Recovery",
+    intro:
+      "Tens of millions of 8mm and Super 8 film reels were transferred to DVD by services like Costco Photo Center, Walgreens, CVS, and local film labs throughout the 2000s and early 2010s. For many families, these DVDs are the only surviving copy of the footage — the original film reels were discarded, deteriorated, or never returned. Recovering footage from a damaged or degraded transfer DVD is often the only path to saving irreplaceable family history.",
+    related: [
+      "recover-home-videos-dvd",
+      "recover-vhs-converted-dvd",
+      "restore-deceased-parents-home-videos",
+      "ai-restore-old-home-videos-windows",
+      "recover-files-scratched-dvd",
+    ],
+    sections: [
+      {
+        id: "about-film-transfer-dvds",
+        heading: "What Is a Film Transfer DVD?",
+        level: 2,
+        paragraphs: [
+          "Between roughly 2000 and 2015, film-to-DVD transfer services flourished at pharmacies, supermarkets, and dedicated film labs. You would post or drop off your 8mm, Super 8, 16mm, or Regular 8 film reels, and the service would project or scan each frame, record the result to video, and burn it to a DVD-R or DVD+R disc.",
+          "The result is a DVD-Video disc in the standard VIDEO_TS format — the same structure used by commercial movies. Your film footage is encoded as MPEG-2 video inside .VOB files. There are no frame-by-frame image files and no RAW film data — just compressed video at whatever resolution the transfer equipment used.",
+          "Most consumer-grade transfer services from the mid-2000s produced video at standard DVD resolution (720×480 NTSC or 720×576 PAL). Higher-quality services — and the more recent Legacybox and Costco transfers — produced 1080p output burned to DVD or delivered as files. The disc itself in all cases is a home-burned DVD-R or DVD+R that is now 10–25 years old.",
+        ],
+      },
+      {
+        id: "why-these-discs-are-at-risk",
+        heading: "Why Film Transfer DVDs Are Especially Vulnerable",
+        level: 2,
+        paragraphs: [
+          "Film transfer DVDs carry a specific risk profile that makes them more likely than average to have degraded by now. They were typically burned on whatever inexpensive DVD-R media the transfer service had in bulk — often Princo, CMC, or Ritek discs, which are among the least stable recordable DVD media ever manufactured. These brands were ubiquitous in transfer labs because they were cheap.",
+          "The discs were then often stored in paper sleeves or basic plastic cases provided by the service, without jewel cases, and frequently kept in mixed storage alongside the original film boxes — sometimes in attics, garages, or storage units where temperature and humidity fluctuate seasonally.",
+          "Because these are often the only digital copy of the footage and the original film may be gone, the stakes of losing them are especially high. Even a disc that looks slightly discoloured or has one obviously scratched area is worth attempting recovery on before concluding the footage is lost.",
+        ],
+        callout: {
+          label: "Urgent",
+          text: "If you have film transfer DVDs that have not been copied to a hard drive, do this now regardless of whether they look damaged. DVD-R discs burned in the early-to-mid 2000s on inexpensive media are approaching or past their reliable lifespan. Do not wait until the disc fails to back it up.",
+          color: "amber",
+        },
+      },
+      {
+        id: "what-you-get-from-recovery",
+        heading: "What You Get When You Recover a Film Transfer DVD",
+        level: 2,
+        paragraphs: [
+          "Recovering a film transfer DVD gives you the .VOB files (and the full VIDEO_TS folder structure) that contain the film footage as MPEG-2 video. These files play in VLC Media Player and can be converted to MP4 using Handbrake or ffmpeg for long-term archival.",
+          "The quality of the recovered footage is the quality of the original transfer — Heirvo cannot improve the resolution or framerate of the source material. What recovery does is ensure you can actually access the footage despite disc damage, rather than losing it to a read error.",
+          "If the original transfer was done at standard DVD resolution (720×480), the recovered MP4 will be at that resolution. If you want to improve the visual quality beyond the original transfer, AI upscaling tools like Topaz Video AI can increase the resolution to 1080p or 4K while recovering fine detail through neural interpolation. This is a separate step after recovery.",
+        ],
+      },
+      {
+        id: "recovery-step-by-step",
+        heading: "Step-by-Step: Recovering the Footage",
+        level: 2,
+        numbered: true,
+        items: [
+          "Insert the disc into a tray-loading desktop DVD drive. Slim laptop drives have weaker error correction than desktop drives and are more likely to give up on degraded media. If you have only a slim drive, a USB desktop drive (Asus, Pioneer, or LG) will significantly improve recovery odds.",
+          "Download and install Heirvo. Open it and select the DVD drive from the dropdown. Heirvo identifies the disc type automatically — film transfer DVDs appear as DVD-Video with a VIDEO_TS structure.",
+          "Click Scan. Heirvo reads the disc sector by sector, making multiple attempts over each unreadable area. The scan progress map shows you in real time which sectors are recovering cleanly and which have damage.",
+          "When the scan completes, Heirvo shows you the recovered VIDEO_TS folder contents — the .VOB, .IFO, and .BUP files that make up your film transfer. Even if some sectors could not be recovered, you can see exactly which files were fully or partially retrieved.",
+          "Activate Heirvo to save the recovered files to your hard drive. Save the entire VIDEO_TS folder as a complete unit — this preserves the disc structure and lets you play back in any DVD player software.",
+          "Open the saved VIDEO_TS folder in VLC (Media > Open Folder, select the VIDEO_TS folder) to verify the footage plays. Then convert to MP4 using Handbrake for long-term archival.",
+        ],
+      },
+      {
+        id: "converting-to-mp4",
+        heading: "Converting Recovered VOB Files to MP4",
+        level: 2,
+        paragraphs: [
+          "Once the VIDEO_TS folder is on your hard drive, the simplest way to convert it to MP4 is Handbrake. Open Handbrake, click Open Source, select the VIDEO_TS folder (not an individual file), and Handbrake will detect the disc structure and present the title list. Select the main title, choose an MP4 preset, and click Start Encode.",
+          "For command-line preference, ffmpeg handles the conversion with: ffmpeg -i concat:VTS_01_1.VOB\\|VTS_01_2.VOB -c:v libx264 -crf 18 -c:a aac film_transfer.mp4. Adjust the VOB filenames to match your recovery — the VTS_01 series contains the main programme content.",
+          "If the disc menu or chapter structure is important to preserve, MakeMKV can convert the VIDEO_TS folder to an MKV file that retains chapter markers and all audio tracks from the original disc. This is useful if the transfer disc included multiple reels as separate chapters.",
+        ],
+        callout: {
+          label: "Pro tip",
+          text: "After converting to MP4, save a copy to at least two separate storage locations — a hard drive and cloud storage, or two hard drives. Film transfer DVDs are often the only copy of the footage. A hard drive with a redundant backup is significantly safer long-term than a single DVD.",
+          color: "green",
+        },
+      },
+      {
+        id: "improving-quality-after-recovery",
+        heading: "Improving the Quality After Recovery",
+        level: 2,
+        paragraphs: [
+          "Most 8mm and Super 8 film footage transferred in the early 2000s was captured at standard definition (720×480 or 720×576). The original film resolution was much higher — Super 8 film has a theoretical resolution equivalent to about 1080p — but consumer transfer equipment of that era did not capture it at full quality.",
+          "AI upscaling tools can meaningfully improve the appearance of these recordings. Topaz Video AI, available for Windows, uses neural network models trained specifically on film and video footage to increase resolution to 1080p or 4K, deinterlace if necessary, reduce film grain, and stabilise shaky footage. The results on 8mm film footage transferred from standard-definition masters are often striking.",
+          "Heirvo's Archive tier includes AI restoration features that can apply these improvements without requiring a separate tool. Once the footage is recovered and exported, the AI restoration pipeline processes the video and delivers an enhanced version alongside the original.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "The transfer service said they returned the original film reels but I can't find them. Is the DVD really the only copy?",
+        a: "If you cannot locate the original reels, the DVD is likely the only copy. Some transfer services kept digital masters for a period, but most no longer do. Treating the DVD as irreplaceable and prioritising its recovery and backup is the correct approach. Act before the disc degrades further.",
+      },
+      {
+        q: "The DVD plays in a player but Windows won't copy the VIDEO_TS folder. Why?",
+        a: "This is a common issue with aging DVD-R media. The disc is marginal enough that a player's hardware error correction can compensate for read errors during playback, but the Windows file copy path cannot. Heirvo's sector-level scan uses the same low-level retry strategies as hardware players and can typically extract what Windows cannot.",
+      },
+      {
+        q: "My transfer DVD has multiple reels on one disc. Will Heirvo recover all of them?",
+        a: "Yes. Multi-reel discs are structured as multiple titles or title sets within the VIDEO_TS folder. Heirvo recovers the entire VIDEO_TS folder including all titles. You can then play each title separately in VLC or a DVD player.",
+      },
+      {
+        q: "The recovered footage looks washed out and flat. Is that from the damage?",
+        a: "Probably not — it is almost certainly the quality of the original transfer. Consumer film-to-DVD services in the early 2000s often used simple film projectors aimed at a white screen with a video camera, which produces flat, low-contrast output. This is a limitation of the original transfer, not disc damage. AI restoration tools can improve contrast and colour balance significantly.",
+      },
+      {
+        q: "Can I recover 16mm or Regular 8 film transfer DVDs with Heirvo as well?",
+        a: "Yes. Regardless of the original film format, the transfer service encoded the footage as standard MPEG-2 DVD-Video. Heirvo recovers the VIDEO_TS folder from the disc — the original film format (8mm, Super 8, 16mm, Regular 8) makes no difference to the recovery process.",
+      },
+    ],
+    cta: {
+      heading: "Don't Lose the Only Copy of Your Family Film",
+      body: "If your film transfer DVD is scratched, degraded, or unreadable — and it may be the only copy of the footage — Heirvo can recover what's still on the disc. Free scan, pay only if files are recovered.",
+      primaryLabel: "Download Heirvo Free",
+      primaryHref: "/#download",
+      secondaryLabel: "Or mail us the disc",
+      secondaryHref: "/recover",
+    },
+  },
 ];
 
 export default GUIDES;
