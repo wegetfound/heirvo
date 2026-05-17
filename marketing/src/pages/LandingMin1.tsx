@@ -518,13 +518,27 @@ export default function LandingMin1() {
                   lineHeight: 1.06,
                   letterSpacing: "-0.035em",
                   color: C.text,
-                  marginBottom: 28,
+                  marginBottom: 12,
                 }}
               >
                 Recover files from{" "}
                 <em style={{ fontStyle: "normal", color: C.blue }}>any</em>{" "}
                 damaged disc.
               </h1>
+
+              <p
+                style={{
+                  fontFamily: SORA,
+                  fontWeight: 600,
+                  fontSize: "clamp(1.15rem, 2.4vw, 1.65rem)",
+                  lineHeight: 1.2,
+                  letterSpacing: "-0.025em",
+                  color: C.textMuted,
+                  marginBottom: 28,
+                }}
+              >
+                Then find every moment inside it.
+              </p>
 
               <p
                 ref={heroSubRef}
