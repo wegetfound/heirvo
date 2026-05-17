@@ -1,12 +1,13 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { ipc } from "@/lib/ipc";
 import type { HealthReport, IsoResult, ExtractedFile, StorageDrive, Session, AudioToc, ExtractedAudioFile } from "@/lib/types";
-import { FileVideo, Files, Loader2, FileArchive, LifeBuoy, Save, Upload, Usb, HardDrive, Pencil, Lock, Sparkles, Music, FolderOpen, ArrowRight, ShieldCheck } from "lucide-react";
+import { FileVideo, Files, Loader2, FileArchive, LifeBuoy, Save, Upload, Usb, HardDrive, Pencil, Music, FolderOpen, ArrowRight, ShieldCheck } from "lucide-react";
 import { open as openDialog, save as saveDialog } from "@tauri-apps/plugin-dialog";
 import { bytesToHuman } from "@/lib/human";
 import { useLicense } from "@/lib/useLicense";
 import { cn } from "@/lib/cn";
+import { ProPaywallModal } from "./ProPaywallModal";
 
 type Mp4Result = { output_path: string; bytes_written: number; source_files: string[] };
 type DiagnosticBundle = { zip_path: string; bytes: number; session_id: string };
@@ -42,6 +43,20 @@ export function OutputPanel({
 
   const { status: license } = useLicense();
   const canSave = license.can_save;
+
+  // Paywall modal — shown when free user clicks a save action
+  const [paywallOpen, setPaywallOpen] = useState(false);
+  // Stores the save action to run after Pro unlock
+  const pendingSaveRef = useRef<(() => Promise<void>) | null>(null);
+
+  const guardedSave = (action: () => Promise<void>) => {
+    if (canSave) {
+      wrap("mp4", action);
+    } else {
+      pendingSaveRef.current = action;
+      setPaywallOpen(true);
+    }
+  };
 
   // Output destination state — fetched and editable mid-recovery
   const [session, setSession] = useState<Session | null>(null);
@@ -184,30 +199,65 @@ export function OutputPanel({
         <div className="card">
           <div className="micro-label mb-3">Disc health</div>
           {health ? (
-            <div className="flex items-center gap-4">
-              <HealthArc score={health.score} />
-              <div className="min-w-0 flex-1">
-                <p className="text-[13px] leading-snug text-ink-700">
-                  {health.summary}
-                </p>
-                <details className="mt-2">
-                  <summary className="cursor-pointer text-[11px] text-ink-500 hover:text-ink-700">
-                    Details
-                  </summary>
-                  <dl className="mt-2 space-y-0.5 text-[11px] text-ink-500">
-                    <div>Coverage: {health.coverage_pct.toFixed(1)}%</div>
-                    <div>
-                      Critical files:{" "}
-                      {health.critical_intact ? "intact" : "damaged"}
-                    </div>
-                    <div>
-                      Largest unreadable run:{" "}
-                      {health.largest_failed_run.toLocaleString()} sections
-                    </div>
-                  </dl>
-                </details>
+            <>
+              <div className="flex items-center gap-4">
+                <HealthArc score={health.score} />
+                <div className="min-w-0 flex-1">
+                  <p className="text-[13px] leading-snug text-ink-700">
+                    {health.summary}
+                  </p>
+                  <details className="mt-2">
+                    <summary className="cursor-pointer text-[11px] text-ink-500 hover:text-ink-700">
+                      Details
+                    </summary>
+                    <dl className="mt-2 space-y-0.5 text-[11px] text-ink-500">
+                      <div>Coverage: {health.coverage_pct.toFixed(1)}%</div>
+                      <div>
+                        Critical files:{" "}
+                        {health.critical_intact ? "intact" : "damaged"}
+                      </div>
+                      <div>
+                        Largest unreadable run:{" "}
+                        {health.largest_failed_run.toLocaleString()} sections
+                      </div>
+                    </dl>
+                  </details>
+                </div>
               </div>
-            </div>
+
+              {/* Mail-in handoff — shown when damage is beyond what software can recover */}
+              {health.score < 50 && (
+                <div
+                  className="mt-4 rounded-xl border p-3"
+                  style={{
+                    background: "linear-gradient(135deg, rgba(255,149,0,0.08) 0%, rgba(255,149,0,0.03) 100%)",
+                    borderColor: "rgba(255,149,0,0.30)",
+                  }}
+                >
+                  <div className="text-[12px] font-semibold text-ink-800 mb-1">
+                    Some damage is beyond what software can fix.
+                  </div>
+                  <p className="text-[11px] leading-snug text-ink-600 mb-2.5">
+                    Our lab reads discs with specialised optical equipment — including ones that score this low. Recovery starts at $89, and your Heirvo purchase counts toward it.
+                  </p>
+                  <a
+                    href="https://heirvo.com/recover"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[12px] font-medium transition"
+                    style={{
+                      background: "rgba(255,149,0,0.12)",
+                      color: "#C47700",
+                    }}
+                    onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "rgba(255,149,0,0.2)"; }}
+                    onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "rgba(255,149,0,0.12)"; }}
+                  >
+                    Get a lab estimate
+                    <ArrowRight className="h-3 w-3" aria-hidden />
+                  </a>
+                </div>
+              )}
+            </>
           ) : (
             <button
               className="btn btn-ghost"
@@ -227,17 +277,7 @@ export function OutputPanel({
               {isAudioCd && <Music className="h-3 w-3 text-brand-600" />}
               {isAudioCd ? "Save your music" : "Save your video"}
             </div>
-            {!canSave && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-ink-100 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-ink-600">
-                <Lock className="h-2.5 w-2.5" />
-                Pro
-              </span>
-            )}
           </div>
-
-          {!canSave && (
-            <ProUpsellBanner />
-          )}
 
           {/* Audio CD: only WAV extraction makes sense */}
           {isAudioCd && audioToc && (
@@ -297,12 +337,12 @@ export function OutputPanel({
           {/* Primary button row — hierarchy: one bold, two quiet.
               Buttons are hidden for non-applicable disc types (e.g. MP4
               hides for data CDs; "All files" hides for DVD-Video). */}
-          <div className={cn("flex flex-wrap items-center gap-2", !canSave && "pointer-events-none opacity-50")}>
+          <div className="flex flex-wrap items-center gap-2">
             {showVideoSaves && (
               <button
                 className="btn btn-primary"
                 disabled={busy !== null}
-                onClick={() => wrap("mp4", async () => {
+                onClick={() => guardedSave(async () => {
                   const r = await ipc.saveAsMp4(sessionId);
                   setMp4(r);
                   onMp4Saved?.(r.output_path);
@@ -641,6 +681,20 @@ export function OutputPanel({
           </div>
         </div>
       </div>
+
+      <ProPaywallModal
+        open={paywallOpen}
+        onClose={() => {
+          setPaywallOpen(false);
+          pendingSaveRef.current = null;
+        }}
+        onUnlocked={() => {
+          setPaywallOpen(false);
+          const action = pendingSaveRef.current;
+          pendingSaveRef.current = null;
+          if (action) wrap("mp4", action);
+        }}
+      />
     </div>
   );
 }
@@ -690,90 +744,3 @@ function HealthArc({ score }: { score: number }) {
   );
 }
 
-/**
- * Banner shown above the (locked) Save buttons on the free tier. Explains
- * the Pro upgrade and routes to checkout / license activation.
- */
-function ProUpsellBanner() {
-  const [showActivate, setShowActivate] = useState(false);
-  const { activate } = useLicense();
-  const [key, setKey] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
-
-  const buy = () => window.open("https://heirvo.com/buy", "_blank");
-
-  const submit = async () => {
-    if (!key.trim()) return;
-    setSubmitting(true);
-    setErr(null);
-    try {
-      await activate(key);
-      setShowActivate(false);
-    } catch (e) {
-      setErr(String(e));
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  return (
-    <div
-      className="mb-3 rounded-xl border p-3"
-      style={{
-        background:
-          "linear-gradient(135deg, rgba(10,132,255,0.08) 0%, rgba(90,200,250,0.04) 100%)",
-        borderColor: "rgba(10,132,255,0.25)",
-      }}
-    >
-      <div className="flex items-start gap-2">
-        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white/80">
-          <Sparkles className="h-3.5 w-3.5 text-brand-600" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <div className="text-[13px] font-semibold text-ink-900">
-            You've recovered your video. Keep it forever for $39.
-          </div>
-          <p className="mt-0.5 text-[12px] leading-snug text-ink-600">
-            Heirvo Pro unlocks Save — MP4, disc image, chapters, all files.
-            One-time purchase, no subscription.
-          </p>
-        </div>
-      </div>
-      <button
-        onClick={buy}
-        className="btn btn-primary mt-2 w-full text-[12px]"
-      >
-        Unlock Save
-      </button>
-
-      <div className="mt-2 flex items-center gap-3 border-t border-brand-200/40 pt-2">
-        <button
-          onClick={() => setShowActivate(!showActivate)}
-          className="text-[11px] font-medium text-brand-600 hover:text-brand-700 transition-colors"
-        >
-          {showActivate ? "Hide" : "I already have a license key"}
-        </button>
-        {showActivate && (
-          <div className="flex flex-1 items-center gap-2">
-            <input
-              className="flex-1 rounded-md border border-ink-200 bg-white/90 px-2 py-1 font-mono text-[11px]"
-              placeholder="HEIRVO-XXXX-XXXX"
-              value={key}
-              onChange={(e) => setKey(e.target.value)}
-              disabled={submitting}
-            />
-            <button
-              onClick={submit}
-              disabled={!key.trim() || submitting}
-              className="rounded-md bg-ink-900 px-2 py-1 text-[11px] font-medium text-white hover:bg-ink-800 disabled:opacity-40 transition-colors"
-            >
-              {submitting ? <Loader2 className="h-3 w-3 animate-spin" /> : "Activate"}
-            </button>
-          </div>
-        )}
-      </div>
-      {err && <p className="mt-1 text-[10px] text-ios-red">{err}</p>}
-    </div>
-  );
-}

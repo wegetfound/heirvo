@@ -49,7 +49,11 @@
       "resources/ffmpeg/ffmpeg.exe",
       "resources/ffmpeg/ffprobe.exe",
       "resources/whisper/whisper-cli.exe",
-      "resources/whisper/ggml-base.en.bin"
+      "resources/whisper/ggml-base.en.bin",
+      "resources/whisper/ggml.dll",
+      "resources/whisper/ggml-base.dll",
+      "resources/whisper/ggml-cpu.dll",
+      "resources/whisper/whisper.dll"
     ],
     "windows": {
       "webviewInstallMode": {

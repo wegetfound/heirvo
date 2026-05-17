@@ -216,6 +216,8 @@ export default function LandingMin1() {
   const mediaStripRef   = useRef<HTMLDivElement>(null);
   const testimonialRef  = useRef<HTMLDivElement>(null);
   const photocdRef      = useRef<HTMLElement>(null);
+  const searchableRef   = useRef<HTMLElement>(null);
+  const giftPitchRef    = useRef<HTMLElement>(null);
   const pathsRef        = useRef<HTMLDivElement>(null);
   const stepsRef        = useRef<HTMLDivElement>(null);
   const pricingRef      = useRef<HTMLDivElement>(null);
@@ -337,6 +339,26 @@ export default function LandingMin1() {
             direction: "up",
             duration: 1.0,
             scrollTrigger: { trigger: photocdRef.current, start: "top 80%", once: true },
+          });
+        }
+
+        // ── Searchable archive section clip reveal ─────────────────────────
+
+        if (searchableRef.current) {
+          clipReveal(searchableRef.current, {
+            direction: "up",
+            duration: 1.0,
+            scrollTrigger: { trigger: searchableRef.current, start: "top 80%", once: true },
+          });
+        }
+
+        // ── Gift-buyer pitch section ───────────────────────────────────────
+
+        if (giftPitchRef.current) {
+          clipReveal(giftPitchRef.current, {
+            direction: "up",
+            duration: 1.0,
+            scrollTrigger: { trigger: giftPitchRef.current, start: "top 80%", once: true },
           });
         }
 
@@ -516,10 +538,11 @@ export default function LandingMin1() {
                   maxWidth: 480,
                 }}
               >
-                Heirvo is DVD & CD recovery software that reads failing discs
-                sector by sector — through scratches, degraded dye, and
-                surface damage that stops every other tool. Free to scan.
-                Pay $39 once to save.
+                The shoebox of wedding tapes in your parents' attic isn't
+                lost yet. Heirvo is DVD & CD recovery software that reads
+                failing discs sector by sector — through scratches, degraded
+                dye, and surface damage that stops every other tool. Free
+                to scan. Pay $39 once to save.
               </p>
 
               {/* CTAs */}
@@ -603,6 +626,31 @@ export default function LandingMin1() {
                     </span>
                   ))}
                 </div>
+
+                {/* Gift-buyer link */}
+                <Link
+                  to="/gift"
+                  style={{
+                    display: "inline-flex", alignItems: "center", gap: 8,
+                    marginTop: 18, padding: "6px 12px 6px 10px",
+                    borderRadius: 100, background: "rgba(245,158,11,0.08)",
+                    border: `1px solid ${C.amberBorder}`,
+                    fontFamily: SORA, fontSize: 12, fontWeight: 500,
+                    color: C.amber, textDecoration: "none",
+                    letterSpacing: "-0.005em",
+                    transition: "background 0.15s ease, border-color 0.15s ease",
+                  }}
+                  onMouseEnter={(e) => {
+                    (e.currentTarget as HTMLElement).style.background = "rgba(245,158,11,0.14)";
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLElement).style.background = "rgba(245,158,11,0.08)";
+                  }}
+                >
+                  <span aria-hidden style={{ fontSize: 13 }}>🎁</span>
+                  Doing this for Mom or Dad? See gift guide
+                  <ChevronRight size={11} color={C.amber} />
+                </Link>
 
                 {/* SmartScreen note */}
                 <p style={{
@@ -1108,6 +1156,385 @@ export default function LandingMin1() {
                   .lm1-photocd-grid > div:last-child { display: none; }
                 }
               `}</style>
+            </div>
+          </div>
+        </section>
+
+        {/* ═══════════════════════════════════════════════════════════════
+            SEARCHABLE ARCHIVE — local Whisper transcription feature
+            ═══════════════════════════════════════════════════════════════ */}
+        <section
+          ref={searchableRef}
+          id="searchable-archive"
+          aria-labelledby="searchable-heading"
+          style={{
+            padding: "0 32px",
+            clipPath: "inset(0% 0% 100% 0%)",
+          }}
+        >
+          <div style={{ maxWidth: 1200, margin: "0 auto", padding: "80px 0" }}>
+            <div style={{
+              background: `linear-gradient(135deg, rgba(10,132,255,0.08) 0%, rgba(10,132,255,0.02) 60%, ${C.pageAlt} 100%)`,
+              border: `1px solid ${C.blueBorder}`,
+              borderRadius: 20,
+              padding: "clamp(40px, 5vw, 72px)",
+              position: "relative" as const,
+              overflow: "hidden",
+            }}>
+              {/* Background blue glow */}
+              <div aria-hidden style={{
+                position: "absolute", top: -80, left: -80,
+                width: 400, height: 400, borderRadius: "50%",
+                background: "radial-gradient(circle, rgba(10,132,255,0.12) 0%, transparent 70%)",
+                pointerEvents: "none",
+              }} />
+
+              <div className="lm1-searchable-grid">
+                <div>
+                  <div style={{
+                    display: "inline-flex", alignItems: "center", gap: 8,
+                    padding: "5px 12px", borderRadius: 100,
+                    background: C.blueFaint, border: `1px solid ${C.blueBorder}`,
+                    fontFamily: SORA, fontSize: 10, fontWeight: 700,
+                    color: C.blue, letterSpacing: "0.14em",
+                    textTransform: "uppercase" as const,
+                    marginBottom: 24,
+                  }}>
+                    New · Searchable home video archive
+                  </div>
+
+                  <h2
+                    id="searchable-heading"
+                    style={{
+                      fontFamily: SORA, fontWeight: 700,
+                      fontSize: "clamp(1.8rem, 3.5vw, 3rem)",
+                      lineHeight: 1.1, letterSpacing: "-0.03em",
+                      color: C.text, marginBottom: 20,
+                    }}
+                  >
+                    Find the moment,{" "}
+                    <span style={{ color: C.blue }}>not just the disc.</span>
+                  </h2>
+
+                  <p style={{
+                    fontFamily: SORA, fontSize: 16, color: C.textMuted,
+                    lineHeight: 1.7, marginBottom: 16, maxWidth: 520,
+                  }}>
+                    You know the moment is in there somewhere. Grandma's toast. The first words. The vows. But scrubbing through hours of tape to find sixty seconds is the reason those discs never come off the shelf.
+                  </p>
+
+                  <p style={{
+                    fontFamily: SORA, fontSize: 16, color: C.textMuted,
+                    lineHeight: 1.7, marginBottom: 32, maxWidth: 520,
+                  }}>
+                    <strong style={{ color: C.text }}>Heirvo listens to every video and writes it all down — privately, on your machine.</strong> Drop in a recovered DVD or any old video file, and minutes later you can search "happy birthday" and click straight to grandma's 80th.
+                  </p>
+
+                  {/* Key facts */}
+                  <div style={{ display: "flex", gap: 32, flexWrap: "wrap" as const, marginBottom: 36 }}>
+                    {[
+                      { label: "Transcription", value: "100% on-device" },
+                      { label: "Cloud upload", value: "Never" },
+                      { label: "Subscription", value: "None" },
+                    ].map(({ label, value }) => (
+                      <div key={label}>
+                        <div style={{
+                          fontFamily: SORA, fontSize: 10, fontWeight: 700,
+                          letterSpacing: "0.12em", textTransform: "uppercase" as const,
+                          color: C.textFaint, marginBottom: 4,
+                        }}>
+                          {label}
+                        </div>
+                        <div style={{
+                          fontFamily: SORA, fontSize: 14, fontWeight: 600,
+                          color: C.blue, letterSpacing: "-0.01em",
+                        }}>
+                          {value}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div style={{ display: "flex", gap: 14, flexWrap: "wrap" as const, alignItems: "center" }}>
+                    <a
+                      href={DOWNLOAD_URL}
+                      aria-label="Download Heirvo free — searchable home video archive included"
+                      style={{
+                        display: "inline-flex", alignItems: "center", gap: 8,
+                        padding: "13px 22px", borderRadius: 10,
+                        background: C.blue, color: "#FFFFFF",
+                        fontFamily: SORA, fontSize: 14, fontWeight: 700,
+                        letterSpacing: "-0.01em", textDecoration: "none",
+                        transition: "background 0.18s ease, box-shadow 0.18s ease",
+                        boxShadow: "0 4px 20px rgba(10,132,255,0.35)",
+                        whiteSpace: "nowrap" as const,
+                      }}
+                      onMouseEnter={(e) => {
+                        (e.currentTarget as HTMLElement).style.background = C.blueHover;
+                        (e.currentTarget as HTMLElement).style.boxShadow = "0 6px 28px rgba(10,132,255,0.5)";
+                      }}
+                      onMouseLeave={(e) => {
+                        (e.currentTarget as HTMLElement).style.background = C.blue;
+                        (e.currentTarget as HTMLElement).style.boxShadow = "0 4px 20px rgba(10,132,255,0.35)";
+                      }}
+                    >
+                      Download Heirvo Free
+                    </a>
+                    <span style={{
+                      fontFamily: SORA, fontSize: 13, fontWeight: 500,
+                      color: C.textFaint,
+                    }}>
+                      Windows 10 / 11 · Free forever
+                    </span>
+                  </div>
+                </div>
+
+                {/* Right — search mockup */}
+                <div style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
+                  <div style={{
+                    width: "100%", maxWidth: 360,
+                    background: C.page,
+                    border: `1px solid ${C.borderMed}`,
+                    borderRadius: 14,
+                    padding: 18,
+                    boxShadow: "0 20px 60px rgba(0,0,0,0.4), 0 0 0 1px rgba(10,132,255,0.08)",
+                  }}>
+                    {/* Search input mock */}
+                    <div style={{
+                      display: "flex", alignItems: "center", gap: 10,
+                      padding: "10px 14px", borderRadius: 8,
+                      background: C.pageAlt, border: `1px solid ${C.border}`,
+                      marginBottom: 14,
+                    }}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden>
+                        <circle cx="11" cy="11" r="7" stroke={C.textFaint} strokeWidth="2"/>
+                        <path d="m20 20-3.5-3.5" stroke={C.textFaint} strokeWidth="2" strokeLinecap="round"/>
+                      </svg>
+                      <span style={{
+                        fontFamily: SORA, fontSize: 14, fontWeight: 500,
+                        color: C.text, letterSpacing: "-0.01em",
+                      }}>
+                        happy birthday
+                      </span>
+                      <span aria-hidden style={{
+                        display: "inline-block", width: 1, height: 14,
+                        background: C.blue, marginLeft: 2,
+                        animation: "lm1-blink 1s steps(2) infinite",
+                      }} />
+                    </div>
+
+                    <div style={{
+                      fontFamily: SORA, fontSize: 10, fontWeight: 700,
+                      letterSpacing: "0.14em", textTransform: "uppercase" as const,
+                      color: C.textFaint, marginBottom: 10,
+                    }}>
+                      5 moments · 4 discs
+                    </div>
+
+                    {/* Result card */}
+                    <div style={{
+                      padding: 14, borderRadius: 10,
+                      background: C.pageAlt,
+                      border: `1px solid ${C.blueBorder}`,
+                      marginBottom: 8,
+                    }}>
+                      <div style={{
+                        display: "flex", justifyContent: "space-between",
+                        alignItems: "baseline", marginBottom: 8,
+                      }}>
+                        <span style={{
+                          fontFamily: SORA, fontSize: 13, fontWeight: 600,
+                          color: C.text, letterSpacing: "-0.01em",
+                        }}>
+                          Grandma's 80th
+                        </span>
+                        <span style={{
+                          fontFamily: SORA, fontSize: 11, fontWeight: 500,
+                          color: C.blue,
+                        }}>
+                          00:00:08
+                        </span>
+                      </div>
+                      <div style={{
+                        fontFamily: SORA, fontSize: 12, color: C.textMuted,
+                        lineHeight: 1.5,
+                      }}>
+                        "On three. One, two, three — happy{" "}
+                        <mark style={{
+                          background: "rgba(10,132,255,0.25)",
+                          color: C.text, padding: "1px 3px", borderRadius: 3,
+                        }}>birthday</mark>{" "}
+                        to you, happy{" "}
+                        <mark style={{
+                          background: "rgba(10,132,255,0.25)",
+                          color: C.text, padding: "1px 3px", borderRadius: 3,
+                        }}>birthday</mark>{" "}
+                        to you..."
+                      </div>
+                    </div>
+
+                    {/* Stub result */}
+                    <div style={{
+                      padding: 14, borderRadius: 10,
+                      background: C.pageAlt,
+                      border: `1px solid ${C.border}`,
+                      opacity: 0.55,
+                    }}>
+                      <div style={{
+                        display: "flex", justifyContent: "space-between",
+                        alignItems: "baseline", marginBottom: 8,
+                      }}>
+                        <span style={{
+                          fontFamily: SORA, fontSize: 13, fontWeight: 600,
+                          color: C.text,
+                        }}>
+                          Wedding · June 2003
+                        </span>
+                        <span style={{
+                          fontFamily: SORA, fontSize: 11, fontWeight: 500,
+                          color: C.textFaint,
+                        }}>
+                          00:42:11
+                        </span>
+                      </div>
+                      <div style={{
+                        fontFamily: SORA, fontSize: 12, color: C.textMuted,
+                        lineHeight: 1.5,
+                      }}>
+                        "...and a very happy <mark style={{
+                          background: "rgba(10,132,255,0.25)",
+                          color: C.text, padding: "1px 3px", borderRadius: 3,
+                        }}>birthday</mark> to the bride's father..."
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <style>{`
+                .lm1-searchable-grid {
+                  display: grid;
+                  grid-template-columns: 1fr 380px;
+                  gap: 56px;
+                  align-items: center;
+                }
+                @media (max-width: 880px) {
+                  .lm1-searchable-grid { grid-template-columns: 1fr !important; }
+                }
+                @keyframes lm1-blink {
+                  to { opacity: 0; }
+                }
+              `}</style>
+            </div>
+          </div>
+        </section>
+
+        {/* ═══════════════════════════════════════════════════════════════
+            GIFT-BUYER PITCH — Storyworth-style reframe for adult children
+            ═══════════════════════════════════════════════════════════════ */}
+        <section
+          ref={giftPitchRef}
+          id="for-adult-children"
+          aria-labelledby="gift-pitch-heading"
+          style={{
+            padding: "80px 32px",
+            clipPath: "inset(0% 0% 100% 0%)",
+          }}
+        >
+          <div style={{
+            maxWidth: 980, margin: "0 auto", textAlign: "center" as const,
+          }}>
+            <Eyebrow style={{ marginBottom: 18 }}>
+              <span style={{ color: C.amber }}>For the adult child</span>{" "}
+              · The grown-up daughter or son
+            </Eyebrow>
+
+            <h2
+              id="gift-pitch-heading"
+              style={{
+                fontFamily: SORA, fontWeight: 700,
+                fontSize: "clamp(1.9rem, 3.6vw, 3.1rem)",
+                lineHeight: 1.08, letterSpacing: "-0.03em",
+                color: C.text, marginBottom: 24,
+                maxWidth: 820, margin: "0 auto 24px",
+              }}
+            >
+              You're not just recovering discs.{" "}
+              <span style={{ color: C.amber }}>
+                You're giving Mom her wedding back.
+              </span>
+            </h2>
+
+            <p style={{
+              fontFamily: SORA, fontSize: 17, color: C.textMuted,
+              lineHeight: 1.65, marginBottom: 14,
+              maxWidth: 620, margin: "0 auto 14px",
+            }}>
+              The shoebox in the attic isn't going to digitise itself.
+              Your parents won't get around to it. Your siblings keep saying
+              "someday." Heirvo is for the one person in the family who
+              actually does the thing.
+            </p>
+
+            <p style={{
+              fontFamily: SORA, fontSize: 17, color: C.textMuted,
+              lineHeight: 1.65, marginBottom: 36,
+              maxWidth: 620, margin: "0 auto 36px",
+            }}>
+              Most of our buyers aren't 70-year-olds with one wedding DVD —
+              they're 40-year-olds doing this for their parents, their
+              in-laws, their late uncle's archive. Mother's Day. Father's
+              80th. The Christmas Mom can't go home for. Heirvo turns a
+              forgotten shoebox into the most personal gift in the room.
+            </p>
+
+            <div style={{ display: "flex", gap: 14, flexWrap: "wrap" as const, justifyContent: "center" }}>
+              <Link
+                to="/gift"
+                style={{
+                  display: "inline-flex", alignItems: "center", gap: 9,
+                  padding: "14px 24px", borderRadius: 10,
+                  background: C.amber, color: "#0B0800",
+                  fontFamily: SORA, fontSize: 14, fontWeight: 700,
+                  letterSpacing: "-0.01em", textDecoration: "none",
+                  transition: "background 0.18s ease, box-shadow 0.18s ease",
+                  boxShadow: "0 4px 24px rgba(245,158,11,0.32)",
+                  whiteSpace: "nowrap" as const,
+                }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLElement).style.background = C.amberHover;
+                  (e.currentTarget as HTMLElement).style.boxShadow = "0 6px 32px rgba(245,158,11,0.5)";
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLElement).style.background = C.amber;
+                  (e.currentTarget as HTMLElement).style.boxShadow = "0 4px 24px rgba(245,158,11,0.32)";
+                }}
+              >
+                <span aria-hidden style={{ fontSize: 14 }}>🎁</span>
+                See the gift guide
+                <ChevronRight size={13} color="#0B0800" />
+              </Link>
+              <a
+                href={DOWNLOAD_URL}
+                style={{
+                  display: "inline-flex", alignItems: "center", gap: 7,
+                  padding: "13px 22px", borderRadius: 10,
+                  background: "transparent", color: C.text,
+                  fontFamily: SORA, fontSize: 14, fontWeight: 500,
+                  letterSpacing: "-0.01em", textDecoration: "none",
+                  border: `1.5px solid ${C.borderMed}`,
+                  transition: "border-color 0.18s ease, color 0.18s ease",
+                  whiteSpace: "nowrap" as const,
+                }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLElement).style.borderColor = C.borderBright;
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLElement).style.borderColor = C.borderMed;
+                }}
+              >
+                Start scanning a disc now
+              </a>
             </div>
           </div>
         </section>

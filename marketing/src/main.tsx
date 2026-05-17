@@ -9,6 +9,7 @@ const LandingMin1  = lazy(() => import("./pages/LandingMin1"));
 const Download     = lazy(() => import("./pages/Download"));
 const Activate     = lazy(() => import("./pages/Activate"));
 const RecoverH     = lazy(() => import("./pages/RecoverH"));
+const Gift         = lazy(() => import("./pages/Gift"));
 const About        = lazy(() => import("./pages/About"));
 const GuideIndex   = lazy(() => import("./pages/GuideIndex"));
 const GuidePost    = lazy(() => import("./pages/GuidePost"));
@@ -61,6 +62,7 @@ function AppRoot() {
           <Route path="/acceptable-use" element={<AcceptableUse />} />
           <Route path="/recover" element={<RecoverH />} />
           <Route path="/recover-h" element={<RecoverH />} />
+          <Route path="/gift" element={<Gift />} />
           <Route path="/about" element={<About />} />
           <Route path="/guides" element={<GuideIndex />} />
           <Route path="/guides/:slug" element={<GuidePost />} />
