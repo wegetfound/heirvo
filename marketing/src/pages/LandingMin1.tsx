@@ -81,7 +81,7 @@ const HOW_TO_SCHEMA = JSON.stringify({
       "@type": "HowToStep",
       "position": 3,
       "name": "Save your recovered files",
-      "text": "Preview what was found, then pay once ($49) to save everything. Choose to extract individual files, save a full ISO image, or have Heirvo convert video to MP4 automatically."
+      "text": "Preview what was found, then pay once ($59) to save everything. Choose to extract individual files, save a full ISO image, or have Heirvo convert video to MP4 automatically."
     }
   ]
 });
@@ -103,7 +103,7 @@ const FAQ_SCHEMA = JSON.stringify({
       "name": "What is the best software to recover files from a damaged CD or DVD?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Heirvo is purpose-built disc recovery software for Windows 10 and 11. Unlike older tools such as IsoBuster, Heirvo is designed for non-technical users recovering family memories. It supports DVD, CD, Blu-ray, and Kodak Photo CD formats. The scan is free; saving files costs a one-time fee of $49 with no subscription."
+        "text": "Heirvo is purpose-built disc recovery software for Windows 10 and 11. Unlike older tools such as IsoBuster, Heirvo is designed for non-technical users recovering family memories. It supports DVD, CD, Blu-ray, and Kodak Photo CD formats. The scan is free; saving files costs a one-time fee of $59 with no subscription."
       }
     },
     {
@@ -119,7 +119,7 @@ const FAQ_SCHEMA = JSON.stringify({
       "name": "Is there a free DVD recovery tool for Windows?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Heirvo offers a completely free scan — you can see every recoverable file on your disc before spending anything. If you want to save those files, a one-time payment of $49 unlocks unlimited saves. There is no subscription, no account required, and no recurring fee."
+        "text": "Heirvo offers a completely free scan — you can see every recoverable file on your disc before spending anything. If you want to save those files, a one-time payment of $59 unlocks unlimited saves. There is no subscription, no account required, and no recurring fee."
       }
     },
     {
@@ -159,7 +159,7 @@ const SOFTWARE_APP_SCHEMA = JSON.stringify({
     "@type": "Offer",
     "price": "0",
     "priceCurrency": "USD",
-    "description": "Free to scan. $49 one-time to save recovered files."
+    "description": "Free to scan. $59 one-time to save recovered files."
   },
   "description": "DVD and CD recovery software for Windows. Recovers files from scratched, damaged, or unreadable DVDs, CDs, Blu-ray, and Kodak Photo CDs.",
   "url": "https://heirvo.com"
@@ -247,7 +247,7 @@ export default function LandingMin1() {
       document.head.appendChild(metaDesc);
     }
     metaDesc.content =
-      "Recover files from scratched DVDs, damaged CDs, Blu-ray, and Kodak Photo CDs. Free to scan. Pay $49 once to save. Mail-in service from $89 with no-recovery/no-charge guarantee. Windows 10 & 11.";
+      "Recover files from scratched DVDs, damaged CDs, Blu-ray, and Kodak Photo CDs. Free to scan. Pay $59 once to save. Mail-in service from $89 with no-recovery/no-charge guarantee. Windows 10 & 11.";
 
     const reduce =
       typeof window !== "undefined" &&
@@ -556,7 +556,7 @@ export default function LandingMin1() {
                 lost yet. Heirvo is DVD & CD recovery software that reads
                 failing discs sector by sector — through scratches, degraded
                 dye, and surface damage that stops every other tool. Free
-                to scan. Pay $49 once to save.
+                to scan. Pay $59 once to save.
               </p>
 
               {/* CTAs */}
@@ -623,7 +623,7 @@ export default function LandingMin1() {
                 <div style={{ display: "flex", gap: 20, flexWrap: "wrap" as const }}>
                   {[
                     "Free to scan",
-                    "$49 one-time · no subscription",
+                    "$59 one-time · no subscription",
                     "Windows 10 / 11 · 64-bit",
                     "No account needed",
                   ].map((tag) => (
@@ -1623,7 +1623,7 @@ export default function LandingMin1() {
                   fontFamily: SORA, fontSize: 15, color: C.textMuted,
                   lineHeight: 1.7, marginBottom: 28, flex: 1,
                 }}>
-                  Insert your disc, scan for free, and save your files with a single $49 payment. No subscription, no account, no tech expertise needed. Works offline on any Windows 10 or 11 PC.
+                  Insert your disc, scan for free, and save your files with a single $59 payment. No subscription, no account, no tech expertise needed. Works offline on any Windows 10 or 11 PC.
                 </p>
 
                 <div style={{ marginBottom: 32 }}>
@@ -1635,7 +1635,7 @@ export default function LandingMin1() {
                     $0
                   </div>
                   <div style={{ fontFamily: SORA, fontSize: 13, color: C.textMuted }}>
-                    to scan — <strong style={{ color: C.text }}>$49 one-time</strong> to save your files
+                    to scan — <strong style={{ color: C.text }}>$59 one-time</strong> to save your files
                   </div>
                 </div>
 
@@ -1865,7 +1865,7 @@ export default function LandingMin1() {
                   {
                     n: "03",
                     title: "Preview, then save",
-                    body: "The scan is completely free. You see every recoverable file before spending anything. When you're ready, pay $49 once to unlock saving. Extract files individually, save a full ISO image, or let Heirvo convert video to MP4 automatically.",
+                    body: "The scan is completely free. You see every recoverable file before spending anything. When you're ready, pay $59 once to unlock saving. Extract files individually, save a full ISO image, or let Heirvo convert video to MP4 automatically.",
                   },
                 ].map(({ n, title, body }, i) => (
                   <React.Fragment key={n}>
@@ -2015,7 +2015,7 @@ export default function LandingMin1() {
                 </a>
               </div>
 
-              {/* Tier 2 — Pro $49 */}
+              {/* Tier 2 — Pro $59 */}
               <div
                 className="pricing-card"
                 style={{
@@ -2044,7 +2044,7 @@ export default function LandingMin1() {
                   letterSpacing: "-0.045em", color: C.text,
                   lineHeight: 1, marginBottom: 4,
                 }}>
-                  $49
+                  $59
                 </div>
                 <div style={{ fontFamily: SORA, fontSize: 13, color: C.textMuted, marginBottom: 28 }}>
                   one-time · no subscription · unlimited discs
@@ -2085,7 +2085,7 @@ export default function LandingMin1() {
                     (e.currentTarget as HTMLElement).style.boxShadow = "0 4px 20px rgba(10,132,255,0.3)";
                   }}
                 >
-                  Download Free · Unlock for $49
+                  Download Free · Unlock for $59
                 </a>
               </div>
 
@@ -2218,7 +2218,7 @@ export default function LandingMin1() {
                   },
                   {
                     q: "What is the best software to recover files from a damaged CD or DVD in 2025?",
-                    a: "Heirvo is a purpose-built disc recovery tool for Windows 10 and 11. Unlike older tools such as IsoBuster or CDRoller — which are powerful but aimed at technical users — Heirvo is designed for everyday people recovering family photos and home videos. The scan is free; saving files costs a one-time $49 with no subscription.",
+                    a: "Heirvo is a purpose-built disc recovery tool for Windows 10 and 11. Unlike older tools such as IsoBuster or CDRoller — which are powerful but aimed at technical users — Heirvo is designed for everyday people recovering family photos and home videos. The scan is free; saving files costs a one-time $59 with no subscription.",
                   },
                   {
                     q: "How do I open Kodak Photo CD files on Windows 10 or 11?",
@@ -2226,7 +2226,7 @@ export default function LandingMin1() {
                   },
                   {
                     q: "Is there a free DVD recovery tool for Windows?",
-                    a: "Heirvo offers a completely free scan. You can see every recoverable file on your disc — names, sizes, and types — before spending anything. If you want to save those files, a one-time payment of $49 unlocks unlimited saves. There is no subscription, no account required, and no recurring fee.",
+                    a: "Heirvo offers a completely free scan. You can see every recoverable file on your disc — names, sizes, and types — before spending anything. If you want to save those files, a one-time payment of $59 unlocks unlimited saves. There is no subscription, no account required, and no recurring fee.",
                   },
                   {
                     q: "What disc types does Heirvo support?",

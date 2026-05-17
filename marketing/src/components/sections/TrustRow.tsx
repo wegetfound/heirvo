@@ -27,7 +27,7 @@ const items: Item[] = [
     icon: <SparkleIcon />,
   },
   {
-    title: "$49 once, no subscription",
+    title: "$59 once, no subscription",
     body: "Pay once, keep forever. Free updates. Three of your devices, lifetime.",
     icon: <PriceIcon />,
   },

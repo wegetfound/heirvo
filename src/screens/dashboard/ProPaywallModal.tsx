@@ -154,7 +154,7 @@ export function ProPaywallModal({ open, onClose, onUnlocked, exportsUsed = 0 }: 
             onClick={() => window.open(BUY_URL, "_blank")}
             className="mt-6 w-full rounded-2xl bg-brand-600 px-5 py-3.5 text-[15px] font-semibold text-white shadow-glow-blue transition hover:bg-brand-500 active:scale-[0.98]"
           >
-            Unlock Heirvo Pro — $49
+            Unlock Heirvo Pro — $59
           </button>
 
           <p className="mt-2 text-center text-[12px] text-ink-400">

@@ -28,7 +28,7 @@ const LS_CHECKOUT_URL = import.meta.env.VITE_LS_CHECKOUT_URL || "";
 export default function Download() {
   useMeta(
     "Download Heirvo Free — DVD & CD Recovery Software for Windows",
-    "Download Heirvo and scan your damaged DVDs, CDs, and Blu-ray discs for free. Pay $49 once to save recovered files. Works on Windows 10 & 11.",
+    "Download Heirvo and scan your damaged DVDs, CDs, and Blu-ray discs for free. Pay $59 once to save recovered files. Works on Windows 10 & 11.",
     "https://heirvo.com/download"
   );
   const scopeRef = useRef<HTMLDivElement>(null);
@@ -80,7 +80,7 @@ export default function Download() {
             </h1>
             <p className="mt-5 text-[17px] leading-relaxed text-ink-500">
               Heirvo recovers any disc for free — no time limit, no watermarks.
-              Pro ($49 one-time) unlocks saving the recovered video as MP4, ISO,
+              Pro ($59 one-time) unlocks saving the recovered video as MP4, ISO,
               or chapter files, plus AI restoration.
             </p>
           </div>
@@ -122,7 +122,7 @@ export default function Download() {
               tone="pro"
               eyebrow="When you're ready to save"
               title="Heirvo Pro"
-              price="$49"
+              price="$59"
               priceNote="One-time, no subscription"
               features={[
                 "Save as MP4 (lossless)",

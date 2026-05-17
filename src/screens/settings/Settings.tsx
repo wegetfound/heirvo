@@ -291,7 +291,7 @@ function FreeTierPanel() {
         <div className="mt-auto pt-5">
           <div className="flex items-baseline gap-1.5 mb-3">
             <span className="font-display text-[32px] font-bold tabular-nums leading-none text-white">
-              $49
+              $59
             </span>
             <span className="text-[12px]" style={{ color: "rgba(255,255,255,0.42)" }}>
               one-time

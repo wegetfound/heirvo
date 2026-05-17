@@ -116,7 +116,7 @@ export default function About() {
                 Who writes the guides
               </h2>
               <p className="text-[16px] leading-relaxed text-ink-600 mb-4">
-                The <Link to="/guides" className="text-brand-600 hover:text-brand-700 underline underline-offset-2">recovery guides on this site</Link> are written and maintained by the Heirvo team. We test every procedure on real discs — including commercially pressed DVDs, home-burned DVD-R and DVD+R, Kodak Photo CDs, and discs with deliberate damage. We don't publish advice we haven't verified ourselves.
+                The <Link to="/guides" className="text-brand-600 hover:text-brand-700 underline underline-offset-2">recovery guides on this site</Link> are written and maintained by <strong className="text-ink-800">Sasha Goldsmith</strong>, Heirvo's founder. Every procedure is tested on real discs — commercially pressed DVDs, home-burned DVD-R and DVD+R, Kodak Photo CDs, and discs with deliberate damage. We don't publish advice we haven't verified ourselves.
               </p>
               <p className="text-[16px] leading-relaxed text-ink-600">
                 Where a guide references another tool — IsoBuster, DVDisaster, CDRoller — we have actually used that tool and are reporting what it does, not what its marketing page says.

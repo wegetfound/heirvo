@@ -154,7 +154,7 @@ export default function Hero() {
                 <span className="text-ink-700 font-medium">DVDs, photo CDs, data CDs, audio CDs, and Blu-ray</span>{" "}
                 — discs other software gives up on.{" "}
                 <span className="text-ink-700 font-medium">Free to scan.</span>{" "}
-                $49 to save.
+                $59 to save.
               </p>
 
               {/* CTAs */}
