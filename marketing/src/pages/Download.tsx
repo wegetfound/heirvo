@@ -8,6 +8,7 @@ import {
   isLemonSqueezyConfigured,
   openLemonCheckout,
 } from "../lib/lemon-squeezy";
+import { PRICING } from "../lib/pricing";
 
 const DOWNLOAD_URL = (import.meta.env.VITE_DOWNLOAD_URL as string) || "";
 
@@ -122,7 +123,7 @@ export default function Download() {
               tone="pro"
               eyebrow="When you're ready to save"
               title="Heirvo Pro"
-              price="$59"
+              price={PRICING.recover.label}
               priceNote="One-time, no subscription"
               features={[
                 "Save as MP4 (lossless)",

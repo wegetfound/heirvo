@@ -6,6 +6,7 @@ import { Loader2, Check, ExternalLink, LogOut, Sparkles, FolderOpen, FileText, V
 import { ipc } from "@/lib/ipc";
 import { audio, type AudioPrefs } from "@/lib/audio";
 import type { PreflightStatus, WhisperModelInfo } from "@/lib/types";
+import { PRICING } from "@/lib/pricing";
 
 const CHECKOUT_URL = "https://heirvo.com/buy"; // placeholder — swap to Lemon Squeezy URL
 const SUPPORT_URL = "https://heirvo.com/support";
@@ -291,7 +292,7 @@ function FreeTierPanel() {
         <div className="mt-auto pt-5">
           <div className="flex items-baseline gap-1.5 mb-3">
             <span className="font-display text-[32px] font-bold tabular-nums leading-none text-white">
-              $59
+              {PRICING.recover.label}
             </span>
             <span className="text-[12px]" style={{ color: "rgba(255,255,255,0.42)" }}>
               one-time

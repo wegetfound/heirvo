@@ -255,6 +255,12 @@ export default function RecoverH() {
   const [submitted, setSubmitted] = useState(false);
   const [busy,      setBusy]      = useState(false);
 
+  // Anti-spam: invisible honeypot + minimum fill time. Both signals are
+  // imperfect on their own; combined they filter the vast majority of
+  // automated form-spam without ever inconveniencing a real user.
+  const [honeypot, setHoneypot] = useState("");
+  const mountedAtRef = useRef<number>(Date.now());
+
   const addOnCost =
     (delivery === "usb" ? 19 : delivery === "upload" ? 15 : 0) +
     (rush ? 25 : 0);
@@ -267,6 +273,16 @@ export default function RecoverH() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Anti-spam: silently "accept" obvious bot submissions instead of bouncing
+    // them — bots that get rejected often retry; bots that get a fake success
+    // move on.
+    const elapsedMs = Date.now() - mountedAtRef.current;
+    if (honeypot.trim() !== "" || elapsedMs < 1500) {
+      setSubmitted(true);
+      return;
+    }
+
     setBusy(true);
     try {
       const res = await fetch(FORMSPREE_ENDPOINT, {
@@ -1392,6 +1408,25 @@ export default function RecoverH() {
               ) : (
                 /* ── Live form ── */
                 <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column" as const, gap: 28 }}>
+
+                  {/* Invisible honeypot — bots fill this, humans never see it */}
+                  <input
+                    type="text"
+                    name="website"
+                    value={honeypot}
+                    onChange={(e) => setHoneypot(e.target.value)}
+                    tabIndex={-1}
+                    autoComplete="off"
+                    aria-hidden="true"
+                    style={{
+                      position: "absolute",
+                      left: "-9999px",
+                      width: 1,
+                      height: 1,
+                      opacity: 0,
+                      pointerEvents: "none",
+                    }}
+                  />
 
                   {/* Disc types */}
                   <div>

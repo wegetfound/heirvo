@@ -5,6 +5,7 @@ import {
   isLemonSqueezyConfigured,
   openLemonCheckout,
 } from "../../lib/lemon-squeezy";
+import { PRICING } from "../../lib/pricing";
 
 // Swap these to real Lemon Squeezy checkout URLs once SKUs are live.
 const LS_RECOVER_URL =
@@ -125,7 +126,7 @@ export default function Pricing() {
           {/* ── Tier 1: Recover ── */}
           <TierCard
             badge="Heirvo Recover"
-            price="$59"
+            price={PRICING.recover.label}
             tagline="The full rescue, nothing hidden."
             features={RECOVER_FEATURES}
             highlighted={false}
@@ -153,7 +154,7 @@ export default function Pricing() {
           {/* ── Tier 2: Archive (recommended) ── */}
           <TierCard
             badge="Heirvo Archive"
-            price="$99"
+            price={PRICING.archive.label}
             tagline="Unlimited exports, AI restoration, shareable memories."
             features={ARCHIVE_FEATURES}
             highlighted
@@ -182,7 +183,7 @@ export default function Pricing() {
           {/* ── Tier 3: Family ── */}
           <TierCard
             badge="Heirvo Family"
-            price="$149"
+            price={PRICING.family.label}
             tagline="3 seats — give your siblings access to the same recovery."
             features={FAMILY_FEATURES}
             highlighted={false}

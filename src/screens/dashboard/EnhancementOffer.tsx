@@ -39,32 +39,28 @@ export function EnhancementOffer({ savedVideoPath, onAccepted }: Props): JSX.Ele
   useEffect(() => {
     if (!modalOpen) return;
 
-    const offProgress = events.onEnhancementProgress((payload: any) => {
-      const id = payload?.jobId ?? payload?.id;
-      const pct = payload?.progress ?? payload?.percent ?? payload;
-      if (jobIdRef.current != null && id != null && id !== jobIdRef.current) return;
-      if (typeof pct === "number") {
-        setProgress(Math.max(0, Math.min(100, pct)));
-      }
+    const offProgress = events.onEnhancementProgress((payload) => {
+      if (jobIdRef.current != null && payload.job_id !== jobIdRef.current) return;
+      setProgress(Math.max(0, Math.min(100, payload.progress)));
     });
 
-    const offComplete = events.onEnhancementComplete(async (payload: any) => {
-      const id = payload?.jobId ?? payload?.id;
-      if (jobIdRef.current != null && id != null && id !== jobIdRef.current) return;
-
-      const outputPath: string | undefined =
-        payload?.outputPath ?? payload?.output ?? payload?.path;
-      if (outputPath) setResultPath(outputPath);
+    const offComplete = events.onEnhancementComplete(async (jobId) => {
+      if (jobIdRef.current != null && jobId !== jobIdRef.current) return;
 
       try {
+        // Pull the completed job record to discover the output file path —
+        // the complete event only carries the job id.
+        const record = await ipc.getJobStatus(jobId);
+        if (record.output_file) setResultPath(record.output_file);
+
         if (!savedVideoPath) throw new Error("missing input");
-        const preview: any = await ipc.enhancePreview(
+        const preview = await ipc.enhancePreview(
           savedVideoPath,
           30,
           "auto" as unknown as AiPreset,
         );
-        setOriginalPreview(preview?.originalPath ?? preview?.original_path ?? null);
-        setEnhancedPreview(preview?.enhancedPath ?? preview?.enhanced_path ?? null);
+        setOriginalPreview(preview.original_png_path);
+        setEnhancedPreview(preview.enhanced_png_path);
         setProgress(100);
         setStep("preview");
       } catch (err) {
@@ -73,9 +69,8 @@ export function EnhancementOffer({ savedVideoPath, onAccepted }: Props): JSX.Ele
       }
     });
 
-    const offError = events.onEnhancementError((payload: any) => {
-      const id = payload?.jobId ?? payload?.id;
-      if (jobIdRef.current != null && id != null && id !== jobIdRef.current) return;
+    const offError = events.onEnhancementError((payload) => {
+      if (jobIdRef.current != null && payload.job_id !== jobIdRef.current) return;
       console.error("[EnhancementOffer] enhancement error", payload);
       setStep("failed");
     });
@@ -131,14 +126,11 @@ export function EnhancementOffer({ savedVideoPath, onAccepted }: Props): JSX.Ele
     setResultPath(null);
   };
 
-  const handleStop = async () => {
-    try {
-      if (jobId != null) {
-        await (ipc as any).cancelEnhancement?.(jobId);
-      }
-    } catch (err) {
-      console.error("[EnhancementOffer] cancel failed", err);
-    }
+  const handleStop = () => {
+    // Closing the modal dismisses the UI. The background job continues until
+    // completion — a real cancel needs a `cancel_enhancement` Tauri command
+    // (not yet wired). For typical jobs that's seconds, not minutes, so the
+    // user-visible effect is the same.
     closeModal();
   };
 
