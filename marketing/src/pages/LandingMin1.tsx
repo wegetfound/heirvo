@@ -165,6 +165,24 @@ const SOFTWARE_APP_SCHEMA = JSON.stringify({
   "url": "https://heirvo.com"
 });
 
+const ORGANIZATION_SCHEMA = JSON.stringify({
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "Heirvo",
+  "url": "https://heirvo.com",
+  "email": "info@heirvo.com",
+  "description": "Heirvo makes disc recovery software for Windows that helps families recover photos and videos from scratched, damaged, or unreadable DVDs, CDs, Blu-ray discs, and Kodak Photo CDs.",
+  "contactPoint": {
+    "@type": "ContactPoint",
+    "contactType": "customer support",
+    "email": "info@heirvo.com",
+    "availableLanguage": "English"
+  },
+  "sameAs": [
+    "https://github.com/JungleLivingPai/heirvo"
+  ]
+});
+
 // ─── Tiny helpers ────────────────────────────────────────────────────────────
 
 function CheckIcon({ color = C.blue, size = 14 }: { color?: string; size?: number }) {
@@ -227,7 +245,7 @@ export default function LandingMin1() {
 
   useEffect(() => {
     // Inject JSON-LD structured data
-    const schemas = [HOW_TO_SCHEMA, FAQ_SCHEMA, SOFTWARE_APP_SCHEMA];
+    const schemas = [HOW_TO_SCHEMA, FAQ_SCHEMA, SOFTWARE_APP_SCHEMA, ORGANIZATION_SCHEMA];
     const scriptEls = schemas.map((schema) => {
       const el = document.createElement("script");
       el.type = "application/ld+json";
