@@ -4,7 +4,7 @@ Welcome. Thank you for trying Heirvo on a real damaged disc — your feedback is
 
 ## Install (Windows)
 
-1. Copy `Heirvo_0.1.0_x64-setup.exe` from your USB stick to the test machine
+1. Copy `Heirvo_1.0.0_x64-setup.exe` from your USB stick to the test machine
 2. Double-click to install. Windows SmartScreen may warn:
    > Windows protected your PC
    > Microsoft Defender SmartScreen prevented an unrecognized app...
@@ -50,7 +50,7 @@ If your drive keeps disconnecting in Standard mode, switch to Patient. If everyt
 
 ## License (pre-launch tester mode)
 
-The Save buttons are gated behind Heirvo Pro ($49 one-time, no subscription).
+The Save buttons are gated behind a paid tier — Heirvo Recover ($59), Archive ($99), or Family ($149), all one-time, no subscription.
 **For testing:** paste any license key matching `XXXX-XXXX-XXXX` (8+ chars, at least one dash). Example: `TEST-PRO-1234`. This is a development gate — the production build will validate against the real license server.
 
 To activate:

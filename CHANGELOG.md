@@ -6,6 +6,42 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [1.0.0] — 2026-05-17
+
+Public 1.0 launch. Three-tier pricing live, full payment flow active, professional branding refreshed.
+
+### Added
+- **Three-tier pricing live** — Heirvo Recover ($59), Heirvo Archive ($99), Heirvo Family ($149). All three SKUs created in Lemon Squeezy with live checkout URLs.
+- **Searchable Archive cluster** — 9 new guides centered on local Whisper transcription (`searchable-family-video-archive-windows` hub + 8 spokes). 8 existing high-emotion guides retrofitted with "make-it-searchable" sections.
+- **Bundled whisper.cpp** — `whisper-cli.exe` + `ggml-base.en.bin` shipped with the installer for fully-offline transcription.
+- **AI-restoration cluster** — 5 new guides for the Archive tier (restore-old-dvd-quality, fix-pixelated-dvd, etc.).
+- **High-emotion guides** — deceased-parent-videos, memorial-video, videographer-out-of-business (3 guides).
+- **Hardware/troubleshooting guides** — 9 guides (dvd-drive-disconnects, vlc-plays-dvd, powered-usb-hub, slim-vs-desktop, dvd-drive-freezing, mode-select-page-01h, mini-dvd, dvd-ram, ps2-game).
+- **`/gift` page** — gift-buyer landing page for Heirvo as a present.
+- **Organization JSON-LD** on homepage — entity trust signals for AIO citation rate.
+- **IndexNow integration** — Bing/Yandex instant-indexing key at `/a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4.txt`.
+- **CSP headers** — `vercel.json` (marketing) and Tauri webview both lock down content sources. Marketing form has invisible honeypot + 1.5s min-fill-time anti-spam.
+
+### Changed
+- **New professional app icon** — replaces the old kintsugi-disc placeholder. Multi-size ICO (16/32/48/128/256). Built via Pillow for proper RC-compatible format.
+- **New installer header BMP** — branded 150×57 wordmark replaces the squashed sidebar-image-as-header.
+- **`icons/` folder cleaned** — purged ~50 unused assets (iOS, Android, Windows Store Square*Logo). Down to 5 files that `tauri.conf.json` actually references.
+- **Pricing extracted to `src/lib/pricing.ts`** in both desktop app and marketing — single source of truth.
+- **Homepage hero second line** — "Then find every moment inside it." (Whisper-feature hook).
+
+### Fixed
+- **NSIS installer header** — was using the sidebar BMP (164×314) in the 150×57 header slot, rendering distorted. Now uses dedicated `installer-header.bmp`.
+- **Tauri webview CSP** — was `null` (allow-all). Now enforces explicit allowlist (Google Fonts, Lemon Squeezy API).
+- **Path traversal** — `import_rmap` and `export_diagnostic_bundle` hardened via `src-tauri/src/util/path_safety.rs` helpers.
+- **`EnhancementOffer.tsx` typing** — was reading non-existent payload fields (`jobId`, `percent`, `outputPath`). Now uses real `AiJobProgress` / `AiJobError` / `AiJobRecord` types from `ipc.getJobStatus`.
+
+### Project hygiene
+- **GitHub release v1.0.0** with refreshed installer (new icon + header BMP).
+- **Cleaned `src-tauri/icons/`** — 56 file deletions across `ios/`, `android/`, `Square*Logo.png`, `StoreLogo.png`, `icon.icns`, `README.txt`.
+- All three `VITE_LS_*` env vars now live in Vercel; "Coming soon" placeholders gone from `/download`.
+
+---
+
 ## [0.1.0] — 2026-05-12
 
 First public release. Recovery engine, transcode pipeline, marketing site, and mail-in service all live.

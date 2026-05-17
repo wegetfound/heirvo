@@ -12,8 +12,10 @@ Recover files from scratched, damaged, or aging DVDs, photo CDs, audio CDs, and 
 
 | Tier | Price | Capabilities |
 |---|---|---|
-| **Heirvo Free** | $0 | Recover any disc · multi-pass sector recovery · resumable sessions · view what was recovered |
-| **Heirvo Pro** | $49 one-time | Save as MP4 (lossless) · save as ISO · extract chapters · recover all data files · AI restoration · priority support |
+| **Heirvo Free** | $0 | Free disc scan · see every recoverable file before paying |
+| **Heirvo Recover** | $59 one-time | Unlimited recovery · transcription · search · in-app playback · 1 lifetime MP4 export |
+| **Heirvo Archive** ⭐ | $99 one-time | Everything in Recover · unlimited MP4 export · AI restoration · clip-and-share · SRT export · hosted private memory pages · priority support |
+| **Heirvo Family** | $149 one-time | Everything in Archive · 3 seats · shared recoveries across family · same-day priority support |
 | **Mail-in service** | $89+ | Ship us the disc — we handle everything. For users without a DVD drive. |
 
 ## Repository layout
@@ -35,8 +37,10 @@ Heirvo/
 │   │   ├── ai/             Enhancement pipeline (Real-ESRGAN, etc.)
 │   │   ├── commands/       Tauri IPC handlers
 │   │   └── lib.rs          Tauri builder + handler registration
-│   ├── icons/              Generated icons (all sizes)
+│   ├── icons/              Generated icons (16/32/48/128/256 + ICO)
 │   ├── resources/ffmpeg/   Bundled ffmpeg.exe + ffprobe.exe (gitignored)
+│   ├── resources/whisper/  Bundled whisper.cpp + ggml model (gitignored)
+│   ├── installer-header.bmp
 │   ├── installer-sidebar.bmp
 │   └── tauri.conf.json
 │
@@ -90,8 +94,10 @@ vercel --prod    # deploy to production (heirvo.com)
 Required env vars (set in Vercel dashboard + `marketing/.env`):
 - `VITE_FORMSPREE_ID` — Mail-in order form endpoint
 - `VITE_STRIPE_INTAKE_URL` — $19.99 mail-in intake fee payment link
-- `VITE_LS_CHECKOUT_URL` — Lemon Squeezy Pro license checkout URL
-- `VITE_DOWNLOAD_URL` — GitHub Release installer URL
+- `VITE_LS_CHECKOUT_URL` — Lemon Squeezy checkout URL for **Heirvo Recover** ($59)
+- `VITE_LS_ARCHIVE_URL` — Lemon Squeezy checkout URL for **Heirvo Archive** ($99)
+- `VITE_LS_FAMILY_URL` — Lemon Squeezy checkout URL for **Heirvo Family** ($149)
+- `VITE_DOWNLOAD_URL` — GitHub Release installer URL (currently `v1.0.0/Heirvo_1.0.0_x64-setup.exe`)
 
 ## AI features (optional `onnx` Cargo feature)
 
