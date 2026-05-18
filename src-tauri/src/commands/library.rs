@@ -996,8 +996,9 @@ fn read_photo_taken_date(path: &str) -> Option<chrono::DateTime<chrono::Utc>> {
     for tag in &tags {
         if let Some(field) = exif.get_field(*tag, In::PRIMARY) {
             let raw = field.display_value().to_string();
-            // EXIF date format: "YYYY:MM:DD HH:MM:SS"
-            if let Ok(ndt) = chrono::NaiveDateTime::parse_from_str(&raw, "%Y:%m:%d %H:%M:%S") {
+            // kamadak-exif's display_value() formats DateTime as "YYYY-MM-DD HH:MM:SS"
+            // (dashes between date components, not the raw EXIF colons).
+            if let Ok(ndt) = chrono::NaiveDateTime::parse_from_str(&raw, "%Y-%m-%d %H:%M:%S") {
                 return Some(ndt.and_utc());
             }
         }
@@ -1090,14 +1091,14 @@ mod tests {
         );
     }
 
-    /// Verify the EXIF date format string parses correctly.
-    /// "YYYY:MM:DD HH:MM:SS" is the standard EXIF ASCII date format.
+    /// Verify the format string matches what kamadak-exif's display_value() produces.
+    /// kamadak-exif formats DateTime as "YYYY-MM-DD HH:MM:SS" (dashes, not colons).
     #[test]
     fn exif_date_format_parses_correctly() {
         use chrono::NaiveDateTime;
-        let raw = "1995:06:15 14:30:00";
-        let ndt = NaiveDateTime::parse_from_str(raw, "%Y:%m:%d %H:%M:%S")
-            .expect("EXIF date format should parse");
+        let raw = "1995-06-15 14:30:00";
+        let ndt = NaiveDateTime::parse_from_str(raw, "%Y-%m-%d %H:%M:%S")
+            .expect("kamadak-exif display format should parse");
         let utc = ndt.and_utc();
         assert_eq!(utc.year(), 1995);
         assert_eq!(utc.month(), 6);
@@ -1110,7 +1111,7 @@ mod tests {
         use chrono::NaiveDateTime;
         let bad = "not-a-date";
         assert!(
-            NaiveDateTime::parse_from_str(bad, "%Y:%m:%d %H:%M:%S").is_err(),
+            NaiveDateTime::parse_from_str(bad, "%Y-%m-%d %H:%M:%S").is_err(),
             "Malformed string should fail to parse"
         );
     }
