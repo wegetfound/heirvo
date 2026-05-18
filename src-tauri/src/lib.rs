@@ -145,6 +145,7 @@ pub fn run() {
             commands::library::delete_library_disc,
             commands::library::get_vault_stats,
             commands::library::list_importable_media_in_dir,
+            commands::library::ensure_disc_thumbnail,
             commands::transcription::enqueue_transcription,
             commands::transcription::list_transcription_jobs,
             commands::transcription::jobs_for_disc,

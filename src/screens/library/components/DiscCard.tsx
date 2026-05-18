@@ -1,14 +1,40 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { convertFileSrc } from "@tauri-apps/api/core";
 import type { Disc } from "../data/types";
 import { GradientArt } from "./GradientArt";
+import { ipc } from "../../../lib/ipc";
 
 interface Props {
-  disc: Pick<Disc, "id" | "title" | "year" | "source" | "gradient" | "durationFormatted" | "status">;
+  disc: Pick<
+    Disc,
+    "id" | "title" | "year" | "source" | "gradient" | "durationFormatted" | "status" | "mediaType"
+  >;
   showStatus?: boolean;
   showSource?: boolean;
 }
 
 export function DiscCard({ disc, showStatus = true, showSource = true }: Props) {
+  // For photo discs, lazy-load the cached thumbnail and use it as the card
+  // artwork. Falls back to the gradient if the thumbnail isn't generatable
+  // (HEIC, decode failure, dev/non-Tauri env). Recovered DVDs + imported
+  // video/audio keep the gradient for now — video keyframe extraction is v2.
+  const [thumbSrc, setThumbSrc] = useState<string | null>(null);
+  useEffect(() => {
+    if (disc.mediaType !== "photo") return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const path = await ipc.library.ensureDiscThumbnail(disc.id);
+        if (!cancelled && path) setThumbSrc(convertFileSrc(path));
+      } catch {/* dev mode — keep gradient */}
+    })();
+    return () => { cancelled = true; };
+  }, [disc.id, disc.mediaType]);
+
+  const isPhoto = disc.mediaType === "photo";
+  const hasThumb = thumbSrc !== null;
+
   return (
     <Link
       to={`/disc/${disc.id}`}
@@ -35,6 +61,21 @@ export function DiscCard({ disc, showStatus = true, showSource = true }: Props) 
           overflow: "hidden",
         }}
       >
+        {hasThumb && (
+          <img
+            src={thumbSrc!}
+            alt=""
+            aria-hidden
+            style={{
+              position: "absolute",
+              inset: 0,
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+              zIndex: 1,
+            }}
+          />
+        )}
         {showStatus && (
           <span
             style={{
@@ -74,7 +115,7 @@ export function DiscCard({ disc, showStatus = true, showSource = true }: Props) 
             backdropFilter: "blur(8px)",
           }}
         >
-          {disc.durationFormatted}
+          {isPhoto ? "Photo" : disc.durationFormatted}
         </span>
         <span
           aria-hidden
@@ -85,6 +126,7 @@ export function DiscCard({ disc, showStatus = true, showSource = true }: Props) 
             background: "linear-gradient(180deg, transparent 55%, rgba(0,0,0,.25) 100%)",
             borderRadius: "inherit",
             pointerEvents: "none",
+            zIndex: 2,
           }}
         />
       </GradientArt>

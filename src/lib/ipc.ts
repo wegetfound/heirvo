@@ -197,6 +197,12 @@ export const ipc = {
      * file paths. Used by the drag-drop handler when the user drops a folder. */
     listImportableMediaInDir: (dir: string) =>
       invoke<string[]>("list_importable_media_in_dir", { dir }),
+    /** Return a cached thumbnail path for the disc (generates on first call).
+     * Currently only returns a path for photo discs; recovered DVDs and
+     * imported videos/audio resolve to null and the UI falls back to the
+     * gradient artwork. */
+    ensureDiscThumbnail: (discId: string) =>
+      invoke<string | null>("ensure_disc_thumbnail", { discId }),
   },
 
   // Transcription

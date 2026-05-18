@@ -112,6 +112,96 @@ pub struct ImportGate {
     pub reason: Option<String>,
 }
 
+/// Return a cached thumbnail for a disc's media file, generating it on first
+/// request. Currently supports photo discs only (video thumbnails will require
+/// ffmpeg orchestration). Returns the absolute path to the cached JPEG which
+/// the frontend can load via `convertFileSrc`.
+///
+/// Returns `Ok(None)` when:
+///   - the disc has no video_path (recovered DVD without a recovered file)
+///   - the disc is not a photo (video/audio thumbnails not implemented yet)
+///   - the source format isn't decodable (e.g. HEIC — falls back to direct serve)
+///
+/// Cache: `<vault>/thumbs/<sha-prefix>.jpg` — deterministic, regeneration is
+/// idempotent, deletion of the source disc frees the thumb on next vault GC.
+#[tauri::command]
+pub async fn ensure_disc_thumbnail(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    disc_id: String,
+) -> AppResult<Option<String>> {
+    // Look up disc media path + type
+    let row = sqlx::query(
+        "SELECT video_path, media_type, source_hash FROM library_discs WHERE id = ?",
+    )
+    .bind(&disc_id)
+    .fetch_optional(&state.db.pool)
+    .await?;
+    let Some(row) = row else { return Ok(None) };
+    let media_path: Option<String> = row.try_get("video_path").ok().flatten();
+    let media_type: String = row.try_get::<String, _>("media_type").unwrap_or_else(|_| "video".into());
+    let hash: Option<String> = row.try_get::<Option<String>, _>("source_hash").ok().flatten();
+
+    let Some(media_path) = media_path else { return Ok(None) };
+    if media_type != "photo" {
+        // v1 of thumbnails only covers photos. Video keyframe extraction
+        // will land in v2 with ffmpeg orchestration.
+        return Ok(None);
+    }
+
+    let vault = vault_dir(&app)?;
+    let thumbs_dir = vault.join("thumbs");
+    std::fs::create_dir_all(&thumbs_dir)
+        .map_err(|e| AppError::Internal(format!("thumbs mkdir failed: {e}")))?;
+
+    // Cache key: source_hash if available, else a hash of the disc id.
+    let cache_key = hash.unwrap_or_else(|| {
+        use sha2::{Digest, Sha256};
+        format!("{:x}", Sha256::digest(disc_id.as_bytes()))
+    });
+    let prefix = &cache_key[..cache_key.len().min(16)];
+    let thumb_path = thumbs_dir.join(format!("{prefix}.jpg"));
+
+    // Cached?
+    if thumb_path.exists() {
+        return Ok(Some(thumb_path.to_string_lossy().to_string()));
+    }
+
+    // Generate. CPU-bound — push to spawn_blocking so the runtime stays hot.
+    let src = media_path.clone();
+    let dst = thumb_path.clone();
+    let result = tokio::task::spawn_blocking(move || {
+        let img = match image::open(&src) {
+            Ok(im) => im,
+            Err(e) => {
+                tracing::warn!("ensure_disc_thumbnail: decode failed for {src}: {e}");
+                return Err(());
+            }
+        };
+        // Long side = 600 px → good for retina 260px cards without burning RAM.
+        // `thumbnail` uses a faster nearest-style filter; for static cards the
+        // quality difference vs. Lanczos is negligible at this size.
+        let small = img.thumbnail(600, 600);
+        // Encode JPEG with quality 80 — good balance of size vs. fidelity.
+        let mut out = std::fs::File::create(&dst).map_err(|_| ())?;
+        let mut enc = image::codecs::jpeg::JpegEncoder::new_with_quality(&mut out, 80);
+        let rgb = small.to_rgb8();
+        enc.encode(&rgb, rgb.width(), rgb.height(), image::ExtendedColorType::Rgb8)
+            .map_err(|e| {
+                tracing::warn!("ensure_disc_thumbnail: encode failed: {e}");
+                ()
+            })?;
+        Ok(())
+    })
+    .await
+    .map_err(|e| AppError::Internal(format!("thumbnail join failed: {e}")))?;
+
+    match result {
+        Ok(()) => Ok(Some(thumb_path.to_string_lossy().to_string())),
+        Err(()) => Ok(None), // fallthrough — frontend can render the original
+    }
+}
+
 /// Walk a directory (recursively, capped depth) and return all paths whose
 /// extension is in the importable-media list. Used by the drag-drop handler
 /// when the user drops a folder of home videos.

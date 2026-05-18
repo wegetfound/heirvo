@@ -55,8 +55,10 @@ reqwest = { version = "0.12", default-features = false, features = ["rustls-tls"
 zip = "2.2"
 futures-util = "0.3"
 
-# Image decode/encode for AI preview output (PNG only — keep deps minimal)
-image = { version = "0.25", default-features = false, features = ["png"] }
+# Image decode/encode — PNG for AI previews, plus JPEG/GIF/WebP/BMP/TIFF for
+# personal-media photo thumbnails (used by ensure_photo_thumbnail). HEIC is
+# not supported and falls back to direct file serving via the webview.
+image = { version = "0.25", default-features = false, features = ["png", "jpeg", "gif", "webp", "bmp", "tiff"] }
 
 # ONNX Runtime — optional. Enable with `--features onnx` to pull ~50MB of
 # native libraries and unlock real Real-ESRGAN inference. Default build
