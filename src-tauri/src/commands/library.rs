@@ -613,15 +613,18 @@ pub async fn delete_library_disc(
     id: String,
 ) -> AppResult<DeleteResult> {
     // 1. Look up the video_path before deleting so we know what to free on disk.
-    let row = sqlx::query("SELECT video_path FROM library_discs WHERE id = ?")
-        .bind(&id)
-        .fetch_optional(&state.db.pool)
-        .await?;
+    let row = sqlx::query(
+        "SELECT video_path, source_hash FROM library_discs WHERE id = ?",
+    )
+    .bind(&id)
+    .fetch_optional(&state.db.pool)
+    .await?;
 
     let Some(row) = row else {
         return Err(AppError::Internal(format!("disc not found: {id}")));
     };
     let video_path: Option<String> = row.try_get("video_path").ok().flatten();
+    let source_hash: Option<String> = row.try_get("source_hash").ok().flatten();
 
     // 2. Delete the DB row — CASCADE clears the rest.
     let res = sqlx::query("DELETE FROM library_discs WHERE id = ?")
@@ -656,6 +659,22 @@ pub async fn delete_library_disc(
                 if let Some(parent) = p.parent() {
                     let _ = std::fs::remove_dir(parent);
                 }
+            }
+        }
+    }
+
+    // Also GC the cached thumbnail (if any). Thumb path is deterministic
+    // from source_hash, so we can compute it without another DB lookup.
+    // Failure is silent — orphan thumbs are cosmetic, not correctness.
+    if let Some(h) = source_hash.as_deref() {
+        let prefix = &h[..h.len().min(16)];
+        let thumb = vault_dir(&app).ok().map(|v| v.join("thumbs").join(format!("{prefix}.jpg")));
+        if let Some(t) = thumb {
+            if t.exists() {
+                if let Ok(meta) = std::fs::metadata(&t) {
+                    bytes_freed = bytes_freed.saturating_add(meta.len());
+                }
+                let _ = std::fs::remove_file(&t);
             }
         }
     }
@@ -708,6 +727,9 @@ pub struct VaultStats {
 /// Walk the vault dir recursively and sum file sizes. Bounded by the depth
 /// of the hash-prefix dirs (always exactly 1 level deep) so this is cheap
 /// even on a vault with tens of thousands of entries.
+///
+/// Skips the `thumbs/` subdir — those are a transparent cache the user
+/// shouldn't think about, and including them double-counts photos.
 fn walk_vault_size(root: &Path) -> (u64, u64) {
     let mut count: u64 = 0;
     let mut bytes: u64 = 0;
@@ -717,6 +739,10 @@ fn walk_vault_size(root: &Path) -> (u64, u64) {
     };
     for entry in read_dir.flatten() {
         let path = entry.path();
+        // Skip the thumbnail cache from user-facing stats.
+        if path.file_name().and_then(|s| s.to_str()) == Some("thumbs") {
+            continue;
+        }
         if let Ok(ft) = entry.file_type() {
             if ft.is_dir() {
                 // One level deeper — the hash-prefix subfolder.
