@@ -75,6 +75,15 @@ pub struct Disc {
     /// Surfaced so the Watch screen can load it via Tauri's asset protocol.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub video_path: Option<String>,
+    /// "video" | "audio" | "photo" | "document". Drives conditional render in
+    /// Watch / DiscDetail. Defaults to "video" for back-compat with existing
+    /// recovered DVD rows (the media_type DB column also defaults to "video").
+    #[serde(default = "default_media_type")]
+    pub media_type: String,
+}
+
+fn default_media_type() -> String {
+    "video".to_string()
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

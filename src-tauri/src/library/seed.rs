@@ -106,6 +106,7 @@ fn build_demo_discs() -> Vec<Disc> {
                 l("00:44:00", "Helen", "Bob. I could die here. Right here on this porch with this drink. Just let me."),
             ],
             video_path: None,
+            media_type: "video".to_string(),
         },
         Disc {
             id: "wedding-sarah-mike".into(),
@@ -142,6 +143,7 @@ fn build_demo_discs() -> Vec<Disc> {
                 l("01:02:14", "Helen", "To my daughter — and to the boy who finally figured out he was lucky."),
             ],
             video_path: None,
+            media_type: "video".to_string(),
         },
         Disc {
             id: "christmas-1992".into(),
@@ -175,6 +177,7 @@ fn build_demo_discs() -> Vec<Disc> {
                 sd("00:18:09", "[wrapping paper, dog barking, someone laughing]"),
             ],
             video_path: None,
+            media_type: "video".to_string(),
         },
         Disc {
             id: "dads-60th".into(),
@@ -215,6 +218,7 @@ fn build_demo_discs() -> Vec<Disc> {
                 l("00:43:55", "Helen", "To the love of my life. Happy birthday, Robert. Sixty more."),
             ],
             video_path: None,
+            media_type: "video".to_string(),
         },
         Disc {
             id: "kids-first-day-school".into(),
@@ -246,6 +250,7 @@ fn build_demo_discs() -> Vec<Disc> {
                 l("00:11:11", "Helen", "There's the bus. Okay — kiss, hug, go, GO."),
             ],
             video_path: None,
+            media_type: "video".to_string(),
         },
         Disc {
             id: "eleanor-80th".into(),
@@ -295,6 +300,7 @@ fn build_demo_discs() -> Vec<Disc> {
                 l("00:24:40", "Eleanor", "He ate them. Then I said yes. Best pancakes I ever had in my life."),
             ],
             video_path: None,
+            media_type: "video".to_string(),
         },
         Disc {
             id: "family-reunion-lake-house".into(),
@@ -328,6 +334,7 @@ fn build_demo_discs() -> Vec<Disc> {
                 l("01:42:22", "Sarah", "Let's get him on the phone. Where's the cordless?"),
             ],
             video_path: None,
+            media_type: "video".to_string(),
         },
         Disc {
             id: "camping-yellowstone".into(),
@@ -362,6 +369,7 @@ fn build_demo_discs() -> Vec<Disc> {
                 l("00:32:42", "Helen", "Robert. That was a squirrel."),
             ],
             video_path: None,
+            media_type: "video".to_string(),
         },
         Disc {
             id: "thanksgiving-aunt-mary".into(),
@@ -395,6 +403,7 @@ fn build_demo_discs() -> Vec<Disc> {
                 sd("00:32:14", "[the whole table laughing]"),
             ],
             video_path: None,
+            media_type: "video".to_string(),
         },
         Disc {
             id: "baby-emma-first-steps".into(),
@@ -427,6 +436,7 @@ fn build_demo_discs() -> Vec<Disc> {
                 l("00:04:34", "Helen", "She did it. She did it. Oh my god, she did it."),
             ],
             video_path: None,
+            media_type: "video".to_string(),
         },
         Disc {
             id: "graduation-michael".into(),
@@ -460,6 +470,7 @@ fn build_demo_discs() -> Vec<Disc> {
                 l("01:24:36", "Robert", "Yeah, buddy. Yeah. Every day for eighteen years. Today especially."),
             ],
             video_path: None,
+            media_type: "video".to_string(),
         },
         Disc {
             id: "road-trip-route-66".into(),
@@ -492,6 +503,7 @@ fn build_demo_discs() -> Vec<Disc> {
                 l("01:40:00", "Helen", "We made it. Bob — we made it. From the kitchen to the Pacific Ocean."),
             ],
             video_path: None,
+            media_type: "video".to_string(),
         },
     ]
 }

@@ -193,6 +193,10 @@ export const ipc = {
       invoke<DeleteResult>("delete_library_disc", { id }),
     /** Aggregate vault stats — total files, bytes used, free space. */
     getVaultStats: () => invoke<VaultStats>("get_vault_stats"),
+    /** Walk a directory (recursively, capped) and return all importable media
+     * file paths. Used by the drag-drop handler when the user drops a folder. */
+    listImportableMediaInDir: (dir: string) =>
+      invoke<string[]>("list_importable_media_in_dir", { dir }),
   },
 
   // Transcription

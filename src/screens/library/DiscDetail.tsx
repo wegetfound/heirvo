@@ -166,6 +166,8 @@ export default function DiscDetail() {
     };
   }, [discId]);
 
+  const isPhoto = disc?.mediaType === "photo";
+
   if (!disc) {
     return (
       <div className="lib-root">
@@ -310,12 +312,23 @@ export default function DiscDetail() {
                   flexWrap: "wrap",
                 }}
               >
-                <span className="lib-pill">{disc.scenes.length} chapters</span>
-                <span>{disc.year}</span>
-                <span className="lib-bullet" />
-                <span>{disc.people.length} people identified</span>
-                <span className="lib-bullet" />
-                <span>{disc.phrasesIndexed.toLocaleString()} phrases</span>
+                {isPhoto ? (
+                  <>
+                    <span className="lib-pill">Photo</span>
+                    <span>{disc.year}</span>
+                    <span className="lib-bullet" />
+                    <span>{disc.source}</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="lib-pill">{disc.scenes.length} chapters</span>
+                    <span>{disc.year}</span>
+                    <span className="lib-bullet" />
+                    <span>{disc.people.length} people identified</span>
+                    <span className="lib-bullet" />
+                    <span>{disc.phrasesIndexed.toLocaleString()} phrases</span>
+                  </>
+                )}
               </div>
               {disc.about && (
                 <>
@@ -501,6 +514,7 @@ export default function DiscDetail() {
           </div>
         </div>
 
+        {!isPhoto && (
         <div style={{ marginTop: 64 }}>
           <h2
             style={{
@@ -600,7 +614,9 @@ export default function DiscDetail() {
             ))}
           </div>
         </div>
+        )}
 
+        {!isPhoto && (
         <div
           style={{
             marginTop: 64,
@@ -763,6 +779,7 @@ export default function DiscDetail() {
             </div>
           </aside>
         </div>
+        )}
       </div>
 
       {/* Remove-from-library confirm modal */}

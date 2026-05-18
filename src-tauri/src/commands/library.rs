@@ -98,7 +98,7 @@ pub struct ImportPreview {
     pub file_size_display: String,
     pub vault_free_space: Option<u64>,
     pub will_fit: bool,
-    pub media_kind: &'static str, // "video" | "audio" (future: "photo" | "document")
+    pub media_kind: &'static str, // "video" | "audio" | "photo" (future: "document")
     pub gate: ImportGate,
 }
 
@@ -110,6 +110,86 @@ pub struct ImportGate {
     pub allowed: bool,
     pub required_plan: &'static str, // "archive" — UI uses this for upgrade copy
     pub reason: Option<String>,
+}
+
+/// Walk a directory (recursively, capped depth) and return all paths whose
+/// extension is in the importable-media list. Used by the drag-drop handler
+/// when the user drops a folder of home videos.
+///
+/// Cap: 5000 files / 8 dir levels. Beyond that we stop and return what we
+/// have so a misclick on `C:\` doesn't freeze the UI.
+#[tauri::command]
+pub async fn list_importable_media_in_dir(dir: String) -> AppResult<Vec<String>> {
+    const MAX_FILES: usize = 5000;
+    const MAX_DEPTH: usize = 8;
+    const EXTS: &[&str] = &[
+        // video
+        "mp4","mov","avi","mkv","mts","m2ts","ts","wmv","webm",
+        // audio
+        "wav","mp3","flac","m4a","aac","ogg","opus",
+        // photo (v1 import support)
+        "jpg","jpeg","png","heic","tiff","tif","webp","gif","bmp",
+    ];
+
+    fn walk(
+        dir: &Path,
+        depth: usize,
+        max_depth: usize,
+        max_files: usize,
+        out: &mut Vec<String>,
+    ) {
+        if depth > max_depth || out.len() >= max_files {
+            return;
+        }
+        let Ok(rd) = std::fs::read_dir(dir) else { return };
+        for entry in rd.flatten() {
+            if out.len() >= max_files {
+                return;
+            }
+            let path = entry.path();
+            let ft = match entry.file_type() {
+                Ok(ft) => ft,
+                Err(_) => continue,
+            };
+            // Skip hidden / system dirs to avoid recursing into Windows
+            // `$RECYCLE.BIN`, `System Volume Information`, etc.
+            if let Some(name) = path.file_name().and_then(|s| s.to_str()) {
+                if name.starts_with('.') || name.starts_with('$') {
+                    continue;
+                }
+            }
+            if ft.is_dir() {
+                walk(&path, depth + 1, max_depth, max_files, out);
+            } else if ft.is_file() {
+                let ext = path
+                    .extension()
+                    .and_then(|s| s.to_str())
+                    .unwrap_or("")
+                    .to_ascii_lowercase();
+                if EXTS.iter().any(|e| *e == ext) {
+                    out.push(path.to_string_lossy().to_string());
+                }
+            }
+        }
+    }
+
+    let dir_path = PathBuf::from(&dir);
+    let meta = tokio::fs::metadata(&dir_path).await.map_err(|e| {
+        AppError::Internal(format!("Cannot read directory {}: {}", dir_path.display(), e))
+    })?;
+    if !meta.is_dir() {
+        return Err(AppError::Internal(format!("Not a directory: {}", dir_path.display())));
+    }
+
+    let mut out = Vec::with_capacity(64);
+    // CPU walk on a blocking task so we don't stall the async runtime.
+    tokio::task::spawn_blocking(move || {
+        walk(&dir_path, 0, MAX_DEPTH, MAX_FILES, &mut out);
+        out
+    })
+    .await
+    .map(Ok)
+    .map_err(|e| AppError::Internal(format!("walk failed: {e}")))?
 }
 
 /// Inspect a file the user is about to import. Cheap — does not hash or copy.
@@ -132,7 +212,7 @@ pub async fn get_import_size_preview(
     let free = free_space_for(&vault).ok();
     let will_fit = free.map(|f| f >= size.saturating_add(64 * 1024 * 1024)).unwrap_or(true);
 
-    let kind = if is_audio_ext(&media_path) { "audio" } else { "video" };
+    let kind = classify_media(&media_path);
 
     let status = crate::licensing::current(&app_data_dir(&app));
     let gate = if status.can_import_media {
@@ -265,7 +345,7 @@ pub async fn import_media_disc(
     let date_display = format!("{} {}, {}", month_name(now.month()), now.day(), year);
     let recovered_at = format!("{} {}", short_month(now.month()), now.day());
 
-    let is_audio = is_audio_ext(&media_path);
+    let media_kind = classify_media(&media_path);
 
     const VIDEO_GRADIENTS: [&str; 14] = [
         "wedding", "christmas", "hawaii", "birthday", "summer", "autumn",
@@ -275,10 +355,21 @@ pub async fn import_media_disc(
     const AUDIO_GRADIENTS: [&str; 5] = [
         "eleanor", "christmas", "winter", "autumn", "anniversary",
     ];
-    let palette: &[&str] = if is_audio { &AUDIO_GRADIENTS } else { &VIDEO_GRADIENTS };
+    const PHOTO_GRADIENTS: [&str; 5] = [
+        "summer", "autumn", "spring", "hawaii", "vacation",
+    ];
+    let palette: &[&str] = match media_kind {
+        "audio" => &AUDIO_GRADIENTS,
+        "photo" => &PHOTO_GRADIENTS,
+        _ => &VIDEO_GRADIENTS,
+    };
     let gradient = palette[(now.timestamp_subsec_nanos() as usize) % palette.len()];
     let monogram_id = ((title_hash(&title) % 8) + 1) as i64;
-    let source = if is_audio { "Imported audio" } else { "Imported video" };
+    let source = match media_kind {
+        "audio" => "Imported audio",
+        "photo" => "Imported photo",
+        _ => "Imported video",
+    };
 
     let now_ts = now.timestamp();
     sqlx::query(
@@ -286,9 +377,9 @@ pub async fn import_media_disc(
          (id, title, year, date_display, filmed_by, location, source, status,
           duration_sec, duration_formatted, recovered_at, phrases_indexed,
           monogram_id, gradient, about, session_id, video_path, source_hash,
-          created_at, updated_at)
+          media_type, created_at, updated_at)
          VALUES (?, ?, ?, ?, NULL, NULL, ?, 'recovered', 0, '--:--', ?, 0,
-                 ?, ?, NULL, NULL, ?, ?, ?, ?)",
+                 ?, ?, NULL, NULL, ?, ?, ?, ?, ?)",
     )
     .bind(&id)
     .bind(&title)
@@ -300,33 +391,37 @@ pub async fn import_media_disc(
     .bind(gradient)
     .bind(&vault_path_str)
     .bind(&hash)
+    .bind(media_kind)
     .bind(now_ts)
     .bind(now_ts)
     .execute(&state.db.pool)
     .await?;
 
-    // ── 6. Auto-enqueue transcription ───────────────────────────────────
+    // ── 6. Auto-enqueue transcription (video + audio only) ──────────────
     // CRITICAL: enqueue using the VAULT path, not the source path. If the
     // user deletes/moves the original after the import returns, the worker
     // would otherwise hit a "no such file" error mid-job. The vault copy
     // is stable for the lifetime of the disc row.
     //
-    // Failure is non-fatal — the disc is already in the library and the
-    // user can retry transcription from the disc page.
-    if let Err(e) = crate::transcription::queue::enqueue(
-        &state.db.pool,
-        &id,
-        &vault_path_str,
-        "stub",
-        None,
-    )
-    .await
-    {
-        tracing::warn!(
-            "import_media_disc: disc {} inserted but transcription enqueue failed: {}",
-            id,
-            e
-        );
+    // Skipped for photos — no audio to transcribe. Failure on supported
+    // types is non-fatal: the disc is already in the library and the user
+    // can retry transcription from the disc page.
+    if media_kind != "photo" {
+        if let Err(e) = crate::transcription::queue::enqueue(
+            &state.db.pool,
+            &id,
+            &vault_path_str,
+            "stub",
+            None,
+        )
+        .await
+        {
+            tracing::warn!(
+                "import_media_disc: disc {} inserted but transcription enqueue failed: {}",
+                id,
+                e
+            );
+        }
     }
 
     Ok(ImportResult { id, is_duplicate: false })
@@ -584,16 +679,23 @@ pub async fn import_video_disc(
     import_media_disc(app, state, video_path, title).await
 }
 
-fn is_audio_ext(path: &str) -> bool {
+/// Classify an import path into a media_type kind. Unknown extensions fall
+/// back to "video" so the picker filter is the real gate; this only
+/// distinguishes within already-accepted files.
+fn classify_media(path: &str) -> &'static str {
     let ext = path
         .rsplit('.')
         .next()
         .unwrap_or("")
         .to_ascii_lowercase();
-    matches!(
-        ext.as_str(),
-        "wav" | "mp3" | "flac" | "m4a" | "aac" | "ogg" | "opus"
-    )
+    match ext.as_str() {
+        // photo
+        "jpg" | "jpeg" | "png" | "heic" | "tiff" | "tif" | "webp" | "gif" | "bmp" => "photo",
+        // audio
+        "wav" | "mp3" | "flac" | "m4a" | "aac" | "ogg" | "opus" => "audio",
+        // video (default)
+        _ => "video",
+    }
 }
 
 fn slugify(s: &str) -> String {

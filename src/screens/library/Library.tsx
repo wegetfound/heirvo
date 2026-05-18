@@ -66,6 +66,19 @@ export default function Library() {
     };
   }, []);
 
+  // Surface any toast left by DiscDetail (e.g. after a delete) so the user
+  // sees confirmation when they land on /library.
+  useEffect(() => {
+    try {
+      const note = sessionStorage.getItem("lib_toast");
+      if (note) {
+        sessionStorage.removeItem("lib_toast");
+        setImportMsg(note);
+        setTimeout(() => setImportMsg(null), 5000);
+      }
+    } catch {/* private mode */}
+  }, []);
+
   // Explicit "Load more" — keeps older users from being confused by
   // infinite scroll, and keeps the IPC load bounded.
   async function loadMore() {
@@ -138,8 +151,12 @@ export default function Library() {
 
   /** Accepted extensions for both picker and drag-drop. */
   const ACCEPTED_EXT = [
+    // video
     "mp4","mov","avi","mkv","mts","m2ts","ts","wmv","webm",
+    // audio
     "wav","mp3","flac","m4a","aac","ogg","opus",
+    // photo
+    "jpg","jpeg","png","heic","tiff","tif","webp","gif","bmp",
   ];
 
   /** Derive a title-cased title from a file path's stem. */
@@ -167,7 +184,7 @@ export default function Library() {
       const picked = await dialog.open({
         multiple: true,
         directory: false,
-        filters: [{ name: "Video or Audio", extensions: ACCEPTED_EXT }],
+        filters: [{ name: "Media (video, audio, photos)", extensions: ACCEPTED_EXT }],
       });
       if (!picked) return;
       const paths = Array.isArray(picked) ? picked : [picked];
@@ -247,12 +264,14 @@ export default function Library() {
 
     let lastId: string | null = null;
     let failed = 0;
+    let duplicates = 0;
 
     for (let i = 0; i < items.length; i++) {
       const it = items[i];
       try {
         const result = await ipc.library.importMedia(it.path, it.title);
         lastId = result.id;
+        if (result.isDuplicate) duplicates++;
         // Backend auto-enqueues transcription on import — no separate call needed.
       } catch (e) {
         failed++;
@@ -271,12 +290,20 @@ export default function Library() {
     setPending([]);
     setBulkProgress(null);
 
-    if (failed > 0) {
-      setImportMsg(`Imported ${items.length - failed} of ${items.length} (${failed} failed).`);
+    // Compose a single result message covering successes, dups, and failures.
+    const succeeded = items.length - failed - duplicates;
+    const parts: string[] = [];
+    if (succeeded > 0) parts.push(`Imported ${succeeded}`);
+    if (duplicates > 0) parts.push(`${duplicates} already in library`);
+    if (failed > 0) parts.push(`${failed} failed`);
+    if (parts.length > 0) {
+      setImportMsg(parts.join(" · "));
       setTimeout(() => setImportMsg(null), 6000);
     }
 
-    // Single-file flow → jump straight to that disc. Bulk flow → stay on library.
+    // Navigate to the single result only when it's a clean single-file import.
+    // For duplicates of a single pick: navigate to the existing disc so the
+    // user sees what already exists. For bulk: stay on library.
     if (items.length === 1 && lastId) {
       nav(`/disc/${lastId}`);
     } else if (lastId) {
@@ -307,7 +334,34 @@ export default function Library() {
           } else if (e.payload.type === "drop") {
             setIsDragHover(false);
             const paths = e.payload.paths.filter((p): p is string => typeof p === "string");
-            void processImports(paths);
+            // Expand any directories the user dropped into their contained
+            // importable media. Folder semantics: "import everything inside".
+            void (async () => {
+              const expanded: string[] = [];
+              for (const p of paths) {
+                try {
+                  // We can't reliably tell file vs dir from path alone, so just
+                  // try the dir walk — backend returns an error if it's a file.
+                  const inside = await ipc.library.listImportableMediaInDir(p);
+                  if (inside.length > 0) {
+                    expanded.push(...inside);
+                    continue;
+                  }
+                  // Empty dir → still skip; fall through to add as a file.
+                  expanded.push(p);
+                } catch {
+                  // Not a directory (or unreadable) — treat as a single file.
+                  expanded.push(p);
+                }
+              }
+              // De-duplicate before sending to processImports.
+              const unique = Array.from(new Set(expanded));
+              if (unique.length > paths.length) {
+                setImportMsg(`Found ${unique.length} media file(s) in dropped folders`);
+                setTimeout(() => setImportMsg(null), 4000);
+              }
+              void processImports(unique);
+            })();
           }
         });
         unlisten = u;

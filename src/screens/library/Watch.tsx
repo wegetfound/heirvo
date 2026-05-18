@@ -71,6 +71,7 @@ export default function Watch() {
     }
   }, [disc?.videoPath]);
   const hasMedia = mediaSrc !== null;
+  const isPhoto = disc?.mediaType === "photo";
 
   useEffect(() => {
     setCurrentSec(initialSec);
@@ -179,7 +180,18 @@ export default function Watch() {
                   justifyContent: "center",
                 }}
               >
-                {hasMedia ? (
+                {hasMedia && isPhoto ? (
+                  <img
+                    src={mediaSrc ?? undefined}
+                    alt={disc?.title ?? "Imported photo"}
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "contain",
+                      background: "#000",
+                    }}
+                  />
+                ) : hasMedia ? (
                   <video
                     ref={videoRef}
                     src={mediaSrc ?? undefined}
@@ -253,6 +265,7 @@ export default function Watch() {
                   </>
                 )}
               </div>
+              {!isPhoto && (
               <div
                 style={{
                   padding: "14px 18px",
@@ -335,6 +348,7 @@ export default function Watch() {
                   {fmtTime(currentSec)} / {disc.durationFormatted}
                 </span>
               </div>
+              )}
             </div>
 
             <div style={{ marginTop: 22, padding: "0 4px" }}>
@@ -351,8 +365,13 @@ export default function Watch() {
                 {disc.title}
               </div>
               <div style={{ color: "var(--lib-muted)", fontSize: 13, marginTop: 6 }}>
-                {disc.date} · {disc.source}, recovered {disc.recoveredAt} ·{" "}
-                {disc.scenes.length} scenes · {disc.phrasesIndexed.toLocaleString()} phrases
+                {disc.date} · {disc.source}, recovered {disc.recoveredAt}
+                {!isPhoto && (
+                  <>
+                    {" "}· {disc.scenes.length} scenes ·{" "}
+                    {disc.phrasesIndexed.toLocaleString()} phrases
+                  </>
+                )}
               </div>
               <div style={{ marginTop: 18, display: "flex", gap: 10, flexWrap: "wrap" }}>
                 <Link to={`/disc/${disc.id}`} className="lib-btn-flat lib-btn-flat-primary">
@@ -369,6 +388,26 @@ export default function Watch() {
           </div>
 
           <div style={{ paddingTop: 8 }}>
+            {isPhoto ? (
+              <div
+                style={{
+                  padding: "20px 22px",
+                  background: "var(--lib-paper)",
+                  border: "1px solid var(--lib-line)",
+                  borderRadius: 14,
+                  fontFamily: "var(--lib-serif)",
+                  fontStyle: "italic",
+                  color: "var(--lib-ink-2)",
+                  fontSize: 15,
+                  lineHeight: 1.55,
+                }}
+              >
+                Photos in your vault don't carry a spoken transcript — but they
+                still live alongside your videos so the whole family archive is
+                in one place.
+              </div>
+            ) : (
+            <>
             <div
               style={{
                 marginBottom: 24,
@@ -436,6 +475,8 @@ export default function Watch() {
                 </div>
               )}
             </div>
+            </>
+            )}
           </div>
         </div>
       </div>

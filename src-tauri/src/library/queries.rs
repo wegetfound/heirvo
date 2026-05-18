@@ -291,6 +291,9 @@ pub async fn get_disc(db: &Db, id: &str) -> AppResult<Option<Disc>> {
         .try_get::<Option<String>, _>("video_path")
         .ok()
         .flatten();
+    let media_type: String = row
+        .try_get::<String, _>("media_type")
+        .unwrap_or_else(|_| "video".to_string());
 
     Ok(Some(Disc {
         id: row.try_get("id")?,
@@ -313,6 +316,7 @@ pub async fn get_disc(db: &Db, id: &str) -> AppResult<Option<Disc>> {
         gradient: row.try_get("gradient")?,
         about,
         video_path,
+        media_type,
     }))
 }
 

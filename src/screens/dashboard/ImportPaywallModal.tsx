@@ -96,14 +96,14 @@ export function ImportPaywallModal({
               <>
                 You picked <span className="font-medium text-ink-900">{fileName}</span>
                 {fileSizeDisplay ? ` (${fileSizeDisplay})` : ""}. Heirvo Archive copies it
-                into a permanent vault and makes every spoken word searchable —
-                alongside your recovered discs.
+                into a permanent vault — videos and audio get every spoken word
+                indexed alongside your recovered discs.
               </>
             ) : (
               <>
-                Heirvo Archive adds your existing home videos and audio to the same
-                searchable vault as your recovered discs. Every spoken word indexed,
-                forever — no subscription.
+                Heirvo Archive adds your existing home videos, audio, and photos
+                to the same vault as your recovered discs. Every spoken word
+                indexed, every memory in one place — forever, no subscription.
               </>
             )}
           </p>
@@ -111,7 +111,7 @@ export function ImportPaywallModal({
           {/* Value bullets — concrete, scannable */}
           <ul className="mt-5 space-y-2.5">
             {[
-              "Import unlimited video & audio files",
+              "Import unlimited video, audio, and photo files",
               "Whisper transcription — search every spoken word",
               "Files copied into a safe vault (originals untouched)",
             ].map((b) => (
