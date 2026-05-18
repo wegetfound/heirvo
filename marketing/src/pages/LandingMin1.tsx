@@ -571,10 +571,10 @@ export default function LandingMin1() {
                 }}
               >
                 The shoebox of wedding tapes in your parents' attic isn't
-                lost yet. Heirvo is DVD & CD recovery software that reads
-                failing discs sector by sector — through scratches, degraded
-                dye, and surface damage that stops every other tool. Free
-                to scan. Pay $59 once to save.
+                lost yet. Heirvo recovers files from failing discs — then
+                lets you import your home videos, photos, and audio into a
+                permanent personal vault, privately on your own machine.
+                Free to scan. One-time payment to save and keep everything.
               </p>
 
               {/* CTAs */}
@@ -646,7 +646,7 @@ export default function LandingMin1() {
                 <div style={{ display: "flex", gap: 20, flexWrap: "wrap" as const }}>
                   {[
                     "Free to scan",
-                    "$59 one-time · no subscription",
+                    "$59 to save · $99 vault import",
                     "Windows 10 / 11 · 64-bit",
                     "No account needed",
                   ].map((tag) => (
@@ -1237,7 +1237,7 @@ export default function LandingMin1() {
                     textTransform: "uppercase" as const,
                     marginBottom: 24,
                   }}>
-                    New · Searchable home video archive
+                    Archive tier · Personal media vault + searchable archive
                   </div>
 
                   <h2
@@ -1249,30 +1249,30 @@ export default function LandingMin1() {
                       color: C.text, marginBottom: 20,
                     }}
                   >
-                    Find the moment,{" "}
-                    <span style={{ color: C.blue }}>not just the disc.</span>
+                    From discs to{" "}
+                    <span style={{ color: C.blue }}>digital vault.</span>
                   </h2>
 
                   <p style={{
                     fontFamily: SORA, fontSize: 16, color: C.textMuted,
                     lineHeight: 1.7, marginBottom: 16, maxWidth: 520,
                   }}>
-                    You know the moment is in there somewhere. Grandma's toast. The first words. The vows. But scrubbing through hours of tape to find sixty seconds is the reason those discs never come off the shelf.
+                    Recovering a disc is step one. The Archive tier lets you import your home videos, photos, and audio directly into Heirvo — not just from discs, but from any folder on your computer. Drag in a whole drive of camcorder files and Heirvo organises them into albums automatically.
                   </p>
 
                   <p style={{
                     fontFamily: SORA, fontSize: 16, color: C.textMuted,
                     lineHeight: 1.7, marginBottom: 32, maxWidth: 520,
                   }}>
-                    <strong style={{ color: C.text }}>Heirvo listens to every video and writes it all down — privately, on your machine.</strong> Drop in a recovered DVD or any old video file, and minutes later you can search "happy birthday" and click straight to grandma's 80th.
+                    <strong style={{ color: C.text }}>Heirvo listens to every video and writes it all down — privately, on your machine.</strong> Minutes after import you can search "happy birthday" and click straight to grandma's 80th. Originals are never touched; the vault keeps its own copy.
                   </p>
 
                   {/* Key facts */}
                   <div style={{ display: "flex", gap: 32, flexWrap: "wrap" as const, marginBottom: 36 }}>
                     {[
+                      { label: "Import formats", value: "Video · Audio · Photos" },
                       { label: "Transcription", value: "100% on-device" },
                       { label: "Cloud upload", value: "Never" },
-                      { label: "Subscription", value: "None" },
                     ].map(({ label, value }) => (
                       <div key={label}>
                         <div style={{
@@ -1295,7 +1295,7 @@ export default function LandingMin1() {
                   <div style={{ display: "flex", gap: 14, flexWrap: "wrap" as const, alignItems: "center" }}>
                     <a
                       href={DOWNLOAD_URL}
-                      aria-label="Download Heirvo free — searchable home video archive included"
+                      aria-label="Download Heirvo free — personal media vault in Archive tier"
                       style={{
                         display: "inline-flex", alignItems: "center", gap: 8,
                         padding: "13px 22px", borderRadius: 10,
@@ -1321,7 +1321,7 @@ export default function LandingMin1() {
                       fontFamily: SORA, fontSize: 13, fontWeight: 500,
                       color: C.textFaint,
                     }}>
-                      Windows 10 / 11 · Free forever
+                      Vault import unlocks at $99 Archive
                     </span>
                   </div>
                 </div>
@@ -1968,29 +1968,30 @@ export default function LandingMin1() {
                 color: C.text, marginBottom: 16,
               }}
             >
-              Pay only when you succeed.
+              From disc recovery to personal vault.
             </h2>
             <p style={{
               fontFamily: SORA, fontSize: 16, color: C.textMuted,
-              lineHeight: 1.7, marginBottom: 56, maxWidth: 500,
+              lineHeight: 1.7, marginBottom: 56, maxWidth: 560,
             }}>
-              The scan is always free. You see exactly what's recoverable before any payment. No subscription, no account, no surprises.
+              Scan any disc free. Pay once to save. Step up to Archive to import your home videos, photos, and audio into a permanent personal vault — searchable, organised, and private on your own machine.
             </p>
 
             <div className="lm1-pricing-grid">
-              {/* Tier 1 — Free scan */}
+
+              {/* Tier 1 — Free */}
               <div
                 className="pricing-card"
                 style={{
                   background: C.pageAlt,
                   border: `1px solid ${C.border}`,
                   borderRadius: 16,
-                  padding: "36px 32px",
+                  padding: "36px 28px",
                   display: "flex", flexDirection: "column" as const,
                   opacity: 0,
                 }}
               >
-                <Eyebrow style={{ marginBottom: 16 }}>Free scan</Eyebrow>
+                <Eyebrow style={{ marginBottom: 16 }}>Free</Eyebrow>
                 <div style={{
                   fontFamily: SORA, fontSize: 44, fontWeight: 700,
                   letterSpacing: "-0.045em", color: C.text,
@@ -1999,15 +2000,16 @@ export default function LandingMin1() {
                   $0
                 </div>
                 <div style={{ fontFamily: SORA, fontSize: 13, color: C.textMuted, marginBottom: 28 }}>
-                  no time limit · no account required
+                  no account · no time limit
                 </div>
                 <Rule style={{ marginBottom: 24 }} />
                 <ul style={{ listStyle: "none", padding: 0, margin: "0 0 32px", display: "flex", flexDirection: "column" as const, gap: 10, flex: 1 }}>
                   {[
-                    "Full sector-by-sector scan",
+                    "Full sector-by-sector disc scan",
                     "Preview every recoverable file",
-                    "See filenames and sizes",
-                    "Works on all supported disc types",
+                    "Disc health map + sector stats",
+                    "All disc types supported",
+                    "No saving or importing",
                   ].map((f) => (
                     <li key={f} style={{ display: "flex", gap: 10, fontFamily: SORA, fontSize: 13, color: C.textMuted, lineHeight: 1.55 }}>
                       <CheckIcon size={13} color={C.textFaint} />
@@ -2038,14 +2040,14 @@ export default function LandingMin1() {
                 </a>
               </div>
 
-              {/* Tier 2 — Pro $59 */}
+              {/* Tier 2 — Recover $59 */}
               <div
                 className="pricing-card"
                 style={{
                   background: C.pageAlt,
                   border: `1.5px solid ${C.blue}`,
                   borderRadius: 16,
-                  padding: "36px 32px",
+                  padding: "36px 28px",
                   display: "flex", flexDirection: "column" as const,
                   position: "relative" as const,
                   boxShadow: "0 0 0 4px rgba(10,132,255,0.07)",
@@ -2053,7 +2055,7 @@ export default function LandingMin1() {
                 }}
               >
                 <span style={{
-                  position: "absolute" as const, top: -13, left: 24,
+                  position: "absolute" as const, top: -13, left: 20,
                   background: C.blue, color: "#FFF",
                   fontFamily: SORA, fontSize: 10, fontWeight: 700,
                   letterSpacing: "0.12em", textTransform: "uppercase" as const,
@@ -2061,7 +2063,7 @@ export default function LandingMin1() {
                 }}>
                   Most popular
                 </span>
-                <Eyebrow style={{ marginBottom: 16, color: C.blue }}>Pro — one-time payment</Eyebrow>
+                <Eyebrow style={{ marginBottom: 16, color: C.blue }}>Recover — one-time</Eyebrow>
                 <div style={{
                   fontFamily: SORA, fontSize: 44, fontWeight: 700,
                   letterSpacing: "-0.045em", color: C.text,
@@ -2075,12 +2077,12 @@ export default function LandingMin1() {
                 <Rule style={{ marginBottom: 24 }} />
                 <ul style={{ listStyle: "none", padding: 0, margin: "0 0 32px", display: "flex", flexDirection: "column" as const, gap: 10, flex: 1 }}>
                   {[
-                    "Everything in the free scan",
+                    "Everything in Free",
                     "Save all recovered files",
-                    "Extract MP4, ISO, or raw files",
+                    "MP4 export · ISO image · raw files",
+                    "Chapter extract from DVD titles",
                     "Kodak Photo CD .PCD → JPEG / TIFF",
                     "Unlimited discs, lifetime licence",
-                    "No account, works fully offline",
                   ].map((f) => (
                     <li key={f} style={{ display: "flex", gap: 10, fontFamily: SORA, fontSize: 13, color: C.textMuted, lineHeight: 1.55 }}>
                       <CheckIcon size={13} color={C.blue} />
@@ -2112,77 +2114,176 @@ export default function LandingMin1() {
                 </a>
               </div>
 
-              {/* Tier 3 — Mail-in */}
+              {/* Tier 3 — Archive $99 */}
               <div
                 className="pricing-card"
                 style={{
-                  background: C.pageAlt,
-                  border: `1px solid ${C.border}`,
+                  background: `linear-gradient(160deg, rgba(10,132,255,0.06) 0%, ${C.pageAlt} 60%)`,
+                  border: `1px solid ${C.blueBorder}`,
                   borderRadius: 16,
-                  padding: "36px 32px",
+                  padding: "36px 28px",
                   display: "flex", flexDirection: "column" as const,
                   opacity: 0,
                 }}
               >
-                <Eyebrow style={{ marginBottom: 16 }}>Mail-in service</Eyebrow>
+                <Eyebrow style={{ marginBottom: 16, color: C.blue }}>Archive — one-time</Eyebrow>
                 <div style={{
                   fontFamily: SORA, fontSize: 44, fontWeight: 700,
                   letterSpacing: "-0.045em", color: C.text,
                   lineHeight: 1, marginBottom: 4,
                 }}>
-                  from $89
+                  $99
                 </div>
                 <div style={{ fontFamily: SORA, fontSize: 13, color: C.textMuted, marginBottom: 28 }}>
-                  per disc · no-recovery, no-charge guaranteed
+                  one-time · no subscription · unlimited media
                 </div>
                 <Rule style={{ marginBottom: 24 }} />
                 <ul style={{ listStyle: "none", padding: 0, margin: "0 0 32px", display: "flex", flexDirection: "column" as const, gap: 10, flex: 1 }}>
                   {[
-                    "No computer or drive needed",
-                    "Professional lab equipment",
-                    "Delivered in 10–14 days",
-                    "Rush processing: +$25",
-                    "Cloud link · USB +$19 · G Photos/iCloud +$15",
-                    "Fragile, rare discs welcome",
+                    "Everything in Recover",
+                    "Import home videos, photos & audio",
+                    "Folder-drop auto-creates albums",
+                    "Collage cover art per album",
+                    "Whisper transcription — search by word",
+                    "Vault copy kept · originals untouched",
                   ].map((f) => (
                     <li key={f} style={{ display: "flex", gap: 10, fontFamily: SORA, fontSize: 13, color: C.textMuted, lineHeight: 1.55 }}>
-                      <CheckIcon size={13} color={C.textFaint} />
+                      <CheckIcon size={13} color={C.blue} />
                       {f}
                     </li>
                   ))}
                 </ul>
-                <Link
-                  to="/recover"
+                <a
+                  href={DOWNLOAD_URL}
                   style={{
                     display: "inline-flex", alignItems: "center", justifyContent: "center",
-                    gap: 8, padding: "13px 18px", borderRadius: 8,
-                    border: `1.5px solid ${C.borderMed}`, background: "transparent",
-                    color: C.text, fontFamily: SORA, fontSize: 13, fontWeight: 600,
+                    gap: 8, padding: "14px 18px", borderRadius: 8,
+                    background: "transparent", color: C.blue,
+                    fontFamily: SORA, fontSize: 14, fontWeight: 700,
                     textDecoration: "none", letterSpacing: "-0.01em",
-                    transition: "border-color 0.18s, background 0.18s",
+                    border: `1.5px solid ${C.blue}`,
+                    transition: "background 0.18s, box-shadow 0.18s",
                   }}
                   onMouseEnter={(e) => {
-                    (e.currentTarget as HTMLElement).style.borderColor = C.borderBright;
-                    (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.04)";
+                    (e.currentTarget as HTMLElement).style.background = C.blueFaint;
+                    (e.currentTarget as HTMLElement).style.boxShadow = "0 4px 20px rgba(10,132,255,0.2)";
                   }}
                   onMouseLeave={(e) => {
-                    (e.currentTarget as HTMLElement).style.borderColor = C.borderMed;
                     (e.currentTarget as HTMLElement).style.background = "transparent";
+                    (e.currentTarget as HTMLElement).style.boxShadow = "none";
                   }}
                 >
-                  Start mail-in recovery
-                  <ChevronRight size={12} color="currentColor" />
-                </Link>
+                  Download Free · Unlock for $99
+                </a>
               </div>
+
+              {/* Tier 4 — Family $149 */}
+              <div
+                className="pricing-card"
+                style={{
+                  background: `linear-gradient(160deg, rgba(245,158,11,0.05) 0%, ${C.pageAlt} 60%)`,
+                  border: `1px solid ${C.amberBorder}`,
+                  borderRadius: 16,
+                  padding: "36px 28px",
+                  display: "flex", flexDirection: "column" as const,
+                  opacity: 0,
+                }}
+              >
+                <Eyebrow style={{ marginBottom: 16, color: C.amber }}>Family — one-time</Eyebrow>
+                <div style={{
+                  fontFamily: SORA, fontSize: 44, fontWeight: 700,
+                  letterSpacing: "-0.045em", color: C.text,
+                  lineHeight: 1, marginBottom: 4,
+                }}>
+                  $149
+                </div>
+                <div style={{ fontFamily: SORA, fontSize: 13, color: C.textMuted, marginBottom: 28 }}>
+                  one-time · the heirloom plan
+                </div>
+                <Rule style={{ marginBottom: 24 }} />
+                <ul style={{ listStyle: "none", padding: 0, margin: "0 0 32px", display: "flex", flexDirection: "column" as const, gap: 10, flex: 1 }}>
+                  {[
+                    "Everything in Archive",
+                    "Built for families with large collections",
+                    "Multi-user library sync (coming soon)",
+                    "Priority support",
+                    "Lifetime licence — one purchase, forever",
+                  ].map((f) => (
+                    <li key={f} style={{ display: "flex", gap: 10, fontFamily: SORA, fontSize: 13, color: C.textMuted, lineHeight: 1.55 }}>
+                      <CheckIcon size={13} color={C.amber} />
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+                <a
+                  href={DOWNLOAD_URL}
+                  style={{
+                    display: "inline-flex", alignItems: "center", justifyContent: "center",
+                    gap: 8, padding: "14px 18px", borderRadius: 8,
+                    background: "transparent", color: C.amber,
+                    fontFamily: SORA, fontSize: 14, fontWeight: 700,
+                    textDecoration: "none", letterSpacing: "-0.01em",
+                    border: `1.5px solid ${C.amberBorder}`,
+                    transition: "background 0.18s, border-color 0.18s",
+                  }}
+                  onMouseEnter={(e) => {
+                    (e.currentTarget as HTMLElement).style.background = C.amberFaint;
+                    (e.currentTarget as HTMLElement).style.borderColor = C.amber;
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLElement).style.background = "transparent";
+                    (e.currentTarget as HTMLElement).style.borderColor = C.amberBorder;
+                  }}
+                >
+                  Download Free · Unlock for $149
+                </a>
+              </div>
+
+            </div>
+
+            {/* Mail-in callout below pricing grid */}
+            <div style={{
+              marginTop: 32, padding: "20px 28px",
+              background: C.pageAlt, border: `1px solid ${C.border}`,
+              borderRadius: 12,
+              display: "flex", flexWrap: "wrap" as const,
+              alignItems: "center", justifyContent: "space-between",
+              gap: 16,
+            }}>
+              <div>
+                <span style={{ fontFamily: SORA, fontSize: 14, fontWeight: 600, color: C.text }}>
+                  No disc drive, or disc too damaged for software?
+                </span>{" "}
+                <span style={{ fontFamily: SORA, fontSize: 14, color: C.textMuted }}>
+                  Mail it to us — professional lab recovery from $89. No recovery, no charge.
+                </span>
+              </div>
+              <Link
+                to="/recover"
+                style={{
+                  display: "inline-flex", alignItems: "center", gap: 7,
+                  padding: "11px 20px", borderRadius: 8,
+                  border: `1.5px solid ${C.borderMed}`, background: "transparent",
+                  color: C.text, fontFamily: SORA, fontSize: 13, fontWeight: 600,
+                  textDecoration: "none", letterSpacing: "-0.01em",
+                  transition: "border-color 0.18s",
+                  whiteSpace: "nowrap" as const,
+                }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = C.borderBright; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = C.borderMed; }}
+              >
+                Mail-in recovery from $89
+                <ChevronRight size={12} color="currentColor" />
+              </Link>
             </div>
 
             <style>{`
               .lm1-pricing-grid {
                 display: grid;
-                grid-template-columns: repeat(3, 1fr);
-                gap: 20px;
+                grid-template-columns: repeat(4, 1fr);
+                gap: 16px;
               }
-              @media (max-width: 960px) {
+              @media (max-width: 1100px) {
                 .lm1-pricing-grid { grid-template-columns: 1fr 1fr !important; }
               }
               @media (max-width: 640px) {
