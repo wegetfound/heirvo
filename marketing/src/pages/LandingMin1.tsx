@@ -2514,7 +2514,12 @@ export default function LandingMin1() {
 
       </main>
 
-      <Footer />
+      {/* Light-theme island so the Footer's ink-* text colours stay legible
+          against the dark page background. The gradient softens the hard
+          dark→light edge. */}
+      <div className="lm1-footer-island">
+        <Footer />
+      </div>
 
       {/* ── Global styles ─────────────────────────────────────────────── */}
       <style>{`
@@ -2525,6 +2530,12 @@ export default function LandingMin1() {
         }
         body:has(.lm1-root) {
           background: #0B1220 !important;
+        }
+        .lm1-footer-island {
+          background: #F4F6FA;
+          border-top: none;
+          /* Gradient fade from the dark page into the light footer */
+          box-shadow: 0 -48px 80px 0 rgba(11,18,32,0.85);
         }
         @media (max-width: 640px) {
           .lm1-container { padding: 0 16px; }
