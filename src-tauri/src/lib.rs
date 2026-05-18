@@ -142,6 +142,8 @@ pub fn run() {
             commands::library::import_video_disc,
             commands::library::import_media_disc,
             commands::library::get_import_size_preview,
+            commands::library::delete_library_disc,
+            commands::library::get_vault_stats,
             commands::transcription::enqueue_transcription,
             commands::transcription::list_transcription_jobs,
             commands::transcription::jobs_for_disc,

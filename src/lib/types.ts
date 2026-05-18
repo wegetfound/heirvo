@@ -145,6 +145,25 @@ export interface ImportGate {
   reason: string | null;
 }
 
+/** Returned by delete_library_disc. `vaultFileRemoved` is false if the disc
+ * was a recovered DVD whose video_path lived outside the vault — in that
+ * case only the DB row is dropped, the original file is untouched. */
+export interface DeleteResult {
+  id: string;
+  vaultFileRemoved: boolean;
+  bytesFreed: number;
+}
+
+/** Returned by get_vault_stats. Powers the Settings storage panel. */
+export interface VaultStats {
+  vaultPath: string;
+  fileCount: number;
+  bytesUsed: number;
+  bytesUsedDisplay: string;
+  bytesFree: number | null;
+  bytesFreeDisplay: string | null;
+}
+
 /** Whisper model info returned by get_whisper_model_info. */
 export interface WhisperModelInfo {
   current: string;         // e.g. "ggml-base.en.bin" or "ggml-tiny.en.bin"

@@ -117,6 +117,9 @@ export function Settings() {
       {/* System status */}
       <SystemStatusPanel />
 
+      {/* Vault storage — imported media disk usage */}
+      <VaultStoragePanel />
+
       {/* Transcription model */}
       <TranscriptionModelPanel />
 
@@ -643,6 +646,99 @@ function DiagnosticLogsPanel() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// ─── Vault storage ────────────────────────────────────────────────────────────
+
+function VaultStoragePanel() {
+  const [stats, setStats] = useState<import("@/lib/types").VaultStats | null>(null);
+  const [loadErr, setLoadErr] = useState<string | null>(null);
+
+  const refresh = async () => {
+    try {
+      const s = await ipc.library.getVaultStats();
+      setStats(s);
+      setLoadErr(null);
+    } catch (e) {
+      setLoadErr(e instanceof Error ? e.message : String(e));
+    }
+  };
+
+  useEffect(() => {
+    void refresh();
+  }, []);
+
+  const openVault = async () => {
+    if (!stats?.vaultPath) return;
+    try {
+      await ipc.openFolder(stats.vaultPath);
+    } catch {/* ignore — backend may not have access */}
+  };
+
+  return (
+    <div className="mt-4 rounded-2xl border border-ink-200/70 bg-white/60 p-5">
+      <div className="flex items-start gap-3">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-ink-100">
+          <FolderOpen className="h-4 w-4 text-ink-600" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <span className="micro-label">Vault storage</span>
+          {!stats && !loadErr && (
+            <p className="mt-2 text-[13px] text-ink-500">Loading…</p>
+          )}
+          {loadErr && (
+            <p className="mt-2 text-[13px] text-ios-red">Couldn't read vault: {loadErr}</p>
+          )}
+          {stats && (
+            <>
+              <p className="mt-2 text-[13px] leading-relaxed text-ink-700">
+                Your imported videos and audio live in a dedicated vault on this
+                device. Removing a disc from your library frees the space.
+              </p>
+              <div className="mt-3 grid grid-cols-3 gap-3">
+                <Stat label="Files" value={stats.fileCount.toLocaleString()} />
+                <Stat label="Used" value={stats.bytesUsedDisplay} />
+                <Stat label="Free on drive" value={stats.bytesFreeDisplay ?? "—"} />
+              </div>
+              <div className="mt-3 flex items-center gap-2 flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => void openVault()}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-ink-200 bg-white/80 px-3 py-1.5 text-[12px] font-medium text-ink-700 hover:border-brand-300 hover:text-brand-600 transition-colors"
+                >
+                  <FolderOpen className="h-3 w-3" />
+                  Open vault folder
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void refresh()}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-ink-200 bg-white/80 px-3 py-1.5 text-[12px] font-medium text-ink-700 hover:border-brand-300 hover:text-brand-600 transition-colors"
+                >
+                  Refresh
+                </button>
+                <span className="text-[11px] text-ink-400 truncate" title={stats.vaultPath}>
+                  {stats.vaultPath}
+                </span>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Stat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-xl border border-ink-100 bg-ink-50 px-3 py-2">
+      <div className="text-[10px] uppercase tracking-[0.12em] text-ink-400 font-medium">
+        {label}
+      </div>
+      <div className="mt-0.5 font-mono text-[14px] font-semibold text-ink-900 tabular-nums">
+        {value}
+      </div>
     </div>
   );
 }

@@ -305,7 +305,177 @@ pub async fn import_media_disc(
     .execute(&state.db.pool)
     .await?;
 
+    // ── 6. Auto-enqueue transcription ───────────────────────────────────
+    // CRITICAL: enqueue using the VAULT path, not the source path. If the
+    // user deletes/moves the original after the import returns, the worker
+    // would otherwise hit a "no such file" error mid-job. The vault copy
+    // is stable for the lifetime of the disc row.
+    //
+    // Failure is non-fatal — the disc is already in the library and the
+    // user can retry transcription from the disc page.
+    if let Err(e) = crate::transcription::queue::enqueue(
+        &state.db.pool,
+        &id,
+        &vault_path_str,
+        "stub",
+        None,
+    )
+    .await
+    {
+        tracing::warn!(
+            "import_media_disc: disc {} inserted but transcription enqueue failed: {}",
+            id,
+            e
+        );
+    }
+
     Ok(ImportResult { id, is_duplicate: false })
+}
+
+/// Delete a disc from the library. If the disc's video_path lives inside the
+/// vault dir (i.e. it was an imported file, not a recovered DVD), the vault
+/// copy is removed too — and its parent hash-prefix dir is removed if empty.
+///
+/// Safety: vault-path check is strict — only files under `<app_data>/vault/`
+/// are eligible for deletion. A recovered DVD whose video_path points at an
+/// ISO output dir will leave that file alone; only the DB row goes.
+///
+/// CASCADE handles transcript lines / scenes / topics / people / transcription
+/// jobs (all FK with ON DELETE CASCADE on library_discs.id).
+#[tauri::command]
+pub async fn delete_library_disc(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    id: String,
+) -> AppResult<DeleteResult> {
+    // 1. Look up the video_path before deleting so we know what to free on disk.
+    let row = sqlx::query("SELECT video_path FROM library_discs WHERE id = ?")
+        .bind(&id)
+        .fetch_optional(&state.db.pool)
+        .await?;
+
+    let Some(row) = row else {
+        return Err(AppError::Internal(format!("disc not found: {id}")));
+    };
+    let video_path: Option<String> = row.try_get("video_path").ok().flatten();
+
+    // 2. Delete the DB row — CASCADE clears the rest.
+    let res = sqlx::query("DELETE FROM library_discs WHERE id = ?")
+        .bind(&id)
+        .execute(&state.db.pool)
+        .await?;
+    if res.rows_affected() == 0 {
+        return Err(AppError::Internal(format!("disc not found: {id}")));
+    }
+
+    // 3. If the video_path is inside the vault dir, delete the file and try to
+    //    prune the (now likely empty) hash-prefix directory.
+    let mut bytes_freed: u64 = 0;
+    let mut vault_file_removed = false;
+    if let Some(path_str) = video_path.as_deref() {
+        let vault = vault_dir(&app)?;
+        let p = Path::new(path_str);
+        // Canonicalize both sides where possible so we compare resolved paths
+        // and aren't fooled by ../ or symlinks.
+        let inside_vault = match (p.canonicalize(), vault.canonicalize()) {
+            (Ok(p), Ok(v)) => p.starts_with(&v),
+            _ => p.starts_with(&vault), // fallback if canonicalize fails
+        };
+        if inside_vault {
+            if let Ok(meta) = std::fs::metadata(p) {
+                bytes_freed = meta.len();
+            }
+            if std::fs::remove_file(p).is_ok() {
+                vault_file_removed = true;
+                // Try to prune the parent (the hash-prefix dir). Ignore errors;
+                // remove_dir only succeeds if empty, which is the safe case.
+                if let Some(parent) = p.parent() {
+                    let _ = std::fs::remove_dir(parent);
+                }
+            }
+        }
+    }
+
+    Ok(DeleteResult {
+        id,
+        vault_file_removed,
+        bytes_freed,
+    })
+}
+
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DeleteResult {
+    pub id: String,
+    pub vault_file_removed: bool,
+    pub bytes_freed: u64,
+}
+
+/// Aggregate vault stats — file count, bytes used, bytes free on the volume.
+/// Powers a "Storage" panel in Settings and informs the user how much space
+/// their imported memories are taking.
+#[tauri::command]
+pub async fn get_vault_stats(app: AppHandle) -> AppResult<VaultStats> {
+    let vault = vault_dir(&app)?;
+    let (file_count, bytes_used) = walk_vault_size(&vault);
+    let bytes_free = free_space_for(&vault).ok();
+
+    Ok(VaultStats {
+        vault_path: vault.to_string_lossy().to_string(),
+        file_count,
+        bytes_used,
+        bytes_used_display: format_bytes(bytes_used),
+        bytes_free,
+        bytes_free_display: bytes_free.map(format_bytes),
+    })
+}
+
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct VaultStats {
+    pub vault_path: String,
+    pub file_count: u64,
+    pub bytes_used: u64,
+    pub bytes_used_display: String,
+    pub bytes_free: Option<u64>,
+    pub bytes_free_display: Option<String>,
+}
+
+/// Walk the vault dir recursively and sum file sizes. Bounded by the depth
+/// of the hash-prefix dirs (always exactly 1 level deep) so this is cheap
+/// even on a vault with tens of thousands of entries.
+fn walk_vault_size(root: &Path) -> (u64, u64) {
+    let mut count: u64 = 0;
+    let mut bytes: u64 = 0;
+    let read_dir = match std::fs::read_dir(root) {
+        Ok(rd) => rd,
+        Err(_) => return (0, 0),
+    };
+    for entry in read_dir.flatten() {
+        let path = entry.path();
+        if let Ok(ft) = entry.file_type() {
+            if ft.is_dir() {
+                // One level deeper — the hash-prefix subfolder.
+                if let Ok(inner) = std::fs::read_dir(&path) {
+                    for sub in inner.flatten() {
+                        if let Ok(meta) = sub.metadata() {
+                            if meta.is_file() {
+                                count += 1;
+                                bytes += meta.len();
+                            }
+                        }
+                    }
+                }
+            } else if ft.is_file() {
+                // Loose file directly under vault root (shouldn't happen, but tolerate).
+                if let Ok(meta) = entry.metadata() {
+                    count += 1;
+                    bytes += meta.len();
+                }
+            }
+        }
+    }
+    (count, bytes)
 }
 
 // ─── Vault helpers ──────────────────────────────────────────────────────────

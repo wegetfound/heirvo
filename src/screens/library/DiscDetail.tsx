@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
-import { ChevronLeft, Play, Download, Share2 } from "lucide-react";
+import { ChevronLeft, Play, Download, Share2, Trash2 } from "lucide-react";
 import { getDiscById } from "./data/mockDiscs";
 import type { Disc } from "./data/types";
 import { GradientArt, gradientCss } from "./components/GradientArt";
@@ -20,6 +20,9 @@ export default function DiscDetail() {
   const [activeJob, setActiveJob] = useState<TranscriptionJob | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteErr, setDeleteErr] = useState<string | null>(null);
 
   // Poll for the latest transcription job for this disc + subscribe to
   // progress events so the status block updates live.
@@ -76,6 +79,28 @@ export default function DiscDetail() {
       setActiveJob(jobs[0] ?? null);
     } catch {
       /* ignore */
+    }
+  }
+
+  /** Remove this disc from the library. Backend handles cascade + vault file. */
+  async function handleDelete() {
+    if (!discId || deleting) return;
+    setDeleting(true);
+    setDeleteErr(null);
+    try {
+      const r = await ipc.library.deleteDisc(discId);
+      setDeleteOpen(false);
+      // Tiny success cue in the navigated-to library so user knows it worked.
+      const note = r.vaultFileRemoved
+        ? `Removed “${disc?.title ?? "disc"}” · freed ${(r.bytesFreed / 1024 / 1024 / 1024).toFixed(2)} GB`
+        : `Removed “${disc?.title ?? "disc"}” from the library`;
+      try {
+        sessionStorage.setItem("lib_toast", note);
+      } catch {/* private mode → just navigate */}
+      nav("/library");
+    } catch (e) {
+      setDeleteErr(e instanceof Error ? e.message : "Remove failed — please try again.");
+      setDeleting(false);
     }
   }
 
@@ -354,6 +379,16 @@ export default function DiscDetail() {
                 >
                   <Share2 size={14} />
                   Share with family
+                </button>
+                <button
+                  type="button"
+                  className="lib-btn lib-btn-ghost"
+                  onClick={() => setDeleteOpen(true)}
+                  title="Remove this disc from your library"
+                  style={{ color: "var(--lib-amber, #b45309)" }}
+                >
+                  <Trash2 size={14} />
+                  Remove
                 </button>
               </div>
               {activeJob &&
@@ -729,6 +764,51 @@ export default function DiscDetail() {
           </aside>
         </div>
       </div>
+
+      {/* Remove-from-library confirm modal */}
+      {deleteOpen && disc && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-ink-900/50 p-4 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delete-disc-title"
+        >
+          <div className="w-full max-w-sm overflow-hidden rounded-2xl bg-white shadow-2xl p-6">
+            <h3
+              id="delete-disc-title"
+              className="font-display text-[18px] font-bold tracking-[-0.01em] text-ink-900"
+            >
+              Remove “{disc.title}” from your library?
+            </h3>
+            <p className="mt-2 text-[13.5px] leading-[1.55] text-ink-600">
+              The disc entry, transcript, and any vault copy of the imported
+              file will be deleted from this device. <span className="font-medium text-ink-900">
+              Your original disc and any source file outside the vault are untouched.</span>
+            </p>
+            {deleteErr && (
+              <p className="mt-3 text-[12.5px] text-ios-red">{deleteErr}</p>
+            )}
+            <div className="mt-5 flex gap-2 justify-end">
+              <button
+                type="button"
+                onClick={() => { setDeleteOpen(false); setDeleteErr(null); }}
+                disabled={deleting}
+                className="rounded-xl border border-ink-200 px-4 py-2 text-[13px] font-medium text-ink-700 transition hover:bg-ink-50 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleDelete()}
+                disabled={deleting}
+                className="rounded-xl bg-ios-red px-4 py-2 text-[13px] font-semibold text-white transition hover:bg-red-500 disabled:opacity-60"
+              >
+                {deleting ? "Removing…" : "Remove from library"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Share with family modal */}
       {shareOpen && disc && (

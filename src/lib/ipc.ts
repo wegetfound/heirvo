@@ -28,6 +28,8 @@ import type {
   TranscriptionProgress,
   ImportResult,
   ImportPreview,
+  DeleteResult,
+  VaultStats,
   WhisperModelInfo,
 } from "./types";
 
@@ -185,6 +187,12 @@ export const ipc = {
      * "this will use X GB" confirmation before committing to a multi-GB copy. */
     getImportSizePreview: (mediaPath: string) =>
       invoke<ImportPreview>("get_import_size_preview", { mediaPath }),
+    /** Remove a disc from the library. If the disc was an imported file
+     * (video_path inside the vault), the vault copy is deleted too. */
+    deleteDisc: (id: string) =>
+      invoke<DeleteResult>("delete_library_disc", { id }),
+    /** Aggregate vault stats — total files, bytes used, free space. */
+    getVaultStats: () => invoke<VaultStats>("get_vault_stats"),
   },
 
   // Transcription
