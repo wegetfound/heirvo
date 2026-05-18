@@ -11,7 +11,9 @@
     "preview": "vite preview",
     "tauri": "tauri",
     "fetch-ffmpeg": "powershell -ExecutionPolicy Bypass -File scripts/fetch-ffmpeg.ps1",
-    "fetch-whisper": "powershell -ExecutionPolicy Bypass -File scripts/fetch-whisper.ps1"
+    "fetch-whisper": "powershell -ExecutionPolicy Bypass -File scripts/fetch-whisper.ps1",
+    "test": "vitest run",
+    "test:ui": "vitest --ui"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.1.1",
@@ -31,13 +33,19 @@
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.1.0",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.3.0",
+    "@testing-library/user-event": "^14.5.2",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.3",
+    "@vitest/ui": "^3.2.2",
     "autoprefixer": "^10.4.20",
+    "jsdom": "^26.1.0",
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.15",
     "typescript": "^5.6.3",
-    "vite": "^5.4.11"
+    "vite": "^5.4.11",
+    "vitest": "^3.2.2"
   }
 }
