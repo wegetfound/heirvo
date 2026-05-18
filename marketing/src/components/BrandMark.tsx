@@ -4,39 +4,30 @@ interface Props {
 }
 
 /**
- * Heirvo BrandMark — gradient rounded square with a circle and vertical
- * recovery-arm light track. Mirrors the in-app icon style.
+ * Heirvo brand mark — the v1.1.0 disc-with-arrow icon that ships in the
+ * desktop app, NSIS installer, and Windows taskbar. Single source of truth
+ * for the visual brand: `marketing/public/brand/mark.png` (256×256, mirrored
+ * from `src-tauri/icons/128x128@2x.png`).
+ *
+ * Renders as a plain <img>. No gradient wrapper, no shadow — the artwork
+ * already has its own ground and depth. Adding chrome makes it look like
+ * a button.
  */
 export function BrandMark({ size = 36, className = "" }: Props) {
   return (
-    <div
-      className={`relative inline-flex items-center justify-center rounded-2xl shadow-glow-blue ${className}`}
+    <img
+      src="/brand/mark.png"
+      width={size}
+      height={size}
+      alt="Heirvo"
+      decoding="async"
+      loading="eager"
+      className={className}
       style={{
+        display: "inline-block",
         width: size,
         height: size,
-        backgroundImage: "linear-gradient(135deg, #0A84FF 0%, #5AC8FA 100%)",
       }}
-      aria-label="Heirvo"
-    >
-      <svg
-        width={size * 0.62}
-        height={size * 0.62}
-        viewBox="0 0 24 24"
-        fill="none"
-        aria-hidden
-      >
-        <circle cx="12" cy="12" r="8.25" stroke="white" strokeWidth="1.4" opacity="0.95" />
-        <circle cx="12" cy="12" r="2.4" fill="white" />
-        <line
-          x1="12"
-          y1="3.75"
-          x2="12"
-          y2="9.6"
-          stroke="white"
-          strokeWidth="1.4"
-          strokeLinecap="round"
-        />
-      </svg>
-    </div>
+    />
   );
 }
