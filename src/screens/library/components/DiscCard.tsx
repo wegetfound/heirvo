@@ -18,12 +18,11 @@ export function DiscCard({ disc, showStatus = true, showSource = true }: Props) 
   // Lazy-load a real thumbnail for any disc whose backend can supply one:
   // - photo discs → resized JPEG via the `image` crate
   // - video discs → keyframe at ~1s via bundled ffmpeg
-  // - audio / recovered DVDs → backend returns null; we keep the gradient.
+  // - audio discs → waveform image via ffmpeg showwavespic filter
+  // - recovered DVDs without a media_path → backend returns null; gradient kept.
   // The first call generates + caches; subsequent calls are filesystem-fast.
   const [thumbSrc, setThumbSrc] = useState<string | null>(null);
   useEffect(() => {
-    // Skip the IPC for media types we know won't have a thumbnail.
-    if (disc.mediaType === "audio") return;
     let cancelled = false;
     (async () => {
       try {
@@ -35,6 +34,7 @@ export function DiscCard({ disc, showStatus = true, showSource = true }: Props) 
   }, [disc.id, disc.mediaType]);
 
   const isPhoto = disc.mediaType === "photo";
+  const isAudio = disc.mediaType === "audio";
   const hasThumb = thumbSrc !== null;
 
   return (
@@ -73,7 +73,12 @@ export function DiscCard({ disc, showStatus = true, showSource = true }: Props) 
               inset: 0,
               width: "100%",
               height: "100%",
-              objectFit: "cover",
+              // Audio waveforms are 600x180 (10:3) rendered into a 4:3 card.
+              // "contain" letterboxes the wave so it's never cropped and the
+              // full oscillogram is visible; the gradient art shows as
+              // letterbox bars above/below, which looks intentional.
+              // Photo and video use "cover" as before (fills the card).
+              objectFit: isAudio ? "contain" : "cover",
               zIndex: 1,
             }}
           />

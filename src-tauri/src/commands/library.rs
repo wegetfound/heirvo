@@ -143,11 +143,6 @@ pub async fn ensure_disc_thumbnail(
     let hash: Option<String> = row.try_get::<Option<String>, _>("source_hash").ok().flatten();
 
     let Some(media_path) = media_path else { return Ok(None) };
-    // Audio has no visual representation — frontend keeps the gradient.
-    // (A future enhancement could render a waveform image here.)
-    if media_type == "audio" {
-        return Ok(None);
-    }
 
     let vault = vault_dir(&app)?;
     let thumbs_dir = vault.join("thumbs");
@@ -175,11 +170,22 @@ pub async fn ensure_disc_thumbnail(
         };
     }
 
-    // Video path — extract a keyframe via bundled ffmpeg.
+    // Both video and audio need ffmpeg — locate it once.
     let ffmpeg = match crate::media::ffmpeg::locate_ffmpeg(&app) {
         Ok(p) => p,
         Err(_) => return Ok(None), // ffmpeg missing → graceful fallback to gradient
     };
+
+    if media_type == "audio" {
+        // Render a waveform image with the showwavespic filter.
+        let result = generate_audio_waveform(ffmpeg, media_path.clone(), thumb_path.clone()).await;
+        return match result {
+            Ok(()) => Ok(Some(thumb_path.to_string_lossy().to_string())),
+            Err(()) => Ok(None),
+        };
+    }
+
+    // Video path — extract a keyframe via bundled ffmpeg.
     let result = generate_video_thumbnail(ffmpeg, media_path.clone(), thumb_path.clone()).await;
     match result {
         Ok(()) => Ok(Some(thumb_path.to_string_lossy().to_string())),
@@ -261,6 +267,54 @@ async fn generate_video_thumbnail(
     }
     tracing::warn!("video thumbnail: ffmpeg failed to extract a frame from {src}");
     Err(())
+}
+
+/// Spawn ffmpeg to render a waveform image from an audio file using the
+/// `showwavespic` filter. The output is a 600x180 JPEG in Heirvo brand blue
+/// (#0A84FF), written to `dst`.
+///
+/// `compand` is prepended to flatten dynamic range so quiet recordings (e.g.
+/// old cassette transfers) show visible wave detail rather than a flat line.
+///
+/// The output dimensions (600x180) give a roughly 10:3 aspect ratio; the card
+/// container is 4:3, so the waveform image will letterbox inside it with some
+/// gradient showing above and below — a deliberate design choice that keeps the
+/// card from looking identical to a photo thumbnail.
+async fn generate_audio_waveform(
+    ffmpeg: PathBuf,
+    src: String,
+    dst: PathBuf,
+) -> Result<(), ()> {
+    use tokio::process::Command;
+
+    let status = Command::new(&ffmpeg)
+        .args([
+            "-hide_banner",
+            "-loglevel", "error",
+            "-i", &src,
+            "-filter_complex", "aformat=channel_layouts=mono,compand,showwavespic=s=600x180:colors=#0A84FF",
+            "-frames:v", "1",
+            "-y",
+            dst.to_str().unwrap_or(""),
+        ])
+        .stdin(std::process::Stdio::null())
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .status()
+        .await;
+
+    let ok = matches!(
+        status,
+        Ok(s) if s.success()
+            && dst.exists()
+            && dst.metadata().map(|m| m.len() > 0).unwrap_or(false)
+    );
+    if ok {
+        Ok(())
+    } else {
+        tracing::warn!("audio waveform: ffmpeg failed for {src}");
+        Err(())
+    }
 }
 
 /// Walk a directory (recursively, capped depth) and return all paths whose
