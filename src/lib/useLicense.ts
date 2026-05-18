@@ -2,7 +2,13 @@ import { useEffect, useState, useCallback } from "react";
 import { ipc } from "./ipc";
 import type { LicenseStatus } from "./types";
 
-const DEFAULT: LicenseStatus = { plan: "free", holder: null, can_save: true, exports_used: 0 };
+const DEFAULT: LicenseStatus = {
+  plan: "free",
+  holder: null,
+  can_save: true,
+  can_import_media: false,
+  exports_used: 0,
+};
 
 /**
  * useLicense — read + mutate the freemium license state.

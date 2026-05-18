@@ -6,7 +6,8 @@ import type { Disc } from "./data/types";
 import { HeroFeatured } from "./components/HeroFeatured";
 import { DiscRail } from "./components/DiscRail";
 import { ipc } from "../../lib/ipc";
-import type { Session } from "../../lib/types";
+import type { Session, ImportPreview } from "../../lib/types";
+import { ImportPaywallModal } from "../dashboard/ImportPaywallModal";
 
 export default function Library() {
   const nav = useNavigate();
@@ -123,9 +124,21 @@ export default function Library() {
 
   const [importMsg, setImportMsg] = useState<string | null>(null);
   const [importing, setImporting] = useState(false);
+  // The currently-pending import: file the user picked + the size/gate preview.
+  // When set + !preview.gate.allowed → paywall modal shows.
+  // When set + gate.allowed + needsConfirm → size-confirm dialog shows.
+  // Cleared after success, cancel, or paywall close.
+  const [pending, setPending] = useState<{
+    path: string;
+    title: string;
+    preview: ImportPreview;
+  } | null>(null);
+  const [showConfirm, setShowConfirm] = useState(false);
+
+  /** Open the file picker, fetch the size+gate preview, then route to either
+   *  the paywall, the size confirm dialog, or straight into the import. */
   async function handleImportVideo() {
     if (importing) return;
-    setImporting(true);
     setImportMsg(null);
     try {
       const dialog = await import("@tauri-apps/plugin-dialog");
@@ -142,11 +155,8 @@ export default function Library() {
           },
         ],
       });
-      if (!picked || typeof picked !== "string") {
-        setImporting(false);
-        return;
-      }
-      // Derive a nice title from the filename.
+      if (!picked || typeof picked !== "string") return;
+
       const base = picked.split(/[\\/]/).pop() ?? picked;
       const stem = base.replace(/\.[^.]+$/, "");
       const title = stem
@@ -154,20 +164,64 @@ export default function Library() {
         .replace(/\s+/g, " ")
         .trim()
         .replace(/\b\w/g, (c) => c.toUpperCase()) || "Imported Media";
-      const result = await ipc.library.importMedia(picked, title);
+
+      // Cheap pre-flight — no hashing, no copying yet.
+      const preview = await ipc.library.getImportSizePreview(picked);
+      setPending({ path: picked, title, preview });
+
+      if (!preview.gate.allowed) {
+        // Paywall path — the modal opens via `pending && !gate.allowed`.
+        return;
+      }
+      if (!preview.willFit) {
+        setImportMsg(
+          `Not enough disk space — need ${preview.fileSizeDisplay} for the vault copy.`,
+        );
+        setTimeout(() => setImportMsg(null), 6000);
+        setPending(null);
+        return;
+      }
+      // Always confirm before a multi-GB copy. For tiny files (<200 MB) skip
+      // the confirmation — the wait is short and the friction isn't worth it.
+      if (preview.fileSize > 200 * 1024 * 1024) {
+        setShowConfirm(true);
+      } else {
+        void runImport();
+      }
+    } catch {
+      setImportMsg("Available in the desktop app");
+      setTimeout(() => setImportMsg(null), 3500);
+    }
+  }
+
+  /** Final step — actually hash, copy into vault, and enqueue transcription. */
+  async function runImport() {
+    if (!pending || importing) return;
+    setShowConfirm(false);
+    setImporting(true);
+    try {
+      const result = await ipc.library.importMedia(pending.path, pending.title);
       if (!result.isDuplicate) {
         try {
-          await ipc.transcription.enqueue(result.id, picked);
+          await ipc.transcription.enqueue(result.id, pending.path);
         } catch {
           // Non-fatal — user can retry from the disc page.
         }
       }
       nav(`/disc/${result.id}`);
-    } catch {
-      setImportMsg("Available in the desktop app");
-      setTimeout(() => setImportMsg(null), 3500);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      // Surface the backend's tier-gate error in case the license changed
+      // between the preview and the import (rare, but possible).
+      if (msg.includes("import_blocked")) {
+        setImportMsg("Import requires the Archive tier — see upgrade page.");
+      } else {
+        setImportMsg("Import failed — please try again.");
+      }
+      setTimeout(() => setImportMsg(null), 5000);
     } finally {
       setImporting(false);
+      setPending(null);
     }
   }
 
@@ -413,6 +467,83 @@ export default function Library() {
           <div>v0.9 preview</div>
         </footer>
       </div>
+
+      {/* ── Import paywall — shown when the picked file is allowed by the
+            backend's tier gate. Closing the modal cancels the pending import. */}
+      {pending && !pending.preview.gate.allowed && (
+        <ImportPaywallModal
+          open
+          onClose={() => setPending(null)}
+          onUnlocked={() => {
+            // License just upgraded — re-check the preview, then continue.
+            // Easiest: trigger the same flow by re-using the picked path.
+            void (async () => {
+              try {
+                const preview = await ipc.library.getImportSizePreview(pending.path);
+                setPending({ ...pending, preview });
+                if (preview.gate.allowed && preview.willFit) {
+                  if (preview.fileSize > 200 * 1024 * 1024) {
+                    setShowConfirm(true);
+                  } else {
+                    void runImport();
+                  }
+                }
+              } catch {
+                setPending(null);
+              }
+            })();
+          }}
+          fileName={pending.path.split(/[\\/]/).pop()}
+          fileSizeDisplay={pending.preview.fileSizeDisplay}
+        />
+      )}
+
+      {/* ── Size-confirm dialog — shown for files > 200 MB so the user knows
+            disk space will be consumed. Skipped for small audio clips. */}
+      {showConfirm && pending && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-ink-900/50 p-4 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="import-confirm-title"
+        >
+          <div className="w-full max-w-sm overflow-hidden rounded-2xl bg-white shadow-2xl p-6">
+            <h3
+              id="import-confirm-title"
+              className="font-display text-[18px] font-bold tracking-[-0.01em] text-ink-900"
+            >
+              Copy {pending.preview.fileSizeDisplay} to your vault?
+            </h3>
+            <p className="mt-2 text-[13.5px] leading-[1.55] text-ink-600">
+              Heirvo will copy{" "}
+              <span className="font-medium text-ink-900">
+                {pending.path.split(/[\\/]/).pop()}
+              </span>{" "}
+              into a permanent vault so your library doesn't break if you move
+              or delete the original. Your file stays where it is.
+            </p>
+            <div className="mt-5 flex gap-2 justify-end">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowConfirm(false);
+                  setPending(null);
+                }}
+                className="rounded-xl border border-ink-200 px-4 py-2 text-[13px] font-medium text-ink-700 transition hover:bg-ink-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => void runImport()}
+                className="rounded-xl bg-brand-600 px-4 py-2 text-[13px] font-semibold text-white transition hover:bg-brand-500"
+              >
+                Copy &amp; import
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

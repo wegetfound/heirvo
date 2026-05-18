@@ -27,6 +27,7 @@ import type {
   TranscriptionJob,
   TranscriptionProgress,
   ImportResult,
+  ImportPreview,
   WhisperModelInfo,
 } from "./types";
 
@@ -179,6 +180,11 @@ export const ipc = {
       invoke<ImportResult>("import_media_disc", { mediaPath: videoPath, title }),
     importMedia: (mediaPath: string, title: string) =>
       invoke<ImportResult>("import_media_disc", { mediaPath, title }),
+    /** Cheap pre-flight: returns size, free-space, and the licensing gate.
+     * Call this BEFORE importMedia so the UI can show a paywall or a
+     * "this will use X GB" confirmation before committing to a multi-GB copy. */
+    getImportSizePreview: (mediaPath: string) =>
+      invoke<ImportPreview>("get_import_size_preview", { mediaPath }),
   },
 
   // Transcription

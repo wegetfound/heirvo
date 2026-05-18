@@ -108,13 +108,41 @@ export type SessionStatus =
  */
 export type RecoveryMode = "standard" | "patient";
 
-/** Freemium license status. Returned by get_license_status IPC. */
-export type Plan = "free" | "pro";
+/** Freemium license status. Returned by get_license_status IPC.
+ *
+ * Plan tiers (2026-05-18):
+ *   - "free"     — full recovery, no save, no media import
+ *   - "recover"  — unlocks Save (MP4, ISO, all-files)
+ *   - "archive"  — Recover features + personal media import into vault
+ *   - "family"   — Archive features + (future) multi-user library sync
+ *   - "pro"      — legacy alias, treated as Archive for backward compat
+ */
+export type Plan = "free" | "recover" | "archive" | "family" | "pro";
 export interface LicenseStatus {
   plan: Plan;
   holder: string | null;
   can_save: boolean;
+  /** True on Archive / Family / (legacy) Pro tiers only. */
+  can_import_media: boolean;
   exports_used: number;
+}
+
+/** Returned by get_import_size_preview — used by the import flow to show a
+ * size confirmation OR a paywall before committing to a multi-GB hash+copy. */
+export interface ImportPreview {
+  fileSize: number;
+  fileSizeDisplay: string;
+  vaultFreeSpace: number | null;
+  willFit: boolean;
+  mediaKind: "video" | "audio";
+  gate: ImportGate;
+}
+
+export interface ImportGate {
+  allowed: boolean;
+  /** Tier the user needs to unlock import. Currently always "archive". */
+  requiredPlan: "archive";
+  reason: string | null;
 }
 
 /** Whisper model info returned by get_whisper_model_info. */
