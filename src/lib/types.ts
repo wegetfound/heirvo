@@ -154,6 +154,27 @@ export interface DeleteResult {
   bytesFreed: number;
 }
 
+/** A library album — groups related discs (most commonly photos from a
+ *  dropped folder) under a single library card. */
+export interface Album {
+  id: string;
+  title: string;
+  coverDiscId: string | null;
+  discCount: number;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface AlbumWithDiscs extends Album {
+  discs: import("../screens/library/data/types").Disc[];
+}
+
+export interface DeleteAlbumResult {
+  id: string;
+  membersRemoved: number;
+  bytesFreed: number;
+}
+
 /** Returned by get_vault_stats. Powers the Settings storage panel. */
 export interface VaultStats {
   vaultPath: string;

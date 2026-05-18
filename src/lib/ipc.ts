@@ -30,6 +30,9 @@ import type {
   ImportPreview,
   DeleteResult,
   VaultStats,
+  Album,
+  AlbumWithDiscs,
+  DeleteAlbumResult,
   WhisperModelInfo,
 } from "./types";
 
@@ -179,9 +182,9 @@ export const ipc = {
       invoke<number>("export_disc_html", { discId, outputPath }),
     importVideoDisc: (videoPath: string, title: string) =>
       // Backwards-compat alias — routes to the new media importer.
-      invoke<ImportResult>("import_media_disc", { mediaPath: videoPath, title }),
-    importMedia: (mediaPath: string, title: string) =>
-      invoke<ImportResult>("import_media_disc", { mediaPath, title }),
+      invoke<ImportResult>("import_media_disc", { mediaPath: videoPath, title, albumId: null }),
+    importMedia: (mediaPath: string, title: string, albumId: string | null = null) =>
+      invoke<ImportResult>("import_media_disc", { mediaPath, title, albumId }),
     /** Cheap pre-flight: returns size, free-space, and the licensing gate.
      * Call this BEFORE importMedia so the UI can show a paywall or a
      * "this will use X GB" confirmation before committing to a multi-GB copy. */
@@ -203,6 +206,21 @@ export const ipc = {
      * gradient artwork. */
     ensureDiscThumbnail: (discId: string) =>
       invoke<string | null>("ensure_disc_thumbnail", { discId }),
+  },
+
+  // Albums
+  albums: {
+    create: (title: string) => invoke<Album>("create_album", { title }),
+    list: () => invoke<Album[]>("list_albums"),
+    get: (id: string) => invoke<AlbumWithDiscs | null>("get_album_with_discs", { id }),
+    rename: (id: string, title: string) =>
+      invoke<void>("rename_album", { id, title }),
+    delete: (id: string, deleteMembers: boolean) =>
+      invoke<DeleteAlbumResult>("delete_album", { id, deleteMembers }),
+    addDisc: (discId: string, albumId: string) =>
+      invoke<void>("add_disc_to_album", { discId, albumId }),
+    removeDisc: (discId: string) =>
+      invoke<void>("remove_disc_from_album", { discId }),
   },
 
   // Transcription

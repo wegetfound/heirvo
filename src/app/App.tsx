@@ -14,6 +14,7 @@ import LibraryAll from "@/screens/library/LibraryAll";
 import LibrarySearch from "@/screens/library/Search";
 import LibraryWatch from "@/screens/library/Watch";
 import LibraryDiscDetail from "@/screens/library/DiscDetail";
+import LibraryAlbumDetail from "@/screens/library/AlbumDetail";
 import IsoBrowser from "@/screens/iso/IsoBrowser";
 // UpdateBanner disabled until signing keypair is generated.
 // import UpdateBanner from "@/components/UpdateBanner";
@@ -53,6 +54,7 @@ export default function App() {
             <Route path="/search" element={<LibrarySearch />} />
             <Route path="/watch/:discId" element={<LibraryWatch />} />
             <Route path="/disc/:discId" element={<LibraryDiscDetail />} />
+            <Route path="/album/:albumId" element={<LibraryAlbumDetail />} />
             <Route path="/iso" element={<IsoBrowser />} />
             <Route path="*" element={<Home />} />
           </Route>
@@ -97,30 +99,23 @@ function PreflightGate() {
  * track cut through it — quiet, intentional, unique to this app.
  */
 function BrandMark({ size = 26 }: { size?: number }) {
+  // The branded disc-with-arrow mark — same source used for the app icon and
+  // installer assets, served as a transparent PNG. Falls back to a colored
+  // square if the asset is missing in dev (won't happen in prod builds).
   return (
-    <svg
+    <img
+      src="/brand/mark.png"
+      alt=""
+      aria-hidden
       width={size}
       height={size}
-      viewBox="0 0 32 32"
-      fill="none"
-      aria-hidden
-    >
-      <defs>
-        <linearGradient id="bm-g" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stopColor="#0A84FF" />
-          <stop offset="100%" stopColor="#5AC8FA" />
-        </linearGradient>
-        <linearGradient id="bm-track" x1="16" y1="4" x2="16" y2="28" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.95" />
-          <stop offset="100%" stopColor="#FFFFFF" stopOpacity="0.35" />
-        </linearGradient>
-      </defs>
-      <circle cx="16" cy="16" r="13" fill="url(#bm-g)" />
-      <circle cx="16" cy="16" r="3.4" fill="#F4F6FA" />
-      <path d="M16 4.2 L16 11.8" stroke="url(#bm-track)" strokeWidth="1.4" strokeLinecap="round" />
-      <path d="M16 20.2 L16 27.8" stroke="url(#bm-track)" strokeWidth="1.4" strokeLinecap="round" opacity="0.55" />
-      <circle cx="16" cy="16" r="13" stroke="rgba(255,255,255,0.5)" strokeWidth="0.6" fill="none" />
-    </svg>
+      style={{
+        display: "block",
+        objectFit: "contain",
+        // Slight inset so the heavy outer glow doesn't clip on small sizes.
+        filter: "drop-shadow(0 1px 1px rgba(0,0,0,0.08))",
+      }}
+    />
   );
 }
 

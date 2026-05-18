@@ -7,8 +7,9 @@ import { HeroFeatured } from "./components/HeroFeatured";
 import { DiscRail } from "./components/DiscRail";
 import { DiscCard } from "./components/DiscCard";
 import { ipc } from "../../lib/ipc";
-import type { Session, ImportPreview } from "../../lib/types";
+import type { Session, ImportPreview, Album } from "../../lib/types";
 import { ImportPaywallModal } from "../dashboard/ImportPaywallModal";
+import { convertFileSrc } from "@tauri-apps/api/core";
 
 export default function Library() {
   const nav = useNavigate();
@@ -96,13 +97,24 @@ export default function Library() {
     }
   }
 
-  // Library filter by media type. "all" leaves the rails untouched so the
-  // curated rails (On this day / Birthdays / Trips) keep working. Any other
-  // value collapses the rails into a single flat grid of matching discs —
-  // the easiest way to navigate a vault that's grown beyond the curated
-  // rails.
-  type FilterKind = "all" | "imported" | "video" | "audio" | "photo" | "disc";
+  // Library filter by media type / albums. "all" leaves the rails untouched
+  // so the curated rails (On this day / Birthdays / Trips) keep working.
+  // "albums" shows the album grid; everything else collapses the rails into
+  // a single flat grid of matching discs.
+  type FilterKind = "all" | "albums" | "imported" | "video" | "audio" | "photo" | "disc";
   const [filter, setFilter] = useState<FilterKind>("all");
+  const [albums, setAlbums] = useState<Album[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const list = await ipc.albums.list();
+        if (!cancelled) setAlbums(list);
+      } catch {/* dev mode — albums stay empty */}
+    })();
+    return () => { cancelled = true; };
+  }, [filter]); // refresh when user navigates to albums tab
 
   /** Classify a disc into one of the filter buckets. Recovered DVDs and
    *  audio CDs come from the rescue flow; everything else is imported. */
@@ -127,6 +139,7 @@ export default function Library() {
   // what their vault looks like at a glance.
   const counts = {
     all: discs.length,
+    albums: albums.length,
     imported: discs.filter((d) => bucketOf(d) !== "disc").length,
     video: discs.filter((d) => bucketOf(d) === "video").length,
     audio: discs.filter((d) => bucketOf(d) === "audio").length,
@@ -178,9 +191,11 @@ export default function Library() {
   const [importing, setImporting] = useState(false);
   // One or more files queued for import. Each has its own preview so the
   // paywall and size-confirm dialogs can render meaningful counts.
+  // albumId carries the auto-created album id from folder drops.
   const [pending, setPending] = useState<Array<{
     path: string;
     title: string;
+    albumId: string | null;
     preview: ImportPreview;
   }>>([]);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -235,29 +250,34 @@ export default function Library() {
     }
   }
 
-  /** Shared path for both file-picker and drag-drop. Gates, confirms, runs. */
-  async function processImports(paths: string[]) {
-    if (paths.length === 0) return;
+  /** Shared path for both file-picker and drag-drop. Gates, confirms, runs.
+   *  Accepts plain string paths (no album) or tagged objects (folder drops
+   *  with an album id from the auto-created album). */
+  async function processImports(input: Array<string | { path: string; albumId: string | null }>) {
+    if (input.length === 0) return;
+    const items = input.map((it) =>
+      typeof it === "string" ? { path: it, albumId: null as string | null } : it,
+    );
 
-    // Filter by accepted extensions — drag-drop can deliver anything.
-    const accepted = paths.filter((p) => {
-      const ext = p.split(".").pop()?.toLowerCase() ?? "";
+    const accepted = items.filter(({ path }) => {
+      const ext = path.split(".").pop()?.toLowerCase() ?? "";
       return ACCEPTED_EXT.includes(ext);
     });
     if (accepted.length === 0) {
-      setImportMsg("Only video and audio files can be imported.");
+      setImportMsg("Only video, audio, and photo files can be imported.");
       setTimeout(() => setImportMsg(null), 4000);
       return;
     }
-    if (accepted.length < paths.length) {
-      setImportMsg(`Skipped ${paths.length - accepted.length} file(s) — unsupported format.`);
+    if (accepted.length < items.length) {
+      setImportMsg(`Skipped ${items.length - accepted.length} file(s) — unsupported format.`);
       setTimeout(() => setImportMsg(null), 4500);
     }
 
     // Pre-flight every file in parallel — gives us per-file size + the gate.
     const previews = await Promise.all(
-      accepted.map(async (path) => ({
+      accepted.map(async ({ path, albumId }) => ({
         path,
+        albumId,
         title: titleFromPath(path),
         preview: await ipc.library.getImportSizePreview(path),
       })),
@@ -308,7 +328,7 @@ export default function Library() {
     for (let i = 0; i < items.length; i++) {
       const it = items[i];
       try {
-        const result = await ipc.library.importMedia(it.path, it.title);
+        const result = await ipc.library.importMedia(it.path, it.title, it.albumId);
         lastId = result.id;
         if (result.isDuplicate) duplicates++;
         // Backend auto-enqueues transcription on import — no separate call needed.
@@ -340,10 +360,13 @@ export default function Library() {
       setTimeout(() => setImportMsg(null), 6000);
     }
 
-    // Navigate to the single result only when it's a clean single-file import.
-    // For duplicates of a single pick: navigate to the existing disc so the
-    // user sees what already exists. For bulk: stay on library.
-    if (items.length === 1 && lastId) {
+    // Navigate to the album when the whole batch shares one (folder drop);
+    // single-file → disc page; bulk loose files → stay on library.
+    const sharedAlbum = items[0]?.albumId;
+    const allSameAlbum = sharedAlbum && items.every((it) => it.albumId === sharedAlbum);
+    if (allSameAlbum && items.length > 1) {
+      nav(`/album/${sharedAlbum}`);
+    } else if (items.length === 1 && lastId) {
       nav(`/disc/${lastId}`);
     } else if (lastId) {
       // Refresh the library so newly-imported discs appear.
@@ -374,30 +397,58 @@ export default function Library() {
             setIsDragHover(false);
             const paths = e.payload.paths.filter((p): p is string => typeof p === "string");
             // Expand any directories the user dropped into their contained
-            // importable media. Folder semantics: "import everything inside".
+            // importable media. Folder semantics: each dropped folder becomes
+            // its own auto-created album, so 200 wedding photos collapse to
+            // one library card instead of 200.
             void (async () => {
-              const expanded: string[] = [];
+              const expanded: Array<{ path: string; albumKey: string | null }> = [];
+              // Track folders we've seen to create one album per folder, not
+              // one per file.
+              const folderToAlbum = new Map<string, string>();
               for (const p of paths) {
                 try {
-                  // We can't reliably tell file vs dir from path alone, so just
-                  // try the dir walk — backend returns an error if it's a file.
                   const inside = await ipc.library.listImportableMediaInDir(p);
                   if (inside.length > 0) {
-                    expanded.push(...inside);
+                    expanded.push(...inside.map((q) => ({ path: q, albumKey: p })));
+                    // Stash the folder so we can create one album for it.
+                    if (!folderToAlbum.has(p)) folderToAlbum.set(p, p);
                     continue;
                   }
-                  // Empty dir → still skip; fall through to add as a file.
-                  expanded.push(p);
+                  expanded.push({ path: p, albumKey: null });
                 } catch {
-                  // Not a directory (or unreadable) — treat as a single file.
-                  expanded.push(p);
+                  expanded.push({ path: p, albumKey: null });
                 }
               }
-              // De-duplicate before sending to processImports.
-              const unique = Array.from(new Set(expanded));
+
+              // Resolve albumKey → real album id by creating an album per folder.
+              const folderAlbumIds = new Map<string, string>();
+              for (const folderPath of folderToAlbum.keys()) {
+                const folderName = folderPath.split(/[\\/]/).filter(Boolean).pop() ?? "Untitled album";
+                try {
+                  const album = await ipc.albums.create(folderName);
+                  folderAlbumIds.set(folderPath, album.id);
+                } catch {/* if album creation fails, fall through to loose imports */}
+              }
+
+              // De-duplicate by path while preserving album tagging.
+              const seen = new Set<string>();
+              const unique: Array<{ path: string; albumId: string | null }> = [];
+              for (const it of expanded) {
+                if (seen.has(it.path)) continue;
+                seen.add(it.path);
+                unique.push({
+                  path: it.path,
+                  albumId: it.albumKey ? folderAlbumIds.get(it.albumKey) ?? null : null,
+                });
+              }
+
               if (unique.length > paths.length) {
-                setImportMsg(`Found ${unique.length} media file(s) in dropped folders`);
-                setTimeout(() => setImportMsg(null), 4000);
+                const albumCount = folderAlbumIds.size;
+                const note = albumCount > 0
+                  ? `Found ${unique.length} files in ${albumCount} folder(s) — importing as album(s)`
+                  : `Found ${unique.length} media file(s) in dropped folders`;
+                setImportMsg(note);
+                setTimeout(() => setImportMsg(null), 5000);
               }
               void processImports(unique);
             })();
@@ -588,7 +639,9 @@ export default function Library() {
         {/* ── Filter tabs: cuts a mixed vault down to one media type ─── */}
         <FilterTabs filter={filter} setFilter={setFilter} counts={counts} />
 
-        {filter === "all" ? (
+        {filter === "albums" ? (
+          <AlbumGrid albums={albums} />
+        ) : filter === "all" ? (
           <>
             <HeroFeatured disc={featured} />
 
@@ -802,7 +855,7 @@ export default function Library() {
 }
 
 /* ─── Filter tabs ─────────────────────────────────────────────────────────── */
-type FilterKind = "all" | "imported" | "video" | "audio" | "photo" | "disc";
+type FilterKind = "all" | "albums" | "imported" | "video" | "audio" | "photo" | "disc";
 
 function FilterTabs({
   filter,
@@ -815,6 +868,7 @@ function FilterTabs({
 }) {
   const tabs: Array<{ key: FilterKind; label: string }> = [
     { key: "all", label: "All" },
+    { key: "albums", label: "Albums" },
     { key: "video", label: "Videos" },
     { key: "photo", label: "Photos" },
     { key: "audio", label: "Audio" },
@@ -915,5 +969,166 @@ function FilteredGrid({ discs, filter }: { discs: Disc[]; filter: FilterKind }) 
         ))}
       </div>
     </section>
+  );
+}
+
+/* ─── Album grid ──────────────────────────────────────────────────────────── */
+function AlbumGrid({ albums }: { albums: Album[] }) {
+  if (albums.length === 0) {
+    return (
+      <div
+        style={{
+          marginTop: 64,
+          padding: "60px 24px",
+          textAlign: "center",
+          color: "var(--lib-muted)",
+          fontFamily: "var(--lib-serif)",
+          fontStyle: "italic",
+          fontSize: 16,
+        }}
+      >
+        No albums yet — drop a folder of photos onto the library to create one.
+      </div>
+    );
+  }
+  return (
+    <section style={{ marginTop: 32 }}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))",
+          gap: 22,
+        }}
+      >
+        {albums.map((a) => (
+          <AlbumCard key={a.id} album={a} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/* ─── Album card — 2x2 collage cover ──────────────────────────────────────── */
+function AlbumCard({ album }: { album: Album }) {
+  // Fetch up to 4 disc thumbnails for the collage cover. Lazy — only runs
+  // when this card mounts, so a 50-album library doesn't fire 200 IPCs at once.
+  const [thumbs, setThumbs] = useState<Array<string | null>>([]);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const full = await ipc.albums.get(album.id);
+        if (!full || cancelled) return;
+        const firstFour = full.discs.slice(0, 4);
+        const paths = await Promise.all(
+          firstFour.map(async (d) => {
+            try {
+              const p = await ipc.library.ensureDiscThumbnail(d.id);
+              return p ? convertFileSrc(p) : null;
+            } catch {
+              return null;
+            }
+          }),
+        );
+        if (!cancelled) setThumbs(paths);
+      } catch {/* ignore */}
+    })();
+    return () => { cancelled = true; };
+  }, [album.id]);
+
+  const cells = [0, 1, 2, 3]; // always 4 cells; missing thumbs render as gradient
+
+  return (
+    <Link
+      to={`/album/${album.id}`}
+      className="lib-card"
+      style={{
+        textDecoration: "none",
+        color: "inherit",
+        cursor: "pointer",
+        transition: "transform .25s ease",
+        display: "block",
+      }}
+    >
+      <div
+        style={{
+          width: "100%",
+          aspectRatio: "4 / 3",
+          borderRadius: 14,
+          overflow: "hidden",
+          boxShadow: "var(--lib-shadow-soft)",
+          background: "linear-gradient(135deg, #0a84ff 0%, #5ac8fa 100%)",
+          position: "relative",
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          gridTemplateRows: "1fr 1fr",
+          gap: 2,
+        }}
+      >
+        {cells.map((i) => (
+          <div
+            key={i}
+            style={{
+              background: "rgba(255,255,255,0.06)",
+              position: "relative",
+              overflow: "hidden",
+            }}
+          >
+            {thumbs[i] && (
+              <img
+                src={thumbs[i] as string}
+                alt=""
+                aria-hidden
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "cover",
+                  display: "block",
+                }}
+              />
+            )}
+          </div>
+        ))}
+        {/* Count badge */}
+        <span
+          style={{
+            position: "absolute",
+            bottom: 10,
+            right: 10,
+            background: "rgba(0,0,0,.65)",
+            color: "#fff",
+            fontSize: 11,
+            fontWeight: 600,
+            padding: "3px 9px",
+            borderRadius: 999,
+            backdropFilter: "blur(8px)",
+          }}
+        >
+          {album.discCount} item{album.discCount === 1 ? "" : "s"}
+        </span>
+      </div>
+      <div
+        style={{
+          fontFamily: "var(--lib-serif)",
+          fontWeight: 500,
+          fontSize: 16.5,
+          lineHeight: 1.25,
+          letterSpacing: "-0.01em",
+          margin: "14px 2px 4px",
+          color: "var(--lib-ink)",
+        }}
+      >
+        {album.title}
+      </div>
+      <div
+        style={{
+          fontSize: 12.5,
+          color: "var(--lib-muted)",
+          marginLeft: 2,
+        }}
+      >
+        Album · {new Date(album.updatedAt * 1000).toLocaleDateString()}
+      </div>
+    </Link>
   );
 }

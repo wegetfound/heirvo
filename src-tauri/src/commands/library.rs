@@ -411,6 +411,7 @@ pub async fn import_media_disc(
     state: State<'_, AppState>,
     media_path: String,
     title: String,
+    album_id: Option<String>,
 ) -> AppResult<ImportResult> {
     // ── 1. Tier gate ─────────────────────────────────────────────────────
     let license = crate::licensing::current(&app_data_dir(&app));
@@ -528,9 +529,9 @@ pub async fn import_media_disc(
          (id, title, year, date_display, filmed_by, location, source, status,
           duration_sec, duration_formatted, recovered_at, phrases_indexed,
           monogram_id, gradient, about, session_id, video_path, source_hash,
-          media_type, created_at, updated_at)
+          media_type, album_id, created_at, updated_at)
          VALUES (?, ?, ?, ?, NULL, NULL, ?, 'recovered', 0, '--:--', ?, 0,
-                 ?, ?, NULL, NULL, ?, ?, ?, ?, ?)",
+                 ?, ?, NULL, NULL, ?, ?, ?, ?, ?, ?)",
     )
     .bind(&id)
     .bind(&title)
@@ -543,10 +544,27 @@ pub async fn import_media_disc(
     .bind(&vault_path_str)
     .bind(&hash)
     .bind(media_kind)
+    .bind(&album_id)
     .bind(now_ts)
     .bind(now_ts)
     .execute(&state.db.pool)
     .await?;
+
+    // If we just dropped a disc into an album and that album has no cover yet,
+    // promote this disc to be the cover (deferred-init pattern — keeps the
+    // album row simple at creation time).
+    if let Some(album_id_ref) = album_id.as_deref() {
+        let _ = sqlx::query(
+            "UPDATE library_albums
+             SET cover_disc_id = COALESCE(cover_disc_id, ?), updated_at = ?
+             WHERE id = ?",
+        )
+        .bind(&id)
+        .bind(now_ts)
+        .bind(album_id_ref)
+        .execute(&state.db.pool)
+        .await;
+    }
 
     // ── 6. Auto-enqueue transcription (video + audio only) ──────────────
     // CRITICAL: enqueue using the VAULT path, not the source path. If the
@@ -827,7 +845,7 @@ pub async fn import_video_disc(
     video_path: String,
     title: String,
 ) -> AppResult<ImportResult> {
-    import_media_disc(app, state, video_path, title).await
+    import_media_disc(app, state, video_path, title, None).await
 }
 
 /// Classify an import path into a media_type kind. Unknown extensions fall
