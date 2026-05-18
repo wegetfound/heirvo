@@ -610,31 +610,36 @@ export default function LandingMin1() {
                     Download Free for Windows
                   </a>
 
-                  <Link
-                    to="/recover"
-                    aria-label="Mail-in disc recovery service — we recover your disc for you"
-                    style={{
-                      display: "inline-flex", alignItems: "center", gap: 7,
-                      padding: "14px 22px", borderRadius: 10,
-                      background: "transparent", color: C.text,
-                      fontFamily: SORA, fontSize: 14, fontWeight: 500,
-                      letterSpacing: "-0.01em", textDecoration: "none",
-                      border: `1.5px solid ${C.borderMed}`,
-                      transition: "border-color 0.18s ease, color 0.18s ease",
-                      whiteSpace: "nowrap" as const,
-                    }}
-                    onMouseEnter={(e) => {
-                      (e.currentTarget as HTMLElement).style.borderColor = C.borderBright;
-                      (e.currentTarget as HTMLElement).style.color = "#FFFFFF";
-                    }}
-                    onMouseLeave={(e) => {
-                      (e.currentTarget as HTMLElement).style.borderColor = C.borderMed;
-                      (e.currentTarget as HTMLElement).style.color = C.text;
-                    }}
-                  >
-                    Mail us your disc
-                    <ChevronRight size={13} color="currentColor" />
-                  </Link>
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 5 }}>
+                    <Link
+                      to="/recover"
+                      aria-label="No disc drive? Mail-in recovery service — we recover your disc for you"
+                      style={{
+                        display: "inline-flex", alignItems: "center", gap: 7,
+                        padding: "14px 22px", borderRadius: 10,
+                        background: "transparent", color: C.text,
+                        fontFamily: SORA, fontSize: 14, fontWeight: 500,
+                        letterSpacing: "-0.01em", textDecoration: "none",
+                        border: `1.5px solid ${C.borderMed}`,
+                        transition: "border-color 0.18s ease, color 0.18s ease",
+                        whiteSpace: "nowrap" as const,
+                      }}
+                      onMouseEnter={(e) => {
+                        (e.currentTarget as HTMLElement).style.borderColor = C.borderBright;
+                        (e.currentTarget as HTMLElement).style.color = "#FFFFFF";
+                      }}
+                      onMouseLeave={(e) => {
+                        (e.currentTarget as HTMLElement).style.borderColor = C.borderMed;
+                        (e.currentTarget as HTMLElement).style.color = C.text;
+                      }}
+                    >
+                      No drive? We'll recover it
+                      <ChevronRight size={13} color="currentColor" />
+                    </Link>
+                    <span style={{ fontSize: 11, color: C.textMuted, paddingLeft: 4, letterSpacing: "0.01em" }}>
+                      Mail-in service · from $89
+                    </span>
+                  </div>
                 </div>
 
                 {/* Trust micro-signals */}

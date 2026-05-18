@@ -498,7 +498,7 @@ export default function RecoverH() {
                 style={{
                   fontFamily: SORA, fontSize: "clamp(15px, 1.8vw, 18px)",
                   color: C.textMuted, lineHeight: 1.7,
-                  marginBottom: 44, maxWidth: 480, opacity: 0,
+                  marginBottom: 36, maxWidth: 480, opacity: 0,
                 }}
               >
                 No disc drive. No software. No technical knowledge required.
@@ -507,6 +507,37 @@ export default function RecoverH() {
                 If we can't recover anything,{" "}
                 <strong style={{ color: C.text }}>you pay nothing.</strong>
               </p>
+
+              {/* ── Why $89: lab trust strip ────────────────────────────── */}
+              <div style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: "12px 24px",
+                marginBottom: 44,
+                padding: "20px 24px",
+                borderRadius: 12,
+                border: `1px solid ${C.borderMed}`,
+                background: "rgba(255,255,255,0.03)",
+              }}>
+                {[
+                  { icon: "🔬", title: "Lab-grade optical drives", desc: "Not available in retail — reads discs consumer drives cannot." },
+                  { icon: "🔄", title: "Multi-pass sector recovery", desc: "Every bad sector retried at controlled speeds before giving up." },
+                  { icon: "📦", title: "Your disc always returned", desc: "Tracked return shipping included on every order." },
+                  { icon: "✅", title: "No recovery — no charge", desc: "If we can't extract files, the recovery fee is waived entirely." },
+                ].map(({ icon, title, desc }) => (
+                  <div key={title} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                    <span style={{ fontSize: 16, flexShrink: 0, marginTop: 1 }}>{icon}</span>
+                    <div>
+                      <div style={{ fontFamily: SORA, fontSize: 12, fontWeight: 600, color: C.text, marginBottom: 3, letterSpacing: "-0.01em" }}>
+                        {title}
+                      </div>
+                      <div style={{ fontFamily: SORA, fontSize: 11, color: C.textMuted, lineHeight: 1.55 }}>
+                        {desc}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
 
               <div ref={heroCTAsRef} style={{ opacity: 0 }}>
                 <div style={{ display: "flex", gap: 14, flexWrap: "wrap" as const, alignItems: "center", marginBottom: 20 }}>

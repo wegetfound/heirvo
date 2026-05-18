@@ -327,7 +327,7 @@ function HandOffBand() {
               to="/recover"
               className="inline-flex items-center gap-1.5 text-[13px] font-medium text-brand-400 hover:text-white border border-brand-500/40 hover:border-brand-400 px-4 py-2 rounded-lg transition-colors whitespace-nowrap"
             >
-              Mail us your disc
+              No drive? We'll recover it
               <span aria-hidden>&rarr;</span>
             </Link>
           </div>
