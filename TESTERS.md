@@ -4,7 +4,7 @@ Welcome. Thank you for trying Heirvo on a real damaged disc — your feedback is
 
 ## Install (Windows)
 
-1. Copy `Heirvo_1.0.0_x64-setup.exe` from your USB stick to the test machine
+1. Copy `Heirvo_1.1.0_x64-setup.exe` from your USB stick to the test machine
 2. Double-click to install. Windows SmartScreen may warn:
    > Windows protected your PC
    > Microsoft Defender SmartScreen prevented an unrecognized app...

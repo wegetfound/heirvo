@@ -106,7 +106,7 @@ Required env vars (set in Vercel dashboard + `marketing/.env`):
 - `VITE_LS_CHECKOUT_URL` — Lemon Squeezy checkout URL for **Heirvo Recover** ($59)
 - `VITE_LS_ARCHIVE_URL` — Lemon Squeezy checkout URL for **Heirvo Archive** ($99)
 - `VITE_LS_FAMILY_URL` — Lemon Squeezy checkout URL for **Heirvo Family** ($149)
-- `VITE_DOWNLOAD_URL` — GitHub Release installer URL (currently `v1.0.0/Heirvo_1.0.0_x64-setup.exe`)
+- `VITE_DOWNLOAD_URL` — GitHub Release installer URL (currently `v1.1.0/Heirvo_1.1.0_x64-setup.exe`)
 
 ## AI features (optional `onnx` Cargo feature)
 

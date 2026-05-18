@@ -110,7 +110,7 @@ pub async fn download_model(app: AppHandle, model: AiModel) -> AppResult<Downloa
     });
 
     let client = reqwest::Client::builder()
-        .user_agent("dvd-recovery/0.1")
+        .user_agent("heirvo/1.1.0")
         .build()
         .map_err(|e| AppError::Internal(format!("reqwest builder: {e}")))?;
 

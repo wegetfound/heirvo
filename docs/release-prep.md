@@ -44,7 +44,7 @@ the Windows SDK (typically at
 After build, verify signature on the installer:
 
 ```powershell
-Get-AuthenticodeSignature .\src-tauri\target\release\bundle\nsis\Heirvo_1.0.0_x64-setup.exe
+Get-AuthenticodeSignature .\src-tauri\target\release\bundle\nsis\Heirvo_1.1.0_x64-setup.exe
 ```
 
 Should show `Status: Valid` and a `SignerCertificate` matching the issued cert.
