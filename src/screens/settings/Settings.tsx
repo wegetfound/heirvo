@@ -8,7 +8,9 @@ import { audio, type AudioPrefs } from "@/lib/audio";
 import type { PreflightStatus, WhisperModelInfo } from "@/lib/types";
 import { PRICING } from "@/lib/pricing";
 
-const CHECKOUT_URL = "https://heirvo.com/buy"; // placeholder — swap to Lemon Squeezy URL
+const CHECKOUT_RECOVER_URL = "https://heirvo.com/buy?tier=recover";
+const CHECKOUT_ARCHIVE_URL = "https://heirvo.com/buy?tier=archive";
+const CHECKOUT_FAMILY_URL  = "https://heirvo.com/buy?tier=family";
 const SUPPORT_URL = "https://heirvo.com/support";
 const MAILIN_URL = "https://heirvo.com/recover";
 
@@ -43,6 +45,8 @@ export function Settings() {
     setConfirmDeactivate(false);
   };
 
+  const isPaid = status.plan !== "free";
+
   if (!loaded) {
     return (
       <div className="mx-auto max-w-2xl px-8 py-12">
@@ -60,29 +64,73 @@ export function Settings() {
           Your Heirvo
         </h1>
         <p className="mt-1 text-[13px] text-ink-500">
-          {status.plan === "pro"
-            ? "Everything set up and ready to recover your discs."
+          {isPaid
+            ? "Everything set up and ready to go."
             : "You're using the free version. Upgrade when you're ready — your memories are worth it."}
         </p>
       </header>
 
-      {/* Two paths — side by side */}
-      <div className="grid grid-cols-2 gap-5">
-        {status.plan === "pro" ? (
-          <ProPanel
+      {/* Paid — active tier + mail-in side by side */}
+      {isPaid && (
+        <div className="grid grid-cols-2 gap-5">
+          <ActiveTierPanel
+            plan={status.plan}
             holder={status.holder ?? null}
             confirmDeactivate={confirmDeactivate}
             onDeactivate={handleDeactivate}
           />
-        ) : (
-          <FreeTierPanel />
-        )}
-        {/* Mail-in disc service — co-equal path */}
-        <MailInPanel />
-      </div>
+          <MailInPanel />
+        </div>
+      )}
 
-      {/* Already purchased — full width below the two cards */}
-      {status.plan !== "pro" && (
+      {/* Free — 3-tier pricing grid + mail-in strip */}
+      {!isPaid && (
+        <div className="space-y-4">
+          <div className="grid grid-cols-3 gap-3">
+            <TierCard
+              badge="Recover"
+              title="Save every rescued disc."
+              subtitle="One payment — export everything you recover."
+              features={["Save as MP4 or ISO", "Chapter extract", "All-files export", "Voice search on discs"]}
+              price={PRICING.recover.label}
+              cta="Get Recover"
+              url={CHECKOUT_RECOVER_URL}
+              gradient="linear-gradient(160deg, #1a3fa8 0%, #0f276e 55%, #091850 100%)"
+              borderColor="rgba(110,150,255,0.35)"
+              glowColor="#6ea8ff"
+            />
+            <TierCard
+              badge="Archive"
+              title="Discs + your memories."
+              subtitle="Recover discs AND build a personal media vault."
+              features={["Everything in Recover", "Import photos, video & audio", "Albums & folder drops", "Voice search on imports"]}
+              price={PRICING.archive.label}
+              cta="Get Archive"
+              url={CHECKOUT_ARCHIVE_URL}
+              gradient="linear-gradient(160deg, #2e1065 0%, #1e0a45 55%, #0f0530 100%)"
+              borderColor="rgba(167,139,250,0.45)"
+              glowColor="#a78bfa"
+              highlight
+            />
+            <TierCard
+              badge="Family"
+              title="Built for families."
+              subtitle="Archive for the whole household — future features included."
+              features={["Everything in Archive", "Multi-user sync (coming soon)", "Priority support"]}
+              price={PRICING.family.label}
+              cta="Get Family"
+              url={CHECKOUT_FAMILY_URL}
+              gradient="linear-gradient(160deg, #1c1917 0%, #0f0a07 55%, #080503 100%)"
+              borderColor="rgba(251,191,36,0.35)"
+              glowColor="#fbbf24"
+            />
+          </div>
+          <MailInStrip />
+        </div>
+      )}
+
+      {/* Already purchased — full width below the pricing section */}
+      {!isPaid && (
         <div className="mt-4 rounded-2xl border border-ink-200/70 bg-white/60 p-5">
           <span className="micro-label">Already purchased?</span>
           <p className="mt-1 text-[12px] text-ink-500">
@@ -153,23 +201,32 @@ export function Settings() {
 
       {/* Footer */}
       <div className="mt-4 text-[12px] text-ink-400">
-        Heirvo v0.1.0
+        Heirvo v1.1.0
       </div>
     </div>
   );
 }
 
-// ─── Pro active state ─────────────────────────────────────────────────────────
+// ─── Active tier panel (any paid plan) ───────────────────────────────────────
 
-function ProPanel({
+function tierDisplayName(plan: string): string {
+  if (plan === "recover") return "Recover";
+  if (plan === "family") return "Family";
+  return "Archive"; // archive + pro (legacy)
+}
+
+function ActiveTierPanel({
+  plan,
   holder,
   confirmDeactivate,
   onDeactivate,
 }: {
+  plan: string;
   holder: string | null;
   confirmDeactivate: boolean;
   onDeactivate: () => void;
 }) {
+  const tierName = tierDisplayName(plan);
   return (
     <div
       className="mb-5 rounded-2xl border p-5"
@@ -185,11 +242,11 @@ function ProPanel({
         <div className="flex-1">
           <div className="text-[16px] font-semibold text-ink-900">You're all set.</div>
           <div className="text-[12px] text-ink-600">
-            {holder ? `Licensed to ${holder}` : "Active on this device — all recovery features unlocked."}
+            {holder ? `Licensed to ${holder}` : "Active on this device."}
           </div>
         </div>
         <span className="rounded-full bg-ios-green/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-ios-green">
-          Pro
+          {tierName}
         </span>
       </div>
 
@@ -214,106 +271,175 @@ function ProPanel({
   );
 }
 
-// ─── Free tier ────────────────────────────────────────────────────────────────
+// ─── Tier pricing card (used in free state) ───────────────────────────────────
 
-function FreeTierPanel() {
-  const buy = () => { void openUrl(CHECKOUT_URL); };
+function TierCard({
+  badge,
+  title,
+  subtitle,
+  features,
+  price,
+  cta,
+  url,
+  gradient,
+  borderColor,
+  glowColor,
+  highlight = false,
+}: {
+  badge: string;
+  title: string;
+  subtitle: string;
+  features: string[];
+  price: string;
+  cta: string;
+  url: string;
+  gradient: string;
+  borderColor: string;
+  glowColor: string;
+  highlight?: boolean;
+}) {
+  const buy = () => { void openUrl(url); };
   return (
     <div
       className="group relative flex flex-col overflow-hidden rounded-2xl border cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:shadow-2xl"
       style={{
-        background: "linear-gradient(160deg, #1a3fa8 0%, #0f276e 55%, #091850 100%)",
-        borderColor: "rgba(110,150,255,0.35)",
-        boxShadow: "0 4px 28px rgba(10,30,110,0.40)",
+        background: gradient,
+        borderColor,
+        boxShadow: highlight ? `0 4px 28px rgba(120,80,255,0.35)` : `0 4px 20px rgba(0,0,0,0.30)`,
       }}
       onClick={buy}
     >
-      {/* Ambient glow — top right */}
+      {/* Ambient glow */}
       <div
-        className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full opacity-20 blur-2xl"
-        style={{ background: "radial-gradient(circle, #6ea8ff 0%, transparent 70%)" }}
+        className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full opacity-20 blur-2xl"
+        style={{ background: `radial-gradient(circle, ${glowColor} 0%, transparent 70%)` }}
       />
 
-      {/* Card body */}
-      <div className="relative flex flex-col flex-1 p-5">
-        {/* Icon + badge row */}
-        <div className="flex items-start justify-between mb-4">
+      {/* Most popular badge */}
+      {highlight && (
+        <div className="relative flex justify-center pt-3">
+          <span
+            className="rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-widest"
+            style={{ background: "rgba(167,139,250,0.25)", color: "#c4b5fd" }}
+          >
+            Most popular
+          </span>
+        </div>
+      )}
+
+      <div className={`relative flex flex-col flex-1 p-4 ${highlight ? "pt-2" : ""}`}>
+        {/* Badge + icon */}
+        <div className="flex items-start justify-between mb-3">
           <div
-            className="flex h-11 w-11 items-center justify-center rounded-xl transition-transform duration-200 group-hover:scale-105"
+            className="flex h-9 w-9 items-center justify-center rounded-xl transition-transform duration-200 group-hover:scale-105"
             style={{
               background: "rgba(255,255,255,0.10)",
               border: "1px solid rgba(255,255,255,0.16)",
             }}
           >
-            <Sparkles className="h-5 w-5 text-white" />
+            <Sparkles className="h-4 w-4 text-white" />
           </div>
           <span
-            className="rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-widest"
+            className="rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest"
             style={{ background: "rgba(255,255,255,0.12)", color: "rgba(255,255,255,0.80)" }}
           >
-            Pro
+            {badge}
           </span>
         </div>
 
         {/* Title */}
-        <h2 className="font-display text-[19px] font-bold leading-tight tracking-[-0.02em] text-white">
-          Unlock everything.
+        <h2 className="font-display text-[15px] font-bold leading-tight tracking-[-0.02em] text-white">
+          {title}
         </h2>
-        <p className="mt-1 text-[12px] leading-relaxed" style={{ color: "rgba(255,255,255,0.55)" }}>
-          One payment. All recovery features, forever.
+        <p className="mt-1 text-[11px] leading-relaxed" style={{ color: "rgba(255,255,255,0.50)" }}>
+          {subtitle}
         </p>
 
-        {/* Feature list — green checkmarks */}
-        <ul className="mt-4 space-y-2">
-          {[
-            { text: "Save videos as playable MP4 files" },
-            { text: "Full disc backup image" },
-            { text: "Auto-sharpen blurry footage" },
-            { text: "+ 3 more features", dim: true },
-          ].map(({ text, dim }) => (
-            <li key={text} className="flex items-center gap-2.5">
+        {/* Feature list */}
+        <ul className="mt-3 space-y-1.5">
+          {features.map((text) => (
+            <li key={text} className="flex items-start gap-2">
               <div
-                className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full"
-                style={{ background: dim ? "rgba(255,255,255,0.07)" : "rgba(74,222,128,0.20)" }}
+                className="mt-0.5 flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full"
+                style={{ background: "rgba(74,222,128,0.20)" }}
               >
-                <Check
-                  className="h-2.5 w-2.5"
-                  style={{ color: dim ? "rgba(255,255,255,0.25)" : "#4ade80" }}
-                />
+                <Check className="h-2 w-2" style={{ color: "#4ade80" }} />
               </div>
-              <span
-                className="text-[12px]"
-                style={{ color: dim ? "rgba(255,255,255,0.30)" : "rgba(255,255,255,0.78)" }}
-              >
+              <span className="text-[11px]" style={{ color: "rgba(255,255,255,0.75)" }}>
                 {text}
               </span>
             </li>
           ))}
         </ul>
 
-        {/* Price + CTA — pinned to bottom */}
-        <div className="mt-auto pt-5">
-          <div className="flex items-baseline gap-1.5 mb-3">
-            <span className="font-display text-[32px] font-bold tabular-nums leading-none text-white">
-              {PRICING.recover.label}
+        {/* Price + CTA */}
+        <div className="mt-auto pt-4">
+          <div className="flex items-baseline gap-1 mb-2.5">
+            <span className="font-display text-[26px] font-bold tabular-nums leading-none text-white">
+              {price}
             </span>
-            <span className="text-[12px]" style={{ color: "rgba(255,255,255,0.42)" }}>
+            <span className="text-[11px]" style={{ color: "rgba(255,255,255,0.40)" }}>
               one-time
             </span>
           </div>
           <button
             onClick={(e) => { e.stopPropagation(); buy(); }}
-            className="flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-[13px] font-semibold text-white transition-all duration-150 hover:brightness-110 active:scale-[0.98]"
+            className="flex w-full items-center justify-center gap-1.5 rounded-xl py-2 text-[12px] font-semibold text-white transition-all duration-150 hover:brightness-110 active:scale-[0.98]"
             style={{
-              background: "linear-gradient(135deg, #4f7fff 0%, #2d5fe8 100%)",
-              boxShadow: "0 2px 14px rgba(45,95,232,0.60)",
+              background: highlight
+                ? "linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%)"
+                : "linear-gradient(135deg, #4f7fff 0%, #2d5fe8 100%)",
+              boxShadow: highlight
+                ? "0 2px 14px rgba(124,58,237,0.55)"
+                : "0 2px 12px rgba(45,95,232,0.50)",
             }}
           >
-            <Sparkles className="h-4 w-4" />
-            Upgrade to Pro
+            <Sparkles className="h-3.5 w-3.5" />
+            {cta}
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+// ─── Mail-in strip (compact — used in free state below the 3 tier cards) ──────
+
+function MailInStrip() {
+  return (
+    <div
+      className="flex items-center justify-between rounded-2xl border px-5 py-4 cursor-pointer transition-colors hover:border-amber-500/50"
+      style={{
+        background: "linear-gradient(90deg, rgba(122,56,0,0.18) 0%, rgba(77,34,0,0.10) 100%)",
+        borderColor: "rgba(255,159,10,0.28)",
+      }}
+      onClick={() => { void openUrl(MAILIN_URL); }}
+    >
+      <div className="flex items-center gap-3">
+        <div
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
+          style={{ background: "rgba(255,159,10,0.18)", border: "1px solid rgba(255,159,10,0.28)" }}
+        >
+          <Mail className="h-4 w-4" style={{ color: "#FFB830" }} />
+        </div>
+        <div>
+          <span className="text-[13px] font-semibold text-ink-900">Disc too damaged?</span>
+          <span className="ml-2 text-[12px] text-ink-500">Mail it to us — professional tools, real people.</span>
+        </div>
+      </div>
+      <button
+        onClick={(e) => { e.stopPropagation(); void openUrl(MAILIN_URL); }}
+        className="flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12px] font-medium transition-colors hover:brightness-110"
+        style={{
+          background: "linear-gradient(135deg, #ff9f0a 0%, #d45f00 100%)",
+          borderColor: "transparent",
+          color: "white",
+        }}
+      >
+        <Mail className="h-3 w-3" />
+        Mail us your disc
+        <ExternalLink className="h-3 w-3 opacity-75" />
+      </button>
     </div>
   );
 }
