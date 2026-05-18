@@ -151,6 +151,7 @@ pub fn run() {
             commands::albums::list_albums,
             commands::albums::get_album_with_discs,
             commands::albums::rename_album,
+            commands::albums::set_album_cover,
             commands::albums::delete_album,
             commands::albums::add_disc_to_album,
             commands::albums::remove_disc_from_album,

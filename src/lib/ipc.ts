@@ -220,6 +220,8 @@ export const ipc = {
     get: (id: string) => invoke<AlbumWithDiscs | null>("get_album_with_discs", { id }),
     rename: (id: string, title: string) =>
       invoke<void>("rename_album", { id, title }),
+    setCover: (albumId: string, discId: string) =>
+      invoke<void>("set_album_cover", { albumId, discId }),
     delete: (id: string, deleteMembers: boolean) =>
       invoke<DeleteAlbumResult>("delete_album", { id, deleteMembers }),
     addDisc: (discId: string, albumId: string) =>

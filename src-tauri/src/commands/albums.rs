@@ -156,6 +156,42 @@ pub async fn get_album_with_discs(
     Ok(Some(AlbumWithDiscs { album, discs }))
 }
 
+/// Set the cover disc for an album. The disc must already be a member of
+/// the album — silently rejects mismatched disc/album pairs rather than
+/// allowing arbitrary disc references (defense against UI bugs that could
+/// "borrow" another album's photo as a cover).
+#[tauri::command]
+pub async fn set_album_cover(
+    state: State<'_, AppState>,
+    album_id: String,
+    disc_id: String,
+) -> AppResult<()> {
+    // Verify membership before updating.
+    let row = sqlx::query("SELECT album_id FROM library_discs WHERE id = ?")
+        .bind(&disc_id)
+        .fetch_optional(&state.db.pool)
+        .await?;
+    let Some(row) = row else {
+        return Err(AppError::Internal(format!("disc not found: {disc_id}")));
+    };
+    let member_album: Option<String> = row.try_get("album_id").ok().flatten();
+    if member_album.as_deref() != Some(album_id.as_str()) {
+        return Err(AppError::Internal(
+            "disc is not a member of this album".into(),
+        ));
+    }
+    let now = Utc::now().timestamp();
+    sqlx::query(
+        "UPDATE library_albums SET cover_disc_id = ?, updated_at = ? WHERE id = ?",
+    )
+    .bind(&disc_id)
+    .bind(now)
+    .bind(&album_id)
+    .execute(&state.db.pool)
+    .await?;
+    Ok(())
+}
+
 #[tauri::command]
 pub async fn rename_album(
     state: State<'_, AppState>,

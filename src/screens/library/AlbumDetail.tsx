@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { ChevronLeft, Trash2, Pencil } from "lucide-react";
+import { ChevronLeft, Trash2, Pencil, Star } from "lucide-react";
 import { ipc } from "../../lib/ipc";
 import type { AlbumWithDiscs } from "../../lib/types";
 import { DiscCard } from "./components/DiscCard";
@@ -41,6 +41,14 @@ export default function AlbumDetail() {
       setAlbum((a) => (a ? { ...a, title: newTitle.trim() } : a));
     } catch {/* ignore — keep old title */}
     setEditing(false);
+  }
+
+  async function handleSetCover(discId: string) {
+    if (!albumId) return;
+    try {
+      await ipc.albums.setCover(albumId, discId);
+      setAlbum((a) => (a ? { ...a, coverDiscId: discId } : a));
+    } catch {/* ignore — keep current cover */}
   }
 
   async function confirmDelete(deleteMembers: boolean) {
@@ -197,11 +205,65 @@ export default function AlbumDetail() {
             gap: 22,
             paddingBottom: 60,
           }}>
-            {album.discs.map((d) => (
-              <DiscCard key={d.id} disc={d as any} showStatus={false} showSource={false} />
-            ))}
+            {album.discs.map((d) => {
+              const isCover = album.coverDiscId === d.id;
+              return (
+                <div
+                  key={d.id}
+                  style={{ position: "relative" }}
+                  className="album-member-card"
+                >
+                  <DiscCard disc={d as any} showStatus={false} showSource={false} />
+                  {/* Cover-picker button — always visible if current cover,
+                      else fades in on hover (via CSS in the parent class). */}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      if (!isCover) void handleSetCover(d.id);
+                    }}
+                    aria-label={isCover ? "Album cover" : "Set as album cover"}
+                    title={isCover ? "Current album cover" : "Set as album cover"}
+                    style={{
+                      position: "absolute",
+                      top: 10,
+                      right: 10,
+                      width: 30,
+                      height: 30,
+                      borderRadius: "50%",
+                      border: "none",
+                      background: isCover ? "var(--lib-amber, #b45309)" : "rgba(0,0,0,.55)",
+                      color: "#fff",
+                      cursor: isCover ? "default" : "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      backdropFilter: "blur(8px)",
+                      zIndex: 5,
+                      opacity: isCover ? 1 : 0,
+                      transition: "opacity .2s ease, background .15s ease",
+                      boxShadow: isCover ? "0 2px 8px rgba(180,83,9,.4)" : "0 1px 4px rgba(0,0,0,.3)",
+                    }}
+                  >
+                    <Star
+                      size={15}
+                      fill={isCover ? "currentColor" : "none"}
+                      stroke="currentColor"
+                      strokeWidth={2}
+                    />
+                  </button>
+                </div>
+              );
+            })}
           </div>
         )}
+
+        {/* CSS for hover-reveal of the cover button (everything else is inline) */}
+        <style>{`
+          .album-member-card:hover > button { opacity: 1 !important; }
+          .album-member-card:focus-within > button { opacity: 1 !important; }
+        `}</style>
       </div>
 
       {/* Delete-album confirm modal */}
