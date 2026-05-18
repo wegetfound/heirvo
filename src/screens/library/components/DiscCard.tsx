@@ -15,13 +15,15 @@ interface Props {
 }
 
 export function DiscCard({ disc, showStatus = true, showSource = true }: Props) {
-  // For photo discs, lazy-load the cached thumbnail and use it as the card
-  // artwork. Falls back to the gradient if the thumbnail isn't generatable
-  // (HEIC, decode failure, dev/non-Tauri env). Recovered DVDs + imported
-  // video/audio keep the gradient for now — video keyframe extraction is v2.
+  // Lazy-load a real thumbnail for any disc whose backend can supply one:
+  // - photo discs → resized JPEG via the `image` crate
+  // - video discs → keyframe at ~1s via bundled ffmpeg
+  // - audio / recovered DVDs → backend returns null; we keep the gradient.
+  // The first call generates + caches; subsequent calls are filesystem-fast.
   const [thumbSrc, setThumbSrc] = useState<string | null>(null);
   useEffect(() => {
-    if (disc.mediaType !== "photo") return;
+    // Skip the IPC for media types we know won't have a thumbnail.
+    if (disc.mediaType === "audio") return;
     let cancelled = false;
     (async () => {
       try {

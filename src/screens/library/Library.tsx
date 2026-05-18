@@ -5,6 +5,7 @@ import { MOCK_DISCS, getDiscById } from "./data/mockDiscs";
 import type { Disc } from "./data/types";
 import { HeroFeatured } from "./components/HeroFeatured";
 import { DiscRail } from "./components/DiscRail";
+import { DiscCard } from "./components/DiscCard";
 import { ipc } from "../../lib/ipc";
 import type { Session, ImportPreview } from "../../lib/types";
 import { ImportPaywallModal } from "../dashboard/ImportPaywallModal";
@@ -94,6 +95,44 @@ export default function Library() {
       setLoadingMore(false);
     }
   }
+
+  // Library filter by media type. "all" leaves the rails untouched so the
+  // curated rails (On this day / Birthdays / Trips) keep working. Any other
+  // value collapses the rails into a single flat grid of matching discs —
+  // the easiest way to navigate a vault that's grown beyond the curated
+  // rails.
+  type FilterKind = "all" | "imported" | "video" | "audio" | "photo" | "disc";
+  const [filter, setFilter] = useState<FilterKind>("all");
+
+  /** Classify a disc into one of the filter buckets. Recovered DVDs and
+   *  audio CDs come from the rescue flow; everything else is imported. */
+  function bucketOf(d: Disc): FilterKind {
+    const src = (d.source || "").toLowerCase();
+    const isRecoveredDisc =
+      src.includes("dvd") || src.includes("blu-ray") ||
+      src.includes("cd") || src.includes("disc");
+    if (isRecoveredDisc && !src.startsWith("imported")) return "disc";
+    if (d.mediaType === "photo") return "photo";
+    if (d.mediaType === "audio") return "audio";
+    return "video";
+  }
+
+  const filteredDiscs = filter === "all"
+    ? discs
+    : filter === "imported"
+    ? discs.filter((d) => bucketOf(d) !== "disc")
+    : discs.filter((d) => bucketOf(d) === filter);
+
+  // Live counts for the tab badges — drive engagement and show the user
+  // what their vault looks like at a glance.
+  const counts = {
+    all: discs.length,
+    imported: discs.filter((d) => bucketOf(d) !== "disc").length,
+    video: discs.filter((d) => bucketOf(d) === "video").length,
+    audio: discs.filter((d) => bucketOf(d) === "audio").length,
+    photo: discs.filter((d) => bucketOf(d) === "photo").length,
+    disc: discs.filter((d) => bucketOf(d) === "disc").length,
+  };
 
   const findById = (id: string): Disc | undefined =>
     discs.find((d) => d.id === id) ?? getDiscById(id);
@@ -546,35 +585,44 @@ export default function Library() {
           </Link>
         )}
 
-        <HeroFeatured disc={featured} />
+        {/* ── Filter tabs: cuts a mixed vault down to one media type ─── */}
+        <FilterTabs filter={filter} setFilter={setFilter} counts={counts} />
 
-        <DiscRail
-          title="Recently recovered"
-          sub="From the last 30 days · 7 discs, 14 hours restored"
-          discs={recentlyRecovered}
-          seeAllHref="/library/all?title=Recently+recovered&filter=recent"
-        />
-        <DiscRail
-          title="On this day in your archive"
-          sub="May 16 across the years — birthdays, beaches, backyards"
-          discs={onThisDay}
-          showStatus={false}
-          seeAllHref="/library/all?title=On+this+day&filter=on-this-day"
-        />
-        <DiscRail
-          title="Family birthdays"
-          sub='Curated automatically from cake, candles & "happy birthday" detected in audio'
-          discs={birthdays}
-          showStatus={false}
-          seeAllHref="/library/all?title=Family+birthdays&filter=birthdays"
-        />
-        <DiscRail
-          title="Trips & vacations"
-          sub="Places you went, road songs you sang in the back seat"
-          discs={trips}
-          showStatus={false}
-          seeAllHref="/library/all?title=Trips+%26+vacations&filter=trips"
-        />
+        {filter === "all" ? (
+          <>
+            <HeroFeatured disc={featured} />
+
+            <DiscRail
+              title="Recently recovered"
+              sub="From the last 30 days · 7 discs, 14 hours restored"
+              discs={recentlyRecovered}
+              seeAllHref="/library/all?title=Recently+recovered&filter=recent"
+            />
+            <DiscRail
+              title="On this day in your archive"
+              sub="May 16 across the years — birthdays, beaches, backyards"
+              discs={onThisDay}
+              showStatus={false}
+              seeAllHref="/library/all?title=On+this+day&filter=on-this-day"
+            />
+            <DiscRail
+              title="Family birthdays"
+              sub='Curated automatically from cake, candles & "happy birthday" detected in audio'
+              discs={birthdays}
+              showStatus={false}
+              seeAllHref="/library/all?title=Family+birthdays&filter=birthdays"
+            />
+            <DiscRail
+              title="Trips & vacations"
+              sub="Places you went, road songs you sang in the back seat"
+              discs={trips}
+              showStatus={false}
+              seeAllHref="/library/all?title=Trips+%26+vacations&filter=trips"
+            />
+          </>
+        ) : (
+          <FilteredGrid discs={filteredDiscs} filter={filter} />
+        )}
 
         {nextCursor != null && (
           <div
@@ -750,5 +798,122 @@ export default function Library() {
         </div>
       )}
     </div>
+  );
+}
+
+/* ─── Filter tabs ─────────────────────────────────────────────────────────── */
+type FilterKind = "all" | "imported" | "video" | "audio" | "photo" | "disc";
+
+function FilterTabs({
+  filter,
+  setFilter,
+  counts,
+}: {
+  filter: FilterKind;
+  setFilter: (k: FilterKind) => void;
+  counts: Record<FilterKind, number>;
+}) {
+  const tabs: Array<{ key: FilterKind; label: string }> = [
+    { key: "all", label: "All" },
+    { key: "video", label: "Videos" },
+    { key: "photo", label: "Photos" },
+    { key: "audio", label: "Audio" },
+    { key: "disc", label: "Recovered discs" },
+    { key: "imported", label: "All imports" },
+  ];
+  return (
+    <div
+      style={{
+        marginTop: 28,
+        display: "flex",
+        gap: 6,
+        flexWrap: "wrap",
+        padding: "10px 0 6px",
+        borderBottom: "1px solid var(--lib-line)",
+      }}
+    >
+      {tabs.map((t) => {
+        const active = filter === t.key;
+        const n = counts[t.key];
+        // Hide tabs with no content (except "all", which always shows).
+        if (n === 0 && t.key !== "all") return null;
+        return (
+          <button
+            key={t.key}
+            type="button"
+            onClick={() => setFilter(t.key)}
+            style={{
+              padding: "7px 12px",
+              borderRadius: 999,
+              border: "1px solid",
+              borderColor: active ? "var(--lib-ink)" : "transparent",
+              background: active ? "var(--lib-ink)" : "transparent",
+              color: active ? "#fff" : "var(--lib-ink-2)",
+              fontFamily: "var(--lib-sans)",
+              fontSize: 12.5,
+              fontWeight: 500,
+              cursor: "pointer",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              transition: "background .15s ease, color .15s ease",
+            }}
+          >
+            {t.label}
+            <span
+              style={{
+                fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
+                fontSize: 11,
+                color: active ? "rgba(255,255,255,.7)" : "var(--lib-muted)",
+                fontVariantNumeric: "tabular-nums",
+              }}
+            >
+              {n}
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ─── Flat filtered grid ──────────────────────────────────────────────────── */
+function FilteredGrid({ discs, filter }: { discs: Disc[]; filter: FilterKind }) {
+  if (discs.length === 0) {
+    return (
+      <div
+        style={{
+          marginTop: 64,
+          padding: "60px 24px",
+          textAlign: "center",
+          color: "var(--lib-muted)",
+          fontFamily: "var(--lib-serif)",
+          fontStyle: "italic",
+          fontSize: 16,
+        }}
+      >
+        Nothing in this section yet — try importing some {filter === "all" ? "media" : filter}.
+      </div>
+    );
+  }
+  return (
+    <section style={{ marginTop: 32 }}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
+          gap: 22,
+        }}
+      >
+        {discs.map((d) => (
+          <DiscCard
+            key={d.id}
+            disc={d}
+            showStatus={false}
+            showSource={true}
+          />
+        ))}
+      </div>
+    </section>
   );
 }

@@ -143,9 +143,9 @@ pub async fn ensure_disc_thumbnail(
     let hash: Option<String> = row.try_get::<Option<String>, _>("source_hash").ok().flatten();
 
     let Some(media_path) = media_path else { return Ok(None) };
-    if media_type != "photo" {
-        // v1 of thumbnails only covers photos. Video keyframe extraction
-        // will land in v2 with ffmpeg orchestration.
+    // Audio has no visual representation — frontend keeps the gradient.
+    // (A future enhancement could render a waveform image here.)
+    if media_type == "audio" {
         return Ok(None);
     }
 
@@ -167,39 +167,100 @@ pub async fn ensure_disc_thumbnail(
         return Ok(Some(thumb_path.to_string_lossy().to_string()));
     }
 
-    // Generate. CPU-bound — push to spawn_blocking so the runtime stays hot.
-    let src = media_path.clone();
-    let dst = thumb_path.clone();
-    let result = tokio::task::spawn_blocking(move || {
+    if media_type == "photo" {
+        let result = generate_photo_thumbnail(media_path.clone(), thumb_path.clone()).await;
+        return match result {
+            Ok(()) => Ok(Some(thumb_path.to_string_lossy().to_string())),
+            Err(()) => Ok(None),
+        };
+    }
+
+    // Video path — extract a keyframe via bundled ffmpeg.
+    let ffmpeg = match crate::media::ffmpeg::locate_ffmpeg(&app) {
+        Ok(p) => p,
+        Err(_) => return Ok(None), // ffmpeg missing → graceful fallback to gradient
+    };
+    let result = generate_video_thumbnail(ffmpeg, media_path.clone(), thumb_path.clone()).await;
+    match result {
+        Ok(()) => Ok(Some(thumb_path.to_string_lossy().to_string())),
+        Err(()) => Ok(None),
+    }
+}
+
+/// Decode the photo with the `image` crate and write a max-600px JPEG thumb.
+async fn generate_photo_thumbnail(src: String, dst: PathBuf) -> Result<(), ()> {
+    tokio::task::spawn_blocking(move || {
         let img = match image::open(&src) {
             Ok(im) => im,
             Err(e) => {
-                tracing::warn!("ensure_disc_thumbnail: decode failed for {src}: {e}");
+                tracing::warn!("photo thumbnail decode failed for {src}: {e}");
                 return Err(());
             }
         };
-        // Long side = 600 px → good for retina 260px cards without burning RAM.
-        // `thumbnail` uses a faster nearest-style filter; for static cards the
-        // quality difference vs. Lanczos is negligible at this size.
+        // `thumbnail` is fast nearest-style; quality fine at this size.
         let small = img.thumbnail(600, 600);
-        // Encode JPEG with quality 80 — good balance of size vs. fidelity.
         let mut out = std::fs::File::create(&dst).map_err(|_| ())?;
         let mut enc = image::codecs::jpeg::JpegEncoder::new_with_quality(&mut out, 80);
         let rgb = small.to_rgb8();
         enc.encode(&rgb, rgb.width(), rgb.height(), image::ExtendedColorType::Rgb8)
             .map_err(|e| {
-                tracing::warn!("ensure_disc_thumbnail: encode failed: {e}");
-                ()
+                tracing::warn!("photo thumbnail encode failed: {e}");
             })?;
         Ok(())
     })
     .await
-    .map_err(|e| AppError::Internal(format!("thumbnail join failed: {e}")))?;
+    .unwrap_or(Err(()))
+}
 
-    match result {
-        Ok(()) => Ok(Some(thumb_path.to_string_lossy().to_string())),
-        Err(()) => Ok(None), // fallthrough — frontend can render the original
+/// Spawn ffmpeg to grab a single frame at ~1s and scale to 600px wide.
+/// Uses fast pre-input seeking (`-ss` before `-i`) — accuracy isn't important
+/// for a thumbnail and this is dramatically faster on long videos.
+/// For videos shorter than the seek target, ffmpeg falls back to the last
+/// frame automatically.
+async fn generate_video_thumbnail(
+    ffmpeg: PathBuf,
+    src: String,
+    dst: PathBuf,
+) -> Result<(), ()> {
+    use tokio::process::Command;
+
+    // Attempt 1: seek to 1s. Good for typical home video / camcorder content
+    // where the very first frame is often a black/sync frame.
+    let attempt = |seek: &'static str| {
+        let ffmpeg = ffmpeg.clone();
+        let src = src.clone();
+        let dst = dst.clone();
+        async move {
+            let status = Command::new(&ffmpeg)
+                .args([
+                    "-hide_banner",
+                    "-loglevel", "error",
+                    "-ss", seek,
+                    "-i", &src,
+                    "-vframes", "1",
+                    "-vf", "scale='min(600,iw)':-2",
+                    "-q:v", "5", // JPEG quality (2=best, 31=worst); 5 ≈ visually lossless thumb
+                    "-y",
+                    dst.to_str().unwrap_or(""),
+                ])
+                .stdin(std::process::Stdio::null())
+                .stdout(std::process::Stdio::null())
+                .stderr(std::process::Stdio::null())
+                .status()
+                .await;
+            matches!(status, Ok(s) if s.success() && dst.exists() && dst.metadata().map(|m| m.len() > 0).unwrap_or(false))
+        }
+    };
+
+    if attempt("00:00:01").await {
+        return Ok(());
     }
+    // Very short video — try seeking to 0.
+    if attempt("00:00:00").await {
+        return Ok(());
+    }
+    tracing::warn!("video thumbnail: ffmpeg failed to extract a frame from {src}");
+    Err(())
 }
 
 /// Walk a directory (recursively, capped depth) and return all paths whose

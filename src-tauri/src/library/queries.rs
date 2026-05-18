@@ -481,6 +481,7 @@ pub async fn search(db: &Db, query: &str) -> AppResult<Vec<SearchHit>> {
         })?;
 
     let mut out = Vec::with_capacity(rows.len());
+    let mut seen_discs: std::collections::HashSet<String> = std::collections::HashSet::new();
     for row in rows {
         let text: String = row.try_get("text")?;
         let text_lower = text.to_lowercase();
@@ -493,20 +494,75 @@ pub async fn search(db: &Db, query: &str) -> AppResult<Vec<SearchHit>> {
             .try_get::<Option<String>, _>("disc_date")
             .ok()
             .flatten();
+        let disc_id: String = row.try_get("disc_id")?;
+        seen_discs.insert(disc_id.clone());
         out.push(SearchHit {
-            disc_id: row.try_get("disc_id")?,
+            disc_id,
             disc_title: row.try_get("disc_title")?,
             disc_date: disc_date.unwrap_or_default(),
             time: row.try_get("time_display")?,
             time_sec: row.try_get("time_sec")?,
             speaker: row.try_get::<Option<String>, _>("speaker").ok().flatten(),
             snippet: text,
-            matched_terms: if matched.is_empty() {
-                terms.clone()
-            } else {
-                matched
-            },
+            matched_terms: if matched.is_empty() { terms.clone() } else { matched },
         });
     }
+
+    // ── Title-match pass ────────────────────────────────────────────────
+    // Photos have no transcript, so they'd never match the FTS join above.
+    // Run a cheap LIKE pass against disc titles so any disc — including
+    // photos — surfaces when its title contains a search term. Rank these
+    // *after* transcript hits because phrase matches are more meaningful.
+    //
+    // We build one OR'd LIKE expression so the query is a single round-trip.
+    let mut sql_parts: Vec<&'static str> = Vec::with_capacity(terms.len());
+    for _ in &terms {
+        sql_parts.push("LOWER(title) LIKE ?");
+    }
+    let title_sql = format!(
+        "SELECT id, title, date_display FROM library_discs WHERE {} LIMIT 100",
+        sql_parts.join(" OR "),
+    );
+    let mut title_query = sqlx::query(&title_sql);
+    for t in &terms {
+        title_query = title_query.bind(format!("%{}%", t));
+    }
+    if let Ok(title_rows) = title_query.fetch_all(&db.pool).await {
+        for row in title_rows {
+            let disc_id: String = match row.try_get("id") {
+                Ok(v) => v,
+                Err(_) => continue,
+            };
+            if seen_discs.contains(&disc_id) {
+                continue; // already surfaced via transcript hit
+            }
+            let title: String = row.try_get("title").unwrap_or_default();
+            let title_lower = title.to_lowercase();
+            let matched: Vec<String> = terms
+                .iter()
+                .filter(|t| title_lower.contains(t.as_str()))
+                .cloned()
+                .collect();
+            if matched.is_empty() {
+                continue;
+            }
+            let disc_date: Option<String> = row
+                .try_get::<Option<String>, _>("date_display")
+                .ok()
+                .flatten();
+            seen_discs.insert(disc_id.clone());
+            out.push(SearchHit {
+                disc_id,
+                disc_title: title.clone(),
+                disc_date: disc_date.unwrap_or_default(),
+                time: "—".to_string(),
+                time_sec: 0,
+                speaker: None,
+                snippet: title,
+                matched_terms: matched,
+            });
+        }
+    }
+
     Ok(out)
 }
