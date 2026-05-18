@@ -6,31 +6,43 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
-## [Unreleased] — Family Memory Vault
+## [1.1.0] — 2026-05-18 — Family Memory Vault
 
-Heirvo expanded from "disc recovery only" to a full family memory vault with disc recovery at the core. The Archive ($99) and Family ($149) tiers now have a real product behind them: a personal media library with albums, thumbnails, transcription, and EXIF-aware organisation.
+Heirvo expanded from "disc recovery only" to a full family memory vault with disc recovery at the core. The Archive ($99) and Family ($149) tiers now have a real product behind them: a personal media library with albums, thumbnails, Whisper transcription, EXIF-aware organisation, and bulk-management tools. Tier expansion: Free / Recover ($59) / Archive ($99) / Family ($149) — the legacy Pro key remains valid and is treated as Archive.
 
 ### Added
-- **Personal media vault** — import photos, videos, and audio from folders alongside recovered disc content. All media lives in a single managed vault.
-- **Bulk import + drag-and-drop** — drop a folder onto the app to import an entire photo collection in one step; duplicate detection prevents re-importing files already in the vault.
-- **Albums** — full CRUD: auto-created from folder drops, renameable, deleteable (ungroup or delete files). Album detail page shows a 2×2 collage cover. Schema + backend migration included.
-- **Photo thumbnails** — photos show real inline previews in library cards.
-- **Video thumbnails** — generated via bundled ffmpeg at import time; no external dependency.
-- **EXIF date extraction** — imported photos use the real date-taken from EXIF, not the import timestamp.
-- **Filter tabs** — Library view now has tabs: All · Albums · Videos · Photos · Audio · Recovered discs · All imports.
-- **Title search** — type to filter any item across all tabs; makes photos and imported media findable alongside recovered disc content.
-- **Import flow paywall** — size preview and vault-copy confirm step before committing; Archive-tier gate enforced at the point of personal-media import.
-- **Archive-tier gate** — personal media import (vault-copy) is gated behind the Archive ($99) licence; paywall modal shown on attempt from lower tiers.
-- **New app icon** — disc-with-arrow mark; 7-size ICO (16/24/32/48/64/128/256) + matching PNGs replacing the kintsugi-disc placeholder.
-- **Sidebar brand mark** — updated to new branded PNG.
+- **Personal media vault** — import photos, videos, and audio from folders alongside recovered disc content. All media lives in a single managed vault under `<app_data>/vault/`; originals are never touched.
+- **Bulk import + drag-and-drop** — drop a folder onto the app to import an entire photo collection in one step. SHA-256 duplicate detection prevents re-importing files already in the vault. Bulk-aware confirm dialog with itemized list (≤8 files) or summary count (larger batches).
+- **Folder-recursive drop** — drop a folder of mixed media: backend walks it (capped at 5000 files / 8 levels deep), each dropped folder becomes its own auto-created album.
+- **Albums** — full CRUD: auto-created from folder drops, renameable inline, delete-or-ungroup modal, 2×2 collage cover. Album cover picker — hover a member to set it as the cover (star button).
+- **Photo thumbnails** — photos show real inline previews in library cards (image crate, 600px JPEG).
+- **Video thumbnails** — keyframe extracted at ~1s via bundled ffmpeg.
+- **Audio waveform thumbnails** — brand-blue showwavespic image, letterboxed into the card so the full oscillogram is visible.
+- **EXIF date extraction** — imported photos use the real `DateTimeOriginal` (fallback `DateTimeDigitized`) from EXIF, not the import timestamp. A 1995 scanned wedding photo finally shows "1995" in the library year column.
+- **Filter tabs** — Library view tabs: All · Albums · Videos · Photos · Audio · Recovered discs · All imports. Live count badges; empty tabs hide.
+- **Title search** — search now matches disc/album titles in addition to transcript content. Photos (which have no transcript) finally surface in search results.
+- **Bulk-delete in filtered grid** — multi-select mode on filter tabs with a floating bottom toolbar. Removes DB rows + vault files + thumbnails in one batch.
+- **Vault storage panel** — Settings page now shows file count, bytes used, free space on the volume, vault path, and "Open vault folder" button.
+- **Import flow paywall** — size preview + vault-copy confirm step before committing. Archive-tier gate enforced at the point of personal-media import.
+- **Archive-tier gate** — personal media import is gated behind the Archive ($99) licence; paywall modal shown on attempt from lower tiers.
+- **License-tier expansion** — backend `Plan` enum now Free / Recover / Archive / Family (legacy `Pro` alias retained → Archive). Tier-specific Lemon Squeezy product-id env vars supported at build time.
+- **EXIF helper unit tests** + **Vitest harness** with 13 frontend tests (ImportPaywallModal, DiscCard, useLicense default state).
+- **Albums migration** (`20260518100000_albums.sql`) — `library_albums` table + `album_id` column on `library_discs` with cascade rules.
+- **Media-type migration** (`20260518000000_media_type.sql`) — `media_type` column on `library_discs`, defaults to "video" for backward compat.
+- **New app icon** — disc-with-arrow mark; 7-size ICO (16/24/32/48/64/128/256) + matching PNGs.
+- **Sidebar brand mark** — updated to new branded PNG (same asset as app icon).
+- **Marketing JSON-LD** — `SoftwareApplication` schema updated with current pricing, vault feature list, v1.0.0 download URL; preps for Perplexity / Google AIO / ChatGPT citation surfaces.
 
 ### Changed
-- **Vault stats** — thumbnail files are excluded from vault storage totals; thumbnails no longer double-count against the user's vault size.
-- **Marketing site** — tier positioning updated to "From discs to digital vault" narrative; all four tier names, prices, and feature bullets realigned to current product.
+- **Vault stats** — thumbnail cache excluded from user-facing storage totals; no double-counting.
+- **Marketing site** — tier positioning updated to "From discs to digital vault" narrative; pricing grid expanded from 3 to 4 cards, mail-in demoted from a card to a callout strip below.
+- **Library Hero/rails** — "All" view keeps the curated rails (Recently / On this day / Birthdays / Trips); other filter tabs collapse into a flat auto-fill grid optimised for large vaults.
 
 ### Fixed
-- **Transcription enqueue path bug (critical)** — transcription jobs were enqueued with the source path instead of the vault copy path. Jobs would silently fail or transcribe the wrong file. Now correctly uses the vault path after import completes.
-- **Thumbnail GC on disc delete** — orphaned thumbnails are now garbage-collected when a disc session is deleted, preventing unbounded cache growth.
+- **Transcription enqueue path bug (critical)** — transcription jobs were enqueued with the source path instead of the vault copy path. Jobs would silently fail mid-job if the user moved or deleted the original after import. Now correctly uses the vault path; backend auto-enqueues on import.
+- **Thumbnail GC on disc delete** — orphaned thumbnails are now removed when a disc is deleted, preventing unbounded cache growth.
+- **Empty-album-on-cancel bug** — folder drops used to create an album row eagerly, before the paywall / size-confirm. A free user closing the paywall left an empty album in the library. Albums are now created at commit time inside `runImport`, so cancelled flows leave zero side effects.
+- **Bulk-select overlay pointer-events bug** — the click-catching overlay above each card in select mode had `pointer-events: none`, so clicks fell through to the inner `<Link>` and the page navigated instead of toggling selection. Now correctly captures clicks.
 
 ---
 
