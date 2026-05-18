@@ -244,11 +244,14 @@ export default function Library() {
   const [importing, setImporting] = useState(false);
   // One or more files queued for import. Each has its own preview so the
   // paywall and size-confirm dialogs can render meaningful counts.
-  // albumId carries the auto-created album id from folder drops.
+  // `folderOrigin` is the dropped-folder path the file came from (null for
+  // file-picker / loose-file drops). Albums are created lazily in runImport
+  // ONLY after the user clears the paywall + confirm, so cancelled imports
+  // don't leave empty albums in the library.
   const [pending, setPending] = useState<Array<{
     path: string;
     title: string;
-    albumId: string | null;
+    folderOrigin: string | null;
     preview: ImportPreview;
   }>>([]);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -305,11 +308,12 @@ export default function Library() {
 
   /** Shared path for both file-picker and drag-drop. Gates, confirms, runs.
    *  Accepts plain string paths (no album) or tagged objects (folder drops
-   *  with an album id from the auto-created album). */
-  async function processImports(input: Array<string | { path: string; albumId: string | null }>) {
+   *  with the source folder path; the actual album row is created later in
+   *  runImport, AFTER the user has cleared the paywall and the confirm). */
+  async function processImports(input: Array<string | { path: string; folderOrigin: string | null }>) {
     if (input.length === 0) return;
     const items = input.map((it) =>
-      typeof it === "string" ? { path: it, albumId: null as string | null } : it,
+      typeof it === "string" ? { path: it, folderOrigin: null as string | null } : it,
     );
 
     const accepted = items.filter(({ path }) => {
@@ -328,9 +332,9 @@ export default function Library() {
 
     // Pre-flight every file in parallel — gives us per-file size + the gate.
     const previews = await Promise.all(
-      accepted.map(async ({ path, albumId }) => ({
+      accepted.map(async ({ path, folderOrigin }) => ({
         path,
-        albumId,
+        folderOrigin,
         title: titleFromPath(path),
         preview: await ipc.library.getImportSizePreview(path),
       })),
@@ -367,12 +371,34 @@ export default function Library() {
     }
   }
 
-  /** Actually hash, copy, and (backend auto-enqueues transcription). */
+  /** Actually hash, copy, and (backend auto-enqueues transcription). Albums
+   *  are created here, just-in-time — one per distinct folderOrigin — so a
+   *  cancelled flow never leaves empty albums behind. */
   async function runImport(items: typeof pending = pending) {
     if (items.length === 0 || importing) return;
     setShowConfirm(false);
     setImporting(true);
     setBulkProgress({ done: 0, total: items.length });
+
+    // ── Create albums for each distinct folder this import covers ────────
+    // Album rows are now created here (commit time), not at drag-drop time,
+    // so users who cancel at the paywall or size-confirm don't pollute
+    // their library with empty albums.
+    const folderToAlbumId = new Map<string, string>();
+    for (const it of items) {
+      if (!it.folderOrigin || folderToAlbumId.has(it.folderOrigin)) continue;
+      const folderName = it.folderOrigin
+        .split(/[\\/]/)
+        .filter(Boolean)
+        .pop() ?? "Untitled album";
+      try {
+        const album = await ipc.albums.create(folderName);
+        folderToAlbumId.set(it.folderOrigin, album.id);
+      } catch {
+        // Album creation failed — fall through and import this folder's
+        // files as loose entries rather than blocking the whole batch.
+      }
+    }
 
     let lastId: string | null = null;
     let failed = 0;
@@ -380,8 +406,9 @@ export default function Library() {
 
     for (let i = 0; i < items.length; i++) {
       const it = items[i];
+      const albumId = it.folderOrigin ? folderToAlbumId.get(it.folderOrigin) ?? null : null;
       try {
-        const result = await ipc.library.importMedia(it.path, it.title, it.albumId);
+        const result = await ipc.library.importMedia(it.path, it.title, albumId);
         lastId = result.id;
         if (result.isDuplicate) duplicates++;
         // Backend auto-enqueues transcription on import — no separate call needed.
@@ -415,10 +442,11 @@ export default function Library() {
 
     // Navigate to the album when the whole batch shares one (folder drop);
     // single-file → disc page; bulk loose files → stay on library.
-    const sharedAlbum = items[0]?.albumId;
-    const allSameAlbum = sharedAlbum && items.every((it) => it.albumId === sharedAlbum);
-    if (allSameAlbum && items.length > 1) {
-      nav(`/album/${sharedAlbum}`);
+    const sharedFolder = items[0]?.folderOrigin;
+    const allSameFolder = sharedFolder && items.every((it) => it.folderOrigin === sharedFolder);
+    const sharedAlbumId = allSameFolder ? folderToAlbumId.get(sharedFolder) ?? null : null;
+    if (sharedAlbumId && items.length > 1) {
+      nav(`/album/${sharedAlbumId}`);
     } else if (items.length === 1 && lastId) {
       nav(`/disc/${lastId}`);
     } else if (lastId) {
@@ -449,56 +477,39 @@ export default function Library() {
           } else if (e.payload.type === "drop") {
             setIsDragHover(false);
             const paths = e.payload.paths.filter((p): p is string => typeof p === "string");
-            // Expand any directories the user dropped into their contained
-            // importable media. Folder semantics: each dropped folder becomes
-            // its own auto-created album, so 200 wedding photos collapse to
-            // one library card instead of 200.
+            // Expand any directories into their contained importable media.
+            // Each dropped folder is tagged as the "folderOrigin" for the
+            // files inside; runImport will materialize the album row from
+            // the origin only after the user clears paywall + confirm.
             void (async () => {
-              const expanded: Array<{ path: string; albumKey: string | null }> = [];
-              // Track folders we've seen to create one album per folder, not
-              // one per file.
-              const folderToAlbum = new Map<string, string>();
+              const expanded: Array<{ path: string; folderOrigin: string | null }> = [];
+              const folderSet = new Set<string>();
               for (const p of paths) {
                 try {
                   const inside = await ipc.library.listImportableMediaInDir(p);
                   if (inside.length > 0) {
-                    expanded.push(...inside.map((q) => ({ path: q, albumKey: p })));
-                    // Stash the folder so we can create one album for it.
-                    if (!folderToAlbum.has(p)) folderToAlbum.set(p, p);
+                    expanded.push(...inside.map((q) => ({ path: q, folderOrigin: p })));
+                    folderSet.add(p);
                     continue;
                   }
-                  expanded.push({ path: p, albumKey: null });
+                  expanded.push({ path: p, folderOrigin: null });
                 } catch {
-                  expanded.push({ path: p, albumKey: null });
+                  expanded.push({ path: p, folderOrigin: null });
                 }
               }
 
-              // Resolve albumKey → real album id by creating an album per folder.
-              const folderAlbumIds = new Map<string, string>();
-              for (const folderPath of folderToAlbum.keys()) {
-                const folderName = folderPath.split(/[\\/]/).filter(Boolean).pop() ?? "Untitled album";
-                try {
-                  const album = await ipc.albums.create(folderName);
-                  folderAlbumIds.set(folderPath, album.id);
-                } catch {/* if album creation fails, fall through to loose imports */}
-              }
-
-              // De-duplicate by path while preserving album tagging.
+              // De-duplicate by path while preserving folder tagging.
               const seen = new Set<string>();
-              const unique: Array<{ path: string; albumId: string | null }> = [];
+              const unique: Array<{ path: string; folderOrigin: string | null }> = [];
               for (const it of expanded) {
                 if (seen.has(it.path)) continue;
                 seen.add(it.path);
-                unique.push({
-                  path: it.path,
-                  albumId: it.albumKey ? folderAlbumIds.get(it.albumKey) ?? null : null,
-                });
+                unique.push(it);
               }
 
               if (unique.length > paths.length) {
-                const albumCount = folderAlbumIds.size;
-                const note = albumCount > 0
-                  ? `Found ${unique.length} files in ${albumCount} folder(s) — importing as album(s)`
+                const note = folderSet.size > 0
+                  ? `Found ${unique.length} files in ${folderSet.size} folder(s) — will import as album(s)`
                   : `Found ${unique.length} media file(s) in dropped folders`;
                 setImportMsg(note);
                 setTimeout(() => setImportMsg(null), 5000);
@@ -1152,7 +1163,9 @@ function FilteredGrid({
                 transition: "outline-color .15s ease",
               }}
             >
-              {/* Intercept link clicks inside DiscCard by layering an invisible overlay */}
+              {/* Click-catching overlay above DiscCard. MUST keep pointerEvents:
+                  "auto" — with "none" the click falls through to the <Link> inside
+                  DiscCard and the page navigates instead of toggling selection. */}
               <div
                 aria-hidden
                 style={{
@@ -1160,7 +1173,8 @@ function FilteredGrid({
                   inset: 0,
                   zIndex: 10,
                   borderRadius: 16,
-                  pointerEvents: "none",
+                  pointerEvents: "auto",
+                  cursor: "pointer",
                 }}
               />
               <DiscCard disc={d} showStatus={false} showSource={true} />
