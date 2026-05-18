@@ -2045,24 +2045,13 @@ export default function LandingMin1() {
                 className="pricing-card"
                 style={{
                   background: C.pageAlt,
-                  border: `1.5px solid ${C.blue}`,
+                  border: `1px solid ${C.borderMed}`,
                   borderRadius: 16,
                   padding: "36px 28px",
                   display: "flex", flexDirection: "column" as const,
-                  position: "relative" as const,
-                  boxShadow: "0 0 0 4px rgba(10,132,255,0.07)",
                   opacity: 0,
                 }}
               >
-                <span style={{
-                  position: "absolute" as const, top: -13, left: 20,
-                  background: C.blue, color: "#FFF",
-                  fontFamily: SORA, fontSize: 10, fontWeight: 700,
-                  letterSpacing: "0.12em", textTransform: "uppercase" as const,
-                  padding: "4px 12px", borderRadius: 100,
-                }}>
-                  Most popular
-                </span>
                 <Eyebrow style={{ marginBottom: 16, color: C.blue }}>Recover — one-time</Eyebrow>
                 <div style={{
                   fontFamily: SORA, fontSize: 44, fontWeight: 700,
@@ -2095,37 +2084,48 @@ export default function LandingMin1() {
                   style={{
                     display: "inline-flex", alignItems: "center", justifyContent: "center",
                     gap: 8, padding: "14px 18px", borderRadius: 8,
-                    background: C.blue, color: "#FFF",
-                    fontFamily: SORA, fontSize: 14, fontWeight: 700,
+                    background: "transparent", color: C.text,
+                    fontFamily: SORA, fontSize: 14, fontWeight: 600,
                     textDecoration: "none", letterSpacing: "-0.01em",
-                    transition: "background 0.18s, box-shadow 0.18s",
-                    boxShadow: "0 4px 20px rgba(10,132,255,0.3)",
+                    border: `1.5px solid ${C.borderMed}`,
+                    transition: "border-color 0.18s, background 0.18s",
                   }}
                   onMouseEnter={(e) => {
-                    (e.currentTarget as HTMLElement).style.background = C.blueHover;
-                    (e.currentTarget as HTMLElement).style.boxShadow = "0 6px 28px rgba(10,132,255,0.45)";
+                    (e.currentTarget as HTMLElement).style.borderColor = C.borderBright;
+                    (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.04)";
                   }}
                   onMouseLeave={(e) => {
-                    (e.currentTarget as HTMLElement).style.background = C.blue;
-                    (e.currentTarget as HTMLElement).style.boxShadow = "0 4px 20px rgba(10,132,255,0.3)";
+                    (e.currentTarget as HTMLElement).style.borderColor = C.borderMed;
+                    (e.currentTarget as HTMLElement).style.background = "transparent";
                   }}
                 >
                   Download Free · Unlock for $59
                 </a>
               </div>
 
-              {/* Tier 3 — Archive $99 */}
+              {/* Tier 3 — Archive $99 ★ Most popular */}
               <div
                 className="pricing-card"
                 style={{
-                  background: `linear-gradient(160deg, rgba(10,132,255,0.06) 0%, ${C.pageAlt} 60%)`,
-                  border: `1px solid ${C.blueBorder}`,
+                  background: `linear-gradient(160deg, rgba(10,132,255,0.10) 0%, ${C.pageAlt} 60%)`,
+                  border: `1.5px solid ${C.blue}`,
                   borderRadius: 16,
                   padding: "36px 28px",
                   display: "flex", flexDirection: "column" as const,
+                  position: "relative" as const,
+                  boxShadow: "0 0 0 4px rgba(10,132,255,0.07)",
                   opacity: 0,
                 }}
               >
+                <span style={{
+                  position: "absolute" as const, top: -13, left: 20,
+                  background: C.blue, color: "#F4F6FA",
+                  fontFamily: SORA, fontSize: 10, fontWeight: 700,
+                  letterSpacing: "0.12em", textTransform: "uppercase" as const,
+                  padding: "4px 12px", borderRadius: 100,
+                }}>
+                  Most popular
+                </span>
                 <Eyebrow style={{ marginBottom: 16, color: C.blue }}>Archive — one-time</Eyebrow>
                 <div style={{
                   fontFamily: SORA, fontSize: 44, fontWeight: 700,
@@ -2158,19 +2158,19 @@ export default function LandingMin1() {
                   style={{
                     display: "inline-flex", alignItems: "center", justifyContent: "center",
                     gap: 8, padding: "14px 18px", borderRadius: 8,
-                    background: "transparent", color: C.blue,
+                    background: C.blue, color: "#F4F6FA",
                     fontFamily: SORA, fontSize: 14, fontWeight: 700,
                     textDecoration: "none", letterSpacing: "-0.01em",
-                    border: `1.5px solid ${C.blue}`,
                     transition: "background 0.18s, box-shadow 0.18s",
+                    boxShadow: "0 4px 20px rgba(10,132,255,0.3)",
                   }}
                   onMouseEnter={(e) => {
-                    (e.currentTarget as HTMLElement).style.background = C.blueFaint;
-                    (e.currentTarget as HTMLElement).style.boxShadow = "0 4px 20px rgba(10,132,255,0.2)";
+                    (e.currentTarget as HTMLElement).style.background = C.blueHover;
+                    (e.currentTarget as HTMLElement).style.boxShadow = "0 6px 28px rgba(10,132,255,0.45)";
                   }}
                   onMouseLeave={(e) => {
-                    (e.currentTarget as HTMLElement).style.background = "transparent";
-                    (e.currentTarget as HTMLElement).style.boxShadow = "none";
+                    (e.currentTarget as HTMLElement).style.background = C.blue;
+                    (e.currentTarget as HTMLElement).style.boxShadow = "0 4px 20px rgba(10,132,255,0.3)";
                   }}
                 >
                   Download Free · Unlock for $99
