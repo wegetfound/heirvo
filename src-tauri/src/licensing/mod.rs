@@ -1,15 +1,24 @@
 //! License management for the freemium tier.
 //!
-//! v1 model:
-//! - **Free** — full recovery (sector reads, sector map, disc health, preview).
-//! - **Pro** — unlocks Save (MP4, ISO, chapter extract, all-files).
+//! v2 model (2026-05-18):
+//! - **Free**     — full recovery (sector reads, sector map, disc health, preview).
+//! - **Recover**  ($59) — unlocks Save (MP4, ISO, chapter extract, all-files).
+//! - **Archive**  ($99) — Recover features + import personal media into vault.
+//! - **Family**   ($149) — Archive features + (future) multi-user library sync.
+//!
+//! Backward compatibility:
+//! - The legacy `Pro` variant remains and is treated as equivalent to **Archive**
+//!   so existing keys on disk and existing call-sites that check `plan == Pro`
+//!   continue to work without migration.
 //!
 //! Validation strategy:
-//! - If `HEIRVO_LS_PRODUCT_ID` is set at compile time (production builds),
-//!   `validate_online` calls the Lemon Squeezy license API and verifies the
-//!   key is active and belongs to this product.
-//! - Otherwise (dev builds / CI), `validate_key` accepts any syntactically
-//!   valid key (`XXXX-XXXX`, 8+ chars, contains `-`) — no network call.
+//! - If a tier-specific `HEIRVO_LS_<TIER>_PRODUCT_ID` is set at compile time,
+//!   `validate_online` calls Lemon Squeezy and matches the key against each
+//!   configured product id, returning the matching tier.
+//! - The legacy `HEIRVO_LS_PRODUCT_ID` is honored as the **Recover** product id
+//!   when no tier-specific override is set (so existing prod builds keep working).
+//! - In dev / CI builds with no product ids configured, `validate_key` accepts
+//!   any well-formed key and grants **Archive** so all features unlock.
 //!
 //! No phone-home for free users — privacy-preserving by default.
 
@@ -18,16 +27,53 @@ use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use std::sync::Mutex;
 
-/// Set at compile time when building for production.
-/// `HEIRVO_LS_PRODUCT_ID=<your-ls-product-id> cargo tauri build`
+/// Legacy single-product env var — treated as the Recover tier product id.
 const LS_PRODUCT_ID: Option<&str> = option_env!("HEIRVO_LS_PRODUCT_ID");
+/// Tier-specific product ids, set at compile time for production builds:
+///   HEIRVO_LS_RECOVER_PRODUCT_ID=… HEIRVO_LS_ARCHIVE_PRODUCT_ID=… HEIRVO_LS_FAMILY_PRODUCT_ID=… cargo tauri build
+const LS_RECOVER_PRODUCT_ID: Option<&str> = option_env!("HEIRVO_LS_RECOVER_PRODUCT_ID");
+const LS_ARCHIVE_PRODUCT_ID: Option<&str> = option_env!("HEIRVO_LS_ARCHIVE_PRODUCT_ID");
+const LS_FAMILY_PRODUCT_ID:  Option<&str> = option_env!("HEIRVO_LS_FAMILY_PRODUCT_ID");
 const LS_VALIDATE_URL: &str = "https://api.lemonsqueezy.com/v1/licenses/validate";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Plan {
     Free,
+    /// Recover tier — Save features.
+    Recover,
+    /// Archive tier — Recover + personal media vault import.
+    Archive,
+    /// Family tier — Archive + (future) multi-user library sync.
+    Family,
+    /// Legacy alias for Archive. Existing call-sites comparing `plan == Pro`
+    /// will see the variant unchanged; new code should use `is_paid()` /
+    /// `can_save()` / `can_import_media()`.
     Pro,
+}
+
+impl Plan {
+    /// Any paid tier (Recover / Archive / Family / legacy Pro).
+    pub fn is_paid(self) -> bool {
+        !matches!(self, Plan::Free)
+    }
+
+    /// Tiers that may import personal media files into the vault.
+    /// Archive, Family, and the legacy Pro alias only.
+    pub fn can_import_media(self) -> bool {
+        matches!(self, Plan::Archive | Plan::Family | Plan::Pro)
+    }
+
+    /// Human-readable name for UI and logs.
+    pub fn display_name(self) -> &'static str {
+        match self {
+            Plan::Free => "Free",
+            Plan::Recover => "Recover",
+            Plan::Archive => "Archive",
+            Plan::Family => "Family",
+            Plan::Pro => "Pro",
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -37,13 +83,21 @@ pub struct LicenseStatus {
     pub holder: Option<String>,
     /// Whether the SAVE features are unlocked.
     pub can_save: bool,
+    /// Whether personal-media import into the vault is unlocked (Archive/Family).
+    pub can_import_media: bool,
     /// How many MP4 exports this device has made (free tier gets 1 lifetime).
     pub exports_used: u32,
 }
 
 impl Default for LicenseStatus {
     fn default() -> Self {
-        Self { plan: Plan::Free, holder: None, can_save: true, exports_used: 0 }
+        Self {
+            plan: Plan::Free,
+            holder: None,
+            can_save: true, // Free tier: 1 lifetime export (gate enforced via exports_used)
+            can_import_media: false,
+            exports_used: 0,
+        }
     }
 }
 
@@ -102,18 +156,61 @@ pub fn record_export(app_data_dir: &PathBuf) {
 // ─── Validation ───────────────────────────────────────────────────────────────
 
 /// Dev-mode stub: accepts any non-empty key with at least one `-` and ≥8 chars.
-/// Used when `HEIRVO_LS_PRODUCT_ID` is not set at build time.
+/// Used when no `HEIRVO_LS_*_PRODUCT_ID` is set at build time.
+///
+/// Tier inference for dev keys:
+///   prefix `RECOVER-…`  → Recover
+///   prefix `FAMILY-…`   → Family
+///   anything else       → Archive (default — unlocks import for dev/testing)
 pub fn validate_key(key: &str) -> Option<LicenseStatus> {
     let trimmed = key.trim();
     if trimmed.len() < 8 || !trimmed.contains('-') {
         return None;
     }
+    let upper = trimmed.to_ascii_uppercase();
+    let plan = if upper.starts_with("RECOVER-") {
+        Plan::Recover
+    } else if upper.starts_with("FAMILY-") {
+        Plan::Family
+    } else {
+        Plan::Archive
+    };
     Some(LicenseStatus {
-        plan: Plan::Pro,
+        plan,
         holder: Some(trimmed.split('-').next().unwrap_or("").to_string()),
         can_save: true,
+        can_import_media: plan.can_import_media(),
         exports_used: 0,
     })
+}
+
+/// Resolve a Lemon Squeezy product id to a tier.
+/// Honors tier-specific env vars first, then falls back to the legacy
+/// `HEIRVO_LS_PRODUCT_ID` (interpreted as Recover).
+fn tier_for_product_id(product_id: u64) -> Option<Plan> {
+    let parse = |opt: Option<&str>| -> Option<u64> { opt.and_then(|s| s.parse().ok()) };
+    if Some(product_id) == parse(LS_RECOVER_PRODUCT_ID) {
+        return Some(Plan::Recover);
+    }
+    if Some(product_id) == parse(LS_ARCHIVE_PRODUCT_ID) {
+        return Some(Plan::Archive);
+    }
+    if Some(product_id) == parse(LS_FAMILY_PRODUCT_ID) {
+        return Some(Plan::Family);
+    }
+    // Legacy single-product builds: treat as Recover.
+    if Some(product_id) == parse(LS_PRODUCT_ID) {
+        return Some(Plan::Recover);
+    }
+    None
+}
+
+/// Returns true if any production product id is configured at compile time.
+fn any_product_configured() -> bool {
+    LS_PRODUCT_ID.is_some()
+        || LS_RECOVER_PRODUCT_ID.is_some()
+        || LS_ARCHIVE_PRODUCT_ID.is_some()
+        || LS_FAMILY_PRODUCT_ID.is_some()
 }
 
 /// Production validation via Lemon Squeezy.
@@ -124,12 +221,10 @@ pub async fn validate_online(key: &str) -> Option<LicenseStatus> {
         return None;
     }
 
-    let Some(product_id_str) = LS_PRODUCT_ID else {
+    if !any_product_configured() {
         // Dev / CI build — use format check only.
         return validate_key(trimmed);
-    };
-
-    let product_id: u64 = product_id_str.parse().ok()?;
+    }
 
     // Bounded HTTP client — never let a slow/hostile network hang license
     // validation indefinitely. 15s is generous for a single POST.
@@ -156,14 +251,13 @@ pub async fn validate_online(key: &str) -> Option<LicenseStatus> {
     if !v.valid || v.license_key.status != "active" {
         return None;
     }
-    if v.meta.product_id != product_id {
-        return None; // Key is for a different product
-    }
+    let plan = tier_for_product_id(v.meta.product_id)?;
 
     Some(LicenseStatus {
-        plan: Plan::Pro,
+        plan,
         holder: v.meta.customer_email,
         can_save: true,
+        can_import_media: plan.can_import_media(),
         exports_used: 0,
     })
 }
@@ -184,8 +278,10 @@ pub fn current(app_data_dir: &PathBuf) -> LicenseStatus {
     let exports_used = get_exports_used(app_data_dir);
     let status = LicenseStatus {
         exports_used,
-        // Pro users always save; free users get exactly 1 lifetime export.
-        can_save: base.plan == Plan::Pro || exports_used == 0,
+        // Any paid tier always saves; free users get exactly 1 lifetime export.
+        can_save: base.plan.is_paid() || exports_used == 0,
+        // Only Archive/Family/Pro may import personal media.
+        can_import_media: base.plan.can_import_media(),
         ..base
     };
     *CACHE.lock().unwrap() = Some(status.clone());
@@ -253,10 +349,36 @@ mod tests {
 
     #[test]
     fn well_formed_key_is_accepted_in_dev() {
+        // Default tier for an unprefixed dev key is Archive (unlocks import).
         let s = validate_key("HEIRVO-PRO-1234").expect("should accept dev key");
-        assert_eq!(s.plan, Plan::Pro);
+        assert_eq!(s.plan, Plan::Archive);
         assert!(s.can_save);
+        assert!(s.can_import_media);
         assert_eq!(s.holder.as_deref(), Some("HEIRVO"));
+    }
+
+    #[test]
+    fn recover_prefix_dev_key_grants_recover_only() {
+        let s = validate_key("RECOVER-DEV-1234").expect("should accept");
+        assert_eq!(s.plan, Plan::Recover);
+        assert!(s.can_save);
+        assert!(!s.can_import_media, "Recover tier must not allow media import");
+    }
+
+    #[test]
+    fn family_prefix_dev_key_grants_family() {
+        let s = validate_key("FAMILY-DEV-1234").expect("should accept");
+        assert_eq!(s.plan, Plan::Family);
+        assert!(s.can_import_media);
+    }
+
+    #[test]
+    fn free_plan_cannot_import() {
+        assert!(!Plan::Free.can_import_media());
+        assert!(!Plan::Recover.can_import_media());
+        assert!(Plan::Archive.can_import_media());
+        assert!(Plan::Family.can_import_media());
+        assert!(Plan::Pro.can_import_media(), "legacy Pro alias must keep import");
     }
 
     #[tokio::test]
@@ -285,7 +407,10 @@ mod tests {
             .ok();
         let s = deactivate(&dir);
         assert_eq!(s.plan, Plan::Free);
-        assert!(!s.can_save);
+        // After deactivate, plan is Free. can_save remains true because the
+        // free tier gets exactly 1 lifetime export and exports_used = 0 here.
+        // The real gate is `can_import_media`, which must be off on Free.
+        assert!(!s.can_import_media, "Free tier must not allow media import after deactivate");
         std::fs::remove_dir_all(&dir).ok();
     }
 

@@ -1,13 +1,14 @@
 //! Library — Tauri IPC commands for the recovered-disc archive.
 
-use crate::error::AppResult;
+use crate::error::{AppError, AppResult};
 use crate::library::queries;
 use crate::library::seed;
 use crate::library::types::{Disc, SearchHit};
 use crate::state::AppState;
 use chrono::{Datelike, Utc};
 use sqlx::Row;
-use tauri::State;
+use std::path::{Path, PathBuf};
+use tauri::{AppHandle, Manager, State};
 
 #[tauri::command]
 pub async fn list_library_discs(state: State<'_, AppState>) -> AppResult<Vec<Disc>> {
@@ -88,25 +89,113 @@ pub struct ImportResult {
     pub is_duplicate: bool,
 }
 
+/// Pre-flight info for a prospective media import — lets the UI show a clear
+/// "this will copy 4.2 GB into your vault" confirmation before the user commits.
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ImportPreview {
+    pub file_size: u64,
+    pub file_size_display: String,
+    pub vault_free_space: Option<u64>,
+    pub will_fit: bool,
+    pub media_kind: &'static str, // "video" | "audio" (future: "photo" | "document")
+    pub gate: ImportGate,
+}
+
+/// What the user is allowed to do, given their current license.
+/// `kind` tells the frontend which paywall variant to show.
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ImportGate {
+    pub allowed: bool,
+    pub required_plan: &'static str, // "archive" — UI uses this for upgrade copy
+    pub reason: Option<String>,
+}
+
+/// Inspect a file the user is about to import. Cheap — does not hash or copy.
+/// Returns size, free-space check, and whether the current license permits the
+/// import. The frontend calls this BEFORE `import_media_disc` so it can show
+/// a "this will use ~X GB of disk space" confirmation and/or a paywall.
+#[tauri::command]
+pub async fn get_import_size_preview(
+    app: AppHandle,
+    media_path: String,
+) -> AppResult<ImportPreview> {
+    let path = PathBuf::from(&media_path);
+    let meta = tokio::fs::metadata(&path).await.map_err(|e| {
+        AppError::Internal(format!("Cannot read {}: {}", path.display(), e))
+    })?;
+    let size = meta.len();
+
+    let vault = vault_dir(&app)?;
+    // best-effort free-space check; ignore on platforms where it fails.
+    let free = free_space_for(&vault).ok();
+    let will_fit = free.map(|f| f >= size.saturating_add(64 * 1024 * 1024)).unwrap_or(true);
+
+    let kind = if is_audio_ext(&media_path) { "audio" } else { "video" };
+
+    let status = crate::licensing::current(&app_data_dir(&app));
+    let gate = if status.can_import_media {
+        ImportGate { allowed: true, required_plan: "archive", reason: None }
+    } else {
+        ImportGate {
+            allowed: false,
+            required_plan: "archive",
+            reason: Some(format!(
+                "Personal media import requires the Archive tier — your current plan is {}.",
+                status.plan.display_name()
+            )),
+        }
+    };
+
+    Ok(ImportPreview {
+        file_size: size,
+        file_size_display: format_bytes(size),
+        vault_free_space: free,
+        will_fit,
+        media_kind: kind,
+        gate,
+    })
+}
+
 /// Create a new library disc from a user-imported media file (video OR
 /// audio). Returns `{ id, isDuplicate }`. When `isDuplicate` is true the
 /// disc was already in the library (same SHA-256 content hash) and `id`
 /// points to the existing entry — the frontend should navigate there
 /// without re-enqueuing transcription.
 ///
+/// Tier gate: requires Archive / Family / (legacy) Pro. Returns an error
+/// otherwise so the frontend can show the paywall modal.
+///
+/// Vault semantics (2026-05-18): the source file is COPIED into the per-user
+/// vault under `<app_data>/vault/<sha256-prefix>/<filename>` and the stored
+/// `video_path` points to the vault copy. The user's original file is never
+/// touched and may be moved or deleted afterward without breaking the library.
+///
 /// Audio inputs get a distinct (moodier) gradient palette so they're
 /// visually distinguishable from video imports in the library grid.
 #[tauri::command]
 pub async fn import_media_disc(
+    app: AppHandle,
     state: State<'_, AppState>,
     media_path: String,
     title: String,
 ) -> AppResult<ImportResult> {
+    // ── 1. Tier gate ─────────────────────────────────────────────────────
+    let license = crate::licensing::current(&app_data_dir(&app));
+    if !license.can_import_media {
+        return Err(AppError::Internal(format!(
+            "import_blocked: Personal media import requires the Archive tier (current: {}).",
+            license.plan.display_name()
+        )));
+    }
+
+    // ── 2. Hash the source ───────────────────────────────────────────────
     // Stream-hash the source file. For large video files (4 GB+) this takes
     // ~5–10 s on an SSD — acceptable once per import, negligible vs. transcription.
     let hash = sha256_path(&media_path).await;
 
-    // If we already have a disc with this hash, return it immediately.
+    // ── 3. Dedup short-circuit ───────────────────────────────────────────
     if let Some(ref h) = hash {
         if let Ok(Some(row)) = sqlx::query("SELECT id FROM library_discs WHERE source_hash = ? LIMIT 1")
             .bind(h)
@@ -124,6 +213,48 @@ pub async fn import_media_disc(
         }
     }
 
+    // ── 4. Vault copy ─────────────────────────────────────────────────────
+    // Stable: hash-derived path. Means a re-import after delete lands in the
+    // same vault slot and doesn't grow the disk twice.
+    let vault_root = vault_dir(&app)?;
+    let prefix = hash.as_deref().unwrap_or("nohash");
+    let prefix_short = &prefix[..prefix.len().min(16)];
+    let filename = Path::new(&media_path)
+        .file_name()
+        .map(|s| s.to_string_lossy().to_string())
+        .unwrap_or_else(|| "imported".to_string());
+    let vault_slot = vault_root.join(prefix_short);
+    tokio::fs::create_dir_all(&vault_slot)
+        .await
+        .map_err(|e| AppError::Internal(format!("vault mkdir failed: {e}")))?;
+    let vault_path = vault_slot.join(&filename);
+
+    // If the exact target already exists with the same size, skip the copy
+    // (idempotent — same hash means same bytes; saves a multi-GB recopy on retry).
+    let need_copy = match tokio::fs::metadata(&vault_path).await {
+        Ok(m) => {
+            let src_len = tokio::fs::metadata(&media_path)
+                .await
+                .map(|s| s.len())
+                .unwrap_or(0);
+            m.len() != src_len
+        }
+        Err(_) => true,
+    };
+    if need_copy {
+        tokio::fs::copy(&media_path, &vault_path).await.map_err(|e| {
+            AppError::Internal(format!(
+                "vault copy failed ({} → {}): {}",
+                Path::new(&media_path).display(),
+                vault_path.display(),
+                e
+            ))
+        })?;
+    }
+
+    let vault_path_str = vault_path.to_string_lossy().to_string();
+
+    // ── 5. Insert row pointing at the VAULT copy ─────────────────────────
     let now = Utc::now();
     let id = format!(
         "{}-{}",
@@ -167,7 +298,7 @@ pub async fn import_media_disc(
     .bind(&recovered_at)
     .bind(monogram_id)
     .bind(gradient)
-    .bind(&media_path)
+    .bind(&vault_path_str)
     .bind(&hash)
     .bind(now_ts)
     .bind(now_ts)
@@ -175,6 +306,80 @@ pub async fn import_media_disc(
     .await?;
 
     Ok(ImportResult { id, is_duplicate: false })
+}
+
+// ─── Vault helpers ──────────────────────────────────────────────────────────
+
+fn app_data_dir(app: &AppHandle) -> PathBuf {
+    app.path()
+        .app_data_dir()
+        .unwrap_or_else(|_| PathBuf::from("."))
+}
+
+fn vault_dir(app: &AppHandle) -> AppResult<PathBuf> {
+    let dir = app_data_dir(app).join("vault");
+    std::fs::create_dir_all(&dir)
+        .map_err(|e| AppError::Internal(format!("vault dir create failed: {e}")))?;
+    Ok(dir)
+}
+
+/// Best-effort free-space query. Returns None on platforms where the syscall
+/// fails; callers should treat None as "unknown — proceed but warn".
+fn free_space_for(path: &Path) -> std::io::Result<u64> {
+    // Walk up to the first existing ancestor (vault dir may not yet exist).
+    let mut cur = path.to_path_buf();
+    while !cur.exists() {
+        if !cur.pop() {
+            break;
+        }
+    }
+    #[cfg(windows)]
+    {
+        use std::os::windows::ffi::OsStrExt;
+        use std::ptr::null_mut;
+        let mut wide: Vec<u16> = cur.as_os_str().encode_wide().collect();
+        wide.push(0);
+        let mut free_bytes: u64 = 0;
+        // SAFETY: passing valid wide-null-terminated path and out-pointer.
+        let ok = unsafe {
+            #[link(name = "kernel32")]
+            extern "system" {
+                fn GetDiskFreeSpaceExW(
+                    lpDirectoryName: *const u16,
+                    lpFreeBytesAvailable: *mut u64,
+                    lpTotalNumberOfBytes: *mut u64,
+                    lpTotalNumberOfFreeBytes: *mut u64,
+                ) -> i32;
+            }
+            GetDiskFreeSpaceExW(wide.as_ptr(), &mut free_bytes, null_mut(), null_mut())
+        };
+        if ok != 0 {
+            Ok(free_bytes)
+        } else {
+            Err(std::io::Error::last_os_error())
+        }
+    }
+    #[cfg(not(windows))]
+    {
+        // Not implemented on non-Windows in this slice — Heirvo ships Windows-only today.
+        let _ = cur;
+        Err(std::io::Error::new(std::io::ErrorKind::Other, "unsupported"))
+    }
+}
+
+fn format_bytes(n: u64) -> String {
+    const KB: u64 = 1024;
+    const MB: u64 = KB * 1024;
+    const GB: u64 = MB * 1024;
+    if n >= GB {
+        format!("{:.2} GB", n as f64 / GB as f64)
+    } else if n >= MB {
+        format!("{:.1} MB", n as f64 / MB as f64)
+    } else if n >= KB {
+        format!("{:.1} KB", n as f64 / KB as f64)
+    } else {
+        format!("{} B", n)
+    }
 }
 
 /// SHA-256 of a file, streamed in 64 KB blocks. Returns None on any I/O error
@@ -201,11 +406,12 @@ async fn sha256_path(path: &str) -> Option<String> {
 /// Thin wrapper around `import_media_disc`.
 #[tauri::command]
 pub async fn import_video_disc(
+    app: AppHandle,
     state: State<'_, AppState>,
     video_path: String,
     title: String,
 ) -> AppResult<ImportResult> {
-    import_media_disc(state, video_path, title).await
+    import_media_disc(app, state, video_path, title).await
 }
 
 fn is_audio_ext(path: &str) -> bool {
