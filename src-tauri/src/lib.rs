@@ -146,6 +146,7 @@ pub fn run() {
             commands::library::get_vault_stats,
             commands::library::list_importable_media_in_dir,
             commands::library::ensure_disc_thumbnail,
+            commands::library::delete_library_discs_bulk,
             commands::albums::create_album,
             commands::albums::list_albums,
             commands::albums::get_album_with_discs,

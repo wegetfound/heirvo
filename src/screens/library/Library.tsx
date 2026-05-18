@@ -105,6 +105,59 @@ export default function Library() {
   const [filter, setFilter] = useState<FilterKind>("all");
   const [albums, setAlbums] = useState<Album[]>([]);
 
+  // ── Multi-select / bulk-delete state (lifted so it persists across filter tab switches) ──
+  const [selectMode, setSelectMode] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [bulkDeleteErr, setBulkDeleteErr] = useState<string | null>(null);
+
+  // Clear selection when leaving a filter tab or exiting select mode.
+  function exitSelectMode() {
+    setSelectMode(false);
+    setSelected(new Set());
+    setBulkDeleteOpen(false);
+    setBulkDeleteErr(null);
+  }
+
+  function toggleSelectMode() {
+    if (selectMode) {
+      exitSelectMode();
+    } else {
+      setSelectMode(true);
+      setSelected(new Set());
+    }
+  }
+
+  function toggleDisc(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  async function handleBulkDelete() {
+    if (bulkDeleting || selected.size === 0) return;
+    setBulkDeleting(true);
+    setBulkDeleteErr(null);
+    try {
+      await ipc.library.deleteDiscsBulk(Array.from(selected));
+      setBulkDeleteOpen(false);
+      exitSelectMode();
+      // Refresh library list.
+      try {
+        const page = await ipc.library.listPage(0, PAGE_SIZE);
+        setDiscs(page.discs);
+        setNextCursor(page.nextCursor);
+      } catch {/* ignore refresh error */}
+    } catch (e) {
+      setBulkDeleteErr(e instanceof Error ? e.message : "Delete failed — please try again.");
+      setBulkDeleting(false);
+    }
+  }
+
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -637,7 +690,14 @@ export default function Library() {
         )}
 
         {/* ── Filter tabs: cuts a mixed vault down to one media type ─── */}
-        <FilterTabs filter={filter} setFilter={setFilter} counts={counts} />
+        <FilterTabs
+          filter={filter}
+          setFilter={(k) => { exitSelectMode(); setFilter(k); }}
+          counts={counts}
+          selectMode={selectMode}
+          onToggleSelectMode={toggleSelectMode}
+          showSelectToggle={filter !== "all" && filter !== "albums"}
+        />
 
         {filter === "albums" ? (
           <AlbumGrid albums={albums} />
@@ -674,7 +734,15 @@ export default function Library() {
             />
           </>
         ) : (
-          <FilteredGrid discs={filteredDiscs} filter={filter} />
+          <FilteredGrid
+            discs={filteredDiscs}
+            filter={filter}
+            selectMode={selectMode}
+            selected={selected}
+            onToggleDisc={toggleDisc}
+            onRequestBulkDelete={() => setBulkDeleteOpen(true)}
+            onCancelSelect={exitSelectMode}
+          />
         )}
 
         {nextCursor != null && (
@@ -743,6 +811,53 @@ export default function Library() {
             <p className="mt-1 text-[13px] text-ink-600">
               Video & audio · Heirvo will copy them to your vault
             </p>
+          </div>
+        </div>
+      )}
+
+      {/* ── Bulk-delete confirm modal ────────────────────────────────── */}
+      {bulkDeleteOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-ink-900/50 p-4 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="bulk-delete-title"
+        >
+          <div className="w-full max-w-sm overflow-hidden rounded-2xl bg-white shadow-2xl p-6">
+            <h3
+              id="bulk-delete-title"
+              className="font-display text-[18px] font-bold tracking-[-0.01em] text-ink-900"
+            >
+              Remove {selected.size} {selected.size === 1 ? "disc" : "discs"} from your library?
+            </h3>
+            <p className="mt-2 text-[13.5px] leading-[1.55] text-ink-600">
+              The disc entries, transcripts, and any vault copies of imported
+              files will be deleted from this device.{" "}
+              <span className="font-medium text-ink-900">
+                Your original discs and any source files outside the vault are untouched.
+              </span>
+            </p>
+            {bulkDeleteErr && (
+              <p className="mt-3 text-[12.5px] text-ios-red">{bulkDeleteErr}</p>
+            )}
+            <div className="mt-5 flex gap-2 justify-end">
+              <button
+                type="button"
+                onClick={() => { setBulkDeleteOpen(false); setBulkDeleteErr(null); }}
+                disabled={bulkDeleting}
+                className="rounded-xl border border-ink-200 px-4 py-2 text-[13px] font-medium text-ink-700 transition hover:bg-ink-50 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleBulkDelete()}
+                disabled={bulkDeleting}
+                className="rounded-xl bg-ios-red px-4 py-2 text-[13px] font-semibold text-white transition hover:bg-red-500 disabled:opacity-60"
+              >
+                {bulkDeleting ? "Removing…" : `Remove ${selected.size}`}
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -861,10 +976,16 @@ function FilterTabs({
   filter,
   setFilter,
   counts,
+  selectMode,
+  onToggleSelectMode,
+  showSelectToggle,
 }: {
   filter: FilterKind;
   setFilter: (k: FilterKind) => void;
   counts: Record<FilterKind, number>;
+  selectMode: boolean;
+  onToggleSelectMode: () => void;
+  showSelectToggle: boolean;
 }) {
   const tabs: Array<{ key: FilterKind; label: string }> = [
     { key: "all", label: "All" },
@@ -884,6 +1005,7 @@ function FilterTabs({
         flexWrap: "wrap",
         padding: "10px 0 6px",
         borderBottom: "1px solid var(--lib-line)",
+        alignItems: "center",
       }}
     >
       {tabs.map((t) => {
@@ -927,12 +1049,53 @@ function FilterTabs({
           </button>
         );
       })}
+      {showSelectToggle && (
+        <button
+          type="button"
+          onClick={onToggleSelectMode}
+          style={{
+            marginLeft: "auto",
+            padding: "7px 12px",
+            borderRadius: 999,
+            border: "1px solid",
+            borderColor: selectMode ? "var(--lib-amber, #b45309)" : "var(--lib-line)",
+            background: selectMode ? "rgba(180,83,9,.08)" : "transparent",
+            color: selectMode ? "var(--lib-amber, #b45309)" : "var(--lib-ink-2)",
+            fontFamily: "var(--lib-sans)",
+            fontSize: 12.5,
+            fontWeight: 500,
+            cursor: "pointer",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 6,
+            transition: "background .15s ease, color .15s ease, border-color .15s ease",
+          }}
+        >
+          {selectMode ? "Cancel" : "Select"}
+        </button>
+      )}
     </div>
   );
 }
 
 /* ─── Flat filtered grid ──────────────────────────────────────────────────── */
-function FilteredGrid({ discs, filter }: { discs: Disc[]; filter: FilterKind }) {
+function FilteredGrid({
+  discs,
+  filter,
+  selectMode,
+  selected,
+  onToggleDisc,
+  onRequestBulkDelete,
+  onCancelSelect,
+}: {
+  discs: Disc[];
+  filter: FilterKind;
+  selectMode: boolean;
+  selected: Set<string>;
+  onToggleDisc: (id: string) => void;
+  onRequestBulkDelete: () => void;
+  onCancelSelect: () => void;
+}) {
   if (discs.length === 0) {
     return (
       <div
@@ -950,8 +1113,9 @@ function FilteredGrid({ discs, filter }: { discs: Disc[]; filter: FilterKind }) 
       </div>
     );
   }
+
   return (
-    <section style={{ marginTop: 32 }}>
+    <section style={{ marginTop: 32, paddingBottom: selectMode ? 80 : 0 }}>
       <div
         style={{
           display: "grid",
@@ -959,15 +1123,150 @@ function FilteredGrid({ discs, filter }: { discs: Disc[]; filter: FilterKind }) 
           gap: 22,
         }}
       >
-        {discs.map((d) => (
-          <DiscCard
-            key={d.id}
-            disc={d}
-            showStatus={false}
-            showSource={true}
-          />
-        ))}
+        {discs.map((d) => {
+          const isSelected = selected.has(d.id);
+          if (!selectMode) {
+            return (
+              <DiscCard
+                key={d.id}
+                disc={d}
+                showStatus={false}
+                showSource={true}
+              />
+            );
+          }
+          // In select mode: wrap card in a div that intercepts clicks.
+          return (
+            <div
+              key={d.id}
+              role="checkbox"
+              aria-checked={isSelected}
+              tabIndex={0}
+              onClick={() => onToggleDisc(d.id)}
+              onKeyDown={(e) => { if (e.key === " " || e.key === "Enter") onToggleDisc(d.id); }}
+              style={{
+                position: "relative",
+                cursor: "pointer",
+                borderRadius: 16,
+                outline: isSelected ? "2.5px solid var(--lib-amber, #b45309)" : "2.5px solid transparent",
+                transition: "outline-color .15s ease",
+              }}
+            >
+              {/* Intercept link clicks inside DiscCard by layering an invisible overlay */}
+              <div
+                aria-hidden
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  zIndex: 10,
+                  borderRadius: 16,
+                  pointerEvents: "none",
+                }}
+              />
+              <DiscCard disc={d} showStatus={false} showSource={true} />
+              {/* Checkbox indicator top-left */}
+              <span
+                aria-hidden
+                style={{
+                  position: "absolute",
+                  top: 10,
+                  left: 10,
+                  zIndex: 11,
+                  width: 22,
+                  height: 22,
+                  borderRadius: "50%",
+                  border: "2px solid",
+                  borderColor: isSelected ? "var(--lib-amber, #b45309)" : "rgba(255,255,255,.9)",
+                  background: isSelected ? "var(--lib-amber, #b45309)" : "rgba(0,0,0,.35)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  boxShadow: "0 1px 4px rgba(0,0,0,.3)",
+                  backdropFilter: "blur(4px)",
+                  transition: "background .15s ease, border-color .15s ease",
+                  pointerEvents: "none",
+                }}
+              >
+                {isSelected && (
+                  <svg width="12" height="9" viewBox="0 0 12 9" fill="none" aria-hidden>
+                    <path d="M1 4L4.5 7.5L11 1" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                )}
+              </span>
+            </div>
+          );
+        })}
       </div>
+
+      {/* Floating bottom toolbar — visible only in select mode */}
+      {selectMode && (
+        <div
+          style={{
+            position: "fixed",
+            bottom: 24,
+            left: "50%",
+            transform: "translateX(-50%)",
+            zIndex: 40,
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            background: "rgba(30,30,30,.96)",
+            backdropFilter: "blur(12px)",
+            borderRadius: 999,
+            padding: "10px 18px",
+            boxShadow: "0 4px 24px rgba(0,0,0,.35)",
+            fontFamily: "var(--lib-sans)",
+          }}
+        >
+          <span
+            style={{
+              fontSize: 13,
+              color: "rgba(255,255,255,.7)",
+              fontVariantNumeric: "tabular-nums",
+              minWidth: 80,
+            }}
+          >
+            {selected.size === 0 ? "None selected" : `${selected.size} selected`}
+          </span>
+          <button
+            type="button"
+            onClick={onCancelSelect}
+            style={{
+              padding: "6px 14px",
+              borderRadius: 999,
+              border: "1px solid rgba(255,255,255,.2)",
+              background: "transparent",
+              color: "rgba(255,255,255,.85)",
+              fontFamily: "var(--lib-sans)",
+              fontSize: 12.5,
+              fontWeight: 500,
+              cursor: "pointer",
+            }}
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            disabled={selected.size === 0}
+            onClick={onRequestBulkDelete}
+            style={{
+              padding: "6px 16px",
+              borderRadius: 999,
+              border: "none",
+              background: selected.size === 0 ? "rgba(255,255,255,.15)" : "#e53e3e",
+              color: "#fff",
+              fontFamily: "var(--lib-sans)",
+              fontSize: 12.5,
+              fontWeight: 600,
+              cursor: selected.size === 0 ? "default" : "pointer",
+              opacity: selected.size === 0 ? 0.5 : 1,
+              transition: "background .15s ease, opacity .15s ease",
+            }}
+          >
+            Delete {selected.size > 0 ? selected.size : ""} selected
+          </button>
+        </div>
+      )}
     </section>
   );
 }

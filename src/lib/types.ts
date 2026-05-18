@@ -154,6 +154,13 @@ export interface DeleteResult {
   bytesFreed: number;
 }
 
+/** Returned by delete_library_discs_bulk. Partial success is allowed. */
+export interface BulkDeleteResult {
+  successCount: number;
+  failCount: number;
+  bytesFreed: number;
+}
+
 /** A library album — groups related discs (most commonly photos from a
  *  dropped folder) under a single library card. */
 export interface Album {

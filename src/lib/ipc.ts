@@ -29,6 +29,7 @@ import type {
   ImportResult,
   ImportPreview,
   DeleteResult,
+  BulkDeleteResult,
   VaultStats,
   Album,
   AlbumWithDiscs,
@@ -194,6 +195,10 @@ export const ipc = {
      * (video_path inside the vault), the vault copy is deleted too. */
     deleteDisc: (id: string) =>
       invoke<DeleteResult>("delete_library_disc", { id }),
+    /** Bulk-delete multiple discs. Loops delete_library_disc internally and
+     * returns aggregate totals. Partial success is allowed. */
+    deleteDiscsBulk: (ids: string[]) =>
+      invoke<BulkDeleteResult>("delete_library_discs_bulk", { ids }),
     /** Aggregate vault stats — total files, bytes used, free space. */
     getVaultStats: () => invoke<VaultStats>("get_vault_stats"),
     /** Walk a directory (recursively, capped) and return all importable media

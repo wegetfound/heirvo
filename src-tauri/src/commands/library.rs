@@ -706,6 +706,46 @@ pub struct DeleteResult {
     pub bytes_freed: u64,
 }
 
+/// Batch-delete multiple discs in one IPC call. Loops `delete_library_disc`
+/// internally and accumulates totals. Partial success is allowed — failures
+/// are counted but do not abort the remaining deletes.
+#[tauri::command]
+pub async fn delete_library_discs_bulk(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    ids: Vec<String>,
+) -> AppResult<BulkDeleteResult> {
+    let mut success_count: u32 = 0;
+    let mut fail_count: u32 = 0;
+    let mut bytes_freed: u64 = 0;
+
+    for id in ids {
+        match delete_library_disc(app.clone(), state.clone(), id).await {
+            Ok(r) => {
+                success_count += 1;
+                bytes_freed = bytes_freed.saturating_add(r.bytes_freed);
+            }
+            Err(_) => {
+                fail_count += 1;
+            }
+        }
+    }
+
+    Ok(BulkDeleteResult {
+        success_count,
+        fail_count,
+        bytes_freed,
+    })
+}
+
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BulkDeleteResult {
+    pub success_count: u32,
+    pub fail_count: u32,
+    pub bytes_freed: u64,
+}
+
 /// Aggregate vault stats — file count, bytes used, bytes free on the volume.
 /// Powers a "Storage" panel in Settings and informs the user how much space
 /// their imported memories are taking.
