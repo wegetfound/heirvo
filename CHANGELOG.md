@@ -6,6 +6,34 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [Unreleased] — Family Memory Vault
+
+Heirvo expanded from "disc recovery only" to a full family memory vault with disc recovery at the core. The Archive ($99) and Family ($149) tiers now have a real product behind them: a personal media library with albums, thumbnails, transcription, and EXIF-aware organisation.
+
+### Added
+- **Personal media vault** — import photos, videos, and audio from folders alongside recovered disc content. All media lives in a single managed vault.
+- **Bulk import + drag-and-drop** — drop a folder onto the app to import an entire photo collection in one step; duplicate detection prevents re-importing files already in the vault.
+- **Albums** — full CRUD: auto-created from folder drops, renameable, deleteable (ungroup or delete files). Album detail page shows a 2×2 collage cover. Schema + backend migration included.
+- **Photo thumbnails** — photos show real inline previews in library cards.
+- **Video thumbnails** — generated via bundled ffmpeg at import time; no external dependency.
+- **EXIF date extraction** — imported photos use the real date-taken from EXIF, not the import timestamp.
+- **Filter tabs** — Library view now has tabs: All · Albums · Videos · Photos · Audio · Recovered discs · All imports.
+- **Title search** — type to filter any item across all tabs; makes photos and imported media findable alongside recovered disc content.
+- **Import flow paywall** — size preview and vault-copy confirm step before committing; Archive-tier gate enforced at the point of personal-media import.
+- **Archive-tier gate** — personal media import (vault-copy) is gated behind the Archive ($99) licence; paywall modal shown on attempt from lower tiers.
+- **New app icon** — disc-with-arrow mark; 7-size ICO (16/24/32/48/64/128/256) + matching PNGs replacing the kintsugi-disc placeholder.
+- **Sidebar brand mark** — updated to new branded PNG.
+
+### Changed
+- **Vault stats** — thumbnail files are excluded from vault storage totals; thumbnails no longer double-count against the user's vault size.
+- **Marketing site** — tier positioning updated to "From discs to digital vault" narrative; all four tier names, prices, and feature bullets realigned to current product.
+
+### Fixed
+- **Transcription enqueue path bug (critical)** — transcription jobs were enqueued with the source path instead of the vault copy path. Jobs would silently fail or transcribe the wrong file. Now correctly uses the vault path after import completes.
+- **Thumbnail GC on disc delete** — orphaned thumbnails are now garbage-collected when a disc session is deleted, preventing unbounded cache growth.
+
+---
+
 ## [1.0.0] — 2026-05-17
 
 Public 1.0 launch. Three-tier pricing live, full payment flow active, professional branding refreshed.

@@ -2,7 +2,7 @@
 
 > *Retrieving memories before they are lost forever.*
 
-Recover files from scratched, damaged, or aging DVDs, photo CDs, audio CDs, and data discs — even when the disc won't play in a normal player. Built with Rust + Tauri 2 + React.
+Recover files from scratched, damaged, or aging DVDs, photo CDs, audio CDs, and data discs — then organise everything in a personal family memory vault. Built with Rust + Tauri 2 + React.
 
 [**heirvo.com**](https://heirvo.com) · [Download](https://heirvo.com/download) · [Mail-in service](https://heirvo.com/recover)
 
@@ -14,9 +14,18 @@ Recover files from scratched, damaged, or aging DVDs, photo CDs, audio CDs, and 
 |---|---|---|
 | **Heirvo Free** | $0 | Free disc scan · see every recoverable file before paying |
 | **Heirvo Recover** | $59 one-time | Unlimited recovery · transcription · search · in-app playback · 1 lifetime MP4 export |
-| **Heirvo Archive** ⭐ | $99 one-time | Everything in Recover · unlimited MP4 export · AI restoration · clip-and-share · SRT export · hosted private memory pages · priority support |
+| **Heirvo Archive** ⭐ | $99 one-time | Everything in Recover · **personal media vault** · bulk photo/video import · albums · thumbnails · EXIF dates · unlimited MP4 export · AI restoration · clip-and-share · SRT export · hosted private memory pages · priority support |
 | **Heirvo Family** | $149 one-time | Everything in Archive · 3 seats · shared recoveries across family · same-day priority support |
 | **Mail-in service** | $89+ | Ship us the disc — we handle everything. For users without a DVD drive. |
+
+### Vault features (Archive + Family tiers)
+
+- **Import from folders** — drag-and-drop a folder to bulk-import an entire photo or video collection alongside disc recoveries
+- **Albums** — auto-created from folder drops; renameable, deleteable, with 2×2 collage covers
+- **Thumbnails** — photo and video previews generated at import (video thumbnails via bundled ffmpeg)
+- **EXIF-aware dates** — photos sorted by real date-taken, not import timestamp
+- **Filter + search** — tabs for All · Albums · Videos · Photos · Audio · Recovered discs; live title search across all media
+- **Unified vault** — disc recoveries and personal imports share one library, one search, one set of stats
 
 ## Repository layout
 
@@ -24,7 +33,7 @@ Recover files from scratched, damaged, or aging DVDs, photo CDs, audio CDs, and 
 Heirvo/
 ├── src/                    React frontend (desktop app)
 │   ├── app/                Routing + top-level App
-│   ├── screens/            Wizard, Dashboard, Transcode, Enhancement
+│   ├── screens/            Wizard, Dashboard, Library, AlbumDetail, Transcode, Enhancement
 │   └── lib/                Typed IPC bindings, types, utilities
 │
 ├── src-tauri/              Rust backend
