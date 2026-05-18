@@ -60,6 +60,10 @@ futures-util = "0.3"
 # not supported and falls back to direct file serving via the webview.
 image = { version = "0.25", default-features = false, features = ["png", "jpeg", "gif", "webp", "bmp", "tiff"] }
 
+# EXIF metadata — extract DateTimeOriginal from imported photos so the library
+# year column reflects when the photo was taken, not when it was imported.
+kamadak-exif = "0.6"
+
 # ONNX Runtime — optional. Enable with `--features onnx` to pull ~50MB of
 # native libraries and unlock real Real-ESRGAN inference. Default build
 # uses MockAiBackend and stays fast/light.

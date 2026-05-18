@@ -493,11 +493,23 @@ pub async fn import_media_disc(
         slugify(&title),
         &uuid::Uuid::new_v4().to_string()[..8]
     );
-    let year = now.year() as i64;
-    let date_display = format!("{} {}, {}", month_name(now.month()), now.day(), year);
-    let recovered_at = format!("{} {}", short_month(now.month()), now.day());
 
     let media_kind = classify_media(&media_path);
+
+    // For photos, try to use the EXIF DateTimeOriginal so the year column
+    // reflects when the photo was taken rather than when it was imported.
+    // `now_ts` (used for created_at / updated_at) stays as wall-clock for
+    // sort stability.
+    let photo_date = if media_kind == "photo" {
+        read_photo_taken_date(&media_path)
+    } else {
+        None
+    };
+    let date_ref = photo_date.as_ref().unwrap_or(&now);
+
+    let year = date_ref.year() as i64;
+    let date_display = format!("{} {}, {}", month_name(date_ref.month()), date_ref.day(), year);
+    let recovered_at = format!("{} {}", short_month(date_ref.month()), date_ref.day());
 
     const VIDEO_GRADIENTS: [&str; 14] = [
         "wedding", "christmas", "hawaii", "birthday", "summer", "autumn",
@@ -874,6 +886,31 @@ pub async fn import_video_disc(
     import_media_disc(app, state, video_path, title, None).await
 }
 
+/// Read the photo's EXIF DateTimeOriginal (or DateTimeDigitized as fallback).
+/// Returns None when the file is not a photo, has no EXIF, or the date
+/// can't be parsed. Failure is benign — the caller falls back to wall-clock.
+fn read_photo_taken_date(path: &str) -> Option<chrono::DateTime<chrono::Utc>> {
+    use exif::{In, Reader, Tag};
+
+    let file = std::fs::File::open(path).ok()?;
+    let mut bufreader = std::io::BufReader::new(file);
+    let exif = Reader::new().read_from_container(&mut bufreader).ok()?;
+
+    // Prefer DateTimeOriginal (when the shutter fired); fall back to
+    // DateTimeDigitized (when it was scanned/digitised).
+    let tags = [Tag::DateTimeOriginal, Tag::DateTimeDigitized];
+    for tag in &tags {
+        if let Some(field) = exif.get_field(*tag, In::PRIMARY) {
+            let raw = field.display_value().to_string();
+            // EXIF date format: "YYYY:MM:DD HH:MM:SS"
+            if let Ok(ndt) = chrono::NaiveDateTime::parse_from_str(&raw, "%Y:%m:%d %H:%M:%S") {
+                return Some(ndt.and_utc());
+            }
+        }
+    }
+    None
+}
+
 /// Classify an import path into a media_type kind. Unknown extensions fall
 /// back to "video" so the picker filter is the real gate; this only
 /// distinguishes within already-accepted files.
@@ -934,5 +971,53 @@ fn short_month(m: u32) -> &'static str {
         1 => "Jan", 2 => "Feb", 3 => "Mar", 4 => "Apr",
         5 => "May", 6 => "Jun", 7 => "Jul", 8 => "Aug",
         9 => "Sep", 10 => "Oct", 11 => "Nov", _ => "Dec",
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// A missing file path must return None — not panic or propagate an error.
+    #[test]
+    fn read_photo_taken_date_missing_file_returns_none() {
+        assert!(
+            read_photo_taken_date("/nonexistent/path/photo.jpg").is_none(),
+            "Expected None for a missing file"
+        );
+    }
+
+    /// An empty string path must return None gracefully.
+    #[test]
+    fn read_photo_taken_date_empty_path_returns_none() {
+        assert!(
+            read_photo_taken_date("").is_none(),
+            "Expected None for an empty path"
+        );
+    }
+
+    /// Verify the EXIF date format string parses correctly.
+    /// "YYYY:MM:DD HH:MM:SS" is the standard EXIF ASCII date format.
+    #[test]
+    fn exif_date_format_parses_correctly() {
+        use chrono::NaiveDateTime;
+        let raw = "1995:06:15 14:30:00";
+        let ndt = NaiveDateTime::parse_from_str(raw, "%Y:%m:%d %H:%M:%S")
+            .expect("EXIF date format should parse");
+        let utc = ndt.and_utc();
+        assert_eq!(utc.year(), 1995);
+        assert_eq!(utc.month(), 6);
+        assert_eq!(utc.day(), 15);
+    }
+
+    /// Malformed EXIF date strings must produce None, not a panic.
+    #[test]
+    fn exif_date_format_rejects_malformed() {
+        use chrono::NaiveDateTime;
+        let bad = "not-a-date";
+        assert!(
+            NaiveDateTime::parse_from_str(bad, "%Y:%m:%d %H:%M:%S").is_err(),
+            "Malformed string should fail to parse"
+        );
     }
 }
