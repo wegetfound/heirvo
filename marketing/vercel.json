@@ -1,4 +1,8 @@
 {
+  "redirects": [
+    { "source": "/operators", "destination": "/labs", "permanent": true },
+    { "source": "/recover-h", "destination": "/recover", "permanent": true }
+  ],
   "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }],
   "headers": [
     {

@@ -13,9 +13,9 @@ export function Nav() {
           borderBottom: "1px solid rgba(225,230,238,0.7)",
         }}
       />
-      <nav className="container-narrow flex h-[68px] items-center justify-between">
-        <Link to="/" className="flex items-center gap-2.5 group">
-          <BrandMark size={36} />
+      <nav className="container-narrow flex h-[80px] items-center justify-between">
+        <Link to="/" className="flex items-center gap-3 group">
+          <BrandMark size={72} />
           <span className="font-display text-[18px] font-semibold tracking-tightish text-ink-900">
             Heirvo
           </span>

@@ -18,6 +18,9 @@ const Privacy      = lazy(() => import("./pages/Privacy"));
 const Terms        = lazy(() => import("./pages/Terms"));
 const Refund       = lazy(() => import("./pages/Refund"));
 const AcceptableUse = lazy(() => import("./pages/AcceptableUse"));
+const Beta         = lazy(() => import("./pages/Beta"));
+const Labs         = lazy(() => import("./pages/Labs"));
+const LabsHandbook = lazy(() => import("./pages/LabsHandbook"));
 const NotFound     = lazy(() => import("./pages/NotFound"));
 import "./index.css";
 
@@ -66,6 +69,11 @@ function AppRoot() {
           <Route path="/about" element={<About />} />
           <Route path="/guides" element={<GuideIndex />} />
           <Route path="/guides/:slug" element={<GuidePost />} />
+          <Route path="/beta" element={<Beta />} />
+          <Route path="/hn" element={<Beta />} />
+          <Route path="/labs" element={<Labs />} />
+          <Route path="/operators" element={<Labs />} />
+          <Route path="/labs/handbook" element={<LabsHandbook />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Suspense>

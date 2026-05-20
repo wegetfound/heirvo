@@ -9,7 +9,7 @@ export function Footer() {
           {/* Brand column */}
           <div className="md:max-w-xs">
             <Link to="/" className="inline-flex items-center gap-2.5 mb-4 group">
-              <BrandMark size={36} />
+              <BrandMark size={48} />
               <span className="font-display text-[18px] font-semibold tracking-tightish text-ink-900">
                 Heirvo
               </span>

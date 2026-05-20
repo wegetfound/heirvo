@@ -2471,7 +2471,7 @@ const GUIDES: Guide[] = [
   // Recover 8mm film transferred to DVD
   // ─────────────────────────────────────────────────────────────────────────────
   {
-    slug: "recover-8mm-film-dvd-transfer",
+    slug: "recover-8mm-film-transferred-to-dvd",
     title: "How to Recover 8mm Film Transferred to DVD",
     metaTitle:
       "How to Recover 8mm Film Transferred to DVD (2026 Guide)",

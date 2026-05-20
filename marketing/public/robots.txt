@@ -67,6 +67,5 @@ Allow: /
 # ── Do not allow indexing of utility pages ────────────────────────────────────
 User-agent: *
 Disallow: /activate
-Disallow: /refund
 
 Sitemap: https://heirvo.com/sitemap.xml
