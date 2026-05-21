@@ -20,6 +20,7 @@ import {
   useState,
   useEffect,
   useCallback,
+  useMemo,
 } from "react";
 import { gsap } from "gsap";
 import {
@@ -35,6 +36,7 @@ import {
   Clock,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { convertFileSrc } from "@tauri-apps/api/core";
 import { MOCK_DISCS, getDiscById } from "./data/mockDiscs";
 import { gradientCss } from "./components/GradientArt";
 import type { Disc } from "./data/types";
@@ -443,6 +445,348 @@ function CoverFlow({ discs, activeId, onSelect, fullscreen }: CarouselProps) {
   );
 }
 
+// ─── IMMERSIVE PLAYER (stable top-level component) ───────────────────────────
+//
+// Hoisted out of Memories() so React never sees a new component type each
+// render, which would remount (and reset) the <video> element on every state
+// tick.  Everything the old closure-Player captured is now an explicit prop.
+
+interface ImmersivePlayerProps {
+  // layout
+  height: number | string;
+  ambient?: boolean;
+  // visual
+  glow: string;
+  posterBg: string;
+  aspect: string;
+  // playback state
+  disc: Disc;
+  currentSec: number;
+  isPlaying: boolean;
+  hasVideo: boolean;
+  mediaSrc: string | null;
+  // setters
+  setCurrentSec: React.Dispatch<React.SetStateAction<number>>;
+  setIsPlaying: React.Dispatch<React.SetStateAction<boolean>>;
+  setFullscreen: React.Dispatch<React.SetStateAction<boolean>>;
+  setAspect: React.Dispatch<React.SetStateAction<string>>;
+  // refs from parent (created there so parent GSAP effects still work)
+  playerRef: React.RefObject<HTMLDivElement | null>;
+  posterRef: React.RefObject<HTMLDivElement | null>;
+  videoRef: React.RefObject<HTMLVideoElement | null>;
+}
+
+function ImmersivePlayer({
+  height,
+  ambient,
+  glow,
+  posterBg,
+  disc,
+  currentSec,
+  isPlaying,
+  hasVideo,
+  mediaSrc,
+  setCurrentSec,
+  setIsPlaying,
+  setFullscreen,
+  setAspect,
+  playerRef,
+  posterRef,
+  videoRef,
+}: ImmersivePlayerProps) {
+  // Track whether video failed to load so we can fall back to the poster.
+  const [videoFailed, setVideoFailed] = useState(false);
+
+  // Reset failure state when the disc changes (new video source).
+  useEffect(() => {
+    setVideoFailed(false);
+  }, [mediaSrc]);
+
+  // ── Sync video element → seek when currentSec changes from scrubber/external
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v || !hasVideo || videoFailed) return;
+    if (Math.abs(v.currentTime - currentSec) > 0.5) {
+      v.currentTime = currentSec;
+    }
+  }, [currentSec, hasVideo, videoFailed, videoRef]);
+
+  // ── Sync video element play/pause
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v || !hasVideo || videoFailed) return;
+    if (isPlaying) {
+      v.play().catch(() => setIsPlaying(false));
+    } else {
+      v.pause();
+    }
+  }, [isPlaying, hasVideo, videoFailed, videoRef, setIsPlaying]);
+
+  // Decide whether to show the real video or the poster (poster if no video,
+  // or if the video element reported an error).
+  const showVideo = hasVideo && !videoFailed;
+
+  return (
+    <div
+      ref={playerRef as React.RefObject<HTMLDivElement>}
+      style={{
+        position: "relative",
+        width: "100%",
+        height,
+        borderRadius: ambient ? 18 : 16,
+        overflow: "hidden",
+        boxShadow: ambient
+          ? `0 0 80px ${glow}, 0 24px 80px rgba(0,0,0,0.55), 0 2px 8px rgba(0,0,0,0.35)`
+          : `0 0 60px ${glow}, 0 16px 60px rgba(0,0,0,0.35), 0 2px 8px rgba(0,0,0,0.20)`,
+        border: "1px solid rgba(255,255,255,0.12)",
+        flexShrink: 0,
+      }}
+    >
+      {/* ── REAL VIDEO (when hasVideo and no error) ── */}
+      {showVideo && (
+        <video
+          ref={videoRef as React.RefObject<HTMLVideoElement>}
+          src={mediaSrc ?? undefined}
+          playsInline
+          style={{
+            position: "absolute",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+            objectFit: "contain",
+            background: "#000",
+            zIndex: 1,
+          }}
+          onTimeUpdate={(e) => {
+            setCurrentSec((e.currentTarget as HTMLVideoElement).currentTime);
+          }}
+          onPlay={() => setIsPlaying(true)}
+          onPause={() => setIsPlaying(false)}
+          onEnded={() => {
+            setIsPlaying(false);
+            setCurrentSec(disc.durationSec);
+          }}
+          onLoadedMetadata={(e) => {
+            const v = e.currentTarget as HTMLVideoElement;
+            if (v.videoWidth && v.videoHeight) {
+              setAspect(`${v.videoWidth} / ${v.videoHeight}`);
+            }
+          }}
+          onError={() => setVideoFailed(true)}
+        />
+      )}
+
+      {/* ── POSTER ART with Ken Burns (poster path OR video fallback) ── */}
+      {!showVideo && (
+        <div
+          ref={posterRef as React.RefObject<HTMLDivElement>}
+          style={{
+            position: "absolute",
+            inset: 0,
+            background: posterBg,
+            transformOrigin: "center center",
+            zIndex: 1,
+          }}
+        />
+      )}
+
+      {/* Film grain — always visible, gives texture over both video and poster */}
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.72' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)' opacity='0.055'/%3E%3C/svg%3E")`,
+          backgroundSize: "200px 200px",
+          pointerEvents: "none",
+          mixBlendMode: "overlay",
+          zIndex: 2,
+        }}
+      />
+
+      {/* Vignette */}
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          background:
+            "radial-gradient(ellipse at 50% 50%, transparent 40%, rgba(0,0,0,0.65) 100%)",
+          pointerEvents: "none",
+          zIndex: 3,
+        }}
+      />
+
+      {/* Bottom info gradient */}
+      <div
+        style={{
+          position: "absolute",
+          bottom: 0,
+          left: 0,
+          right: 0,
+          height: "55%",
+          background: "linear-gradient(to top, rgba(0,0,0,0.72) 0%, transparent 100%)",
+          pointerEvents: "none",
+          zIndex: 3,
+        }}
+      />
+
+      {/* Top bar — expand button */}
+      <div
+        style={{
+          position: "absolute",
+          top: 12,
+          right: 12,
+          display: "flex",
+          gap: 8,
+          zIndex: 10,
+        }}
+      >
+        {!ambient && (
+          <button
+            onClick={() => setFullscreen(true)}
+            title="Theater mode (F)"
+            style={{
+              width: 34,
+              height: 34,
+              borderRadius: "50%",
+              background: "rgba(0,0,0,0.40)",
+              backdropFilter: "blur(8px)",
+              border: "1px solid rgba(255,255,255,0.18)",
+              color: "rgba(255,255,255,0.90)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "pointer",
+              transition: "background 0.2s",
+            }}
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.background = "rgba(0,0,0,0.65)";
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.background = "rgba(0,0,0,0.40)";
+            }}
+          >
+            <Maximize2 size={15} />
+          </button>
+        )}
+      </div>
+
+      {/* Controls overlay */}
+      <div
+        style={{
+          position: "absolute",
+          bottom: 0,
+          left: 0,
+          right: 0,
+          padding: ambient ? "16px 24px 20px" : "12px 20px 16px",
+          display: "flex",
+          flexDirection: "column",
+          gap: ambient ? 10 : 8,
+          zIndex: 5,
+        }}
+      >
+        {/* Scrubber */}
+        <Scrubber
+          currentSec={currentSec}
+          durationSec={disc.durationSec}
+          onSeek={(s) => setCurrentSec(s)}
+          ambient={true}
+        />
+
+        {/* Play row */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            {/* Big play button */}
+            <button
+              onClick={() => setIsPlaying((p) => !p)}
+              style={{
+                width: ambient ? 52 : 44,
+                height: ambient ? 52 : 44,
+                borderRadius: "50%",
+                background: "rgba(255,255,255,0.95)",
+                border: "none",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer",
+                boxShadow: "0 4px 16px rgba(0,0,0,0.35)",
+                transition: "transform 0.15s ease, box-shadow 0.15s ease",
+                flexShrink: 0,
+              }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.transform = "scale(1.08)";
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.transform = "scale(1)";
+              }}
+            >
+              {isPlaying ? (
+                <Pause size={ambient ? 20 : 17} fill="var(--lib-ink)" color="var(--lib-ink)" />
+              ) : (
+                <Play
+                  size={ambient ? 20 : 17}
+                  fill="var(--lib-ink)"
+                  color="var(--lib-ink)"
+                  style={{ marginLeft: 2 }}
+                />
+              )}
+            </button>
+
+            {/* Timecode */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                fontFamily: "var(--lib-sans)",
+                fontSize: ambient ? 14 : 12,
+                color: "rgba(255,255,255,0.85)",
+                fontVariantNumeric: "tabular-nums",
+                letterSpacing: "0.01em",
+              }}
+            >
+              <Clock size={11} style={{ opacity: 0.6 }} />
+              <span>{fmtSec(currentSec)}</span>
+              <span style={{ opacity: 0.45 }}>/</span>
+              <span style={{ opacity: 0.65 }}>{disc.durationFormatted}</span>
+            </div>
+          </div>
+
+          {/* Right side: volume hint + fullscreen */}
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <Volume2 size={14} style={{ color: "rgba(255,255,255,0.45)" }} />
+            {ambient && (
+              <button
+                onClick={() => setFullscreen(false)}
+                style={{
+                  width: 34,
+                  height: 34,
+                  borderRadius: "50%",
+                  background: "rgba(255,255,255,0.12)",
+                  border: "1px solid rgba(255,255,255,0.18)",
+                  color: "rgba(255,255,255,0.85)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "pointer",
+                  backdropFilter: "blur(8px)",
+                }}
+              >
+                <Minimize2 size={14} />
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
 
 export default function Memories() {
@@ -462,13 +806,27 @@ export default function Memories() {
   // a real <video> sets this from its native dimensions via onLoadedMetadata so
   // footage is shown true and never stretched.
   const [aspect, setAspect] = useState("4 / 3");
-  void setAspect; // wired by real-video playback (handoff to /watch for now)
+
+  // ── Resolve a playable media source for the active disc ──────────────────────
+  // URL passthrough (http/https/blob/data) lets this work without a Tauri shell.
+  // Local paths go through convertFileSrc (Tauri asset protocol).
+  const mediaSrc = useMemo<string | null>(() => {
+    if (!disc.videoPath) return null;
+    if (/^(https?:|blob:|data:)/i.test(disc.videoPath)) return disc.videoPath;
+    try {
+      return convertFileSrc(disc.videoPath);
+    } catch {
+      return null;
+    }
+  }, [disc.videoPath]);
+  const hasVideo = mediaSrc !== null && disc.mediaType !== "photo";
 
   // Refs for GSAP targets
   const rootRef = useRef<HTMLDivElement>(null);
   const glowRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<HTMLDivElement>(null);
   const posterRef = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const headerRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLDivElement>(null);
   const carouselRef = useRef<HTMLDivElement>(null);
@@ -515,8 +873,10 @@ export default function Memories() {
     };
   }, [disc.id]);
 
-  // ── Playback simulation ──────────────────────────────────────────────────────
+  // ── Playback simulation (poster / no-video path only) ───────────────────────
+  // When a real <video> is present its onTimeUpdate drives currentSec instead.
   useEffect(() => {
+    if (hasVideo) return; // real video drives time — do not double-advance
     if (isPlaying) {
       intervalRef.current = setInterval(() => {
         setCurrentSec((s) => {
@@ -533,11 +893,12 @@ export default function Memories() {
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [isPlaying, disc.durationSec]);
+  }, [isPlaying, disc.durationSec, hasVideo]);
 
-  // ── Ambient Ken Burns pulse on the poster ────────────────────────────────────
+  // ── Ambient Ken Burns pulse on the poster (poster / no-video path only) ─────
+  // When real video is playing there is no poster element to animate.
   useEffect(() => {
-    if (REDUCED() || !posterRef.current) return;
+    if (REDUCED() || !posterRef.current || hasVideo) return;
     gsapKbRef.current = gsap.to(posterRef.current, {
       scale: 1.06,
       duration: 14,
@@ -548,7 +909,7 @@ export default function Memories() {
     return () => {
       gsapKbRef.current?.kill();
     };
-  }, [disc.id]);
+  }, [disc.id, hasVideo]);
 
   // ── Entrance animation (once on mount) ──────────────────────────────────────
   useEffect(() => {
@@ -655,235 +1016,6 @@ export default function Memories() {
   const glow = roomGlow(disc);
   const posterBg = gradientCss(disc.gradient);
   const yearsAgo = new Date().getFullYear() - disc.year;
-
-  // ── Shared player props ───────────────────────────────────────────────────────
-  function Player({
-    height,
-    ambient,
-  }: {
-    height: number | string;
-    ambient?: boolean;
-  }) {
-    return (
-      <div
-        ref={playerRef}
-        style={{
-          position: "relative",
-          width: "100%",
-          height,
-          borderRadius: ambient ? 18 : 16,
-          overflow: "hidden",
-          boxShadow: ambient
-            ? `0 0 80px ${glow}, 0 24px 80px rgba(0,0,0,0.55), 0 2px 8px rgba(0,0,0,0.35)`
-            : `0 0 60px ${glow}, 0 16px 60px rgba(0,0,0,0.35), 0 2px 8px rgba(0,0,0,0.20)`,
-          border: "1px solid rgba(255,255,255,0.12)",
-          flexShrink: 0,
-        }}
-      >
-        {/* Poster art with Ken Burns */}
-        <div
-          ref={posterRef}
-          style={{
-            position: "absolute",
-            inset: 0,
-            background: posterBg,
-            transformOrigin: "center center",
-          }}
-        />
-
-        {/* Film grain */}
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.72' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)' opacity='0.055'/%3E%3C/svg%3E")`,
-            backgroundSize: "200px 200px",
-            pointerEvents: "none",
-            mixBlendMode: "overlay",
-          }}
-        />
-
-        {/* Vignette */}
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            background:
-              "radial-gradient(ellipse at 50% 50%, transparent 40%, rgba(0,0,0,0.65) 100%)",
-            pointerEvents: "none",
-          }}
-        />
-
-        {/* Bottom info gradient */}
-        <div
-          style={{
-            position: "absolute",
-            bottom: 0,
-            left: 0,
-            right: 0,
-            height: "55%",
-            background: "linear-gradient(to top, rgba(0,0,0,0.72) 0%, transparent 100%)",
-            pointerEvents: "none",
-          }}
-        />
-
-        {/* Top bar — expand button */}
-        <div
-          style={{
-            position: "absolute",
-            top: 12,
-            right: 12,
-            display: "flex",
-            gap: 8,
-            zIndex: 10,
-          }}
-        >
-          {!ambient && (
-            <button
-              onClick={() => setFullscreen(true)}
-              title="Theater mode (F)"
-              style={{
-                width: 34,
-                height: 34,
-                borderRadius: "50%",
-                background: "rgba(0,0,0,0.40)",
-                backdropFilter: "blur(8px)",
-                border: "1px solid rgba(255,255,255,0.18)",
-                color: "rgba(255,255,255,0.90)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                cursor: "pointer",
-                transition: "background 0.2s",
-              }}
-              onMouseEnter={(e) => {
-                (e.currentTarget as HTMLButtonElement).style.background = "rgba(0,0,0,0.65)";
-              }}
-              onMouseLeave={(e) => {
-                (e.currentTarget as HTMLButtonElement).style.background = "rgba(0,0,0,0.40)";
-              }}
-            >
-              <Maximize2 size={15} />
-            </button>
-          )}
-        </div>
-
-        {/* Controls overlay */}
-        <div
-          style={{
-            position: "absolute",
-            bottom: 0,
-            left: 0,
-            right: 0,
-            padding: ambient ? "16px 24px 20px" : "12px 20px 16px",
-            display: "flex",
-            flexDirection: "column",
-            gap: ambient ? 10 : 8,
-            zIndex: 5,
-          }}
-        >
-          {/* Scrubber */}
-          <Scrubber
-            currentSec={currentSec}
-            durationSec={disc.durationSec}
-            onSeek={(s) => setCurrentSec(s)}
-            ambient={true}
-          />
-
-          {/* Play row */}
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              {/* Big play button */}
-              <button
-                onClick={() => setIsPlaying((p) => !p)}
-                style={{
-                  width: ambient ? 52 : 44,
-                  height: ambient ? 52 : 44,
-                  borderRadius: "50%",
-                  background: "rgba(255,255,255,0.95)",
-                  border: "none",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  cursor: "pointer",
-                  boxShadow: "0 4px 16px rgba(0,0,0,0.35)",
-                  transition: "transform 0.15s ease, box-shadow 0.15s ease",
-                  flexShrink: 0,
-                }}
-                onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.transform = "scale(1.08)";
-                }}
-                onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.transform = "scale(1)";
-                }}
-              >
-                {isPlaying ? (
-                  <Pause size={ambient ? 20 : 17} fill="var(--lib-ink)" color="var(--lib-ink)" />
-                ) : (
-                  <Play
-                    size={ambient ? 20 : 17}
-                    fill="var(--lib-ink)"
-                    color="var(--lib-ink)"
-                    style={{ marginLeft: 2 }}
-                  />
-                )}
-              </button>
-
-              {/* Timecode */}
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 6,
-                  fontFamily: "var(--lib-sans)",
-                  fontSize: ambient ? 14 : 12,
-                  color: "rgba(255,255,255,0.85)",
-                  fontVariantNumeric: "tabular-nums",
-                  letterSpacing: "0.01em",
-                }}
-              >
-                <Clock size={11} style={{ opacity: 0.6 }} />
-                <span>{fmtSec(currentSec)}</span>
-                <span style={{ opacity: 0.45 }}>/</span>
-                <span style={{ opacity: 0.65 }}>{disc.durationFormatted}</span>
-              </div>
-            </div>
-
-            {/* Right side: volume hint + fullscreen */}
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <Volume2 size={14} style={{ color: "rgba(255,255,255,0.45)" }} />
-              {ambient && (
-                <button
-                  onClick={() => setFullscreen(false)}
-                  style={{
-                    width: 34,
-                    height: 34,
-                    borderRadius: "50%",
-                    background: "rgba(255,255,255,0.12)",
-                    border: "1px solid rgba(255,255,255,0.18)",
-                    color: "rgba(255,255,255,0.85)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    cursor: "pointer",
-                    backdropFilter: "blur(8px)",
-                  }}
-                >
-                  <Minimize2 size={14} />
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   // ── FULLSCREEN OVERLAY ────────────────────────────────────────────────────────
   if (fullscreen) {
@@ -1023,7 +1155,25 @@ export default function Memories() {
             maxWidth: "min(92vw, 960px)",
           }}
         >
-          <Player height="100%" ambient={true} />
+          <ImmersivePlayer
+            height="100%"
+            ambient={true}
+            glow={glow}
+            posterBg={posterBg}
+            aspect={aspect}
+            disc={disc}
+            currentSec={currentSec}
+            isPlaying={isPlaying}
+            hasVideo={hasVideo}
+            mediaSrc={mediaSrc}
+            setCurrentSec={setCurrentSec}
+            setIsPlaying={setIsPlaying}
+            setFullscreen={setFullscreen}
+            setAspect={setAspect}
+            playerRef={playerRef}
+            posterRef={posterRef}
+            videoRef={videoRef}
+          />
         </div>
 
         {/* People avatars */}
@@ -1237,7 +1387,24 @@ export default function Memories() {
             real video loads it adopts the file's true ratio via `aspect`. ── */}
         <div style={{ flex: "1 1 0", minHeight: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
           <div style={{ height: "100%", aspectRatio: `${aspect}`, maxWidth: "100%" }}>
-            <Player height="100%" />
+            <ImmersivePlayer
+              height="100%"
+              glow={glow}
+              posterBg={posterBg}
+              aspect={aspect}
+              disc={disc}
+              currentSec={currentSec}
+              isPlaying={isPlaying}
+              hasVideo={hasVideo}
+              mediaSrc={mediaSrc}
+              setCurrentSec={setCurrentSec}
+              setIsPlaying={setIsPlaying}
+              setFullscreen={setFullscreen}
+              setAspect={setAspect}
+              playerRef={playerRef}
+              posterRef={posterRef}
+              videoRef={videoRef}
+            />
           </div>
         </div>
 
