@@ -37,6 +37,7 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { convertFileSrc } from "@tauri-apps/api/core";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import { MOCK_DISCS, getDiscById } from "./data/mockDiscs";
 import { gradientCss } from "./components/GradientArt";
 import type { Disc } from "./data/types";
@@ -1099,11 +1100,20 @@ export default function Memories() {
     // Just a quick opacity flash on the overlay
   }, [fullscreen]);
 
-  // ── Keyboard: Escape exits fullscreen ────────────────────────────────────────
+  // ── OS-level fullscreen: sync React state → Tauri window ─────────────────────
+  useEffect(() => {
+    getCurrentWindow().setFullscreen(fullscreen).catch(() => {});
+  }, [fullscreen]);
+
+  // ── Keyboard: F toggles fullscreen, Escape exits, Space play/pause ───────────
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
+      const tag = (e.target as HTMLElement).tagName;
       if (e.key === "Escape" && fullscreen) setFullscreen(false);
-      if (e.key === " " && !["INPUT", "TEXTAREA"].includes((e.target as HTMLElement).tagName)) {
+      if ((e.key === "f" || e.key === "F") && !["INPUT", "TEXTAREA"].includes(tag)) {
+        setFullscreen((f) => !f);
+      }
+      if (e.key === " " && !["INPUT", "TEXTAREA"].includes(tag)) {
         e.preventDefault();
         setIsPlaying((p) => !p);
       }
