@@ -20,19 +20,13 @@ export function Nav() {
             Heirvo
           </span>
         </Link>
-        <div className="hidden md:flex flex-1 justify-center items-center gap-7 text-[14px] text-ink-500">
+        <div className="hidden md:flex flex-1 justify-center items-center gap-9 text-[14px] text-ink-500">
           <a href="/#how" className="hover:text-ink-900 transition">How it works</a>
           <a href="/#rescue" className="hover:text-ink-900 transition">What it rescues</a>
           <Link to="/guides" className="hover:text-ink-900 transition">Guides</Link>
           <Link to="/recover" className="hover:text-ink-900 transition">Mail-in service</Link>
         </div>
         <div className="flex items-center gap-2.5">
-          <Link
-            to="/activate"
-            className="hidden sm:inline-flex text-[14px] font-medium text-ink-600 hover:text-ink-900 px-3 py-2"
-          >
-            Manage license
-          </Link>
           <Link to="/download" className="btn btn-primary !py-2.5 !px-4 !text-[14px]">
             Try for free
           </Link>

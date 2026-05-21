@@ -31,7 +31,7 @@ export function Footer() {
             <div className="micro-label mb-4">Product</div>
             <ul className="space-y-3 text-[14px]">
               <FooterLink href="/#pricing">Pricing</FooterLink>
-              <FooterLink to="/activate">Activate license</FooterLink>
+              <FooterLink to="/activate">Manage license</FooterLink>
               <FooterLink href="/#how">How it works</FooterLink>
               <FooterLink href="/#faq">FAQ</FooterLink>
             </ul>
