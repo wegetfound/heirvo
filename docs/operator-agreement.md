@@ -151,3 +151,75 @@ Heirvo signatory:    ________________________________  Date: ____________
    post-acceptance background event clause.
 6. **Payments (§8)** — 1099-NEC mechanics, Stripe Connect terms, state wage-law risk if
    classification is challenged.
+
+---
+
+## Red-team notes (pre-attorney review)
+
+These are the gaps and structural risks to resolve with counsel — in rough order of severity.
+
+### 🔴 Critical — existential before first operator signs
+
+**ABC test prong B (CA, NJ, MA, and expanding).**
+Prong B asks whether the work is "outside the usual course of the hiring entity's business."
+Disc recovery *is* Heirvo's core business, so prong B is almost certainly unsatisfiable in ABC
+states. §1's "outcomes not process" framing helps control-test states but doesn't cure prong B.
+Before accepting operators in CA/NJ/MA: get explicit legal strategy from counsel — likely either
+(a) avoid those states for Phase 1, or (b) restructure the relationship in a way that survives
+prong B (harder), or (c) accept employment risk and insure for it (not recommended).
+
+**§10 is entirely unfilled — indemnification and governing law are non-trivial.**
+"Counsel to draft" is a placeholder, not a section. Before any operator signs, you need at
+minimum: (1) indemnification — who covers a customer claim when it results from operator
+negligence vs. Heirvo routing? (2) limitation of liability cap (both directions); (3)
+governing law and venue; (4) arbitration clause if desired. These aren't boilerplate — the
+indemnification split directly affects how you structure insurance.
+
+### 🟡 Important — fill before first operator signs
+
+**§4 references "the chain-of-custody protocol" but it is not an exhibit.**
+In a dispute, "the protocol" needs to be an attached, dated Exhibit A (or a reference to a
+versioned Handbook that is incorporated by reference with a stable URL and effective-date
+mechanism). Without it the accountability trigger in §4 is unenforceable — you can't prove what
+protocol the operator was supposed to follow.
+
+**§5: retention window is a blank (`[RETENTION WINDOW]`).**
+Customer memory files sitting on an operator's machine indefinitely is a live privacy and
+liability exposure. Set a number (14 days post confirmed delivery is defensible). Also: add an
+explicit data-breach notification obligation — most US state laws require notifying affected
+individuals within 30–72 hours of discovering a breach, and operators holding customer media
+may be independently subject to these obligations.
+
+**§8: "no payment for work that violates this Agreement" is overbroad.**
+If an operator completes a genuine, high-quality recovery but committed a minor procedural
+violation (e.g., a missing step in a custody log), this clause as written lets Heirvo withhold
+all pay. That's both unfair and legally fragile (could look like wage theft in some states).
+Scope it: no payment for **falsified results or integrity-based violations in §7**; quality/SLA
+violations trigger the strike system, not forfeiture.
+
+**No insurance minimums anywhere.**
+The liability split in §4 depends on a working insurance backstop. Specify: (1) what insurance
+type and minimum coverage Heirvo carries on inbound/outbound shipments; (2) whether operators
+are required to carry renter's/homeowner's for their workspace; (3) who files the carrier claim
+on a lost shipment and who is paid. These answers determine whether the §4 protocol-based split
+is actually enforceable.
+
+### 🟢 Polish — for the final clean draft
+
+**§1 "free to work for others" carve-out is fuzzy.**
+"No active job assigned that requires your immediate attention" is undefined. If an operator has
+three jobs in queue and wants to take a side gig, is that an "active job"? Tighten: "during
+periods when a job is in your possession (disc received and not yet shipped return)."
+
+**§7 defines post-acceptance background event but no ongoing monitoring.**
+The FCRA requires separate authorization for ongoing monitoring vs. a one-time pre-hire check.
+If you want to be able to terminate for a newly-discovered event (e.g., a conviction that
+occurred after onboarding), you need an explicit ongoing-monitoring consent in the onboarding
+flow, separate from the §7 clause here.
+
+**§6 "no guarantee of volume" — add minimum-activity expectation (if any).**
+The territory is performance-held, but the agreement currently has no floor: an operator could
+claim a metro, accept zero jobs, and prevent Heirvo from granting it to an active operator.
+Consider adding: "Territory grant may be reviewed if Operator accepts fewer than `[N]` jobs in
+any `[PERIOD]`" — or state explicitly that there is no minimum and the territory-revocation
+discretion in §7 covers this.

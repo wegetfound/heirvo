@@ -244,11 +244,30 @@ Don't build Phase 2+ until Phase 1 proves the trust spine end-to-end with a real
 
 ---
 
-## 12. Decisions needed from you
+## 12. Decisions — resolved
 
-1. **Server language:** Rust/axum with the shared crate (recommended, safest for log
-   correctness) vs. all-TypeScript (faster dashboards, but must conformance-test the crypto).
-2. **Hosting:** Fly.io / Railway / managed VPS — your comfort + budget.
-3. **Operator payout rail:** Stripe Connect (recommended) vs. Wise / PayPal.
-4. **How much to absorb now:** does the HQ order system replace the current Formspree+Stripe
-   mail-in intake immediately, or run alongside it until Phase 2 is proven?
+**1. Server language → Rust/axum + shared crate.**
+The correctness argument is decisive: canonical-JSON serialization and ed25519 verification
+*must* be byte-identical on the producing (desktop) and verifying (server) sides. A TypeScript
+re-implementation of that path is a subtle, hard-to-catch bug waiting to happen. Desktop app is
+already Rust; shared crate costs almost nothing to extract. Dashboards (admin + operator web)
+stay React — those are pure UI and have no cryptographic obligations.
+
+**2. Hosting → Fly.io from day one; Neon for Postgres when Phase 2 needs it.**
+Fly.io: single-region machine, simple deployment, good Rust support. SQLite (via sqlx) is
+fine for Phase 1 (operator registry + telemetry ingest — minimal write volume, single instance).
+When Phase 2 introduces orders + routing + concurrent writes, migrate to **Neon** (serverless
+Postgres, generous free tier, branching for dev, connects from Fly). Avoid the Railway lock-in;
+Fly.io pricing stays predictable at Phase 1–3 scale (tens of labs, thousands of discs/month).
+
+**3. Operator payout rail → Stripe Connect Express.**
+Already on Stripe for customer intake — one vendor. Connect Express: operators onboard in ~2
+min, Heirvo controls pay calculation, Stripe handles 1099-NEC reporting and the payout rail.
+No second vendor (Wise/PayPal) and no manual ACH orchestration. Lemon Squeezy remains the
+consumer *licensing* rail — do not conflate.
+
+**4. Absorb intake timing → run alongside Formspree+Stripe until Phase 2 is proven.**
+Current intake is working and revenue-generating. Don't touch it until the HQ routing engine
+can actually receive an order and assign it to an operator (Phase 2). Phase 1 builds the trust
+spine (operator registry + telemetry verification) in isolation — no customer-facing surface
+changes. Absorb intake at the start of Phase 2, replacing Formspree with `POST /v1/orders`.
