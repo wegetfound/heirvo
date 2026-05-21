@@ -3,48 +3,33 @@
 _Last updated: 2026-05-21. Read this first, then `docs/phase2-recovery-library-bridge.md`._
 
 ## TL;DR
-Two sessions shipped. Phase 2 backend, Memories screen, Quiet Rail nav, photo gallery, humane media states all landed in `95f92fe`. Then (`c72f0b9`) resolved the open black-video question and implemented true OS-level theater fullscreen. Working tree clean, `HEAD = c72f0b9`.
+Phase 2 backend + Memories screen landed earlier (`95f92fe`). This session resolved the black-video question, shipped **true OS-level theater fullscreen** (verified end-to-end on the real build), and merged **Kodak PCD decode** via ImageMagick. Working tree clean, `HEAD = fa31659`.
 
 ## ✅ Validated on a real build (Tauri dev, real DB)
 
-### Previous session (`95f92fe`)
-- `disc_photos` **migration applied cleanly on the populated DB**.
-- App boots; **Quiet Rail nav** + warmer labels render.
-- Immersive Memories screen renders; **memory switch cross-fade + room-glow work**; **in-app theater mode works**.
-- `/watch` transcript screen renders correctly.
+### Earlier (`95f92fe`)
+- `disc_photos` migration applied cleanly on the populated DB.
+- Quiet Rail nav, immersive Memories screen, memory cross-fade + room-glow, in-app theater, `/watch` transcript screen.
 
-### This session (`c72f0b9`)
-- **Black-video RESOLVED** — injected Big Buck Bunny (`C:\Temp\heirvo-sample-bunny.mp4`) directly via DevTools: colorful cartoon plays, `PLAYING OK`. **No WebView2 compositing bug**. The existing "Heirvo Test Video" was AI/TTS narration with a genuinely black video track.
-- **Theater mode fullscreen** coded and TSC-clean (see below). Needs Rust rebuild to activate the new capability.
+### This session
+- **Black-video RESOLVED — no bug.** Big Buck Bunny was imported as a real library disc (`heirvo-sample-bunny`) and **paints correctly in the actual Memories player** (white rabbit, green grass, purple butterfly — verified on the real build, not just DevTools injection). The old "Heirvo Test Video" was AI/TTS narration with a genuinely black video track. The player + import + `convertFileSrc`→`<video>` paint path is fully validated.
+- **Theater OS fullscreen — DONE and verified (`c72f0b9`, `c849164`).** Clicking ⤢ (or pressing F) now makes the window cover the **entire monitor** (rect `0,0→1536×864`, taskbar covered) with **no title bar** — a true edge-to-edge takeover. X-button exit restores windowed chrome. Required two capabilities: `core:window:allow-set-fullscreen` + `core:window:allow-set-decorations` (setFullscreen alone left the caption bar on Windows/WebView2).
+- **Kodak PCD decode — merged (`fa31659`), compiles + relaunches clean.** `media::imagemagick::locate()` mirrors ffmpeg (bundled→app_data→PATH); `pcd_to_jpeg()` runs `magick convert "<src>[2]" "<dst>"`. Both `convert_special_image` and the recovery bridge (`promote.rs`) route `.pcd` through it, with graceful fallback to the existing stub when `magick` isn't found. (magick is NOT on this machine, so only the fallback path was exercised at runtime.)
 
-## 🔴 OPEN: Theater mode needs a `cargo tauri dev` rebuild to activate
+## 🟡 Remaining work
 
-**What was shipped (`c72f0b9`):**
-- `getCurrentWindow().setFullscreen(fullscreen)` syncs React theater state → OS-level fullscreen (the expand button ⤢ now takes over the whole monitor, not just the app viewport).
-- `"core:window:allow-set-fullscreen"` added to `src-tauri/capabilities/default.json`.
-- "F" key shortcut wired (toggle theater on/off — was in button title but never implemented).
-
-**Why it needs a rebuild:** Tauri 2 compiles capabilities into the Rust binary. The running debug binary (`D:\projects\Heirvo\src-tauri\target\debug\heirvo.exe`) was built before the capability was added, so `setFullscreen()` silently no-ops. Run `cargo tauri dev` (or `npx tauri dev`) to rebuild and test. The in-app overlay already works as a fallback in the interim.
-
-## ⚙️ Compile-checked only (cargo + tsc clean) — needs real-build runtime test
-- **Recovery → library bridge**: recover a real disc → watch terminal for `recovery: session … promoted to library disc …` → appears in Memories on its own, shows "Getting your video ready…" while normalizing, then plays.
-- **Photo gallery from a real photo disc / CD of JPEGs** → `disc_photos` rows + vault JPEGs + grid/lightbox.
-- **Kodak Photo CD (.pcd)** → should hit the humane "saved to files" path.
-- **`normalizeForPlayback` → `updateDiscVideoPath` round-trip** (the `useRecoveryPromotion` hook).
-
-## 📋 Remaining work (priority order)
-1. **Rebuild + verify theater OS fullscreen** — run `cargo tauri dev`, click ⤢ or press F, confirm the window covers the whole monitor. Also verify Escape and F-key exit work. If the `setFullscreen` call still fails, check DevTools console for the error (the `.catch()` was silencing it).
-2. **Kodak PCD decode** — bundle ImageMagick (`magick convert`) so `.pcd`→JPEG; wire into `convert_special_image` + the bridge. Real-build feature.
-3. **Finish real-build validation** of the recovery loop + photo gallery (checklist in `docs/phase2-recovery-library-bridge.md`).
-4. Separate track, untouched: **Lab Network** — operator-agreement red-team, 4 HQ backend decisions, real `/labs/apply` intake form.
+1. **Bundle a real ImageMagick binary** to make PCD decode work for end users without `magick` on PATH. Place `magick.exe` at `src-tauri/resources/imagemagick/` (it's gitignored like ffmpeg) AND add `"resources/imagemagick/magick.exe"` to `bundle.resources` in `tauri.conf.json`. **Both must happen together** — the conf entry alone breaks the build-script resource-existence check (this is why the conf line was intentionally omitted from `fa31659`). Mirror how ffmpeg is acquired (`media/ffmpeg_install.rs` downloads at runtime — consider the same for ImageMagick to avoid a 100MB+ bundle). Downloading a binary needs explicit user sign-off.
+2. **Recovery loop + photo gallery — blocked on physical media.** Verifying the recovery→library bridge (`promote_session_to_library` → `disc_added` event → "Getting your video ready…" → playback) and the photo gallery (`disc_photos` rows + vault JPEGs + grid/lightbox) requires recovering a **real disc** in a drive. No drive/disc was available this session ("No drive" in the log). Validate when a damaged DVD / photo CD is on hand. The code is compile-clean and the player half is proven via the bunny.
+3. Separate track, untouched: **Lab Network** — operator-agreement red-team, 4 HQ backend decisions, real `/labs/apply` intake form.
 
 ## Key files
-- Memories screen: `src/screens/library/Memories.tsx` — theater fullscreen uses `getCurrentWindow().setFullscreen()` (line ~1104); "F" key shortcut (line ~1113).
-- Capabilities: `src-tauri/capabilities/default.json` — `core:window:allow-set-fullscreen` added.
-- Watch/transcript: `src/screens/library/Watch.tsx`.
-- Gallery: `src/screens/library/components/PhotoGallery.tsx`.
-- Bridge + media: `src-tauri/src/library/promote.rs`, `src-tauri/src/media/{transcode,image}.rs`.
+- Memories / theater fullscreen: `src/screens/library/Memories.tsx` — `setFullscreen`+`setDecorations` sync (useEffect ~line 1104), "F" shortcut (~1113).
+- Capabilities: `src-tauri/capabilities/default.json` — `allow-set-fullscreen` + `allow-set-decorations`.
+- PCD: `src-tauri/src/media/imagemagick.rs` (locate + pcd_to_jpeg), wired in `commands/library.rs` (`convert_special_image`) + `library/promote.rs` (`SpecialFormat::Pcd` arm).
+- Bridge + media: `src-tauri/src/library/promote.rs`, `src-tauri/src/media/{transcode,ffmpeg,image}.rs`.
 - Frontend loop: `src/lib/useRecoveryPromotion.ts`, `src/lib/ipc.ts`.
 
-## Working style for next session
-Lead architect + delegate buildable chunks to **sonnet** subagents, each `cargo check`/`tsc`-gated, reviewed before commit. **The headless dev preview throttles requestAnimationFrame** — GSAP interactions + OS-level APIs (fullscreen) must be verified on the real Tauri build. The running debug binary at `D:\projects\Heirvo\src-tauri\target\debug\heirvo.exe` was off-screen at session start (coords −25600, −25600) — use `Win32::MoveWindow` via PowerShell to restore it if needed.
+## Notes for next session
+- Lead architect + delegate buildable backend chunks to **sonnet** subagents in **worktrees** (isolated `target/` → no cargo-lock contention with a running `cargo tauri dev`). Worktree subagents on this repo will create empty placeholder binaries for the gitignored `resources/{ffmpeg,whisper,imagemagick}/*.exe` to pass the build-script existence check — **do not merge those placeholders into main** (main has the real binaries; merge code only).
+- **The real Tauri window launches OFF-SCREEN** at approx `(-25600,-25600)` and `Process.MainWindowHandle` returns a "Tao Thread Event Target" helper, NOT the visible window. Find the window whose class is **"Tauri Window"** and `MoveWindow` it on-screen (PowerShell + user32). The headless Vite preview throttles rAF, so GSAP + OS-level APIs (fullscreen/decorations) must be checked on the real build.
+- A `cargo tauri dev` is currently running (background); the bunny disc + "Heirvo Test Video" live in the dev DB at `%APPDATA%\com.heirvo.app\`.
