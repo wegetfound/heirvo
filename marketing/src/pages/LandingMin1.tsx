@@ -610,10 +610,20 @@ export default function LandingMin1() {
                     </svg>
                     Download Free for Windows
                   </a>
-                  <p style={{ fontFamily: SORA, fontSize: 12, color: "rgba(255,255,255,0.75)", lineHeight: 1.6, margin: 0 }}>
-                    <strong style={{ color: "#FFFFFF" }}>SmartScreen warning?</strong>{" "}
-                    New software. Click "More info" → "Run anyway". No malware, no adware — ever.
-                  </p>
+                  <div style={{
+                    display: "flex", alignItems: "flex-start", gap: 10,
+                    padding: "10px 14px", borderRadius: 8, maxWidth: 340,
+                    background: "rgba(245,158,11,0.08)",
+                    border: "1px solid rgba(245,158,11,0.28)",
+                  }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden style={{ flexShrink: 0, marginTop: 2 }}>
+                      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="#F59E0B" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    <span style={{ fontFamily: SORA, fontSize: 12, color: C.amber, lineHeight: 1.55, margin: 0 }}>
+                      <strong style={{ color: "#FBB03B" }}>Windows SmartScreen warning?</strong>{" "}
+                      Expected for new software. Click "More info" → "Run anyway". No malware, no adware — ever.
+                    </span>
+                  </div>
                   </div>
 
                   <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 5 }}>
@@ -868,72 +878,98 @@ export default function LandingMin1() {
         </section>
 
         {/* ═══════════════════════════════════════════════════════════════
-            SOCIAL PROOF STRIP — 3 testimonials
+            SOCIAL PROOF — Honest pre-launch validation stats
             ═══════════════════════════════════════════════════════════════ */}
         <section
-          aria-label="Customer testimonials"
-          style={{ padding: "0 0 80px", borderTop: `1px solid ${C.border}` }}
+          aria-label="Technical validation"
+          style={{ padding: "0 0 64px", borderTop: `1px solid ${C.border}` }}
         >
-          <div
-            ref={testimonialRef}
-            className="lm1-container lm1-testi-grid"
-            style={{ paddingTop: 64 }}
-          >
-            {[
-              {
-                quote: "It read the disc nine times. The ninth pass found my daughter's first birthday.",
-                name: "A. Marsh",
-                location: "Vermont",
-              },
-              {
-                quote: "I thought those 400 family photos from 1997 were gone forever. Heirvo got 389 of them back in an hour.",
-                name: "T. Okonkwo",
-                location: "Texas",
-              },
-              {
-                quote: "My dad's Kodak Photo CD from 1993. Nothing else on Windows 11 could open them. Heirvo extracted every single one.",
-                name: "R. Bergström",
-                location: "Minnesota",
-              },
-            ].map(({ quote, name, location }) => (
-              <article
-                key={name}
-                className="testi-card"
-                style={{
-                  background: C.pageAlt,
-                  border: `1px solid ${C.border}`,
-                  borderRadius: 14,
-                  padding: "32px 28px",
-                  display: "flex",
-                  flexDirection: "column" as const,
-                  gap: 20,
-                  opacity: 0,
-                }}
-              >
-                <div aria-hidden style={{
-                  fontFamily: SORA, fontSize: 36, lineHeight: 0.7,
-                  color: C.blue, fontWeight: 700, opacity: 0.6,
-                }}>
-                  "
-                </div>
-                <blockquote style={{
-                  margin: 0, padding: 0,
-                  fontFamily: SORA, fontSize: 15, fontWeight: 400,
-                  color: C.text, lineHeight: 1.65,
-                  letterSpacing: "-0.01em",
-                  flex: 1,
-                }}>
-                  {quote}
-                </blockquote>
-                <figcaption style={{
-                  fontFamily: SORA, fontSize: 11, fontWeight: 600,
-                  color: C.textFaint, letterSpacing: "0.1em",
-                  textTransform: "uppercase" as const,
-                }}>
-                  {name} · {location}
-                </figcaption>
-              </article>
-            ))}
+          <div className="lm1-container" style={{ paddingTop: 56 }}>
+            <div style={{ marginBottom: 40 }}>
+              <Eyebrow style={{ marginBottom: 12, color: C.amber }}>
+                Early access · Pre-launch
+              </Eyebrow>
+              <h2 style={{
+                fontFamily: SORA, fontWeight: 700,
+                fontSize: "clamp(1.35rem, 2.4vw, 1.8rem)",
+                lineHeight: 1.2, letterSpacing: "-0.03em",
+                color: C.text, maxWidth: 680, margin: "0 0 12px",
+              }}>
+                No user reviews yet — we're upfront about that.
+                Here's what{" "}
+                <em style={{ fontStyle: "normal", color: C.blue }}>is</em> proven.
+              </h2>
+              <p style={{
+                fontFamily: SORA, fontSize: 14, color: C.textMuted,
+                lineHeight: 1.7, maxWidth: 560, margin: 0,
+              }}>
+                Heirvo is launching through Reddit's data hoarding and
+                preservation communities — early adopters who care about this
+                work. No invented quotes. Just the technical results.
+              </p>
+            </div>
+
+            <div
+              ref={testimonialRef}
+              className="lm1-testi-grid"
+            >
+              {[
+                {
+                  stat: "11 / 11",
+                  label: "Failure scenarios passing",
+                  body: "Every synthetic disc failure mode tested before launch — moderate and severe scratching, corrupt headers, partial sector damage, and mixed-failure discs. All passing.",
+                  color: C.blue,
+                },
+                {
+                  stat: "9×",
+                  label: "Retries per damaged sector",
+                  body: "Multi-pass reads at full and half speed, both forward and in reverse. The same technique professional data recovery labs use — without the lab price.",
+                  color: C.blue,
+                },
+                {
+                  stat: "0 bytes",
+                  label: "Sent to the cloud",
+                  body: "Every scan, every recovered file, every Whisper transcription runs entirely on your machine. No telemetry, no account, no upload. Your memories stay yours.",
+                  color: C.amber,
+                },
+              ].map(({ stat, label, body, color }) => (
+                <article
+                  key={label}
+                  className="testi-card"
+                  style={{
+                    background: C.pageAlt,
+                    border: `1px solid ${C.border}`,
+                    borderRadius: 14,
+                    padding: "32px 28px",
+                    display: "flex",
+                    flexDirection: "column" as const,
+                    gap: 10,
+                    opacity: 0,
+                  }}
+                >
+                  <div style={{
+                    fontFamily: SORA,
+                    fontSize: "clamp(2rem, 4vw, 2.8rem)",
+                    fontWeight: 700, letterSpacing: "-0.05em",
+                    color, lineHeight: 1,
+                  }}>
+                    {stat}
+                  </div>
+                  <div style={{
+                    fontFamily: SORA, fontSize: 13, fontWeight: 700,
+                    color: C.text, letterSpacing: "-0.01em",
+                  }}>
+                    {label}
+                  </div>
+                  <p style={{
+                    fontFamily: SORA, fontSize: 13, fontWeight: 400,
+                    color: C.textMuted, lineHeight: 1.65, margin: 0, flex: 1,
+                  }}>
+                    {body}
+                  </p>
+                </article>
+              ))}
+            </div>
           </div>
 
           <style>{`
@@ -1470,104 +1506,141 @@ export default function LandingMin1() {
           id="for-adult-children"
           aria-labelledby="gift-pitch-heading"
           style={{
-            padding: "80px 32px",
+            padding: "0 32px 64px",
             clipPath: "inset(0% 0% 100% 0%)",
           }}
         >
-          <div style={{
-            maxWidth: 980, margin: "0 auto", textAlign: "center" as const,
-          }}>
-            <Eyebrow style={{ marginBottom: 18 }}>
-              <span style={{ color: C.amber }}>For the adult child</span>{" "}
-              · The grown-up daughter or son
-            </Eyebrow>
-
-            <h2
-              id="gift-pitch-heading"
-              style={{
-                fontFamily: SORA, fontWeight: 700,
-                fontSize: "clamp(1.9rem, 3.6vw, 3.1rem)",
-                lineHeight: 1.08, letterSpacing: "-0.03em",
-                color: C.text, marginBottom: 24,
-                maxWidth: 820, margin: "0 auto 24px",
-              }}
-            >
-              You're not just recovering discs.{" "}
-              <span style={{ color: C.amber }}>
-                You're giving Mom her wedding back.
-              </span>
-            </h2>
-
-            <p style={{
-              fontFamily: SORA, fontSize: 17, color: C.textMuted,
-              lineHeight: 1.65, marginBottom: 14,
-              maxWidth: 620, margin: "0 auto 14px",
+          <div style={{ maxWidth: 980, margin: "0 auto" }}>
+            <div style={{
+              background: `linear-gradient(135deg, rgba(245,158,11,0.10) 0%, rgba(245,158,11,0.03) 60%, ${C.pageAlt} 100%)`,
+              border: `1px solid ${C.amberBorder}`,
+              borderRadius: 20,
+              padding: "clamp(40px, 5vw, 64px)",
+              position: "relative" as const,
+              overflow: "hidden",
+              textAlign: "center" as const,
             }}>
-              The shoebox in the attic isn't going to digitise itself.
-              Your parents won't get around to it. Your siblings keep saying
-              "someday." Heirvo is for the one person in the family who
-              actually does the thing.
-            </p>
+              {/* Ambient glow */}
+              <div aria-hidden style={{
+                position: "absolute", bottom: -80, left: "50%",
+                transform: "translateX(-50%)",
+                width: 560, height: 320, borderRadius: "50%",
+                background: "radial-gradient(ellipse, rgba(245,158,11,0.10) 0%, transparent 70%)",
+                pointerEvents: "none",
+              }} />
 
-            <p style={{
-              fontFamily: SORA, fontSize: 17, color: C.textMuted,
-              lineHeight: 1.65, marginBottom: 36,
-              maxWidth: 620, margin: "0 auto 36px",
-            }}>
-              Most of our buyers aren't 70-year-olds with one wedding DVD —
-              they're 40-year-olds doing this for their parents, their
-              in-laws, their late uncle's archive. Mother's Day. Father's
-              80th. The Christmas Mom can't go home for. Heirvo turns a
-              forgotten shoebox into the most personal gift in the room.
-            </p>
+              {/* Urgency badge */}
+              <div style={{
+                display: "inline-flex", alignItems: "center", gap: 8,
+                padding: "5px 14px", borderRadius: 100, marginBottom: 20,
+                background: C.amberFaint, border: `1px solid ${C.amberBorder}`,
+                fontFamily: SORA, fontSize: 10, fontWeight: 700,
+                color: C.amber, letterSpacing: "0.14em",
+                textTransform: "uppercase" as const,
+                position: "relative" as const,
+              }}>
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" aria-hidden>
+                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
+                  <path d="M12 7v5l3 3" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                </svg>
+                Time-sensitive · disc dye degrades
+              </div>
 
-            <div style={{ display: "flex", gap: 14, flexWrap: "wrap" as const, justifyContent: "center" }}>
-              <Link
-                to="/gift"
+              <Eyebrow style={{ marginBottom: 14, position: "relative" as const }}>
+                <span style={{ color: C.amber }}>For the adult child</span>{" "}
+                · The grown-up daughter or son who actually does the thing
+              </Eyebrow>
+
+              <h2
+                id="gift-pitch-heading"
                 style={{
-                  display: "inline-flex", alignItems: "center", gap: 9,
-                  padding: "14px 24px", borderRadius: 10,
-                  background: C.amber, color: "#0B0800",
-                  fontFamily: SORA, fontSize: 14, fontWeight: 700,
-                  letterSpacing: "-0.01em", textDecoration: "none",
-                  transition: "background 0.18s ease, box-shadow 0.18s ease",
-                  boxShadow: "0 4px 24px rgba(245,158,11,0.32)",
-                  whiteSpace: "nowrap" as const,
-                }}
-                onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLElement).style.background = C.amberHover;
-                  (e.currentTarget as HTMLElement).style.boxShadow = "0 6px 32px rgba(245,158,11,0.5)";
-                }}
-                onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLElement).style.background = C.amber;
-                  (e.currentTarget as HTMLElement).style.boxShadow = "0 4px 24px rgba(245,158,11,0.32)";
+                  fontFamily: SORA, fontWeight: 700,
+                  fontSize: "clamp(2rem, 3.8vw, 3.2rem)",
+                  lineHeight: 1.06, letterSpacing: "-0.033em",
+                  color: C.text,
+                  maxWidth: 820, margin: "0 auto 24px",
+                  position: "relative" as const,
                 }}
               >
-                <span aria-hidden style={{ fontSize: 14 }}>🎁</span>
-                See the gift guide
-                <ChevronRight size={13} color="#0B0800" />
-              </Link>
-              <a
-                href={DOWNLOAD_URL}
-                style={{
-                  display: "inline-flex", alignItems: "center", gap: 7,
-                  padding: "13px 22px", borderRadius: 10,
-                  background: "transparent", color: C.text,
-                  fontFamily: SORA, fontSize: 14, fontWeight: 500,
-                  letterSpacing: "-0.01em", textDecoration: "none",
-                  border: `1.5px solid ${C.borderMed}`,
-                  transition: "border-color 0.18s ease, color 0.18s ease",
-                  whiteSpace: "nowrap" as const,
-                }}
-                onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLElement).style.borderColor = C.borderBright;
-                }}
-                onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLElement).style.borderColor = C.borderMed;
-                }}
-              >
-                Start scanning a disc now
-              </a>
+                You're not just recovering discs.{" "}
+                <span style={{ color: C.amber }}>
+                  You're giving Mom her wedding back.
+                </span>
+              </h2>
+
+              <p style={{
+                fontFamily: SORA, fontSize: 17, color: C.textMuted,
+                lineHeight: 1.65,
+                maxWidth: 620, margin: "0 auto 14px",
+                position: "relative" as const,
+              }}>
+                The shoebox in the attic isn't going to digitise itself.
+                Your parents won't get around to it. Your siblings keep saying
+                "someday." Heirvo is for the one person in the family who
+                actually does the thing.
+              </p>
+
+              <p style={{
+                fontFamily: SORA, fontSize: 17, color: C.textMuted,
+                lineHeight: 1.65,
+                maxWidth: 620, margin: "0 auto 36px",
+                position: "relative" as const,
+              }}>
+                Most of our buyers aren't 70-year-olds with one wedding DVD —
+                they're 40-year-olds doing this for their parents, their
+                in-laws, their late uncle's archive. Mother's Day. Father's
+                80th. The Christmas Mom can't go home for. Heirvo turns a
+                forgotten shoebox into the most personal gift in the room.
+              </p>
+
+              <div style={{ display: "flex", gap: 14, flexWrap: "wrap" as const, justifyContent: "center", position: "relative" as const }}>
+                <Link
+                  to="/gift"
+                  style={{
+                    display: "inline-flex", alignItems: "center", gap: 9,
+                    padding: "15px 26px", borderRadius: 10,
+                    background: C.amber, color: "#0B0800",
+                    fontFamily: SORA, fontSize: 14, fontWeight: 700,
+                    letterSpacing: "-0.01em", textDecoration: "none",
+                    transition: "background 0.18s ease, box-shadow 0.18s ease",
+                    boxShadow: "0 4px 28px rgba(245,158,11,0.40)",
+                    whiteSpace: "nowrap" as const,
+                  }}
+                  onMouseEnter={(e) => {
+                    (e.currentTarget as HTMLElement).style.background = C.amberHover;
+                    (e.currentTarget as HTMLElement).style.boxShadow = "0 6px 36px rgba(245,158,11,0.55)";
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLElement).style.background = C.amber;
+                    (e.currentTarget as HTMLElement).style.boxShadow = "0 4px 28px rgba(245,158,11,0.40)";
+                  }}
+                >
+                  <span aria-hidden style={{ fontSize: 14 }}>🎁</span>
+                  See the gift guide
+                  <ChevronRight size={13} color="#0B0800" />
+                </Link>
+                <a
+                  href={DOWNLOAD_URL}
+                  style={{
+                    display: "inline-flex", alignItems: "center", gap: 7,
+                    padding: "14px 22px", borderRadius: 10,
+                    background: "transparent", color: C.text,
+                    fontFamily: SORA, fontSize: 14, fontWeight: 500,
+                    letterSpacing: "-0.01em", textDecoration: "none",
+                    border: `1.5px solid ${C.amberBorder}`,
+                    transition: "border-color 0.18s ease",
+                    whiteSpace: "nowrap" as const,
+                  }}
+                  onMouseEnter={(e) => {
+                    (e.currentTarget as HTMLElement).style.borderColor = C.amber;
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLElement).style.borderColor = C.amberBorder;
+                  }}
+                >
+                  Start scanning a disc now
+                </a>
+              </div>
             </div>
           </div>
         </section>
@@ -1577,7 +1650,7 @@ export default function LandingMin1() {
             ═══════════════════════════════════════════════════════════════ */}
         <section
           aria-labelledby="paths-heading"
-          style={{ padding: "80px 32px" }}
+          style={{ padding: "64px 32px" }}
         >
           <div style={{ maxWidth: 1200, margin: "0 auto" }}>
             <Eyebrow style={{ marginBottom: 16 }}>Choose your recovery path</Eyebrow>
@@ -1818,7 +1891,7 @@ export default function LandingMin1() {
             ═══════════════════════════════════════════════════════════════ */}
         <section
           aria-labelledby="how-heading"
-          style={{ padding: "96px 32px" }}
+          style={{ padding: "72px 32px" }}
         >
           <div style={{ maxWidth: 1200, margin: "0 auto" }}>
             <div className="lm1-how-grid">
@@ -1951,7 +2024,7 @@ export default function LandingMin1() {
         <section
           id="pricing"
           aria-labelledby="pricing-heading"
-          style={{ padding: "96px 32px" }}
+          style={{ padding: "72px 32px" }}
         >
           <div ref={pricingRef} style={{ maxWidth: 1200, margin: "0 auto" }}>
             <Eyebrow style={{ marginBottom: 16 }}>Simple pricing</Eyebrow>
@@ -2296,7 +2369,7 @@ export default function LandingMin1() {
             ═══════════════════════════════════════════════════════════════ */}
         <section
           aria-labelledby="faq-heading"
-          style={{ padding: "96px 32px" }}
+          style={{ padding: "72px 32px" }}
         >
           <div style={{ maxWidth: 1200, margin: "0 auto" }}>
             <div className="lm1-faq-grid">
