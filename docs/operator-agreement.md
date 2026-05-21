@@ -160,13 +160,23 @@ These are the gaps and structural risks to resolve with counsel — in rough ord
 
 ### 🔴 Critical — existential before first operator signs
 
-**ABC test prong B (CA, NJ, MA, and expanding).**
+**ABC test prong B (CA, NJ, MA) → resolved by geographic restriction.**
 Prong B asks whether the work is "outside the usual course of the hiring entity's business."
-Disc recovery *is* Heirvo's core business, so prong B is almost certainly unsatisfiable in ABC
-states. §1's "outcomes not process" framing helps control-test states but doesn't cure prong B.
-Before accepting operators in CA/NJ/MA: get explicit legal strategy from counsel — likely either
-(a) avoid those states for Phase 1, or (b) restructure the relationship in a way that survives
-prong B (harder), or (c) accept employment risk and insure for it (not recommended).
+Disc recovery *is* Heirvo's core business, so prong B is almost certainly unsatisfiable in
+these states. **Decision: Heirvo will not onboard lab operators domiciled in CA, NJ, or MA.**
+Customers in those states are served via overflow routing from neighboring metros (or flagged
+"coming soon") — no IC exposure in those states.
+
+Impact on Phase 1 founding metros: **Los Angeles removed** (CA). All other Phase 1 metros
+(NY, Chicago, Dallas–Fort Worth, Houston, Atlanta, Phoenix, Miami, Washington DC, Seattle) are
+in states that use control-based or economic-reality tests — §1's "outcomes not process" +
+right-to-decline framing is defensible there. **Counsel should confirm the NY economic-reality
+test is satisfied** — it is not the ABC test, but it does have independent scrutiny.
+
+Phase 2: **Boston (MA) and Philadelphia-area (bleeds into NJ)** will also be excluded or
+handled via PA-domiciled operators only. Add a geographic-restriction clause to the Agreement:
+"This Agreement is available only to Operators domiciled in states other than California, New
+Jersey, and Massachusetts."
 
 **§10 is entirely unfilled — indemnification and governing law are non-trivial.**
 "Counsel to draft" is a placeholder, not a section. Before any operator signs, you need at

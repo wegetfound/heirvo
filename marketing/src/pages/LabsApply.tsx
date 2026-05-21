@@ -12,7 +12,6 @@ const AIRTABLE_TABLE = "Operators";
 
 const METROS = [
   "New York",
-  "Los Angeles",
   "Chicago",
   "Dallas–Fort Worth",
   "Houston",

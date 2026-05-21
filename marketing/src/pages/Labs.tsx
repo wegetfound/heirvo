@@ -12,7 +12,6 @@ const APPLY_MAILTO =
 // Phase-1 founding metros (docs/lab-network.md §12). One customer-facing lab per city.
 const FOUNDING_METROS: { city: string; status: "open" | "claimed" }[] = [
   { city: "New York", status: "open" },
-  { city: "Los Angeles", status: "open" },
   { city: "Chicago", status: "open" },
   { city: "Dallas–Fort Worth", status: "open" },
   { city: "Houston", status: "open" },
