@@ -44,6 +44,18 @@ export interface Person {
   name: string;
 }
 
+/** A single recovered image in a photo set (e.g. a Kodak Photo CD, which holds
+ *  dozens-to-hundreds of scans). One disc → many photos → one gallery. */
+export interface PhotoAsset {
+  /** Local filesystem path to the recovered/converted image (JPEG). Loaded via
+   *  convertFileSrc. Absent in demo/mock data → a warm placeholder is shown. */
+  path?: string;
+  caption?: string;
+  /** CSS background used as the placeholder tile when there is no real file
+   *  yet (demo data, or a thumbnail still being generated). */
+  tint?: string;
+}
+
 export type MonogramId = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
 
 export interface Disc {
@@ -73,6 +85,10 @@ export interface Disc {
    *  the Watch screen (img vs video) and DiscDetail (transcript visibility).
    *  Defaults to "video" for all existing recovered DVD rows. */
   mediaType?: "video" | "audio" | "photo" | "document";
+  /** A multi-image set (Kodak Photo CD, scanned-photo disc, slideshow source).
+   *  When present (length > 0) the disc opens as a gallery rather than a single
+   *  image/player. Backward compatible: existing single-file discs omit it. */
+  photos?: PhotoAsset[];
 }
 
 export interface SearchHit {

@@ -1,7 +1,16 @@
 import { Routes, Route, Link, Outlet, useLocation, useNavigate } from "react-router-dom";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { gsap } from "gsap";
-import { Disc3, History, Film, Library as LibraryIcon, Settings as SettingsIcon, ChevronLeft, ChevronRight as ChevronRightIcon, FileSearch } from "lucide-react";
+import {
+  Disc3,
+  Clapperboard,
+  History,
+  Download,
+  FileSearch,
+  Settings as SettingsIcon,
+  ChevronLeft,
+  ChevronRight as ChevronRightIcon,
+} from "lucide-react";
 import Home from "@/screens/Home";
 import { Wizard } from "@/screens/wizard/Wizard";
 import { Dashboard } from "@/screens/dashboard/Dashboard";
@@ -10,6 +19,7 @@ import { Transcode } from "@/screens/transcode/Transcode";
 import { Settings } from "@/screens/settings/Settings";
 import Preflight from "@/screens/preflight/Preflight";
 import Library from "@/screens/library/Library";
+import Memories from "@/screens/library/Memories";
 import LibraryAll from "@/screens/library/LibraryAll";
 import LibrarySearch from "@/screens/library/Search";
 import LibraryWatch from "@/screens/library/Watch";
@@ -23,6 +33,24 @@ import { cn } from "@/lib/cn";
 import { prefersReducedMotion } from "@/utils/gsap-fx";
 import { useLicense } from "@/lib/useLicense";
 
+// ─── constants ────────────────────────────────────────────────────────────────
+
+const EASE = "cubic-bezier(0.16,1,0.3,1)";
+const DUR = 0.42;
+const W_FULL = 160;   // light persistent / dark revealed
+const W_SLIVER = 44;  // dark receded
+
+const NAV_ITEMS = [
+  { to: "/",          label: "Home",       Icon: Disc3        },
+  { to: "/library",   label: "Memories",   Icon: Clapperboard },
+  { to: "/history",   label: "My Discs",   Icon: History      },
+  { to: "/transcode", label: "Export",     Icon: Download     },
+  { to: "/iso",       label: "Browse ISO", Icon: FileSearch   },
+  { to: "/settings",  label: "Settings",   Icon: SettingsIcon },
+] as const;
+
+// ─── helpers ──────────────────────────────────────────────────────────────────
+
 /** Scrollable wrapper for all non-Dashboard routes. */
 function ScrollLayout() {
   return (
@@ -31,6 +59,8 @@ function ScrollLayout() {
     </div>
   );
 }
+
+// ─── App ──────────────────────────────────────────────────────────────────────
 
 export default function App() {
   return (
@@ -49,7 +79,8 @@ export default function App() {
             <Route path="/history" element={<SessionHistory />} />
             <Route path="/transcode" element={<Transcode />} />
             <Route path="/settings" element={<Settings />} />
-            <Route path="/library" element={<Library />} />
+            <Route path="/library" element={<Memories />} />
+            <Route path="/library/browse" element={<Library />} />
             <Route path="/library/all" element={<LibraryAll />} />
             <Route path="/search" element={<LibrarySearch />} />
             <Route path="/watch/:discId" element={<LibraryWatch />} />
@@ -63,6 +94,8 @@ export default function App() {
     </div>
   );
 }
+
+// ─── PreflightGate ────────────────────────────────────────────────────────────
 
 /**
  * On first launch, redirects to /preflight. Renders nothing once the user has
@@ -94,14 +127,13 @@ function PreflightGate() {
   return null;
 }
 
+// ─── BrandMark ────────────────────────────────────────────────────────────────
+
 /**
  * Custom wordmark mark: a circle (the disc) with a single bright radial
  * track cut through it — quiet, intentional, unique to this app.
  */
-function BrandMark({ size = 26 }: { size?: number }) {
-  // The branded disc-with-arrow mark — same source used for the app icon and
-  // installer assets, served as a transparent PNG. Falls back to a colored
-  // square if the asset is missing in dev (won't happen in prod builds).
+function BrandMark({ size = 26, dark = false }: { size?: number; dark?: boolean }) {
   return (
     <img
       src="/brand/mark.png"
@@ -112,17 +144,163 @@ function BrandMark({ size = 26 }: { size?: number }) {
       style={{
         display: "block",
         objectFit: "contain",
-        // Slight inset so the heavy outer glow doesn't clip on small sizes.
-        filter: "drop-shadow(0 1px 1px rgba(0,0,0,0.08))",
+        flexShrink: 0,
+        filter: dark
+          ? "drop-shadow(0 0 6px rgba(194,116,31,0.35)) brightness(0.95)"
+          : "drop-shadow(0 1px 1px rgba(0,0,0,0.08))",
       }}
     />
   );
 }
 
+// ─── NavItem ──────────────────────────────────────────────────────────────────
+
+interface NavItemProps {
+  to: string;
+  label: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  Icon: React.ComponentType<any>;
+  active: boolean;
+  isDark: boolean;
+  isSliver: boolean;
+}
+
+function NavItem({ to, label, Icon, active, isDark, isSliver }: NavItemProps) {
+  const [hovered, setHovered] = useState(false);
+
+  const iconColor = isDark
+    ? active
+      ? "#E9B97A"
+      : hovered
+      ? "rgba(233,185,122,0.72)"
+      : "rgba(255,255,255,0.42)"
+    : active
+    ? "#0A84FF"
+    : hovered
+    ? "#334155"
+    : "#5C6B82";
+
+  const itemBg = isDark
+    ? active
+      ? "rgba(194,116,31,0.16)"
+      : hovered
+      ? "rgba(255,255,255,0.06)"
+      : "transparent"
+    : active
+    ? "rgba(10,132,255,0.09)"
+    : hovered
+    ? "rgba(10,23,41,0.04)"
+    : "transparent";
+
+  const itemBorder = isDark
+    ? active
+      ? "1px solid rgba(194,116,31,0.28)"
+      : "1px solid transparent"
+    : active
+    ? "1px solid rgba(10,132,255,0.14)"
+    : "1px solid transparent";
+
+  const labelColor = isDark
+    ? active
+      ? "#E9B97A"
+      : hovered
+      ? "rgba(255,255,255,0.82)"
+      : "rgba(255,255,255,0.55)"
+    : active
+    ? "#0A84FF"
+    : hovered
+    ? "#0A1729"
+    : "#5C6B82";
+
+  return (
+    <Link
+      to={to}
+      title={isSliver ? label : undefined}
+      aria-label={label}
+      aria-current={active ? "page" : undefined}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: isSliver ? "center" : "flex-start",
+        gap: 9,
+        width: "100%",
+        padding: isSliver ? "9px 0" : "8px 10px",
+        borderRadius: 10,
+        background: itemBg,
+        border: itemBorder,
+        position: "relative",
+        overflow: "hidden",
+        textDecoration: "none",
+        transition: prefersReducedMotion()
+          ? "none"
+          : `background 0.15s ease, border-color 0.15s ease, padding ${DUR}s ${EASE}`,
+      }}
+    >
+      {/* Active indicator bar on left */}
+      {active && (
+        <span
+          aria-hidden
+          style={{
+            position: "absolute",
+            left: 0,
+            top: "50%",
+            transform: "translateY(-50%)",
+            width: 2.5,
+            height: "60%",
+            borderRadius: "0 2px 2px 0",
+            background: isDark
+              ? "linear-gradient(180deg, #E9B97A 0%, #C2741F 100%)"
+              : "linear-gradient(180deg, #0A84FF 0%, #5AC8FA 100%)",
+            boxShadow: isDark
+              ? "0 0 8px rgba(194,116,31,0.55)"
+              : "0 0 8px rgba(10,132,255,0.35)",
+          }}
+        />
+      )}
+
+      <Icon
+        size={16}
+        style={{
+          flexShrink: 0,
+          color: iconColor,
+          transition: prefersReducedMotion() ? "none" : "color 0.15s ease",
+        }}
+      />
+
+      {/* Label — fades out when sliver */}
+      <span
+        style={{
+          fontSize: 13,
+          fontWeight: active ? 600 : 500,
+          color: labelColor,
+          fontFamily: "system-ui, -apple-system, sans-serif",
+          letterSpacing: "-0.01em",
+          whiteSpace: "nowrap",
+          overflow: "hidden",
+          opacity: isSliver ? 0 : 1,
+          transition: prefersReducedMotion() ? "none" : "opacity 0.15s ease, color 0.15s ease",
+          lineHeight: 1,
+          pointerEvents: "none",
+        }}
+      >
+        {label}
+      </span>
+    </Link>
+  );
+}
+
+// ─── Sidebar ──────────────────────────────────────────────────────────────────
+
 function Sidebar() {
   const loc = useLocation();
   const { status: license } = useLicense();
 
+  // DARK IMMERSIVE: only the exact /library path (the Memories cinematic room)
+  const isDark = loc.pathname === "/library";
+
+  // ── Collapse toggle (light world only) ────────────────────────────────────
   const [collapsed, setCollapsed] = useState(
     () => localStorage.getItem("sidebar-collapsed") === "1"
   );
@@ -133,15 +311,49 @@ function Sidebar() {
       return next;
     });
 
-  const items = [
-    { to: "/", label: "Home", icon: Disc3 },
-    { to: "/library", label: "Library", icon: LibraryIcon },
-    { to: "/history", label: "My Discs", icon: History },
-    { to: "/transcode", label: "Save As…", icon: Film },
-    { to: "/iso", label: "Browse ISO", icon: FileSearch },
-    { to: "/settings", label: "Settings", icon: SettingsIcon },
-  ];
+  // ── Dark-world reveal (proximity / hover) ─────────────────────────────────
+  const [revealed, setRevealed] = useState(false);
+  const revealTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const scheduleHide = useCallback(() => {
+    if (!isDark) return;
+    if (revealTimer.current) clearTimeout(revealTimer.current);
+    revealTimer.current = setTimeout(() => setRevealed(false), 220);
+  }, [isDark]);
+
+  const cancelHide = useCallback(() => {
+    if (revealTimer.current) clearTimeout(revealTimer.current);
+  }, []);
+
+  const handleMouseMove = useCallback(
+    (e: MouseEvent) => {
+      if (!isDark) return;
+      const nearLeft = e.clientX <= W_SLIVER + 20;
+      if (nearLeft && !revealed) {
+        if (revealTimer.current) clearTimeout(revealTimer.current);
+        setRevealed(true);
+      }
+    },
+    [isDark, revealed]
+  );
+
+  useEffect(() => {
+    window.addEventListener("mousemove", handleMouseMove);
+    return () => window.removeEventListener("mousemove", handleMouseMove);
+  }, [handleMouseMove]);
+
+  // When theme switches to light, reset revealed state
+  useEffect(() => {
+    if (!isDark) setRevealed(false);
+  }, [isDark]);
+
+  useEffect(() => {
+    return () => {
+      if (revealTimer.current) clearTimeout(revealTimer.current);
+    };
+  }, []);
+
+  // ── Drive status ───────────────────────────────────────────────────────────
   const [driveReady, setDriveReady] = useState(false);
   const ringRef = useRef<HTMLSpanElement>(null);
 
@@ -174,98 +386,306 @@ function Sidebar() {
     return () => { tween.kill(); };
   }, [driveReady]);
 
+  // ── Rail refs for GSAP width/opacity animation ────────────────────────────
+  const railRef = useRef<HTMLElement>(null);
+  const labelsRef = useRef<HTMLDivElement>(null);
+  const wordmarkRef = useRef<HTMLSpanElement>(null);
+  const haloRef = useRef<HTMLDivElement>(null);
+
+  // ── Entrance animation on mount ───────────────────────────────────────────
+  useEffect(() => {
+    if (prefersReducedMotion() || !railRef.current) return;
+    gsap.fromTo(
+      railRef.current,
+      { x: -24, opacity: 0 },
+      { x: 0, opacity: 1, duration: 0.65, ease: EASE, delay: 0.05, clearProps: "x,opacity" }
+    );
+  }, []);
+
+  // ── Width / label animation when isDark / revealed changes ────────────────
+  useEffect(() => {
+    if (!railRef.current) return;
+
+    // Light world: collapsed state supersedes; on dark: sliver unless revealed
+    const targetW = isDark
+      ? revealed ? W_FULL : W_SLIVER
+      : collapsed ? 48 : W_FULL;
+
+    if (prefersReducedMotion()) {
+      gsap.set(railRef.current, { width: targetW });
+      if (labelsRef.current)  gsap.set(labelsRef.current,  { opacity: targetW === W_SLIVER || (collapsed && !isDark) ? 0 : 1 });
+      if (wordmarkRef.current) gsap.set(wordmarkRef.current, { opacity: targetW === W_SLIVER || (collapsed && !isDark) ? 0 : 1 });
+      return;
+    }
+
+    const showLabels = isDark ? revealed : !collapsed;
+
+    gsap.to(railRef.current, { width: targetW, duration: DUR, ease: EASE });
+
+    if (labelsRef.current) {
+      gsap.to(labelsRef.current, {
+        opacity: showLabels ? 1 : 0,
+        duration: showLabels ? 0.22 : 0.12,
+        delay: showLabels ? 0.18 : 0,
+        ease: "power2.out",
+      });
+    }
+    if (wordmarkRef.current) {
+      gsap.to(wordmarkRef.current, {
+        opacity: showLabels ? 1 : 0,
+        duration: showLabels ? 0.22 : 0.12,
+        delay: showLabels ? 0.20 : 0,
+        ease: "power2.out",
+      });
+    }
+
+    if (haloRef.current) {
+      gsap.to(haloRef.current, {
+        opacity: isDark && !revealed ? 0.55 : 0,
+        duration: 0.5,
+        ease: "power2.out",
+      });
+    }
+  }, [isDark, revealed, collapsed]);
+
+  // ── Derived state ─────────────────────────────────────────────────────────
+  const isSliver = isDark && !revealed;
+  // In light world, treat collapsed (48px) the same as sliver for icon-only layout
+  const isIconOnly = isSliver || (!isDark && collapsed);
+
+  // ── Styles ────────────────────────────────────────────────────────────────
+  const railBg = isDark ? "rgba(20,13,7,0.82)" : "rgba(255,255,255,0.62)";
+  const railBorder = isDark
+    ? "1px solid rgba(255,255,255,0.09)"
+    : "1px solid rgba(225,230,238,0.80)";
+  const railBackdrop = "blur(22px)";
+
   return (
     <aside
-      className={cn(
-        "relative flex flex-col transition-[width] duration-200",
-        collapsed ? "w-12" : "w-48",
-      )}
+      ref={railRef}
+      onMouseEnter={isDark ? cancelHide : undefined}
+      onMouseLeave={isDark ? scheduleHide : undefined}
       style={{
-        background: "rgba(255,255,255,0.62)",
-        backdropFilter: "blur(20px)",
-        WebkitBackdropFilter: "blur(20px)",
-        borderRight: "1px solid rgba(225,230,238,0.8)",
+        position: "relative",
+        flexShrink: 0,
+        display: "flex",
+        flexDirection: "column",
+        height: "100%",
+        // Initial width — GSAP animates on subsequent changes
+        width: isDark ? W_SLIVER : collapsed ? 48 : W_FULL,
+        background: railBg,
+        backdropFilter: railBackdrop,
+        WebkitBackdropFilter: railBackdrop,
+        borderRight: railBorder,
+        overflow: "hidden",
+        zIndex: 20,
+        transition: prefersReducedMotion()
+          ? "none"
+          : `background ${DUR}s ease, border-color ${DUR}s ease`,
+        boxShadow: isDark
+          ? "4px 0 32px rgba(194,116,31,0.08), inset -1px 0 0 rgba(194,116,31,0.06)"
+          : "none",
       }}
     >
+      {/* Top highlight line */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-0 h-px"
-        style={{ background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.9), transparent)" }}
+        style={{
+          position: "absolute",
+          inset: "0 0 auto 0",
+          height: 1,
+          background: isDark
+            ? "linear-gradient(90deg, transparent, rgba(194,116,31,0.20), transparent)"
+            : "linear-gradient(90deg, transparent, rgba(255,255,255,0.90), transparent)",
+          pointerEvents: "none",
+          zIndex: 2,
+        }}
       />
 
-      {/* Brand */}
-      <div className={cn("flex items-center gap-2 px-3 pt-4 pb-5", collapsed && "justify-center px-0")}>
-        <BrandMark size={32} />
-        {!collapsed && (
-          <div className="flex flex-col leading-none min-w-0">
-            <div className="flex items-center gap-1.5">
-              <span className="font-display text-[22px] font-semibold tracking-tightish text-ink-900 truncate">
-                Heirvo
-              </span>
-              {license.plan === "pro" && (
-                <span
-                  className="rounded-full px-1.5 py-px text-[9px] font-semibold uppercase tracking-wider text-white shrink-0"
-                  style={{ background: "linear-gradient(135deg, #0A84FF 0%, #5AC8FA 100%)" }}
-                >
-                  Pro
-                </span>
-              )}
-            </div>
-          </div>
-        )}
+      {/* Ambient halo — glows on the sliver in dark mode */}
+      <div
+        ref={haloRef}
+        aria-hidden
+        style={{
+          position: "absolute",
+          right: -1,
+          top: "20%",
+          width: 2,
+          height: "60%",
+          borderRadius: 1,
+          background: "rgba(194,116,31,0.45)",
+          filter: "blur(6px)",
+          opacity: 0,
+          pointerEvents: "none",
+          zIndex: 1,
+        }}
+      />
+
+      {/* ── Brand row ──────────────────────────────────────────────────────── */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 9,
+          padding: isIconOnly ? "18px 0 16px" : "18px 14px 16px",
+          justifyContent: isIconOnly ? "center" : "flex-start",
+          flexShrink: 0,
+          transition: prefersReducedMotion() ? "none" : `padding ${DUR}s ${EASE}`,
+          overflow: "hidden",
+          minWidth: 0,
+        }}
+      >
+        <BrandMark size={28} dark={isDark} />
+        <span
+          ref={wordmarkRef}
+          style={{
+            fontFamily: "system-ui, -apple-system, sans-serif",
+            fontSize: 17,
+            fontWeight: 700,
+            letterSpacing: "-0.03em",
+            color: isDark ? "rgba(255,255,255,0.92)" : "#0A1729",
+            whiteSpace: "nowrap",
+            opacity: isIconOnly ? 0 : 1, // initial; GSAP takes over
+            transition: prefersReducedMotion() ? "none" : `color ${DUR}s ease`,
+            lineHeight: 1,
+            userSelect: "none",
+          }}
+        >
+          Heirvo
+          {/* Pro badge — shown when expanded and licensed */}
+          {license.plan === "pro" && (
+            <span
+              style={{
+                marginLeft: 6,
+                borderRadius: 99,
+                padding: "1px 6px",
+                fontSize: 9,
+                fontWeight: 700,
+                textTransform: "uppercase",
+                letterSpacing: "0.08em",
+                color: "white",
+                background: isDark
+                  ? "linear-gradient(135deg, #C2741F 0%, #E9B97A 100%)"
+                  : "linear-gradient(135deg, #0A84FF 0%, #5AC8FA 100%)",
+                verticalAlign: "middle",
+              }}
+            >
+              Pro
+            </span>
+          )}
+        </span>
       </div>
 
-      {/* Nav */}
-      <nav className="flex-1 space-y-0.5 px-2">
-        {items.map(({ to, label, icon: Icon }) => {
+      {/* ── Nav items ─────────────────────────────────────────────────────── */}
+      <nav
+        style={{
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+          gap: 2,
+          padding: isIconOnly ? "0 6px" : "0 8px",
+          overflow: "hidden",
+          transition: prefersReducedMotion() ? "none" : `padding ${DUR}s ${EASE}`,
+        }}
+        aria-label="Main navigation"
+      >
+        {NAV_ITEMS.map(({ to, label, Icon }) => {
           const active = to === "/" ? loc.pathname === "/" : loc.pathname.startsWith(to);
           return (
-            <Link
+            <NavItem
               key={to}
               to={to}
-              title={collapsed ? label : undefined}
-              className={cn(
-                "nav-item",
-                active && "nav-item-active",
-                collapsed && "justify-center px-0",
-              )}
-            >
-              <Icon className={cn("h-4 w-4 shrink-0 transition", active ? "text-brand-600" : "text-ink-400")} />
-              {!collapsed && <span>{label}</span>}
-            </Link>
+              label={label}
+              Icon={Icon}
+              active={active}
+              isDark={isDark}
+              isSliver={isIconOnly}
+            />
           );
         })}
       </nav>
 
-      {/* Drive status + collapse toggle */}
-      <div className={cn("px-2 pb-3 space-y-2")}>
-        {/* Drive dot */}
-        <div className={cn("flex items-center gap-2 px-1 py-1", collapsed && "justify-center")}>
+      {/* ── Footer — drive status + collapse toggle ────────────────────────── */}
+      <div
+        style={{
+          flexShrink: 0,
+          padding: isIconOnly ? "10px 0 16px" : "10px 10px 16px",
+          display: "flex",
+          flexDirection: "column",
+          gap: 8,
+          overflow: "hidden",
+          transition: prefersReducedMotion() ? "none" : `padding ${DUR}s ${EASE}`,
+        }}
+      >
+        {/* Drive status */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: isIconOnly ? "center" : "flex-start",
+            gap: 7,
+          }}
+        >
           <span className={cn("status-dot", driveReady ? "status-dot-ready" : "status-dot-idle")}>
             <span className="status-dot-core" />
             {driveReady && <span ref={ringRef} className="status-dot-ring" />}
           </span>
-          {!collapsed && (
-            <span className="text-[11px] text-ink-500">
+          <div
+            ref={labelsRef}
+            style={{
+              opacity: isIconOnly ? 0 : 1, // initial; GSAP takes over
+              overflow: "hidden",
+              whiteSpace: "nowrap",
+              minWidth: 0,
+            }}
+          >
+            <span
+              style={{
+                fontSize: 11,
+                color: isDark ? "rgba(255,255,255,0.38)" : "#5C6B82",
+                fontFamily: "system-ui, -apple-system, sans-serif",
+                letterSpacing: "0.01em",
+                transition: prefersReducedMotion() ? "none" : `color ${DUR}s ease`,
+              }}
+            >
               {driveReady ? "Drive ready" : "No drive"}
             </span>
-          )}
+          </div>
         </div>
 
-        {/* Collapse toggle */}
-        <button
-          onClick={toggle}
-          title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          className={cn(
-            "flex w-full items-center gap-1.5 rounded-lg px-2 py-1.5 text-[11px] text-ink-400 hover:bg-ink-100/60 hover:text-ink-600 transition-colors",
-            collapsed && "justify-center px-0",
-          )}
-        >
-          {collapsed
-            ? <ChevronRightIcon className="h-3.5 w-3.5" />
-            : <><ChevronLeft className="h-3.5 w-3.5" /><span>Collapse</span></>}
-        </button>
+        {/* Collapse toggle — light world only */}
+        {!isDark && (
+          <button
+            onClick={toggle}
+            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            className={cn(
+              "flex w-full items-center gap-1.5 rounded-lg px-2 py-1.5 text-[11px] text-ink-400 hover:bg-ink-100/60 hover:text-ink-600 transition-colors",
+              collapsed && "justify-center px-0",
+            )}
+          >
+            {collapsed
+              ? <ChevronRightIcon className="h-3.5 w-3.5" />
+              : <><ChevronLeft className="h-3.5 w-3.5" /><span>Collapse</span></>}
+          </button>
+        )}
       </div>
+
+      {/* Dark-mode: faint "hover to expand" affordance line on right edge */}
+      {isDark && !revealed && (
+        <div
+          aria-hidden
+          style={{
+            position: "absolute",
+            right: 0,
+            top: "30%",
+            width: 2,
+            height: "40%",
+            background: "rgba(194,116,31,0.18)",
+            borderRadius: 1,
+            pointerEvents: "none",
+          }}
+        />
+      )}
     </aside>
   );
 }

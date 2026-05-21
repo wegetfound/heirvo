@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
-import { ChevronLeft, Play, Download, Share2, Trash2 } from "lucide-react";
+import { ChevronLeft, Play, Download, Share2, Trash2, Images, Music, FileText } from "lucide-react";
 import { getDiscById } from "./data/mockDiscs";
 import type { Disc } from "./data/types";
 import { GradientArt, gradientCss } from "./components/GradientArt";
@@ -167,6 +167,12 @@ export default function DiscDetail() {
   }, [discId]);
 
   const isPhoto = disc?.mediaType === "photo";
+  const isAudio = disc?.mediaType === "audio";
+  const isDocument = disc?.mediaType === "document";
+  const isPhotoSet = !!disc?.photos?.length;
+  // True only for a video memory with chapters + a spoken transcript — the only
+  // case where the Chapters / Full-transcript sections make sense.
+  const hasVideoContent = !!disc && !isPhoto && !isAudio && !isDocument;
 
   if (!disc) {
     return (
@@ -312,14 +318,7 @@ export default function DiscDetail() {
                   flexWrap: "wrap",
                 }}
               >
-                {isPhoto ? (
-                  <>
-                    <span className="lib-pill">Photo</span>
-                    <span>{disc.year}</span>
-                    <span className="lib-bullet" />
-                    <span>{disc.source}</span>
-                  </>
-                ) : (
+                {hasVideoContent ? (
                   <>
                     <span className="lib-pill">{disc.scenes.length} chapters</span>
                     <span>{disc.year}</span>
@@ -327,6 +326,21 @@ export default function DiscDetail() {
                     <span>{disc.people.length} people identified</span>
                     <span className="lib-bullet" />
                     <span>{disc.phrasesIndexed.toLocaleString()} phrases</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="lib-pill">
+                      {isPhotoSet
+                        ? `${disc.photos!.length} photos`
+                        : isPhoto
+                        ? "Photo"
+                        : isAudio
+                        ? "Audio"
+                        : "Files"}
+                    </span>
+                    <span>{disc.year}</span>
+                    <span className="lib-bullet" />
+                    <span>{disc.source}</span>
                   </>
                 )}
               </div>
@@ -358,8 +372,32 @@ export default function DiscDetail() {
               )}
               <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
                 <Link to={`/watch/${disc.id}`} className="lib-btn lib-btn-primary">
-                  <Play size={14} fill="currentColor" stroke="none" />
-                  Play from start
+                  {hasVideoContent ? (
+                    <>
+                      <Play size={14} fill="currentColor" stroke="none" />
+                      Play from start
+                    </>
+                  ) : isPhotoSet ? (
+                    <>
+                      <Images size={14} />
+                      View {disc.photos!.length} photos
+                    </>
+                  ) : isPhoto ? (
+                    <>
+                      <Images size={14} />
+                      View photo
+                    </>
+                  ) : isAudio ? (
+                    <>
+                      <Music size={14} />
+                      Open music
+                    </>
+                  ) : (
+                    <>
+                      <FileText size={14} />
+                      Open files
+                    </>
+                  )}
                 </Link>
                 <button
                   type="button"
@@ -514,7 +552,7 @@ export default function DiscDetail() {
           </div>
         </div>
 
-        {!isPhoto && (
+        {hasVideoContent && (
         <div style={{ marginTop: 64 }}>
           <h2
             style={{
@@ -616,7 +654,7 @@ export default function DiscDetail() {
         </div>
         )}
 
-        {!isPhoto && (
+        {hasVideoContent && (
         <div
           style={{
             marginTop: 64,

@@ -5,11 +5,12 @@ import {
   useSearchParams,
   Link,
 } from "react-router-dom";
-import { ChevronLeft, Play, Pause, Search as SearchIcon } from "lucide-react";
+import { ChevronLeft, Play, Pause, Search as SearchIcon, Music, FileText, FolderOpen, Heart } from "lucide-react";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { getDiscById, tsToSec } from "./data/mockDiscs";
 import { gradientCss } from "./components/GradientArt";
 import { TranscriptLine } from "./components/TranscriptLine";
+import { PhotoGalleryView } from "./components/PhotoGallery";
 import type { Disc, TranscriptLine as TLine } from "./data/types";
 import { ipc } from "../../lib/ipc";
 
@@ -18,6 +19,48 @@ function fmtTime(sec: number): string {
   const m = Math.floor((sec % 3600) / 60);
   const s = Math.floor(sec % 60);
   return [h, m, s].map((n) => String(n).padStart(2, "0")).join(":");
+}
+
+/* ── Humane "we rescued your files" card (Tier 2: audio / documents) ──────────
+   Grandma never sees a black box or a codec word — she sees a kind sentence and
+   a clear way to her files. */
+function RescuedFilesCard({ kind }: { kind: "audio" | "document" }) {
+  const Icon = kind === "audio" ? Music : FileText;
+  const title = kind === "audio" ? "Your music is saved" : "Your files are saved";
+  const body =
+    kind === "audio"
+      ? "We rescued these tracks and saved them to your computer, ready to play in your music app."
+      : "We rescued these files and saved them to your computer, ready to open anytime.";
+  return (
+    <div style={{ textAlign: "center", padding: "32px 28px", maxWidth: 420, position: "relative", zIndex: 1 }}>
+      <div style={{ width: 64, height: 64, borderRadius: "50%", background: "rgba(255,255,255,0.88)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 18px", boxShadow: "0 8px 28px rgba(40,20,10,0.18)" }}>
+        <Icon size={26} style={{ color: "var(--lib-amber)" }} />
+      </div>
+      <div style={{ fontFamily: "var(--lib-serif)", fontSize: 24, color: "#2B1E12", marginBottom: 8 }}>{title}</div>
+      <p style={{ fontFamily: "var(--lib-sans)", fontSize: 14, lineHeight: 1.55, color: "rgba(27,23,20,0.72)", margin: "0 0 18px" }}>{body}</p>
+      <button type="button" className="lib-btn lib-btn-primary" style={{ margin: "0 auto" }} onClick={() => { /* Phase 2: reveal the recovered files in the file explorer */ }}>
+        <FolderOpen size={15} /> Open files
+      </button>
+    </div>
+  );
+}
+
+/* ── Humane "we couldn't preview, but it's safe" card (recovered but not webview-renderable) ── */
+function CantPreviewCard() {
+  return (
+    <div style={{ textAlign: "center", padding: "32px 28px", maxWidth: 440, position: "relative", zIndex: 1 }}>
+      <div style={{ width: 64, height: 64, borderRadius: "50%", background: "rgba(255,255,255,0.88)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 18px", boxShadow: "0 8px 28px rgba(40,20,10,0.18)" }}>
+        <Heart size={26} style={{ color: "var(--lib-amber)" }} />
+      </div>
+      <div style={{ fontFamily: "var(--lib-serif)", fontSize: 24, color: "#2B1E12", marginBottom: 8 }}>This memory is safe</div>
+      <p style={{ fontFamily: "var(--lib-sans)", fontSize: 14, lineHeight: 1.55, color: "rgba(27,23,20,0.72)", margin: "0 0 18px" }}>
+        We rescued it and saved it to your computer. We can&rsquo;t show a preview here, but your file is ready and waiting for you.
+      </p>
+      <button type="button" className="lib-btn lib-btn-primary" style={{ margin: "0 auto" }} onClick={() => { /* Phase 2: reveal the recovered files in the file explorer */ }}>
+        <FolderOpen size={15} /> Open files
+      </button>
+    </div>
+  );
 }
 
 export default function Watch() {
@@ -72,6 +115,14 @@ export default function Watch() {
   }, [disc?.videoPath]);
   const hasMedia = mediaSrc !== null;
   const isPhoto = disc?.mediaType === "photo";
+  const isAudio = disc?.mediaType === "audio";
+  const isDocument = disc?.mediaType === "document";
+  // True only for media we actually play/show inline (video + photo). Audio &
+  // documents are "recover-to-file" — we present them warmly, never a black box.
+  const isPlayable = !isAudio && !isDocument;
+  // If a video file fails to decode in the webview, we swap to a human message
+  // instead of a silent black frame.
+  const [mediaError, setMediaError] = useState(false);
 
   useEffect(() => {
     setCurrentSec(initialSec);
@@ -108,6 +159,12 @@ export default function Watch() {
         </div>
       </div>
     );
+  }
+
+  // A multi-photo disc (Kodak Photo CD, scanned-photo disc) opens as a gallery,
+  // not the single-image / video layout — so every photo is reachable.
+  if (disc.photos && disc.photos.length > 0) {
+    return <PhotoGalleryView disc={disc} onBack={() => nav(-1)} />;
   }
 
   const total = disc.durationSec || 1;
@@ -173,17 +230,21 @@ export default function Watch() {
               <div
                 style={{
                   aspectRatio: "4 / 3",
-                  background: hasMedia ? "#000" : gradientCss(disc.gradient),
+                  background: (isPlayable && hasMedia && !mediaError) ? "#000" : gradientCss(disc.gradient),
                   position: "relative",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                 }}
               >
-                {hasMedia && isPhoto ? (
+                {isAudio || isDocument ? (
+                  /* Tier 2 — recovered to files, presented warmly (never a black box) */
+                  <RescuedFilesCard kind={isAudio ? "audio" : "document"} />
+                ) : hasMedia && isPhoto && !mediaError ? (
                   <img
                     src={mediaSrc ?? undefined}
-                    alt={disc?.title ?? "Imported photo"}
+                    alt={disc?.title ?? "Your photo"}
+                    onError={() => setMediaError(true)}
                     style={{
                       width: "100%",
                       height: "100%",
@@ -191,7 +252,7 @@ export default function Watch() {
                       background: "#000",
                     }}
                   />
-                ) : hasMedia ? (
+                ) : hasMedia && !mediaError ? (
                   <video
                     ref={videoRef}
                     src={mediaSrc ?? undefined}
@@ -199,6 +260,7 @@ export default function Watch() {
                     onPlay={() => setPlaying(true)}
                     onPause={() => setPlaying(false)}
                     onEnded={() => setPlaying(false)}
+                    onError={() => setMediaError(true)}
                     onClick={() => setPlaying((p) => !p)}
                     style={{
                       width: "100%",
@@ -209,6 +271,9 @@ export default function Watch() {
                     }}
                     playsInline
                   />
+                ) : hasMedia && mediaError ? (
+                  /* Recovered, but the webview can't preview this file — stay kind, never show a codec error */
+                  <CantPreviewCard />
                 ) : (
                   <>
                     <div
@@ -265,7 +330,7 @@ export default function Watch() {
                   </>
                 )}
               </div>
-              {!isPhoto && (
+              {isPlayable && !isPhoto && (
               <div
                 style={{
                   padding: "14px 18px",
@@ -366,7 +431,7 @@ export default function Watch() {
               </div>
               <div style={{ color: "var(--lib-muted)", fontSize: 13, marginTop: 6 }}>
                 {disc.date} · {disc.source}, recovered {disc.recoveredAt}
-                {!isPhoto && (
+                {isPlayable && !isPhoto && (
                   <>
                     {" "}· {disc.scenes.length} scenes ·{" "}
                     {disc.phrasesIndexed.toLocaleString()} phrases
@@ -388,7 +453,7 @@ export default function Watch() {
           </div>
 
           <div style={{ paddingTop: 8 }}>
-            {isPhoto ? (
+            {!isPlayable || isPhoto ? (
               <div
                 style={{
                   padding: "20px 22px",
@@ -402,9 +467,11 @@ export default function Watch() {
                   lineHeight: 1.55,
                 }}
               >
-                Photos in your vault don't carry a spoken transcript — but they
-                still live alongside your videos so the whole family archive is
-                in one place.
+                {isAudio
+                  ? "Your music is saved to your computer — there's nothing to watch or read here, just press Open files to listen."
+                  : isDocument
+                  ? "Your files are saved to your computer — there's nothing to watch or read here, just press Open files to view them."
+                  : "Photos in your vault don't carry a spoken transcript — but they still live alongside your videos so the whole family archive is in one place."}
               </div>
             ) : (
             <>
