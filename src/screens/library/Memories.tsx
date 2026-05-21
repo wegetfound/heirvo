@@ -40,7 +40,7 @@ import { convertFileSrc } from "@tauri-apps/api/core";
 import { MOCK_DISCS, getDiscById } from "./data/mockDiscs";
 import { gradientCss } from "./components/GradientArt";
 import type { Disc } from "./data/types";
-import { ipc } from "../../lib/ipc";
+import { ipc, events } from "../../lib/ipc";
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
@@ -409,6 +409,28 @@ function CoverFlow({ discs, activeId, onSelect, fullscreen }: CarouselProps) {
                     boxShadow: "0 0 6px rgba(255,255,255,0.8)",
                   }}
                 />
+              )}
+              {/* "Getting ready" badge for recovering discs */}
+              {disc.status === "recovering" && (
+                <div
+                  style={{
+                    position: "absolute",
+                    top: 6,
+                    left: 6,
+                    background: "rgba(194,116,31,0.75)",
+                    backdropFilter: "blur(4px)",
+                    borderRadius: 4,
+                    padding: "2px 5px",
+                    fontSize: 7,
+                    fontWeight: 600,
+                    color: "rgba(255,255,255,0.95)",
+                    fontFamily: "var(--lib-sans)",
+                    letterSpacing: "0.04em",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  Getting ready…
+                </div>
               )}
             </div>
           );
@@ -834,24 +856,50 @@ export default function Memories() {
   const gsapKbRef = useRef<ReturnType<typeof gsap.to> | null>(null);
 
   // ── Load the real library (IPC), falling back to demo discs ──────────────────
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const page = await ipc.library.listPage(0, 200);
-        if (cancelled || !page?.discs?.length) return;
-        setDiscs(page.discs);
-        // Keep the featured "on this day" disc if it still exists, else feature
-        // the most recently recovered real disc.
-        setDisc((cur) => page.discs.find((d) => d.id === cur.id) ?? page.discs[0]);
-      } catch {
-        // demo discs already shown
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
+  const loadDiscs = useCallback(async () => {
+    try {
+      const page = await ipc.library.listPage(0, 200);
+      if (!page?.discs?.length) return;
+      setDiscs(page.discs);
+      // Keep the featured "on this day" disc if it still exists, else feature
+      // the most recently recovered real disc.
+      setDisc((cur) => page.discs.find((d) => d.id === cur.id) ?? page.discs[0]);
+    } catch {
+      // demo discs already shown
+    }
   }, []);
+
+  useEffect(() => {
+    loadDiscs();
+  }, [loadDiscs]);
+
+  // ── Refresh on recovery completion (window event + disc_added IPC) ───────────
+  useEffect(() => {
+    // Window CustomEvent dispatched by useRecoveryPromotion after normalization.
+    function onLibraryChanged() {
+      loadDiscs();
+    }
+    window.addEventListener("heirvo:library-changed", onLibraryChanged);
+
+    // Also subscribe directly so Memories refreshes even if the hook fires
+    // before this component mounts (race safety).
+    let unlisten: (() => void) | null = null;
+    events
+      .onDiscAdded(() => {
+        loadDiscs();
+      })
+      .then((fn) => {
+        unlisten = fn;
+      })
+      .catch(() => {
+        // non-Tauri dev — no-op
+      });
+
+    return () => {
+      window.removeEventListener("heirvo:library-changed", onLibraryChanged);
+      unlisten?.();
+    };
+  }, [loadDiscs]);
 
   // ── Lazy-load full detail for the active disc ────────────────────────────────
   // The list endpoint may return lightweight rows (no transcript/people). When
@@ -1336,6 +1384,20 @@ export default function Memories() {
                   }}
                 >
                   {disc.about}
+                </p>
+              )}
+              {disc.status === "recovering" && (
+                <p
+                  style={{
+                    margin: "6px 0 0",
+                    fontFamily: "var(--lib-sans)",
+                    fontSize: 11,
+                    color: "rgba(233,185,122,0.80)",
+                    letterSpacing: "0.02em",
+                    fontStyle: "italic",
+                  }}
+                >
+                  Getting your video ready…
                 </p>
               )}
               <button

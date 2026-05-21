@@ -32,6 +32,7 @@ import { ipc } from "@/lib/ipc";
 import { cn } from "@/lib/cn";
 import { prefersReducedMotion } from "@/utils/gsap-fx";
 import { useLicense } from "@/lib/useLicense";
+import { useRecoveryPromotion } from "@/lib/useRecoveryPromotion";
 
 // ─── constants ────────────────────────────────────────────────────────────────
 
@@ -60,11 +61,25 @@ function ScrollLayout() {
   );
 }
 
+// ─── RecoveryPromotionManager ─────────────────────────────────────────────────
+
+/**
+ * Mounts the recovery→library bridge exactly once at app level.
+ * Subscribes to `library:disc_added`, triggers normalization when needed,
+ * and dispatches `heirvo:library-changed` so library screens can refresh.
+ * Renders nothing — pure side-effect component.
+ */
+function RecoveryPromotionManager() {
+  useRecoveryPromotion();
+  return null;
+}
+
 // ─── App ──────────────────────────────────────────────────────────────────────
 
 export default function App() {
   return (
     <div className="flex h-screen text-ink-900 bg-ink-50">
+      <RecoveryPromotionManager />
       <PreflightGate />
       <Sidebar />
       <main className="flex-1 flex flex-col overflow-hidden bg-ink-50">

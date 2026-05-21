@@ -193,8 +193,17 @@ pub async fn promote_session_to_library(
         _ => "Recovered disc",
     };
 
-    // Check for partial recovery (any Failed sectors in the sector map).
-    let status = check_partial_status(db, session_id).await;
+    // A recovered video whose file isn't a webview-playable MP4 yet still needs
+    // normalization (re-encode to H.264). Mark it "recovering" so the UI shows a
+    // "getting your video ready" state; the frontend flips it to its final status
+    // once normalize_for_playback completes. Otherwise use the recovered/partial
+    // result from the sector map.
+    let needs_normalization = media_type == "video" && video_path.is_some();
+    let status = if needs_normalization {
+        "recovering".to_string()
+    } else {
+        check_partial_status(db, session_id).await
+    };
 
     let disc_id = format!("{}-{}", slugify(&title), &Uuid::new_v4().to_string()[..8]);
 
@@ -404,9 +413,8 @@ pub async fn promote_session_to_library(
     }
 
     // ── 11. Emit library:disc_added ──────────────────────────────────────
-    // `needsNormalization` is true for video/ISO files — the frontend should
-    // call `normalizeForPlayback` and then `update_disc_video_path`.
-    let needs_normalization = media_type == "video" && video_path.is_some();
+    // `needsNormalization` (computed above) is true for video/ISO files — the
+    // frontend calls `normalizeForPlayback` then `update_disc_video_path`.
     let _ = app.emit(
         "library:disc_added",
         DiscAddedPayload {

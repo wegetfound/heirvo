@@ -409,4 +409,37 @@ export const events = {
       videoPath: string | null;
     }>("library:disc_added", (e) => handler(e.payload));
   },
+  /** Fired when `normalizeForPlayback` finishes successfully.
+   * `mode` is one of `"already_safe"` | `"remux"` | `"reencode"`.
+   * When `mode === "already_safe"` the output file was NOT written — play
+   * the original `inputPath` directly. */
+  onNormalizeComplete(
+    handler: (p: { job_id: string; mode: string }) => void,
+  ): Promise<UnlistenFn> {
+    return listen<{ job_id: string; mode: string }>(
+      "normalize:complete",
+      (e) => handler(e.payload),
+    );
+  },
+  /** Fired when `normalizeForPlayback` fails. Non-fatal — leave the disc
+   * with whatever path it already has. */
+  onNormalizeError(
+    handler: (p: { job_id: string; error: string }) => void,
+  ): Promise<UnlistenFn> {
+    return listen<{ job_id: string; error: string }>(
+      "normalize:error",
+      (e) => handler(e.payload),
+    );
+  },
+  /** Fired for each photo converted during a photo-disc promotion.
+   * Payload: `{ sessionId, done, total }` (camelCase from Rust
+   * `PromoteProgressPayload { session_id, done, total }`). */
+  onPromoteProgress(
+    handler: (p: { sessionId: string; done: number; total: number }) => void,
+  ): Promise<UnlistenFn> {
+    return listen<{ sessionId: string; done: number; total: number }>(
+      "library:promote_progress",
+      (e) => handler(e.payload),
+    );
+  },
 };
