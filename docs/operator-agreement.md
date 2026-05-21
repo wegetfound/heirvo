@@ -1,9 +1,10 @@
 # Heirvo Lab Operator Agreement — Template (DRAFT)
 
-> ⚠️ **NOT LEGAL ADVICE.** A qualified attorney must review before use. Two areas need
-> lawyer sign-off: (1) independent-contractor classification under your state's test
-> (especially the ABC test in CA, NJ, MA); and (2) confirming the no-fee structure stays
-> outside the FTC Franchise Rule. Placeholders in `[BRACKETS]` are for counsel to complete.
+> ⚠️ **NOT LEGAL ADVICE.** A qualified attorney must review before use. Remaining `[BRACKETS]`
+> are for counsel: entity name, operator name, date, §10 general provisions (indemnification,
+> governing law, arbitration, etc.). See the Counsel checklist and Red-team notes below.
+> Key IC/franchise risks: (1) ABC test in CA/NJ/MA — **operators in those states are excluded**;
+> (2) confirm no-fee structure stays outside the FTC Franchise Rule.
 
 ---
 
@@ -64,7 +65,7 @@ strikes or immediate termination in §7.
 Customer media, data, and personal information are strictly confidential. Use them only to
 perform the assigned job. Do not copy, retain, examine beyond what recovery requires, or
 disclose them. Securely delete all customer data after confirmed delivery, within
-`[RETENTION WINDOW]` days.
+**14 days**.
 
 Do not permit any unauthorized person to access customer media or your workspace during a job.
 This obligation survives termination of the Agreement.
@@ -89,9 +90,9 @@ background event discovered after acceptance.
 **Escalating strikes** for quality and SLA issues (not integrity breaches):
 Strike 1 — coaching conversation; Strike 2 — probation with 100% QC review;
 Strike 3 — service area revocation. Three quality strikes in any rolling
-`[WINDOW, e.g., 90-day]` period ends the relationship.
+**90-day** period ends the relationship.
 
-Either party may terminate this Agreement on `[NOTICE PERIOD, e.g., 14 days]` written notice.
+Either party may terminate this Agreement on **14 days'** written notice.
 Heirvo may terminate immediately for §7 integrity events. On any termination, you will complete
 or hand off in-flight jobs per Heirvo's instructions, return or destroy Heirvo materials, and
 cease using Heirvo's name, marks, and software. §§5 and 8 survive termination.
@@ -100,10 +101,11 @@ cease using Heirvo's name, marks, and software. §§5 and 8 survive termination.
 
 You are paid per-job at the rates in the then-current pay schedule (Tier 1–3 piece rates,
 attempt fee for genuine no-recovery attempts, and a monthly quality bonus for meeting QC and
-on-time thresholds). Rates are set by Heirvo and may be updated on `[NOTICE PERIOD]` advance
-notice. No payment is owed for work that violates this Agreement or for falsified results.
+on-time thresholds). Rates are set by Heirvo and may be updated on **30 days'** advance notice.
+No payment is owed for work that violates this Agreement or for falsified results.
 
-Payment is made `[via Stripe Connect / ACH / method]` on `[schedule, e.g., net-15 from invoice]`.
+Payment is made via **Stripe Connect**, net-15 from the close of each calendar month
+(i.e., the prior month's earnings are paid by the 15th of the following month).
 You invoice Heirvo; Heirvo does not initiate payment automatically.
 
 ### 9. Branding and software license
@@ -193,12 +195,11 @@ versioned Handbook that is incorporated by reference with a stable URL and effec
 mechanism). Without it the accountability trigger in §4 is unenforceable — you can't prove what
 protocol the operator was supposed to follow.
 
-**§5: retention window is a blank (`[RETENTION WINDOW]`).**
-Customer memory files sitting on an operator's machine indefinitely is a live privacy and
-liability exposure. Set a number (14 days post confirmed delivery is defensible). Also: add an
-explicit data-breach notification obligation — most US state laws require notifying affected
-individuals within 30–72 hours of discovering a breach, and operators holding customer media
-may be independently subject to these obligations.
+**§5: retention window set to 14 days. ✓**
+Still needed: an explicit data-breach notification obligation — most US state laws require
+notifying affected individuals within 30–72 hours of discovering a breach, and operators
+holding customer media may be independently subject to these obligations. Counsel should add
+this to §5.
 
 **§8: "no payment for work that violates this Agreement" is overbroad.**
 If an operator completes a genuine, high-quality recovery but committed a minor procedural
