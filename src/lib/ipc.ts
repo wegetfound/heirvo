@@ -222,6 +222,45 @@ export const ipc = {
      * gradient artwork. */
     ensureDiscThumbnail: (discId: string) =>
       invoke<string | null>("ensure_disc_thumbnail", { discId }),
+
+    /**
+     * Convert a source image to a web-viewable JPEG and write it to outputPath.
+     *
+     * Natively supported (via the `image` crate — no extra dependencies):
+     *   JPEG · PNG · GIF · WebP · BMP · TIFF
+     *
+     * Returns a discriminated-union result:
+     *   { status: "ok", outputPath: string }
+     *   { status: "needs_external_converter", extension, reason, recommendation }
+     *   { status: "decode_error", message }
+     *
+     * @param maxDim  Optional longest-edge cap for gallery display sizes.
+     *                Pass undefined / null for full-resolution output.
+     */
+    convertImageToJpeg: (
+      inputPath: string,
+      outputPath: string,
+      maxDim?: number | null,
+    ) =>
+      invoke<
+        | { status: "ok"; output_path: string }
+        | { status: "needs_external_converter"; extension: string; reason: string; recommendation: string }
+        | { status: "decode_error"; message: string }
+      >("convert_image_to_jpeg", { inputPath, outputPath, maxDim: maxDim ?? null }),
+
+    /**
+     * Probe a special-format image (.pcd / .heic / RAW) and return the
+     * documented conversion path. Always returns `needs_external_converter`
+     * — this is a planning/routing command, not a conversion.
+     *
+     * See the Rust doc-comment on `convert_special_image` for the recommended
+     * Phase-2 implementation plan for each format.
+     */
+    convertSpecialImage: (inputPath: string) =>
+      invoke<
+        | { status: "needs_external_converter"; extension: string; reason: string; recommendation: string }
+        | { status: "decode_error"; message: string }
+      >("convert_special_image", { inputPath }),
   },
 
   // Albums

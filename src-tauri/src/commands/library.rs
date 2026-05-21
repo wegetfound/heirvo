@@ -760,6 +760,237 @@ pub struct DeleteResult {
     pub bytes_freed: u64,
 }
 
+// ─── Image conversion commands ──────────────────────────────────────────────
+
+/// Result of `convert_image_to_jpeg` — carries the output path on success and
+/// a structured reason on failure so the UI can decide what to show.
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase", tag = "status")]
+pub enum ConvertImageResult {
+    /// Conversion succeeded; `output_path` is the written JPEG.
+    #[serde(rename = "ok")]
+    Ok { output_path: String },
+    /// The format is not supported by the `image` crate and needs an external
+    /// converter. See `convert_special_image` for the documented path.
+    #[serde(rename = "needs_external_converter")]
+    NeedsExternalConverter {
+        extension: String,
+        reason: String,
+        /// Human-readable recommendation surfaced in the UI.
+        recommendation: String,
+    },
+    /// A supported format that nonetheless failed to decode (corrupt file, etc.).
+    #[serde(rename = "decode_error")]
+    DecodeError { message: String },
+}
+
+/// Classify an extension as supported by the `image` crate, known-unsupported
+/// (PCD / HEIC / RAW), or unknown (treat as unsupported).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum ImageFormatClass {
+    /// `image` crate can open this.
+    Supported,
+    /// Needs an external converter path (PCD, HEIC, RAW).
+    SpecialFormat(SpecialFormat),
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum SpecialFormat {
+    Pcd,
+    Heic,
+    CameraRaw,
+}
+
+fn classify_image_extension(ext: &str) -> ImageFormatClass {
+    match ext {
+        // `image` crate feature-gated formats we have enabled in Cargo.toml.
+        "jpg" | "jpeg" | "png" | "gif" | "webp" | "bmp" | "tiff" | "tif" => {
+            ImageFormatClass::Supported
+        }
+        // ── Formats that need the external-converter path ───────────────
+        "pcd" => ImageFormatClass::SpecialFormat(SpecialFormat::Pcd),
+        "heic" | "heif" => ImageFormatClass::SpecialFormat(SpecialFormat::Heic),
+        // Common RAW extensions.
+        "cr2" | "cr3" | "nef" | "nrw" | "arw" | "srf" | "sr2" | "orf" | "rw2" | "pef"
+        | "dng" | "raf" | "x3f" | "3fr" | "fff" | "mef" | "mos" | "mrw" | "ptx" | "raw"
+        | "rwl" | "rwz" => ImageFormatClass::SpecialFormat(SpecialFormat::CameraRaw),
+        // Everything else — treat as unsupported; caller should surface an error.
+        _ => ImageFormatClass::SpecialFormat(SpecialFormat::CameraRaw),
+    }
+}
+
+/// Convert a source image to a web-viewable JPEG and write it to `output_path`.
+///
+/// Formats handled by the bundled `image` crate (JPEG · PNG · GIF · WebP · BMP
+/// · TIFF): decoded and re-encoded as JPEG automatically. Optionally downscaled
+/// to `max_dim` (longest edge) — pass `None` for full-resolution output.
+///
+/// Returns `ConvertImageResult::NeedsExternalConverter` for Kodak Photo CD
+/// (`.pcd`), HEIC/HEIF, and camera RAW formats — see `convert_special_image`
+/// for the documented production path for those.
+///
+/// The frontend should use `convertFileSrc` on the returned `output_path` to
+/// load the JPEG into an `<img>` element.
+#[tauri::command]
+pub async fn convert_image_to_jpeg(
+    input_path: String,
+    output_path: String,
+    max_dim: Option<u32>,
+) -> AppResult<ConvertImageResult> {
+    let ext = Path::new(&input_path)
+        .extension()
+        .and_then(|s| s.to_str())
+        .unwrap_or("")
+        .to_ascii_lowercase();
+
+    match classify_image_extension(&ext) {
+        ImageFormatClass::SpecialFormat(sf) => {
+            return Ok(special_format_stub(sf, ext));
+        }
+        ImageFormatClass::Supported => {}
+    }
+
+    // Ensure the output directory exists before spawning the blocking task,
+    // so we get a clear error rather than a cryptic "file not found" on encode.
+    if let Some(parent) = Path::new(&output_path).parent() {
+        std::fs::create_dir_all(parent)
+            .map_err(|e| AppError::Internal(format!("output dir create failed: {e}")))?;
+    }
+
+    let result = tokio::task::spawn_blocking(move || {
+        let img = image::open(&input_path).map_err(|e| {
+            tracing::warn!("convert_image_to_jpeg: decode failed for {input_path}: {e}");
+            ConvertImageResult::DecodeError {
+                message: format!("Could not decode image: {e}"),
+            }
+        })?;
+
+        let img = match max_dim {
+            Some(dim) if dim > 0 => img.thumbnail(dim, dim),
+            _ => img,
+        };
+
+        let mut out =
+            std::fs::File::create(&output_path).map_err(|e| ConvertImageResult::DecodeError {
+                message: format!("Could not create output file: {e}"),
+            })?;
+
+        let mut enc = image::codecs::jpeg::JpegEncoder::new_with_quality(&mut out, 90);
+        let rgb = img.to_rgb8();
+        enc.encode(&rgb, rgb.width(), rgb.height(), image::ExtendedColorType::Rgb8)
+            .map_err(|e| {
+                tracing::warn!("convert_image_to_jpeg: encode failed: {e}");
+                ConvertImageResult::DecodeError {
+                    message: format!("JPEG encode failed: {e}"),
+                }
+            })?;
+
+        Ok(output_path)
+    })
+    .await
+    .unwrap_or_else(|e| {
+        Err(ConvertImageResult::DecodeError {
+            message: format!("task panicked: {e}"),
+        })
+    });
+
+    match result {
+        Ok(path) => Ok(ConvertImageResult::Ok { output_path: path }),
+        Err(r) => Ok(r), // surface structured error to JS rather than throwing
+    }
+}
+
+/// Probe a file with a special (non-`image`-crate) format and return the
+/// documented stub result. This command exists so the frontend has a single
+/// typed entry-point for ALL image conversion; it always returns
+/// `NeedsExternalConverter` for unsupported formats with a clear action plan.
+///
+/// # Phase-2 production paths (NOT implemented here — see comments below)
+///
+/// ## Kodak Photo CD (`.pcd`)
+/// - No maintained pure-Rust PCD decoder exists as of 2025.
+/// - Recommended approach: bundle **ImageMagick** (`magick convert input.pcd[2]
+///   output.jpg`) or the standalone `pcdtojpeg` tool alongside the app. Ship it
+///   in `resources/imagemagick/` and locate it the same way `locate_ffmpeg`
+///   finds ffmpeg. Use resolution index `[2]` (768×512) for gallery display;
+///   `[4]` (3072×2048) for full-res export.
+///
+/// ## HEIC / HEIF
+/// - Needs `libheif` (C library) or the `heic` Rust crate (links libde265/x265).
+/// - Both pull substantial native dependencies that are risky on Windows cross-
+///   compile. The `image` crate explicitly excludes HEIC in its feature list.
+///   Recommended: `heic` crate (wraps libheif via bindgen) if a MSVC toolchain
+///   is available; otherwise shell out to ffmpeg (`ffmpeg -i in.heic out.jpg`)
+///   which handles HEIC on modern builds with libde265.
+///
+/// ## Camera RAW (CR2/NEF/ARW/DNG etc.)
+/// - `rawloader` crate (pure Rust, no native deps) decodes most RAW formats to
+///   a linear-light RGB array, but does not do demosaicing or tone-mapping itself.
+///   Pair it with `imagepipe` (same author, pure Rust) for a full develop pipeline.
+///   Alternatively, shell out to `dcraw` or `rawtherapee-cli`.
+///   If adding `rawloader`: `cargo add rawloader` — it builds cleanly on Windows
+///   and adds ~200 KB to the binary. Evaluate against `libraw-sys` if more format
+///   breadth is needed (requires MSVC and the libraw source tree).
+#[tauri::command]
+pub async fn convert_special_image(input_path: String) -> AppResult<ConvertImageResult> {
+    let ext = Path::new(&input_path)
+        .extension()
+        .and_then(|s| s.to_str())
+        .unwrap_or("")
+        .to_ascii_lowercase();
+
+    let sf = match classify_image_extension(&ext) {
+        ImageFormatClass::SpecialFormat(sf) => sf,
+        ImageFormatClass::Supported => {
+            // Caller should have used convert_image_to_jpeg for this format.
+            return Ok(special_format_stub(
+                SpecialFormat::CameraRaw,
+                "use convert_image_to_jpeg".to_string(),
+            ));
+        }
+    };
+
+    Ok(special_format_stub(sf, ext))
+}
+
+/// Build a `NeedsExternalConverter` result for a given special format.
+fn special_format_stub(sf: SpecialFormat, ext: String) -> ConvertImageResult {
+    let (reason, recommendation) = match sf {
+        SpecialFormat::Pcd => (
+            "Kodak Photo CD (.pcd) has no maintained pure-Rust decoder. \
+             An external converter (ImageMagick or pcdtojpeg) is required."
+                .to_string(),
+            "Bundle ImageMagick alongside the app and call: \
+             magick convert input.pcd[2] output.jpg"
+                .to_string(),
+        ),
+        SpecialFormat::Heic => (
+            "HEIC/HEIF requires libheif (native library) which is not bundled. \
+             ffmpeg with libde265 can convert HEIC on supported builds."
+                .to_string(),
+            "Run: ffmpeg -i input.heic output.jpg — if the bundled ffmpeg \
+             was built with libde265 this will work. Otherwise use the heic \
+             Rust crate (links libheif via bindgen)."
+                .to_string(),
+        ),
+        SpecialFormat::CameraRaw => (
+            format!(
+                "Camera RAW format (.{ext}) is not decoded by the bundled \
+                 image crate. A dedicated RAW developer is required."
+            ),
+            "Add the `rawloader` + `imagepipe` crates (pure Rust, clean \
+             Windows build) for demosaic/tone-map, or shell out to \
+             dcraw / rawtherapee-cli."
+                .to_string(),
+        ),
+    };
+    ConvertImageResult::NeedsExternalConverter {
+        extension: ext,
+        reason,
+        recommendation,
+    }
+}
+
 /// Batch-delete multiple discs in one IPC call. Loops `delete_library_disc`
 /// internally and accumulates totals. Partial success is allowed — failures
 /// are counted but do not abort the remaining deletes.
