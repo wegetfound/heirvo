@@ -1175,6 +1175,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "filetime_creation"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c25b5d475550e559de5b0c0084761c65325444e3b6c9e298af9cefe7a9ef3a5f"
+dependencies = [
+ "cfg-if",
+ "filetime",
+ "windows-sys 0.52.0",
+]
+
+[[package]]
 name = "find-msvc-tools"
 version = "0.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1733,6 +1744,7 @@ dependencies = [
  "reqwest 0.12.28",
  "serde",
  "serde_json",
+ "sevenz-rust2",
  "sha2",
  "sqlx",
  "tauri",
@@ -2470,6 +2482,15 @@ dependencies = [
 
 [[package]]
 name = "lzma-rust2"
+version = "0.1.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "85ea7cee9b17915968314862afb1885c725891c6da8c4ac41a89ea4a8125b352"
+dependencies = [
+ "byteorder",
+]
+
+[[package]]
+name = "lzma-rust2"
 version = "0.15.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1670343e58806300d87950e3401e820b519b9384281bbabfb15e3636689ffd69"
@@ -2654,6 +2675,17 @@ name = "new_debug_unreachable"
 version = "1.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "650eef8c711430f1a879fdd01d4745a7deea475becfb90269c06775983bbf086"
+
+[[package]]
+name = "nt-time"
+version = "0.10.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1c367e8edaff1f8a871e56343eb5e03888f6e0d1c2861880ccf4b7dc830899ed"
+dependencies = [
+ "chrono",
+ "rand 0.8.6",
+ "time",
+]
 
 [[package]]
 name = "nu-ansi-term"
@@ -3015,7 +3047,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d7b497d21a8b6fbb4b5a544f8fadb77e801a09ae0add9e411d31c6f89e3c1e90"
 dependencies = [
  "hmac-sha256",
- "lzma-rust2",
+ "lzma-rust2 0.15.7",
  "ureq",
 ]
 
@@ -4237,6 +4269,22 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "170fb83ab34de17dc69aa7c67482b22218ddb85da56546f9bd6b929e32a05930"
 dependencies = [
  "stable_deref_trait",
+]
+
+[[package]]
+name = "sevenz-rust2"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2786494a2628eff4a696e5eb9923514387c006dbd424a85abfad471f3911590d"
+dependencies = [
+ "bit-set",
+ "byteorder",
+ "crc32fast",
+ "filetime_creation",
+ "js-sys",
+ "lzma-rust2 0.1.8",
+ "nt-time",
+ "wasm-bindgen",
 ]
 
 [[package]]

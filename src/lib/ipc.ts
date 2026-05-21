@@ -15,6 +15,7 @@ import type {
   TranscodeStarted,
   TranscodeProgress,
   FfmpegStatus,
+  ImagemagickStatus,
   ProbeResult,
   RecoveryMode,
   StorageDrive,
@@ -136,6 +137,8 @@ export const ipc = {
   ffmpegStatus: () => invoke<FfmpegStatus>("ffmpeg_status"),
   ffprobeFile: (path: string) => invoke<ProbeResult>("ffprobe_file", { path }),
   installFfmpeg: () => invoke<string>("install_ffmpeg"),
+  imagemagickStatus: () => invoke<ImagemagickStatus>("imagemagick_status"),
+  installImagemagick: () => invoke<string>("install_imagemagick"),
   transcode: (job: TranscodeJob) => invoke<TranscodeStarted>("transcode", { job }),
   /** Re-encode or remux a recovered video so it is playable in the Chromium
    * webview. Fires `normalize:progress`, `normalize:complete`, and
@@ -339,6 +342,13 @@ export const events = {
     handler: (p: import("./types").InstallProgress) => void,
   ): Promise<UnlistenFn> {
     return listen<import("./types").InstallProgress>("ffmpeg:install_progress", (e) =>
+      handler(e.payload),
+    );
+  },
+  onImagemagickInstallProgress(
+    handler: (p: import("./types").InstallProgress) => void,
+  ): Promise<UnlistenFn> {
+    return listen<import("./types").InstallProgress>("imagemagick:install_progress", (e) =>
       handler(e.payload),
     );
   },

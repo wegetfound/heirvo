@@ -2,10 +2,10 @@
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { useLicense } from "@/lib/useLicense";
 import { useTheme } from "@/lib/theme";
-import { Loader2, Check, ExternalLink, LogOut, Sparkles, FolderOpen, FileText, Volume2, Play, Mail, ChevronDown, ChevronRight, Mic, Film, Sun, Moon, Zap } from "lucide-react";
-import { ipc } from "@/lib/ipc";
+import { Loader2, Check, ExternalLink, LogOut, Sparkles, FolderOpen, FileText, Volume2, Play, Mail, ChevronDown, ChevronRight, Mic, Film, Sun, Moon, Zap, ImageIcon } from "lucide-react";
+import { ipc, events } from "@/lib/ipc";
 import { audio, type AudioPrefs } from "@/lib/audio";
-import type { PreflightStatus, WhisperModelInfo } from "@/lib/types";
+import type { PreflightStatus, WhisperModelInfo, ImagemagickStatus, InstallProgress } from "@/lib/types";
 import { PRICING } from "@/lib/pricing";
 
 const CHECKOUT_RECOVER_URL = "https://heirvo.com/buy?tier=recover";
@@ -873,14 +873,51 @@ function Stat({ label, value }: { label: string; value: string }) {
 
 function SystemStatusPanel() {
   const [pf, setPf] = useState<PreflightStatus | null>(null);
+  const [imStatus, setImStatus] = useState<ImagemagickStatus | null>(null);
+  const [installingIm, setInstallingIm] = useState(false);
+  const [imProgress, setImProgress] = useState<InstallProgress | null>(null);
+  const [imError, setImError] = useState<string | null>(null);
 
   useEffect(() => {
     ipc.getPreflightStatus().then(setPf).catch(() => {});
+    ipc.imagemagickStatus().then(setImStatus).catch(() => {});
+
+    const sub = events.onImagemagickInstallProgress((p) => {
+      setImProgress(p);
+      if (p.stage === "installed") {
+        setInstallingIm(false);
+        setImProgress(null);
+        ipc.imagemagickStatus().then(setImStatus).catch(() => {});
+      } else if (p.stage === "failed") {
+        setInstallingIm(false);
+        setImError(p.message);
+      }
+    });
+    return () => {
+      sub.then((unsub) => unsub());
+    };
   }, []);
+
+  const installIm = async () => {
+    setInstallingIm(true);
+    setImError(null);
+    try {
+      await ipc.installImagemagick();
+    } catch (e) {
+      setInstallingIm(false);
+      setImError(String(e));
+    }
+  };
 
   const find = (id: string) => pf?.checks.find((c) => c.id === id);
   const whisper = find("whisper");
   const ffmpeg  = find("ffmpeg");
+
+  const imDetail = imStatus === null
+    ? "Checking…"
+    : imStatus.available
+    ? (imStatus.version ?? imStatus.path ?? "Available")
+    : "Not installed — required for Kodak Photo CD (.pcd) images";
 
   return (
     <div className="mt-6 rounded-2xl border border-ink-200/70 bg-white/60 p-5">
@@ -898,6 +935,32 @@ function SystemStatusPanel() {
           ok={ffmpeg?.ok ?? null}
           detail={ffmpeg?.detail ?? "Checking…"}
         />
+        <StatusRow
+          icon={<ImageIcon className="h-4 w-4" />}
+          label="Photo CD decoder (ImageMagick)"
+          ok={imStatus === null ? null : imStatus.available}
+          detail={imDetail}
+        >
+          {imStatus !== null && !imStatus.available && (
+            <div className="mt-2">
+              {imError && (
+                <p className="mb-1.5 text-[11px] text-ios-red">{imError}</p>
+              )}
+              <button
+                onClick={installIm}
+                disabled={installingIm}
+                className="inline-flex items-center gap-2 rounded-xl border border-ink-200 bg-white px-3 py-1.5 text-[12px] font-medium text-ink-700 transition hover:bg-ink-100 disabled:opacity-50"
+              >
+                {installingIm ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : null}
+                {installingIm
+                  ? (imProgress?.message ?? "Installing…")
+                  : "Install Photo CD decoder (~20 MB)"}
+              </button>
+            </div>
+          )}
+        </StatusRow>
       </div>
     </div>
   );
@@ -908,11 +971,13 @@ function StatusRow({
   label,
   ok,
   detail,
+  children,
 }: {
   icon: React.ReactNode;
   label: string;
   ok: boolean | null;
   detail: string;
+  children?: React.ReactNode;
 }) {
   return (
     <div className="flex items-start gap-3">
@@ -950,6 +1015,7 @@ function StatusRow({
           )}
         </div>
         <p className="mt-0.5 text-[11.5px] text-ink-500">{detail}</p>
+        {children}
       </div>
     </div>
   );

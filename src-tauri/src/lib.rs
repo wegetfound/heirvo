@@ -112,6 +112,8 @@ pub fn run() {
             commands::media::ffmpeg_status,
             commands::media::ffprobe_file,
             commands::media::install_ffmpeg,
+            commands::media::imagemagick_status,
+            commands::media::install_imagemagick,
             commands::media::save_as_mp4,
             commands::media::normalize_for_playback,
             commands::ai::list_models,

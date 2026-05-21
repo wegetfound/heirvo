@@ -311,6 +311,12 @@ export interface FfmpegStatus {
   version: string | null;
 }
 
+export interface ImagemagickStatus {
+  available: boolean;
+  path: string | null;
+  version: string | null;
+}
+
 export type InstallStage = "starting" | "downloading" | "extracting" | "installed" | "failed";
 
 export interface InstallProgress {

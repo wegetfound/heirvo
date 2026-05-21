@@ -132,6 +132,44 @@ pub async fn install_ffmpeg(app: AppHandle) -> AppResult<String> {
     crate::media::ffmpeg_install::install(app).await
 }
 
+#[derive(Debug, Serialize)]
+pub struct ImagemagickStatus {
+    pub available: bool,
+    pub path: Option<String>,
+    pub version: Option<String>,
+}
+
+#[tauri::command]
+pub async fn imagemagick_status(app: AppHandle) -> AppResult<ImagemagickStatus> {
+    match crate::media::imagemagick::locate(&app) {
+        Some(path) => {
+            // Capture `magick -version` first line.
+            let output = tokio::process::Command::new(&path)
+                .arg("-version")
+                .output()
+                .await
+                .ok();
+            let version = output.and_then(|o| {
+                String::from_utf8_lossy(&o.stdout)
+                    .lines()
+                    .next()
+                    .map(|l| l.to_string())
+            });
+            Ok(ImagemagickStatus {
+                available: true,
+                path: Some(path.to_string_lossy().to_string()),
+                version,
+            })
+        }
+        None => Ok(ImagemagickStatus { available: false, path: None, version: None }),
+    }
+}
+
+#[tauri::command]
+pub async fn install_imagemagick(app: AppHandle) -> AppResult<String> {
+    crate::media::imagemagick_install::install(app).await
+}
+
 /// Stage 1: instant lossless MP4 from a session's extracted VOBs.
 /// Auto-extracts VOBs first if they're not on disk yet.
 #[tauri::command]

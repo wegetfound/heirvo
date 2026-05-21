@@ -55,6 +55,9 @@ reqwest = { version = "0.12", default-features = false, features = ["rustls-tls"
 zip = "2.2"
 futures-util = "0.3"
 
+# ImageMagick auto-downloader — pure-Rust 7z/LZMA2 decompressor (no native toolchain)
+sevenz-rust2 = "0.9"
+
 # Image decode/encode — PNG for AI previews, plus JPEG/GIF/WebP/BMP/TIFF for
 # personal-media photo thumbnails (used by ensure_photo_thumbnail). HEIC is
 # not supported and falls back to direct file serving via the webview.
