@@ -107,15 +107,13 @@ pub async fn pcd_to_jpeg(
     let pcd_arg = format!("{}[{resolution_index}]", src.to_string_lossy());
     let dst_str = dst.to_string_lossy().to_string();
 
-    tracing::info!(
-        "imagemagick: magick convert \"{}\" \"{}\"",
-        pcd_arg,
-        dst_str
-    );
+    tracing::info!("imagemagick: magick \"{}\" \"{}\"", pcd_arg, dst_str);
 
+    // ImageMagick 7 syntax: `magick <input> <output>`. The legacy `convert`
+    // subcommand is rejected by current IM7 portable builds (it gets treated
+    // as an input filename → "no decode delegate for `convert'").
     let mut cmd = tokio::process::Command::new(magick_bin);
-    cmd.arg("convert")
-        .arg(&pcd_arg)
+    cmd.arg(&pcd_arg)
         .arg(&dst_str)
         .stdin(std::process::Stdio::null())
         .stdout(std::process::Stdio::piped())
@@ -136,12 +134,8 @@ pub async fn pcd_to_jpeg(
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
         let code = output.status.code().unwrap_or(-1);
-        tracing::warn!(
-            "imagemagick: magick convert failed (exit {code}): {stderr}"
-        );
-        return Err(format!(
-            "magick convert exited with status {code}: {stderr}"
-        ));
+        tracing::warn!("imagemagick: magick failed (exit {code}): {stderr}");
+        return Err(format!("magick exited with status {code}: {stderr}"));
     }
 
     Ok(())
