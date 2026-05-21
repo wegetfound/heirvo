@@ -903,7 +903,14 @@ pub async fn convert_image_to_jpeg(
 ///   and adds ~200 KB to the binary. Evaluate against `libraw-sys` if more format
 ///   breadth is needed (requires MSVC and the libraw source tree).
 #[tauri::command]
-pub async fn convert_special_image(input_path: String) -> AppResult<ConvertImageResult> {
+pub async fn convert_special_image(
+    app: AppHandle,
+    input_path: String,
+    // Destination JPEG path. When omitted the caller just wants format info
+    // (old behaviour: always returns `NeedsExternalConverter` or delegates to
+    // the ImageMagick path with a temp-file destination).
+    output_path: Option<String>,
+) -> AppResult<ConvertImageResult> {
     let ext = Path::new(&input_path)
         .extension()
         .and_then(|s| s.to_str())
@@ -920,6 +927,50 @@ pub async fn convert_special_image(input_path: String) -> AppResult<ConvertImage
             ));
         }
     };
+
+    // ── Kodak Photo CD: attempt real conversion via ImageMagick ─────────────
+    if sf == SpecialFormat::Pcd {
+        if let Some(magick_bin) = crate::media::imagemagick::locate(&app) {
+            // Determine the output path: use the caller-supplied one, or
+            // create a temp file next to the source.
+            let dst = match &output_path {
+                Some(p) => PathBuf::from(p),
+                None => {
+                    let stem = Path::new(&input_path)
+                        .file_stem()
+                        .unwrap_or_default()
+                        .to_string_lossy()
+                        .to_string();
+                    std::env::temp_dir().join(format!("{stem}_pcd_preview.jpg"))
+                }
+            };
+
+            // Ensure parent directory exists.
+            if let Some(parent) = dst.parent() {
+                std::fs::create_dir_all(parent).map_err(|e| {
+                    AppError::Internal(format!("output dir create failed: {e}"))
+                })?;
+            }
+
+            let src_path = PathBuf::from(&input_path);
+            match crate::media::imagemagick::pcd_to_jpeg(&magick_bin, &src_path, &dst, 2).await {
+                Ok(()) => {
+                    tracing::info!(
+                        "convert_special_image: PCD decoded → {}",
+                        dst.display()
+                    );
+                    return Ok(ConvertImageResult::Ok {
+                        output_path: dst.to_string_lossy().to_string(),
+                    });
+                }
+                Err(e) => {
+                    tracing::warn!("convert_special_image: ImageMagick failed: {e}");
+                    return Ok(ConvertImageResult::DecodeError { message: e });
+                }
+            }
+        }
+        // ImageMagick not found — fall through to stub below.
+    }
 
     Ok(special_format_stub(sf, ext))
 }

@@ -7,7 +7,9 @@
 
 use crate::error::{AppError, AppResult};
 use crate::library::types::{Disc, PhotoAsset};
-use crate::media::image::{classify_image_extension, special_format_reason, ImageFormatClass};
+use crate::media::image::{
+    classify_image_extension, special_format_reason, ImageFormatClass, SpecialFormat,
+};
 use crate::session::db::Db;
 use crate::session::manager;
 use chrono::{Datelike, Utc};
@@ -229,6 +231,49 @@ pub async fn promote_session_to_library(
                 .to_ascii_lowercase();
 
             match classify_image_extension(&ext) {
+                ImageFormatClass::SpecialFormat(SpecialFormat::Pcd) => {
+                    // Attempt conversion via ImageMagick if available.
+                    let dst = photos_dir.join(format!("{:04}.jpg", i));
+                    if let Some(magick_bin) = crate::media::imagemagick::locate(app) {
+                        match crate::media::imagemagick::pcd_to_jpeg(
+                            &magick_bin,
+                            src_path,
+                            &dst,
+                            2, // 768×512 gallery resolution
+                        )
+                        .await
+                        {
+                            Ok(()) => {
+                                assets.push(PhotoAsset {
+                                    path: Some(dst.to_string_lossy().to_string()),
+                                    caption: None,
+                                    tint: None,
+                                });
+                            }
+                            Err(e) => {
+                                tracing::warn!(
+                                    "promote: ImageMagick failed for {}: {e}",
+                                    src_path.display()
+                                );
+                                assets.push(PhotoAsset {
+                                    path: None,
+                                    caption: None,
+                                    tint: Some(UNCONVERTIBLE_TINT.to_string()),
+                                });
+                            }
+                        }
+                    } else {
+                        tracing::warn!(
+                            "promote: ImageMagick not found — skipping PCD {}",
+                            src_path.display()
+                        );
+                        assets.push(PhotoAsset {
+                            path: None,
+                            caption: None,
+                            tint: Some(UNCONVERTIBLE_TINT.to_string()),
+                        });
+                    }
+                }
                 ImageFormatClass::SpecialFormat(sf) => {
                     let (reason, _) = special_format_reason(sf, &ext);
                     assets.push(PhotoAsset {

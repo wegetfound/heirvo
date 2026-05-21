@@ -6,6 +6,7 @@
 pub mod ffmpeg;
 pub mod ffmpeg_install;
 pub mod image;
+pub mod imagemagick;
 pub mod iso;
 pub mod stream_copy;
 pub mod transcode;
