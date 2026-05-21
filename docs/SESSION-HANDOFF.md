@@ -3,7 +3,7 @@
 _Last updated: 2026-05-21. Read this first, then `docs/phase2-recovery-library-bridge.md`._
 
 ## TL;DR
-Phase 2 backend + Memories screen landed earlier (`95f92fe`). This session: resolved the black-video question (no bug), shipped **true OS-level theater fullscreen**, merged **Kodak PCD decode**, and shipped + **live-validated an ImageMagick runtime installer** (download→extract→active). All verified on the real Tauri build. Working tree clean, `HEAD = 3b1a430` (+ this doc).
+Phase 2 backend + Memories screen landed earlier (`95f92fe`). This session: resolved the black-video question (no bug), shipped **true OS-level theater fullscreen**, merged **Kodak PCD decode** (incl. an IM7-syntax bug fix caught via a synthetic `.pcd`), shipped + **live-validated an ImageMagick runtime installer** (download→extract→active), and ran a **review hardening pass** (zip-slip guard on the 7z extractor, hoisted magick `locate()`, F-key modifier guard). All verified on the real Tauri build. Working tree clean, `HEAD = e0ab163`. Dev build was shut down at end of session — restart with `npx tauri dev`.
 
 ## ✅ Validated on a real build (Tauri dev, real DB)
 
