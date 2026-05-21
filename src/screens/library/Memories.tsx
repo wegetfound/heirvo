@@ -1101,8 +1101,23 @@ export default function Memories() {
   }, [fullscreen]);
 
   // ── OS-level fullscreen: sync React state → Tauri window ─────────────────────
+  // setFullscreen alone leaves the title bar visible on Windows/WebView2, so we
+  // also drop window decorations for a true edge-to-edge takeover.
   useEffect(() => {
-    getCurrentWindow().setFullscreen(fullscreen).catch(() => {});
+    const w = getCurrentWindow();
+    void (async () => {
+      try {
+        if (fullscreen) {
+          await w.setFullscreen(true);
+          await w.setDecorations(false);
+        } else {
+          await w.setDecorations(true);
+          await w.setFullscreen(false);
+        }
+      } catch {
+        /* dev preview / missing window API — overlay still renders */
+      }
+    })();
   }, [fullscreen]);
 
   // ── Keyboard: F toggles fullscreen, Escape exits, Space play/pause ───────────
