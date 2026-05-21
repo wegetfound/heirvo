@@ -578,6 +578,11 @@ function ImmersivePlayer({
             objectFit: "contain",
             background: "#000",
             zIndex: 1,
+            // Promote the video to its own compositing layer. WebView2/Chromium
+            // can render a <video> black inside a rounded `overflow:hidden`
+            // container; isolating it on its own GPU layer fixes the paint.
+            transform: "translateZ(0)",
+            willChange: "transform",
           }}
           onTimeUpdate={(e) => {
             setCurrentSec((e.currentTarget as HTMLVideoElement).currentTime);
@@ -612,18 +617,22 @@ function ImmersivePlayer({
         />
       )}
 
-      {/* Film grain — always visible, gives texture over both video and poster */}
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.72' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)' opacity='0.055'/%3E%3C/svg%3E")`,
-          backgroundSize: "200px 200px",
-          pointerEvents: "none",
-          mixBlendMode: "overlay",
-          zIndex: 2,
-        }}
-      />
+      {/* Film grain — POSTER ONLY. A mix-blend-mode layer over a <video> makes
+          WebView2/Chromium paint the video black, and real footage doesn't need
+          fake grain. So we only texture the gradient poster, never the video. */}
+      {!showVideo && (
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.72' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)' opacity='0.055'/%3E%3C/svg%3E")`,
+            backgroundSize: "200px 200px",
+            pointerEvents: "none",
+            mixBlendMode: "overlay",
+            zIndex: 2,
+          }}
+        />
+      )}
 
       {/* Vignette */}
       <div
@@ -828,6 +837,7 @@ export default function Memories() {
   // a real <video> sets this from its native dimensions via onLoadedMetadata so
   // footage is shown true and never stretched.
   const [aspect, setAspect] = useState("4 / 3");
+  const [importing, setImporting] = useState(false);
 
   // ── Resolve a playable media source for the active disc ──────────────────────
   // URL passthrough (http/https/blob/data) lets this work without a Tauri shell.
@@ -872,6 +882,49 @@ export default function Memories() {
   useEffect(() => {
     loadDiscs();
   }, [loadDiscs]);
+
+  // ── Import a memory from a file (video / audio / photo) ──────────────────────
+  const handleImport = useCallback(async () => {
+    if (importing) return;
+    setImporting(true);
+    try {
+      const dialog = await import("@tauri-apps/plugin-dialog");
+      const picked = await dialog.open({
+        multiple: true,
+        directory: false,
+        filters: [
+          {
+            name: "Memories (video, audio, photos)",
+            extensions: [
+              "mp4", "mov", "mkv", "avi", "webm", "m4v", "mpg", "mpeg", "vob",
+              "mp3", "wav", "flac", "m4a", "aac", "ogg",
+              "jpg", "jpeg", "png", "gif", "webp", "bmp", "tiff", "tif", "heic",
+            ],
+          },
+        ],
+      });
+      if (!picked) return;
+      const paths = (Array.isArray(picked) ? picked : [picked]).filter(
+        (p): p is string => typeof p === "string",
+      );
+      let lastId: string | null = null;
+      for (const p of paths) {
+        const title = p.split(/[\\/]/).pop()?.replace(/\.[^.]+$/, "") || "Imported memory";
+        try {
+          const r = await ipc.library.importMedia(p, title, null);
+          lastId = (r as { id?: string } | undefined)?.id ?? lastId;
+        } catch (err) {
+          console.warn("[Heirvo] import failed for", p, err);
+        }
+      }
+      window.dispatchEvent(new CustomEvent("heirvo:library-changed", { detail: { discId: lastId } }));
+      await loadDiscs();
+    } catch (err) {
+      console.warn("[Heirvo] import dialog unavailable (dev mode?)", err);
+    } finally {
+      setImporting(false);
+    }
+  }, [importing, loadDiscs]);
 
   // ── Refresh on recovery completion (window event + disc_added IPC) ───────────
   useEffect(() => {
@@ -1430,6 +1483,39 @@ export default function Memories() {
                 {disc.photos?.length
                   ? `View all ${disc.photos.length} photos →`
                   : "Open full player & transcript →"}
+              </button>
+              <button
+                onClick={() => { void handleImport(); }}
+                disabled={importing}
+                title="Add a video, photo, or song from your computer"
+                style={{
+                  marginTop: 10,
+                  marginLeft: 8,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                  background: "rgba(255,255,255,0.06)",
+                  border: "1px solid rgba(255,255,255,0.14)",
+                  backdropFilter: "blur(8px)",
+                  WebkitBackdropFilter: "blur(8px)",
+                  color: "rgba(255,255,255,0.78)",
+                  fontFamily: "var(--lib-sans)",
+                  fontSize: 12,
+                  fontWeight: 600,
+                  padding: "6px 14px",
+                  borderRadius: 99,
+                  cursor: importing ? "default" : "pointer",
+                  opacity: importing ? 0.6 : 1,
+                  transition: "background 0.15s",
+                }}
+                onMouseEnter={(e) => {
+                  if (!importing) (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.12)";
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.06)";
+                }}
+              >
+                {importing ? "Importing…" : "+ Import a memory"}
               </button>
             </div>
 
