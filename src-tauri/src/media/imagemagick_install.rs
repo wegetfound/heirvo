@@ -214,6 +214,22 @@ fn extract_imagemagick_portable(
                 return Ok(true);
             }
 
+            // Zip-slip guard: reject entries that would escape target_dir
+            // (absolute paths, drive prefixes, or `..` traversal). Only normal
+            // path components (and `.`) are allowed.
+            if Path::new(&rel).components().any(|c| {
+                !matches!(
+                    c,
+                    std::path::Component::Normal(_) | std::path::Component::CurDir
+                )
+            }) {
+                extract_err = Some(std::io::Error::new(
+                    std::io::ErrorKind::InvalidData,
+                    format!("unsafe archive entry path: {rel}"),
+                ));
+                return Ok(false);
+            }
+
             let dest = target_dir.join(&rel);
 
             if entry.is_directory() {

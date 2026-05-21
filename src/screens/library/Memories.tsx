@@ -1125,7 +1125,11 @@ export default function Memories() {
     function onKey(e: KeyboardEvent) {
       const tag = (e.target as HTMLElement).tagName;
       if (e.key === "Escape" && fullscreen) setFullscreen(false);
-      if ((e.key === "f" || e.key === "F") && !["INPUT", "TEXTAREA"].includes(tag)) {
+      if (
+        (e.key === "f" || e.key === "F") &&
+        !e.ctrlKey && !e.metaKey && !e.altKey && !e.repeat &&
+        !["INPUT", "TEXTAREA"].includes(tag)
+      ) {
         setFullscreen((f) => !f);
       }
       if (e.key === " " && !["INPUT", "TEXTAREA"].includes(tag)) {

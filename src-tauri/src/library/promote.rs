@@ -223,6 +223,10 @@ pub async fn promote_session_to_library(
         // Concurrency: ≤4 blocking tasks at a time.
         let semaphore = std::sync::Arc::new(tokio::sync::Semaphore::new(4));
 
+        // Locate ImageMagick once (used only for .pcd photos) rather than
+        // re-scanning resource dirs + PATH on every loop iteration.
+        let magick_bin = crate::media::imagemagick::locate(app);
+
         for (i, src_path) in image_files.iter().enumerate() {
             let ext = src_path
                 .extension()
@@ -234,9 +238,9 @@ pub async fn promote_session_to_library(
                 ImageFormatClass::SpecialFormat(SpecialFormat::Pcd) => {
                     // Attempt conversion via ImageMagick if available.
                     let dst = photos_dir.join(format!("{:04}.jpg", i));
-                    if let Some(magick_bin) = crate::media::imagemagick::locate(app) {
+                    if let Some(magick_bin) = magick_bin.as_ref() {
                         match crate::media::imagemagick::pcd_to_jpeg(
-                            &magick_bin,
+                            magick_bin,
                             src_path,
                             &dst,
                             2, // 768×512 gallery resolution
