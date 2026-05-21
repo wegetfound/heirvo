@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1280">
+<title>Heirvo Thumbnail v3 — Curiosity Gap / Shock</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;700;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    width: 1280px;
+    height: 720px;
+    overflow: hidden;
+    background: #050810;
+    font-family: 'Sora', sans-serif;
+  }
+
+  /* ─── SCENE WRAPPER ──────────────────────────────────────────── */
+  .scene {
+    position: relative;
+    width: 1280px;
+    height: 720px;
+    overflow: hidden;
+    background: radial-gradient(ellipse 80% 80% at 38% 55%, #0d1730 0%, #050810 70%);
+  }
+
+  /* ─── DISC SVG CONTAINER ─────────────────────────────────────── */
+  .disc-wrap {
+    position: absolute;
+    left: 52px;
+    top: 50%;
+    transform: translateY(-50%) rotate(-8deg);
+    width: 640px;
+    height: 640px;
+    filter: drop-shadow(0 0 60px rgba(80,160,255,0.18)) drop-shadow(0 0 120px rgba(80,120,255,0.10));
+  }
+
+  /* ─── BACKGROUND GLOW BLOBS ──────────────────────────────────── */
+  .glow-red {
+    position: absolute;
+    width: 420px;
+    height: 280px;
+    background: radial-gradient(ellipse, rgba(220,40,30,0.28) 0%, transparent 70%);
+    top: 60px;
+    left: 80px;
+    pointer-events: none;
+  }
+  .glow-blue {
+    position: absolute;
+    width: 500px;
+    height: 380px;
+    background: radial-gradient(ellipse, rgba(40,120,255,0.18) 0%, transparent 70%);
+    bottom: 40px;
+    right: 40px;
+    pointer-events: none;
+  }
+
+  /* ─── HEADLINE BLOCK ─────────────────────────────────────────── */
+  .headline-block {
+    position: absolute;
+    right: 46px;
+    top: 62px;
+    width: 560px;
+    text-align: left;
+  }
+
+  .eyebrow {
+    display: inline-block;
+    background: #dc2010;
+    color: #fff;
+    font-family: 'Sora', sans-serif;
+    font-weight: 800;
+    font-size: 22px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    padding: 6px 16px 5px;
+    margin-bottom: 14px;
+    clip-path: polygon(0 0, 100% 0, 97% 100%, 0% 100%);
+  }
+
+  .headline-main {
+    font-family: 'Sora', sans-serif;
+    font-weight: 900;
+    font-size: 98px;
+    line-height: 0.95;
+    color: #ffffff;
+    letter-spacing: -0.02em;
+    text-transform: uppercase;
+    text-shadow:
+      0 4px 40px rgba(0,0,0,0.8),
+      0 2px 8px rgba(0,0,0,0.9);
+  }
+
+  .headline-main .word-they {
+    color: #f0f0f0;
+  }
+  .headline-main .word-said {
+    color: #f0f0f0;
+  }
+  .headline-main .word-dead {
+    color: #ff3320;
+    display: inline-block;
+    position: relative;
+  }
+  /* strike-through slash on DEAD */
+  .headline-main .word-dead::after {
+    content: '';
+    position: absolute;
+    left: -4px;
+    right: -4px;
+    top: 50%;
+    height: 10px;
+    background: #ffffff;
+    transform: rotate(-6deg) translateY(-50%);
+    opacity: 0.92;
+    border-radius: 3px;
+  }
+
+  .headline-sub {
+    font-family: 'Sora', sans-serif;
+    font-weight: 800;
+    font-size: 50px;
+    line-height: 1.1;
+    color: #f5d400;
+    letter-spacing: -0.01em;
+    margin-top: 10px;
+    text-shadow: 0 3px 24px rgba(0,0,0,0.8);
+  }
+
+  /* ─── SOFTWARE READOUT CARD ──────────────────────────────────── */
+  .readout-card {
+    position: absolute;
+    right: 46px;
+    bottom: 68px;
+    width: 540px;
+    background: rgba(8, 18, 40, 0.88);
+    border: 1.5px solid rgba(60, 120, 255, 0.55);
+    border-radius: 12px;
+    padding: 22px 26px 20px;
+    backdrop-filter: blur(8px);
+    box-shadow:
+      0 0 0 1px rgba(60,120,255,0.15),
+      0 8px 40px rgba(0,0,20,0.7),
+      inset 0 1px 0 rgba(255,255,255,0.06);
+  }
+
+  .readout-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+
+  .readout-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    font-weight: 700;
+    color: rgba(140,180,255,0.75);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .readout-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    font-weight: 700;
+    color: #34d464;
+    letter-spacing: 0.06em;
+  }
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #34d464;
+    box-shadow: 0 0 10px rgba(52,212,100,0.8);
+    flex-shrink: 0;
+  }
+
+  .readout-count {
+    font-family: 'Sora', sans-serif;
+    font-weight: 900;
+    font-size: 62px;
+    color: #ffffff;
+    line-height: 1;
+    letter-spacing: -0.03em;
+    margin-bottom: 4px;
+  }
+  .readout-count .unit {
+    font-size: 26px;
+    font-weight: 700;
+    color: rgba(200,220,255,0.7);
+    margin-left: 4px;
+  }
+
+  /* Progress bar */
+  .progress-wrap {
+    margin-top: 12px;
+    background: rgba(255,255,255,0.07);
+    border-radius: 99px;
+    height: 14px;
+    overflow: hidden;
+    position: relative;
+  }
+  .progress-fill {
+    height: 100%;
+    width: 94%;
+    background: linear-gradient(90deg, #1255f5 0%, #4fa3ff 60%, #80d4ff 100%);
+    border-radius: 99px;
+    position: relative;
+  }
+  .progress-fill::after {
+    content: '';
+    position: absolute;
+    right: 0; top: 0; bottom: 0;
+    width: 40px;
+    background: linear-gradient(90deg, transparent, rgba(200,230,255,0.5));
+    border-radius: 99px;
+  }
+  .progress-pct {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 700;
+    color: rgba(140,180,255,0.65);
+    letter-spacing: 0.05em;
+  }
+  .progress-pct .pct-val {
+    color: #4fa3ff;
+    font-size: 13px;
+  }
+
+  /* ─── HEIRVO MARK ────────────────────────────────────────────── */
+  .heirvo-mark {
+    position: absolute;
+    bottom: 32px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    opacity: 0.82;
+  }
+  .heirvo-mark img {
+    width: 36px;
+    height: 36px;
+    object-fit: contain;
+  }
+  .heirvo-mark-name {
+    font-family: 'Sora', sans-serif;
+    font-weight: 700;
+    font-size: 20px;
+    color: rgba(200,220,255,0.75);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  /* ─── VIGNETTE ───────────────────────────────────────────────── */
+  .vignette {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 90% 90% at 50% 50%, transparent 55%, rgba(2,5,15,0.65) 100%);
+    pointer-events: none;
+  }
+
+  /* ─── NOISE GRAIN overlay (subtle texture) ───────────────────── */
+  .grain {
+    position: absolute;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    opacity: 0.25;
+    mix-blend-mode: overlay;
+  }
+</style>
+</head>
+<body>
+<div class="scene">
+
+  <!-- Background blobs -->
+  <div class="glow-red"></div>
+  <div class="glow-blue"></div>
+
+  <!-- ─── DISC (CSS + SVG inline) ─────────────────────────────── -->
+  <div class="disc-wrap">
+    <svg viewBox="0 0 640 640" xmlns="http://www.w3.org/2000/svg" width="640" height="640">
+      <defs>
+        <!-- Iridescent conic gradient for disc surface -->
+        <radialGradient id="discBase" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#0a0e1f"/>
+          <stop offset="45%" stop-color="#111830"/>
+          <stop offset="100%" stop-color="#060a16"/>
+        </radialGradient>
+
+        <!-- Iridescent shimmer layer -->
+        <radialGradient id="iridescent" cx="42%" cy="38%" r="58%">
+          <stop offset="0%"  stop-color="#7060ff" stop-opacity="0.25"/>
+          <stop offset="22%" stop-color="#00cfff" stop-opacity="0.22"/>
+          <stop offset="44%" stop-color="#00ff88" stop-opacity="0.15"/>
+          <stop offset="62%" stop-color="#ff5500" stop-opacity="0.18"/>
+          <stop offset="80%" stop-color="#ff00cc" stop-opacity="0.20"/>
+          <stop offset="100%" stop-color="#3060ff" stop-opacity="0.14"/>
+        </radialGradient>
+
+        <!-- Edge chrome ring gradient -->
+        <radialGradient id="edgeChrome" cx="50%" cy="50%" r="50%">
+          <stop offset="88%"  stop-color="transparent"/>
+          <stop offset="94%"  stop-color="#4488cc" stop-opacity="0.30"/>
+          <stop offset="97%"  stop-color="#aaccff" stop-opacity="0.55"/>
+          <stop offset="99%"  stop-color="#ffffff" stop-opacity="0.22"/>
+          <stop offset="100%" stop-color="#0a1030" stop-opacity="0.8"/>
+        </radialGradient>
+
+        <!-- Clip to circle -->
+        <clipPath id="discClip">
+          <circle cx="320" cy="320" r="305"/>
+        </clipPath>
+        <!-- Clip to disc (with hole) -->
+        <mask id="discMask">
+          <circle cx="320" cy="320" r="305" fill="white"/>
+          <circle cx="320" cy="320" r="24" fill="black"/>
+        </mask>
+      </defs>
+
+      <!-- ── Disc body ── -->
+      <g mask="url(#discMask)">
+
+        <!-- Base dark fill -->
+        <circle cx="320" cy="320" r="305" fill="url(#discBase)"/>
+
+        <!-- Iridescent layer -->
+        <circle cx="320" cy="320" r="305" fill="url(#iridescent)"/>
+
+        <!-- Concentric data rings — tight band spacing, semi-transparent -->
+        <g stroke="rgba(100,140,200,0.08)" fill="none">
+          <!-- generate 60 rings from r=60 to r=295 -->
+          <circle cx="320" cy="320" r="60"/>
+          <circle cx="320" cy="320" r="64"/>
+          <circle cx="320" cy="320" r="68"/>
+          <circle cx="320" cy="320" r="72"/>
+          <circle cx="320" cy="320" r="76"/>
+          <circle cx="320" cy="320" r="80"/>
+          <circle cx="320" cy="320" r="84"/>
+          <circle cx="320" cy="320" r="88"/>
+          <circle cx="320" cy="320" r="92"/>
+          <circle cx="320" cy="320" r="96"/>
+          <circle cx="320" cy="320" r="100"/>
+          <circle cx="320" cy="320" r="104"/>
+          <circle cx="320" cy="320" r="108"/>
+          <circle cx="320" cy="320" r="112"/>
+          <circle cx="320" cy="320" r="116"/>
+          <circle cx="320" cy="320" r="120"/>
+          <circle cx="320" cy="320" r="124"/>
+          <circle cx="320" cy="320" r="128"/>
+          <circle cx="320" cy="320" r="132"/>
+          <circle cx="320" cy="320" r="136"/>
+          <circle cx="320" cy="320" r="140"/>
+          <circle cx="320" cy="320" r="144"/>
+          <circle cx="320" cy="320" r="148"/>
+          <circle cx="320" cy="320" r="152"/>
+          <circle cx="320" cy="320" r="156"/>
+          <circle cx="320" cy="320" r="160"/>
+          <circle cx="320" cy="320" r="164"/>
+          <circle cx="320" cy="320" r="168"/>
+          <circle cx="320" cy="320" r="172"/>
+          <circle cx="320" cy="320" r="176"/>
+          <circle cx="320" cy="320" r="180"/>
+          <circle cx="320" cy="320" r="184"/>
+          <circle cx="320" cy="320" r="188"/>
+          <circle cx="320" cy="320" r="192"/>
+          <circle cx="320" cy="320" r="196"/>
+          <circle cx="320" cy="320" r="200"/>
+          <circle cx="320" cy="320" r="204"/>
+          <circle cx="320" cy="320" r="208"/>
+          <circle cx="320" cy="320" r="212"/>
+          <circle cx="320" cy="320" r="216"/>
+          <circle cx="320" cy="320" r="220"/>
+          <circle cx="320" cy="320" r="224"/>
+          <circle cx="320" cy="320" r="228"/>
+          <circle cx="320" cy="320" r="232"/>
+          <circle cx="320" cy="320" r="236"/>
+          <circle cx="320" cy="320" r="240"/>
+          <circle cx="320" cy="320" r="244"/>
+          <circle cx="320" cy="320" r="248"/>
+          <circle cx="320" cy="320" r="252"/>
+          <circle cx="320" cy="320" r="256"/>
+          <circle cx="320" cy="320" r="260"/>
+          <circle cx="320" cy="320" r="264"/>
+          <circle cx="320" cy="320" r="268"/>
+          <circle cx="320" cy="320" r="272"/>
+          <circle cx="320" cy="320" r="276"/>
+          <circle cx="320" cy="320" r="280"/>
+          <circle cx="320" cy="320" r="284"/>
+          <circle cx="320" cy="320" r="288"/>
+          <circle cx="320" cy="320" r="292"/>
+          <circle cx="320" cy="320" r="296"/>
+        </g>
+
+        <!-- ── SCRATCHES: long radial gouges across surface ── -->
+        <!-- Primary deep scratch: diagonal across center zone -->
+        <line x1="80" y1="195" x2="540" y2="260"
+              stroke="rgba(255,255,255,0.55)" stroke-width="3.5"
+              stroke-linecap="round"/>
+        <line x1="82" y1="197" x2="542" y2="262"
+              stroke="rgba(0,0,0,0.6)" stroke-width="2"
+              stroke-linecap="round"/>
+
+        <!-- Parallel ghost of first scratch -->
+        <line x1="76" y1="210" x2="530" y2="272"
+              stroke="rgba(255,255,255,0.22)" stroke-width="1.5"
+              stroke-linecap="round"/>
+
+        <!-- Second major scratch: steep angle, lower half -->
+        <line x1="140" y1="480" x2="550" y2="310"
+              stroke="rgba(255,255,255,0.48)" stroke-width="4"
+              stroke-linecap="round"/>
+        <line x1="142" y1="482" x2="552" y2="312"
+              stroke="rgba(0,0,0,0.55)" stroke-width="2.5"
+              stroke-linecap="round"/>
+
+        <!-- Third scratch: shorter, upper right -->
+        <line x1="360" y1="90" x2="500" y2="200"
+              stroke="rgba(255,255,255,0.40)" stroke-width="2.5"
+              stroke-linecap="round"/>
+
+        <!-- Micro-scratch cluster, mid-left -->
+        <line x1="100" y1="320" x2="260" y2="340"
+              stroke="rgba(255,255,255,0.28)" stroke-width="1.2"
+              stroke-linecap="round"/>
+        <line x1="105" y1="330" x2="240" y2="352"
+              stroke="rgba(255,255,255,0.20)" stroke-width="0.8"
+              stroke-linecap="round"/>
+        <line x1="112" y1="308" x2="280" y2="328"
+              stroke="rgba(255,255,255,0.18)" stroke-width="0.8"
+              stroke-linecap="round"/>
+
+        <!-- Deep gouge: full radius, bottom-right quadrant -->
+        <path d="M 260 560 Q 330 420 580 380"
+              stroke="rgba(255,255,255,0.50)" stroke-width="5"
+              stroke-linecap="round" fill="none"/>
+        <path d="M 262 562 Q 332 422 582 382"
+              stroke="rgba(0,0,0,0.60)" stroke-width="3"
+              stroke-linecap="round" fill="none"/>
+        <!-- gouge highlight -->
+        <path d="M 260 560 Q 330 420 580 380"
+              stroke="rgba(160,220,255,0.25)" stroke-width="1.5"
+              stroke-linecap="round" fill="none"/>
+
+        <!-- Crack-like radial gouge, upper-left -->
+        <path d="M 200 120 Q 280 240 310 300"
+              stroke="rgba(255,255,255,0.42)" stroke-width="3.5"
+              stroke-linecap="round" fill="none"/>
+        <path d="M 202 122 Q 282 242 312 302"
+              stroke="rgba(0,0,0,0.50)" stroke-width="2"
+              stroke-linecap="round" fill="none"/>
+
+        <!-- Secondary spider web of fine scratches -->
+        <line x1="320" y1="50" x2="420" y2="400"
+              stroke="rgba(255,255,255,0.14)" stroke-width="0.9"
+              stroke-linecap="round"/>
+        <line x1="50" y1="380" x2="480" y2="560"
+              stroke="rgba(255,255,255,0.16)" stroke-width="0.9"
+              stroke-linecap="round"/>
+        <line x1="420" y1="80" x2="200" y2="540"
+              stroke="rgba(255,255,255,0.12)" stroke-width="0.8"
+              stroke-linecap="round"/>
+
+        <!-- Gouge damage zone: discolored patch -->
+        <ellipse cx="310" cy="370" rx="90" ry="35"
+                 fill="rgba(255,80,20,0.08)"
+                 transform="rotate(-15 310 370)"/>
+        <ellipse cx="310" cy="370" rx="85" ry="30"
+                 fill="rgba(255,120,40,0.05)"
+                 transform="rotate(-15 310 370)"/>
+
+        <!-- Heat discoloration blob from deep gouge -->
+        <ellipse cx="200" cy="430" rx="70" ry="40"
+                 fill="rgba(160,100,30,0.10)"
+                 transform="rotate(20 200 430)"/>
+
+        <!-- Iridescent rainbow bands (data layer shimmer) -->
+        <ellipse cx="320" cy="320" rx="180" ry="180"
+          fill="none"
+          stroke="url(#iridescent)"
+          stroke-width="120"
+          opacity="0.18"/>
+
+        <!-- Reflective hot-spot -->
+        <ellipse cx="210" cy="180" rx="80" ry="45"
+                 fill="rgba(255,255,255,0.06)"
+                 transform="rotate(-20 210 180)"/>
+
+      </g>
+
+      <!-- Centre spindle hole -->
+      <circle cx="320" cy="320" r="24" fill="#040810"/>
+      <circle cx="320" cy="320" r="22" fill="#060b18"/>
+      <circle cx="320" cy="320" r="18" fill="#0a1020" stroke="rgba(80,120,200,0.3)" stroke-width="1"/>
+
+      <!-- Transparent hub ring -->
+      <circle cx="320" cy="320" r="58" fill="none" stroke="rgba(100,140,200,0.15)" stroke-width="1.5"/>
+
+      <!-- Edge chrome highlight -->
+      <circle cx="320" cy="320" r="305" fill="url(#edgeChrome)"/>
+
+      <!-- Outer edge ring -->
+      <circle cx="320" cy="320" r="304" fill="none"
+              stroke="rgba(180,220,255,0.20)" stroke-width="2"/>
+
+    </svg>
+  </div>
+  <!-- end disc -->
+
+  <!-- ─── HEADLINE BLOCK ─────────────────────────────────────── -->
+  <div class="headline-block">
+    <div class="eyebrow">Everyone said</div>
+    <div class="headline-main">
+      <span class="word-they">IT</span><br>
+      <span class="word-said">WAS</span><br>
+      <span class="word-dead">DEAD.</span>
+    </div>
+    <div class="headline-sub">We got 3,842 files back.</div>
+  </div>
+
+  <!-- ─── SOFTWARE READOUT CARD ─────────────────────────────── -->
+  <div class="readout-card">
+    <div class="readout-top">
+      <div class="readout-label">heirvo recovery · disc_scan_03</div>
+      <div class="readout-status">
+        <div class="status-dot"></div>
+        RECOVERED
+      </div>
+    </div>
+    <div class="readout-count">
+      3,842 <span class="unit">files</span>
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-fill"></div>
+    </div>
+    <div class="progress-pct">
+      <span>Sectors read</span>
+      <span class="pct-val">94% &nbsp;✓ complete</span>
+    </div>
+  </div>
+
+  <!-- ─── HEIRVO MARK ──────────────────────────────────────── -->
+  <div class="heirvo-mark">
+    <img src="https://heirvo.com/brand/mark.png" alt="Heirvo">
+    <span class="heirvo-mark-name">Heirvo</span>
+  </div>
+
+  <!-- Overlays -->
+  <div class="vignette"></div>
+  <div class="grain"></div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=1280" />
+  <title>Thumbnail Preview</title>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;700;800;900&family=Cormorant+Garamond:ital,wght@1,300;1,400&display=swap" rel="stylesheet" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { width: 1280px; height: 720px; overflow: hidden; background: #060D1A; }
+
+    .thumb {
+      width: 1280px;
+      height: 720px;
+      position: relative;
+      background: #060D1A;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 80px 0 72px;
+      overflow: hidden;
+    }
+
+    /* Deep atmospheric glow */
+    .glow-left {
+      position: absolute;
+      left: -120px; top: 50%;
+      transform: translateY(-50%);
+      width: 700px; height: 700px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(10,132,255,0.22) 0%, rgba(10,132,255,0.06) 45%, transparent 70%);
+      pointer-events: none;
+    }
+    .glow-right {
+      position: absolute;
+      right: -60px; top: 50%;
+      transform: translateY(-50%);
+      width: 600px; height: 600px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(90,200,250,0.12) 0%, transparent 65%);
+      pointer-events: none;
+    }
+
+    /* Scanline texture */
+    .scanlines {
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 3px,
+        rgba(255,255,255,0.012) 3px,
+        rgba(255,255,255,0.012) 4px
+      );
+      pointer-events: none;
+    }
+
+    /* Left — copy */
+    .copy {
+      position: relative;
+      z-index: 2;
+      flex: 0 0 auto;
+      max-width: 620px;
+    }
+
+    .eyebrow {
+      font-family: 'Sora', sans-serif;
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: #0A84FF;
+      margin-bottom: 18px;
+    }
+
+    .headline {
+      font-family: 'Sora', sans-serif;
+      font-size: 96px;
+      font-weight: 900;
+      line-height: 0.95;
+      letter-spacing: -0.04em;
+      color: #F0EDE8;
+      margin-bottom: 12px;
+    }
+    .headline .accent {
+      color: #0A84FF;
+      display: block;
+    }
+
+    .subline {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-style: italic;
+      font-weight: 300;
+      font-size: 34px;
+      color: rgba(240,237,232,0.55);
+      letter-spacing: -0.01em;
+      margin-bottom: 36px;
+      line-height: 1.2;
+    }
+
+    .pill-row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .pill {
+      font-family: 'Sora', sans-serif;
+      font-size: 16px;
+      font-weight: 600;
+      color: rgba(240,237,232,0.7);
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 99px;
+      padding: 6px 16px;
+    }
+
+    /* Right — disc */
+    .disc-wrap {
+      position: relative;
+      z-index: 2;
+      flex: 0 0 380px;
+      height: 380px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Outer glow ring */
+    .disc-glow {
+      position: absolute;
+      inset: -40px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(10,132,255,0.30) 0%, rgba(10,132,255,0.08) 50%, transparent 70%);
+      filter: blur(24px);
+    }
+
+    /* CSS disc rings */
+    .ring {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      border-radius: 50%;
+    }
+
+    /* Iridescent conic overlay */
+    .disc-iridescent {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 340px; height: 340px;
+      border-radius: 50%;
+      background: conic-gradient(
+        hsla(200,80%,60%,0.12) 0deg,
+        hsla(280,70%,60%,0.08) 90deg,
+        hsla(40,90%,60%,0.10) 180deg,
+        hsla(140,70%,60%,0.08) 270deg,
+        hsla(200,80%,60%,0.12) 360deg
+      );
+      mix-blend-mode: screen;
+    }
+
+    /* Actual app icon */
+    .disc-icon {
+      position: relative;
+      z-index: 3;
+      width: 240px;
+      height: 240px;
+      filter: drop-shadow(0 0 40px rgba(10,132,255,0.6)) drop-shadow(0 20px 60px rgba(0,0,0,0.6));
+    }
+
+    /* Brand strip bottom */
+    .brand-strip {
+      position: absolute;
+      bottom: 32px;
+      left: 72px;
+      right: 80px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      z-index: 3;
+    }
+    .brand-name {
+      font-family: 'Sora', sans-serif;
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: rgba(240,237,232,0.35);
+    }
+    .brand-url {
+      font-family: 'Sora', sans-serif;
+      font-size: 18px;
+      font-weight: 600;
+      color: rgba(10,132,255,0.7);
+    }
+
+    /* Divider line */
+    .divider {
+      position: absolute;
+      left: 50%;
+      top: 10%;
+      bottom: 10%;
+      width: 1px;
+      background: linear-gradient(to bottom, transparent, rgba(255,255,255,0.08) 20%, rgba(255,255,255,0.08) 80%, transparent);
+    }
+  </style>
+</head>
+<body>
+  <div class="thumb">
+    <div class="glow-left"></div>
+    <div class="glow-right"></div>
+    <div class="scanlines"></div>
+    <div class="divider"></div>
+
+    <!-- LEFT COPY -->
+    <div class="copy">
+      <div class="eyebrow">DVD · CD · Blu-ray</div>
+      <h1 class="headline">
+        Still<br>
+        <span class="accent">Recover-<br>able.</span>
+      </h1>
+      <p class="subline">Your family's memories are still on that disc.</p>
+      <div class="pill-row">
+        <span class="pill">Free to scan</span>
+        <span class="pill">Windows 10 &amp; 11</span>
+        <span class="pill">From $59</span>
+      </div>
+    </div>
+
+    <!-- RIGHT DISC -->
+    <div class="disc-wrap">
+      <div class="disc-glow"></div>
+      <!-- Rings -->
+      <div class="ring" style="width:340px;height:340px;border:1px solid rgba(255,255,255,0.06)"></div>
+      <div class="ring" style="width:280px;height:280px;border:1px solid rgba(255,255,255,0.08)"></div>
+      <div class="ring" style="width:220px;height:220px;border:1px solid rgba(255,255,255,0.05)"></div>
+      <div class="disc-iridescent"></div>
+      <!-- App icon -->
+      <img class="disc-icon" src="https://heirvo.com/brand/mark.png" alt="Heirvo" />
+    </div>
+
+    <!-- BRAND STRIP -->
+    <div class="brand-strip">
+      <span class="brand-name">Heirvo</span>
+      <span class="brand-url">heirvo.com</span>
+    </div>
+  </div>
+</body>
+</html>
