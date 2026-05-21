@@ -264,7 +264,7 @@ function Handbook() {
                     {[
                       ["Strike 1 — Coaching", "Missed SLA, sloppy log, minor handling lapse caught in QC. Documented warning + retraining."],
                       ["Strike 2 — Probation", "Sampling snaps back to 100% review (at your own time cost); written improvement plan."],
-                      ["Strike 3 — Revocation", "Three quality strikes in a rolling window, or a quality score below the network floor."],
+                      ["Strike 3 — Revocation", "Three quality strikes in a rolling 90-day window, or a quality score below the network floor."],
                     ].map(([t, b]) => (
                       <li key={t}>
                         <span className="font-display font-semibold text-ink-900">{t}.</span>{" "}
@@ -322,6 +322,12 @@ function Handbook() {
                   </tbody>
                 </table>
               </div>
+
+              <p className="mt-4 text-[13px] leading-relaxed text-ink-500 max-w-2xl" data-reveal>
+                Paid via <strong className="text-ink-700">Stripe Connect</strong>, net-15 from the close of
+                each calendar month — prior month's earnings land by the 15th of the following month. You
+                invoice Heirvo; Heirvo does not initiate payment automatically.
+              </p>
 
               <div className="mt-5 overflow-x-auto rounded-2xl border border-ink-200 bg-white/40" data-reveal>
                 <table className="w-full text-left text-[13px]">

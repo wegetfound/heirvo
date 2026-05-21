@@ -105,15 +105,23 @@ Grade the four Section-D scenarios + workspace on a simple 0–2 scale each; the
 
 ## Implementation notes
 
-- **Frontend:** a form on the recruit page (or `/labs/apply`), same design system. Until the HQ
-  backend exists, the CTA can post to the existing Formspree/email path (mirrors how Beta.tsx
-  gates `DOWNLOAD_URL`); the workspace photo can be requested as a reply attachment in the
-  interim.
-- **Backend (Phase 2+):** `POST /v1/orders`-style `POST /v1/applications` writes an
-  `applications` row (stage = `submitted`), stores the workspace photo to object storage
-  (hash + key), and surfaces it in the admin screening queue.
-- **Privacy:** this collects PII (name, contact, location, photo). Handle per
-  lab-hq-backend-spec.md §8 — restricted access, retention limits, deletion on reject after a
-  grace window.
-- **Anti-spam:** rate-limit + a simple honeypot; this is a low-volume, high-intent funnel, so
-  keep friction human, not captcha-heavy.
+- **Frontend — LIVE at `/labs/apply`** (`marketing/src/pages/LabsApply.tsx`). 5-step form
+  (sections A–F above) posting directly to Airtable via `VITE_AIRTABLE_PAT` /
+  `VITE_AIRTABLE_BASE_ID`. Setup: run `scripts/setup-airtable.mjs` once to create the
+  Operators + Jobs tables, then copy the base ID to Vercel env vars + `marketing/.env`.
+- **Workspace photo — email-based interim.** The live form does not have a file-upload field
+  (no object storage yet). Instead, the success screen and workspace step both prompt the
+  operator to email `labs@heirvo.com` with subject `Workspace photo — Lab application`. This is
+  the screening spec's "self-selection filter" in a simpler form: applicants who don't bother
+  with the email are screened out passively. The `applications` row in Airtable carries a
+  screener-notes field for manually logging photo receipt.
+- **Backend (Phase 2+):** replace Airtable with `POST /v1/applications` → `applications` row
+  (stage = `submitted`), workspace photo to object storage (hash + key), admin screening queue.
+  The Airtable schema mirrors the Phase 2 table structure so migration is straightforward.
+- **Geographic restriction:** CA/NJ/MA operators excluded (ABC test prong B). Los Angeles is
+  not in the metro dropdown. Boston (MA) and NJ-domiciled applicants selecting Philadelphia
+  are screened out at the Airtable review stage.
+- **Privacy:** collects PII (name, contact, location). Handle per lab-hq-backend-spec.md §8.
+  Airtable retention: delete rejected applications after 90 days.
+- **Anti-spam:** Airtable PAT is write-only (data.records:write scope only); low-volume
+  funnel, so honeypot is sufficient — no captcha.

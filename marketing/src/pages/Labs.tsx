@@ -146,8 +146,8 @@ export default function Labs() {
               ))}
             </div>
             <p className="mt-4 text-[12px] text-ink-400">
-              Phase 2 adds the top 25 (Philadelphia, Boston, SF, Denver, and more); Phase 3 covers the
-              top 50 + secondary markets.
+              Phase 2 adds the next tier (Philadelphia, Denver, Portland, Tampa, and more); Phase 3 covers
+              the top 50 + secondary markets.
             </p>
           </div>
 
