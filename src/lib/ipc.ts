@@ -137,6 +137,17 @@ export const ipc = {
   ffprobeFile: (path: string) => invoke<ProbeResult>("ffprobe_file", { path }),
   installFfmpeg: () => invoke<string>("install_ffmpeg"),
   transcode: (job: TranscodeJob) => invoke<TranscodeStarted>("transcode", { job }),
+  /** Re-encode or remux a recovered video so it is playable in the Chromium
+   * webview. Fires `normalize:progress`, `normalize:complete`, and
+   * `normalize:error` events while running.
+   *
+   * `mode` in the complete payload is one of:
+   *   - `"already_safe"` — input was already H.264/AAC MP4; `outputPath` is
+   *     not written and the UI should play `inputPath` directly.
+   *   - `"remux"` — stream-copy into MP4, no quality loss.
+   *   - `"reencode"` — full libx264/AAC encode (MPEG-2/Xvid/etc. sources). */
+  normalizeForPlayback: (inputPath: string, outputPath: string) =>
+    invoke<{ job_id: string }>("normalize_for_playback", { inputPath, outputPath }),
 
   // AI
   listModels: () => invoke<import("./types").ModelCatalog>("list_models"),

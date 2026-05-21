@@ -244,6 +244,87 @@ pub struct TranscodeStarted {
     pub job_id: String,
 }
 
+/// Result returned by `normalize_for_playback`.
+#[derive(Debug, Serialize, Clone)]
+pub struct NormalizeStarted {
+    pub job_id: String,
+}
+
+/// Ensure a recovered video is playable in the Chromium WebView2 / webview.
+///
+/// Recovered footage (MPEG-2 VOB/DAT, Xvid AVI, etc.) cannot be decoded by
+/// the browser webview. This command:
+///   1. Probes the input with ffprobe.
+///   2. If already H.264/AAC in MP4/MOV → returns immediately (`already_safe`).
+///   3. If H.264/AAC but wrong container → fast stream-copy remux (`remux`).
+///   4. Otherwise → full libx264/AAC re-encode with bwdif deinterlacing for
+///      interlaced sources (DVD/VCD) and error-tolerant input flags for damaged
+///      streams (`reencode`).
+///
+/// Progress events: `normalize:progress` `{ job_id, frame, fps, … }`
+/// Completion:      `normalize:complete`  `{ job_id, mode }` where `mode` is
+///                  one of `"already_safe"`, `"remux"`, `"reencode"`.
+/// Error:           `normalize:error`     `{ job_id, error }`
+#[tauri::command]
+pub async fn normalize_for_playback(
+    app: AppHandle,
+    input_path: String,
+    output_path: String,
+) -> AppResult<NormalizeStarted> {
+    use crate::media::transcode;
+    use std::path::PathBuf;
+
+    let job_id = Uuid::new_v4().to_string();
+    let job_id_clone = job_id.clone();
+    let app_for_task = app.clone();
+
+    let on_progress: Arc<dyn Fn(FfmpegProgress) + Send + Sync> = {
+        let app = app.clone();
+        let job_id = job_id.clone();
+        Arc::new(move |p| {
+            #[derive(Serialize, Clone)]
+            struct Payload {
+                job_id: String,
+                #[serde(flatten)]
+                progress: FfmpegProgress,
+            }
+            let _ = app.emit(
+                "normalize:progress",
+                Payload { job_id: job_id.clone(), progress: p },
+            );
+        })
+    };
+
+    let (_cancel_tx, cancel_rx) = watch::channel(false);
+
+    tokio::spawn(async move {
+        let result = transcode::normalize_for_playback(
+            &app_for_task,
+            PathBuf::from(&input_path),
+            PathBuf::from(&output_path),
+            on_progress,
+            Some(cancel_rx),
+        )
+        .await;
+        match result {
+            Ok(mode) => {
+                let _ = app_for_task.emit(
+                    "normalize:complete",
+                    &serde_json::json!({ "job_id": job_id_clone, "mode": mode }),
+                );
+            }
+            Err(e) => {
+                let _ = app_for_task.emit(
+                    "normalize:error",
+                    &serde_json::json!({ "job_id": job_id_clone, "error": e.to_string() }),
+                );
+            }
+        }
+    });
+
+    Ok(NormalizeStarted { job_id })
+}
+
 /// Start a transcode job. Progress events are emitted as `transcode:progress`
 /// with payload `{ jobId, frame, fps, bitrate_kbps, out_time_us, speed }`.
 /// Completion fires `transcode:complete` or `transcode:error`.

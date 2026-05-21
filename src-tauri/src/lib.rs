@@ -113,6 +113,7 @@ pub fn run() {
             commands::media::ffprobe_file,
             commands::media::install_ffmpeg,
             commands::media::save_as_mp4,
+            commands::media::normalize_for_playback,
             commands::ai::list_models,
             commands::ai::download_model,
             commands::ai::ai_backend_info,
