@@ -150,6 +150,7 @@ pub fn run() {
             commands::library::delete_library_discs_bulk,
             commands::library::convert_image_to_jpeg,
             commands::library::convert_special_image,
+            commands::library::update_disc_video_path,
             commands::albums::create_album,
             commands::albums::list_albums,
             commands::albums::get_album_with_discs,

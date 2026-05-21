@@ -266,6 +266,13 @@ export const ipc = {
         | { status: "needs_external_converter"; extension: string; reason: string; recommendation: string }
         | { status: "decode_error"; message: string }
       >("convert_special_image", { inputPath }),
+
+    /** Update the video_path of a disc after normalization completes.
+     * Called by the frontend after `normalizeForPlayback` finishes so the
+     * Watch screen can load the normalized MP4 instead of the raw file.
+     * `status` is optional — omit to leave the current status unchanged. */
+    updateDiscVideoPath: (discId: string, videoPath: string, status?: string) =>
+      invoke<void>("update_disc_video_path", { discId, videoPath, status: status ?? null }),
   },
 
   // Albums
@@ -385,5 +392,21 @@ export const events = {
       "model:download_progress",
       (e) => handler(e.payload),
     );
+  },
+  /** Fired when a recovered session is promoted to a library disc.
+   * `needsNormalization: true` means the frontend should call
+   * `normalizeForPlayback` then `library.updateDiscVideoPath`. */
+  onDiscAdded(
+    handler: (p: {
+      discId: string;
+      needsNormalization: boolean;
+      videoPath: string | null;
+    }) => void,
+  ): Promise<UnlistenFn> {
+    return listen<{
+      discId: string;
+      needsNormalization: boolean;
+      videoPath: string | null;
+    }>("library:disc_added", (e) => handler(e.payload));
   },
 };

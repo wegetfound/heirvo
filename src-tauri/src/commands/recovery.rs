@@ -114,6 +114,18 @@ pub async fn start_recovery(
             if let Err(e) = manager::update_status(&db, id, final_status).await {
                 tracing::error!("update_status failed: {e:?}");
             }
+            // Non-fatally promote to library on successful completion.
+            // A failure here must NOT block recovery:complete or fail the session.
+            if final_status == SessionStatus::Completed {
+                match crate::library::promote::promote_session_to_library(&app_for_save, &db, id).await {
+                    Ok(disc_id) => {
+                        tracing::info!("recovery: session {id} promoted to library disc {disc_id}");
+                    }
+                    Err(e) => {
+                        tracing::warn!("recovery: promote_session_to_library failed for session {id} (non-fatal): {e}");
+                    }
+                }
+            }
             let _ = app_for_save.emit("recovery:complete", id.to_string());
         });
     });

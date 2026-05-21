@@ -784,40 +784,11 @@ pub enum ConvertImageResult {
     DecodeError { message: String },
 }
 
-/// Classify an extension as supported by the `image` crate, known-unsupported
-/// (PCD / HEIC / RAW), or unknown (treat as unsupported).
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum ImageFormatClass {
-    /// `image` crate can open this.
-    Supported,
-    /// Needs an external converter path (PCD, HEIC, RAW).
-    SpecialFormat(SpecialFormat),
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum SpecialFormat {
-    Pcd,
-    Heic,
-    CameraRaw,
-}
-
-fn classify_image_extension(ext: &str) -> ImageFormatClass {
-    match ext {
-        // `image` crate feature-gated formats we have enabled in Cargo.toml.
-        "jpg" | "jpeg" | "png" | "gif" | "webp" | "bmp" | "tiff" | "tif" => {
-            ImageFormatClass::Supported
-        }
-        // ── Formats that need the external-converter path ───────────────
-        "pcd" => ImageFormatClass::SpecialFormat(SpecialFormat::Pcd),
-        "heic" | "heif" => ImageFormatClass::SpecialFormat(SpecialFormat::Heic),
-        // Common RAW extensions.
-        "cr2" | "cr3" | "nef" | "nrw" | "arw" | "srf" | "sr2" | "orf" | "rw2" | "pef"
-        | "dng" | "raf" | "x3f" | "3fr" | "fff" | "mef" | "mos" | "mrw" | "ptx" | "raw"
-        | "rwl" | "rwz" => ImageFormatClass::SpecialFormat(SpecialFormat::CameraRaw),
-        // Everything else — treat as unsupported; caller should surface an error.
-        _ => ImageFormatClass::SpecialFormat(SpecialFormat::CameraRaw),
-    }
-}
+// Re-export the shared helpers from media::image so the rest of this file
+// can use them without qualification.
+use crate::media::image::{
+    classify_image_extension, special_format_reason, ImageFormatClass, SpecialFormat,
+};
 
 /// Convert a source image to a web-viewable JPEG and write it to `output_path`.
 ///
@@ -955,35 +926,7 @@ pub async fn convert_special_image(input_path: String) -> AppResult<ConvertImage
 
 /// Build a `NeedsExternalConverter` result for a given special format.
 fn special_format_stub(sf: SpecialFormat, ext: String) -> ConvertImageResult {
-    let (reason, recommendation) = match sf {
-        SpecialFormat::Pcd => (
-            "Kodak Photo CD (.pcd) has no maintained pure-Rust decoder. \
-             An external converter (ImageMagick or pcdtojpeg) is required."
-                .to_string(),
-            "Bundle ImageMagick alongside the app and call: \
-             magick convert input.pcd[2] output.jpg"
-                .to_string(),
-        ),
-        SpecialFormat::Heic => (
-            "HEIC/HEIF requires libheif (native library) which is not bundled. \
-             ffmpeg with libde265 can convert HEIC on supported builds."
-                .to_string(),
-            "Run: ffmpeg -i input.heic output.jpg — if the bundled ffmpeg \
-             was built with libde265 this will work. Otherwise use the heic \
-             Rust crate (links libheif via bindgen)."
-                .to_string(),
-        ),
-        SpecialFormat::CameraRaw => (
-            format!(
-                "Camera RAW format (.{ext}) is not decoded by the bundled \
-                 image crate. A dedicated RAW developer is required."
-            ),
-            "Add the `rawloader` + `imagepipe` crates (pure Rust, clean \
-             Windows build) for demosaic/tone-map, or shell out to \
-             dcraw / rawtherapee-cli."
-                .to_string(),
-        ),
-    };
+    let (reason, recommendation) = special_format_reason(sf, &ext);
     ConvertImageResult::NeedsExternalConverter {
         extension: ext,
         reason,
@@ -1197,6 +1140,43 @@ async fn sha256_path(path: &str) -> Option<String> {
         hasher.update(&buf[..n]);
     }
     Some(format!("{:x}", hasher.finalize()))
+}
+
+/// Update the `video_path` (and optionally `status`) of an existing library
+/// disc. Called by the frontend after `normalizeForPlayback` completes so the
+/// viewer can load the normalized MP4 path rather than the raw recovered file.
+///
+/// `status` is optional — omit (pass `None`) to leave the current status
+/// unchanged. Typical values: `"recovered"` (done) or `"partial"` (issues).
+#[tauri::command]
+pub async fn update_disc_video_path(
+    state: State<'_, AppState>,
+    disc_id: String,
+    video_path: String,
+    status: Option<String>,
+) -> AppResult<()> {
+    let now = chrono::Utc::now().timestamp();
+    if let Some(s) = status {
+        sqlx::query(
+            "UPDATE library_discs SET video_path = ?, status = ?, updated_at = ? WHERE id = ?",
+        )
+        .bind(&video_path)
+        .bind(&s)
+        .bind(now)
+        .bind(&disc_id)
+        .execute(&state.db.pool)
+        .await?;
+    } else {
+        sqlx::query(
+            "UPDATE library_discs SET video_path = ?, updated_at = ? WHERE id = ?",
+        )
+        .bind(&video_path)
+        .bind(now)
+        .bind(&disc_id)
+        .execute(&state.db.pool)
+        .await?;
+    }
+    Ok(())
 }
 
 /// Backwards-compat: legacy IPC name still used by older builds of the UI.

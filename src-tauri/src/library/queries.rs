@@ -2,7 +2,7 @@
 //! prepare cache required) — mirrors the convention in `session::manager`.
 
 use crate::error::{AppError, AppResult};
-use crate::library::types::{Disc, Person, Scene, SearchHit, TopicTag, TranscriptLine};
+use crate::library::types::{Disc, Person, PhotoAsset, Scene, SearchHit, TopicTag, TranscriptLine};
 use crate::session::db::Db;
 use chrono::Utc;
 use sqlx::Row;
@@ -91,6 +91,26 @@ pub async fn insert_disc(db: &Db, disc: &Disc) -> AppResult<()> {
             .bind(&person.name)
             .execute(&mut *tx)
             .await?;
+    }
+
+    if let Some(photos) = &disc.photos {
+        for (i, photo) in photos.iter().enumerate() {
+            sqlx::query(
+                "INSERT INTO disc_photos
+                 (disc_id, photo_order, path, source_path, needs_external_converter,
+                  converter_reason, caption, tint, created_at)
+                 VALUES (?, ?, ?, NULL, ?, NULL, ?, ?, ?)",
+            )
+            .bind(&disc.id)
+            .bind(i as i64)
+            .bind(&photo.path)
+            .bind(if photo.path.is_none() { 1i64 } else { 0i64 })
+            .bind(&photo.caption)
+            .bind(&photo.tint)
+            .bind(now)
+            .execute(&mut *tx)
+            .await?;
+        }
     }
 
     tx.commit().await?;
@@ -271,6 +291,35 @@ pub async fn get_disc(db: &Db, id: &str) -> AppResult<Option<Disc>> {
         })
         .collect::<AppResult<Vec<_>>>()?;
 
+    // disc_photos — ordered by photo_order; only present on photo-type discs.
+    let photo_rows = sqlx::query(
+        "SELECT path, needs_external_converter, caption, tint
+         FROM disc_photos WHERE disc_id = ? ORDER BY photo_order ASC",
+    )
+    .bind(id)
+    .fetch_all(&db.pool)
+    .await?;
+    let photos: Option<Vec<PhotoAsset>> = if photo_rows.is_empty() {
+        None
+    } else {
+        let v = photo_rows
+            .into_iter()
+            .map(|r| -> AppResult<PhotoAsset> {
+                let needs_ext: i64 = r.try_get("needs_external_converter")?;
+                let raw_path: Option<String> =
+                    r.try_get::<Option<String>, _>("path").ok().flatten();
+                // Only surface a vault path when the image was successfully converted.
+                let path = if needs_ext == 0 { raw_path } else { None };
+                let tint: Option<String> =
+                    r.try_get::<Option<String>, _>("tint").ok().flatten();
+                let caption: Option<String> =
+                    r.try_get::<Option<String>, _>("caption").ok().flatten();
+                Ok(PhotoAsset { path, caption, tint })
+            })
+            .collect::<AppResult<Vec<_>>>()?;
+        Some(v)
+    };
+
     let year_opt: Option<i64> = row.try_get("year").ok();
     let about: Option<String> = row.try_get::<Option<String>, _>("about").ok().flatten();
     let filmed_by: Option<String> = row.try_get::<Option<String>, _>("filmed_by").ok().flatten();
@@ -317,6 +366,7 @@ pub async fn get_disc(db: &Db, id: &str) -> AppResult<Option<Disc>> {
         about,
         video_path,
         media_type,
+        photos,
     }))
 }
 

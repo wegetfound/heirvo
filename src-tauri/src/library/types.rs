@@ -42,6 +42,24 @@ pub struct Person {
     pub name: String,
 }
 
+/// A single photo in a photo-set disc.  Fields are optional because some
+/// images cannot be converted by the bundled `image` crate (Kodak PCD, HEIC,
+/// RAW) and are represented with a `tint` sentinel instead.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PhotoAsset {
+    /// Vault JPEG path, loadable via `convertFileSrc`. `None` when
+    /// `needs_external_converter` is true (unconvertible format).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub path: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub caption: Option<String>,
+    /// Sentinel gradient name used to render a humane placeholder tile when
+    /// the image could not be converted. `None` for convertible images.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tint: Option<String>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Disc {
@@ -80,6 +98,10 @@ pub struct Disc {
     /// recovered DVD rows (the media_type DB column also defaults to "video").
     #[serde(default = "default_media_type")]
     pub media_type: String,
+    /// Photo assets for photo-type discs. `None` (omitted from JSON) for
+    /// video/audio discs so existing callers are unaffected.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub photos: Option<Vec<PhotoAsset>>,
 }
 
 fn default_media_type() -> String {
