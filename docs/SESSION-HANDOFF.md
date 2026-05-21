@@ -3,45 +3,48 @@
 _Last updated: 2026-05-21. Read this first, then `docs/phase2-recovery-library-bridge.md`._
 
 ## TL;DR
-A long session shipped: a redesigned immersive **Memories** screen (`/library`), the **Quiet Rail** global nav, a **photo gallery**, **humane media states**, and the full **Phase 2 backend** (video→H.264 normalize, image→JPEG, recovery→library bridge + `disc_photos` migration, "Open files", frontend bridge-wiring). All on `main`, pushed (`HEAD = 95f92fe`). Working tree clean.
+Two sessions shipped. Phase 2 backend, Memories screen, Quiet Rail nav, photo gallery, humane media states all landed in `95f92fe`. Then (`c72f0b9`) resolved the open black-video question and implemented true OS-level theater fullscreen. Working tree clean, `HEAD = c72f0b9`.
 
 ## ✅ Validated on a real build (Tauri dev, real DB)
-- `disc_photos` **migration applied cleanly on the populated DB** (the scariest risk — passed).
-- App boots; **Quiet Rail nav** + warmer labels (Home · Memories · My Discs · Export · Browse ISO · Settings) render.
-- Immersive Memories screen renders; **memory switch cross-fade + room-glow color shift work**; **theater mode works**.
-- `/watch` transcript screen renders correctly (transcript, search box, poster "transcript-only preview" state).
 
-## 🔴 OPEN QUESTION (resolve this FIRST)
-**Does real video PAINT in the player, or is it black?**
-- Symptom: the existing **"Heirvo Test Video"** disc (file `C:\Temp\heirvo_test_video.mp4`) plays **audio but shows a black frame**. Console confirmed it's a clean **H.264 1280×720, dur 27.92s, no error** — so it *decodes* but doesn't *paint*.
-- Two possibilities, not yet distinguished:
-  1. **No bug** — "Heirvo Test Video" is likely an AI/TTS clip with a **black/blank video track** (just narration). The player is faithfully showing black.
-  2. **Real WebView2 paint bug** — decodable video won't composite.
-- **The decisive test (NOT yet run):** a known-good sample was downloaded to **`C:\Temp\heirvo-sample-bunny.mp4`** (Big Buck Bunny, H.264 320×176 + AAC, verified). In the app: **"+ Import a memory"** (new button on Memories, top-left) → pick that file → Play.
-  - 🐰 **Colorful cartoon plays** → no bug; revert nothing; the test clip was just black. Player fully validated.
-  - ⬛ **Bunny also black** → real WebView2 compositing bug. Fixes already *attempted* (uncommitted? no — committed in `95f92fe`): grain no longer over video + `translateZ` on the `<video>`. If still black after those, next moves: remove ALL overlays (vignette + bottom-gradient) from over the video (render them poster-only), and/or drop the rounded `overflow:hidden` clip on the player frame; last resort, load video via a streaming approach. Config is NOT the cause (CSP `media-src` + `assetProtocol scope:["**"]` both allow it — that's why audio plays).
+### Previous session (`95f92fe`)
+- `disc_photos` **migration applied cleanly on the populated DB**.
+- App boots; **Quiet Rail nav** + warmer labels render.
+- Immersive Memories screen renders; **memory switch cross-fade + room-glow work**; **in-app theater mode works**.
+- `/watch` transcript screen renders correctly.
+
+### This session (`c72f0b9`)
+- **Black-video RESOLVED** — injected Big Buck Bunny (`C:\Temp\heirvo-sample-bunny.mp4`) directly via DevTools: colorful cartoon plays, `PLAYING OK`. **No WebView2 compositing bug**. The existing "Heirvo Test Video" was AI/TTS narration with a genuinely black video track.
+- **Theater mode fullscreen** coded and TSC-clean (see below). Needs Rust rebuild to activate the new capability.
+
+## 🔴 OPEN: Theater mode needs a `cargo tauri dev` rebuild to activate
+
+**What was shipped (`c72f0b9`):**
+- `getCurrentWindow().setFullscreen(fullscreen)` syncs React theater state → OS-level fullscreen (the expand button ⤢ now takes over the whole monitor, not just the app viewport).
+- `"core:window:allow-set-fullscreen"` added to `src-tauri/capabilities/default.json`.
+- "F" key shortcut wired (toggle theater on/off — was in button title but never implemented).
+
+**Why it needs a rebuild:** Tauri 2 compiles capabilities into the Rust binary. The running debug binary (`D:\projects\Heirvo\src-tauri\target\debug\heirvo.exe`) was built before the capability was added, so `setFullscreen()` silently no-ops. Run `cargo tauri dev` (or `npx tauri dev`) to rebuild and test. The in-app overlay already works as a fallback in the interim.
 
 ## ⚙️ Compile-checked only (cargo + tsc clean) — needs real-build runtime test
-The whole Phase 2 backend is wired but only the migration + nav/render/switch/theater have been exercised live. Still to verify on a real disc:
-- **Recovery → library bridge**: recover a real disc → watch terminal for `recovery: session … promoted to library disc …` → it should appear in Memories on its own (event-driven), show "Getting your video ready…" while normalizing, then play. (`promote_session_to_library` in `src-tauri/src/library/promote.rs`, hooked non-fatally in `commands/recovery.rs:~119`.)
+- **Recovery → library bridge**: recover a real disc → watch terminal for `recovery: session … promoted to library disc …` → appears in Memories on its own, shows "Getting your video ready…" while normalizing, then plays.
 - **Photo gallery from a real photo disc / CD of JPEGs** → `disc_photos` rows + vault JPEGs + grid/lightbox.
-- **Kodak Photo CD (.pcd)** → should hit the humane "saved to files" path (PCD decode itself is NOT built — `convert_special_image` returns `NeedsExternalConverter`; bundling ImageMagick is the documented next feature).
-- **`normalizeForPlayback` → `updateDiscVideoPath` round-trip** (the `useRecoveryPromotion` hook drives it).
+- **Kodak Photo CD (.pcd)** → should hit the humane "saved to files" path.
+- **`normalizeForPlayback` → `updateDiscVideoPath` round-trip** (the `useRecoveryPromotion` hook).
 
 ## 📋 Remaining work (priority order)
-1. **Resolve the black-video question** (bunny test above).
-2. **True fullscreen for theater mode** — user explicitly wants the expand button to take over the WHOLE monitor (OS fullscreen via Tauri window API + video edge-to-edge, controls auto-hide), not the current in-app overlay. Not yet built.
-3. **Kodak PCD decode** — bundle ImageMagick (`magick convert`) so `.pcd`→JPEG; wire into `convert_special_image` + the bridge. Real-build feature.
-4. **Finish real-build validation** of the recovery loop + photo gallery (checklist in `docs/phase2-recovery-library-bridge.md`).
-5. Separate track, untouched: **Lab Network** — operator-agreement red-team, 4 HQ backend decisions, real `/labs/apply` intake form.
+1. **Rebuild + verify theater OS fullscreen** — run `cargo tauri dev`, click ⤢ or press F, confirm the window covers the whole monitor. Also verify Escape and F-key exit work. If the `setFullscreen` call still fails, check DevTools console for the error (the `.catch()` was silencing it).
+2. **Kodak PCD decode** — bundle ImageMagick (`magick convert`) so `.pcd`→JPEG; wire into `convert_special_image` + the bridge. Real-build feature.
+3. **Finish real-build validation** of the recovery loop + photo gallery (checklist in `docs/phase2-recovery-library-bridge.md`).
+4. Separate track, untouched: **Lab Network** — operator-agreement red-team, 4 HQ backend decisions, real `/labs/apply` intake form.
 
 ## Key files
-- Memories screen: `src/screens/library/Memories.tsx` (immersive player = `ImmersivePlayer`, hoisted to module scope; cover-flow = `CoverFlow`; new Import button + `handleImport`).
-- Watch/transcript: `src/screens/library/Watch.tsx` (humane states: `RescuedFilesCard`, `CantPreviewCard`; photo set → `PhotoGalleryView`).
+- Memories screen: `src/screens/library/Memories.tsx` — theater fullscreen uses `getCurrentWindow().setFullscreen()` (line ~1104); "F" key shortcut (line ~1113).
+- Capabilities: `src-tauri/capabilities/default.json` — `core:window:allow-set-fullscreen` added.
+- Watch/transcript: `src/screens/library/Watch.tsx`.
 - Gallery: `src/screens/library/components/PhotoGallery.tsx`.
-- Bridge + media: `src-tauri/src/library/promote.rs`, `src-tauri/src/media/{transcode,image}.rs`, `src-tauri/src/commands/{media,library,recovery}.rs`.
-- Frontend loop: `src/lib/useRecoveryPromotion.ts`, `src/lib/ipc.ts` (events: onDiscAdded, onNormalizeComplete/Error, onPromoteProgress).
-- Nav: `src/app/App.tsx` (the `Sidebar`; old browse Library still at `/library/browse`, unlinked).
+- Bridge + media: `src-tauri/src/library/promote.rs`, `src-tauri/src/media/{transcode,image}.rs`.
+- Frontend loop: `src/lib/useRecoveryPromotion.ts`, `src/lib/ipc.ts`.
 
 ## Working style for next session
-Lead architect + delegate buildable chunks to **sonnet** subagents, each `cargo check`/`tsc`-gated, reviewed before commit. Note: **the headless dev preview throttles requestAnimationFrame, so gsap-driven interactions can't be runtime-verified there** — they must be checked on the real Tauri build (this caused a phantom "regression" chase earlier).
+Lead architect + delegate buildable chunks to **sonnet** subagents, each `cargo check`/`tsc`-gated, reviewed before commit. **The headless dev preview throttles requestAnimationFrame** — GSAP interactions + OS-level APIs (fullscreen) must be verified on the real Tauri build. The running debug binary at `D:\projects\Heirvo\src-tauri\target\debug\heirvo.exe` was off-screen at session start (coords −25600, −25600) — use `Win32::MoveWindow` via PowerShell to restore it if needed.
