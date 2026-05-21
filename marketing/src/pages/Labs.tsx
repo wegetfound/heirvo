@@ -5,7 +5,7 @@ import { Footer } from "../components/Footer";
 import { useMeta } from "../lib/useMeta";
 
 // Gated like Beta.tsx gates DOWNLOAD_URL — fill in once the intake form exists.
-const APPLY_URL = "";
+const APPLY_URL = "/labs/apply";
 const APPLY_MAILTO =
   "mailto:labs@heirvo.com?subject=Lab%20Operator%20Application&body=Tell%20us%3A%20your%20metro%2C%20your%20optical-drive%20experience%2C%20and%20a%20photo%20of%20your%20dedicated%20lockable%20workspace.";
 

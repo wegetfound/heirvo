@@ -13,18 +13,16 @@ export function Nav() {
           borderBottom: "1px solid rgba(225,230,238,0.7)",
         }}
       />
-      <nav className="container-narrow flex h-[80px] items-center justify-between">
-        <Link to="/" className="flex items-center gap-3 group">
+      <nav className="container-narrow flex h-[80px] items-center">
+        <Link to="/" className="flex items-center gap-3 group shrink-0">
           <BrandMark size={72} />
           <span className="font-display text-[18px] font-semibold tracking-tightish text-ink-900">
             Heirvo
           </span>
         </Link>
-        <div className="hidden md:flex items-center gap-7 text-[14px] text-ink-500">
+        <div className="hidden md:flex flex-1 justify-center items-center gap-7 text-[14px] text-ink-500">
           <a href="/#how" className="hover:text-ink-900 transition">How it works</a>
           <a href="/#rescue" className="hover:text-ink-900 transition">What it rescues</a>
-          <a href="/#pricing" className="hover:text-ink-900 transition">Pricing</a>
-          <a href="/#faq" className="hover:text-ink-900 transition">FAQ</a>
           <Link to="/guides" className="hover:text-ink-900 transition">Guides</Link>
           <Link to="/recover" className="hover:text-ink-900 transition">Mail-in service</Link>
         </div>

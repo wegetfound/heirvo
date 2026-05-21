@@ -498,7 +498,7 @@ export default function LandingMin1() {
             minHeight: "94vh",
             display: "flex",
             alignItems: "center",
-            padding: "100px 0 60px",
+            padding: "30px 0 60px",
             position: "relative",
             overflow: "hidden",
           }}
@@ -521,7 +521,7 @@ export default function LandingMin1() {
 
           <div className="lm1-container lm1-hero-grid">
             {/* Left — copy */}
-            <div style={{ maxWidth: 620 }}>
+            <div>
               <Eyebrow style={{ marginBottom: 24 }}>
                 DVD Recovery Software · Windows 10 &amp; 11
               </Eyebrow>
@@ -580,6 +580,7 @@ export default function LandingMin1() {
               {/* CTAs */}
               <div ref={heroCTAsRef}>
                 <div style={{ display: "flex", gap: 14, flexWrap: "wrap" as const, alignItems: "center", marginBottom: 20 }}>
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 8 }}>
                   <a
                     ref={dlBtnRef}
                     href={DOWNLOAD_URL}
@@ -609,6 +610,11 @@ export default function LandingMin1() {
                     </svg>
                     Download Free for Windows
                   </a>
+                  <p style={{ fontFamily: SORA, fontSize: 12, color: "rgba(255,255,255,0.75)", lineHeight: 1.6, margin: 0 }}>
+                    <strong style={{ color: "#FFFFFF" }}>SmartScreen warning?</strong>{" "}
+                    New software. Click "More info" → "Run anyway". No malware, no adware — ever.
+                  </p>
+                  </div>
 
                   <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 5 }}>
                     <Link
@@ -689,16 +695,6 @@ export default function LandingMin1() {
                   <ChevronRight size={11} color={C.amber} />
                 </Link>
 
-                {/* SmartScreen note */}
-                <p style={{
-                  marginTop: 14,
-                  fontFamily: SORA, fontSize: 11,
-                  color: C.textFaint, lineHeight: 1.6,
-                  maxWidth: 420,
-                }}>
-                  <strong style={{ color: C.textMuted }}>SmartScreen warning?</strong>{" "}
-                  New software. Click "More info" → "Run anyway". No malware, no adware — ever.
-                </p>
               </div>
             </div>
 
@@ -809,8 +805,8 @@ export default function LandingMin1() {
           <style>{`
             .lm1-hero-grid {
               display: grid;
-              grid-template-columns: 1fr 1fr;
-              gap: 64px;
+              grid-template-columns: 65fr 35fr;
+              gap: 48px;
               align-items: center;
             }
             @media (max-width: 860px) {
