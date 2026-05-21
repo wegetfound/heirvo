@@ -82,6 +82,18 @@ export default function DiscDetail() {
     }
   }
 
+  /** Reveal the disc's recovered file in the OS file manager.
+   *  Only called for audio / document discs that have a videoPath.
+   *  Gracefully degrades in dev mode (no Tauri shell). */
+  async function handleRevealInFolder() {
+    if (!disc?.videoPath) return;
+    try {
+      await ipc.revealInFolder(disc.videoPath);
+    } catch (err) {
+      console.warn("[Heirvo] revealInFolder unavailable in dev mode:", err);
+    }
+  }
+
   /** Remove this disc from the library. Backend handles cascade + vault file. */
   async function handleDelete() {
     if (!discId || deleting) return;
@@ -371,6 +383,29 @@ export default function DiscDetail() {
                 </>
               )}
               <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+                {/* For audio / document discs with a recovered file path, reveal
+                    directly in the OS file manager instead of navigating to Watch.
+                    When no path exists, fall back to the Watch screen which shows
+                    the warm "saved to your computer" message. */}
+                {(isAudio || isDocument) && disc.videoPath ? (
+                  <button
+                    type="button"
+                    className="lib-btn lib-btn-primary"
+                    onClick={() => { void handleRevealInFolder(); }}
+                  >
+                    {isAudio ? (
+                      <>
+                        <Music size={14} />
+                        Open music
+                      </>
+                    ) : (
+                      <>
+                        <FileText size={14} />
+                        Open files
+                      </>
+                    )}
+                  </button>
+                ) : (
                 <Link to={`/watch/${disc.id}`} className="lib-btn lib-btn-primary">
                   {hasVideoContent ? (
                     <>
@@ -399,6 +434,7 @@ export default function DiscDetail() {
                     </>
                   )}
                 </Link>
+                )}
                 <button
                   type="button"
                   className="lib-btn lib-btn-ghost"

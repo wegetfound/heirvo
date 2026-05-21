@@ -24,13 +24,24 @@ function fmtTime(sec: number): string {
 /* ── Humane "we rescued your files" card (Tier 2: audio / documents) ──────────
    Grandma never sees a black box or a codec word — she sees a kind sentence and
    a clear way to her files. */
-function RescuedFilesCard({ kind }: { kind: "audio" | "document" }) {
+function RescuedFilesCard({ kind, path }: { kind: "audio" | "document"; path?: string }) {
   const Icon = kind === "audio" ? Music : FileText;
   const title = kind === "audio" ? "Your music is saved" : "Your files are saved";
   const body =
     kind === "audio"
       ? "We rescued these tracks and saved them to your computer, ready to play in your music app."
       : "We rescued these files and saved them to your computer, ready to open anytime.";
+
+  async function handleReveal() {
+    if (!path) return;
+    try {
+      await ipc.revealInFolder(path);
+    } catch (err) {
+      // Dev mode without a Tauri shell — swallow gracefully.
+      console.warn("[Heirvo] revealInFolder unavailable in dev mode:", err);
+    }
+  }
+
   return (
     <div style={{ textAlign: "center", padding: "32px 28px", maxWidth: 420, position: "relative", zIndex: 1 }}>
       <div style={{ width: 64, height: 64, borderRadius: "50%", background: "rgba(255,255,255,0.88)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 18px", boxShadow: "0 8px 28px rgba(40,20,10,0.18)" }}>
@@ -38,15 +49,31 @@ function RescuedFilesCard({ kind }: { kind: "audio" | "document" }) {
       </div>
       <div style={{ fontFamily: "var(--lib-serif)", fontSize: 24, color: "#2B1E12", marginBottom: 8 }}>{title}</div>
       <p style={{ fontFamily: "var(--lib-sans)", fontSize: 14, lineHeight: 1.55, color: "rgba(27,23,20,0.72)", margin: "0 0 18px" }}>{body}</p>
-      <button type="button" className="lib-btn lib-btn-primary" style={{ margin: "0 auto" }} onClick={() => { /* Phase 2: reveal the recovered files in the file explorer */ }}>
-        <FolderOpen size={15} /> Open files
-      </button>
+      {path ? (
+        <button type="button" className="lib-btn lib-btn-primary" style={{ margin: "0 auto" }} onClick={() => { void handleReveal(); }}>
+          <FolderOpen size={15} /> Open files
+        </button>
+      ) : (
+        <p style={{ fontFamily: "var(--lib-sans)", fontSize: 13, color: "rgba(27,23,20,0.45)", margin: 0, fontStyle: "italic" }}>
+          Saved to your computer
+        </p>
+      )}
     </div>
   );
 }
 
 /* ── Humane "we couldn't preview, but it's safe" card (recovered but not webview-renderable) ── */
-function CantPreviewCard() {
+function CantPreviewCard({ path }: { path?: string }) {
+  async function handleReveal() {
+    if (!path) return;
+    try {
+      await ipc.revealInFolder(path);
+    } catch (err) {
+      // Dev mode without a Tauri shell — swallow gracefully.
+      console.warn("[Heirvo] revealInFolder unavailable in dev mode:", err);
+    }
+  }
+
   return (
     <div style={{ textAlign: "center", padding: "32px 28px", maxWidth: 440, position: "relative", zIndex: 1 }}>
       <div style={{ width: 64, height: 64, borderRadius: "50%", background: "rgba(255,255,255,0.88)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 18px", boxShadow: "0 8px 28px rgba(40,20,10,0.18)" }}>
@@ -56,9 +83,15 @@ function CantPreviewCard() {
       <p style={{ fontFamily: "var(--lib-sans)", fontSize: 14, lineHeight: 1.55, color: "rgba(27,23,20,0.72)", margin: "0 0 18px" }}>
         We rescued it and saved it to your computer. We can&rsquo;t show a preview here, but your file is ready and waiting for you.
       </p>
-      <button type="button" className="lib-btn lib-btn-primary" style={{ margin: "0 auto" }} onClick={() => { /* Phase 2: reveal the recovered files in the file explorer */ }}>
-        <FolderOpen size={15} /> Open files
-      </button>
+      {path ? (
+        <button type="button" className="lib-btn lib-btn-primary" style={{ margin: "0 auto" }} onClick={() => { void handleReveal(); }}>
+          <FolderOpen size={15} /> Open files
+        </button>
+      ) : (
+        <p style={{ fontFamily: "var(--lib-sans)", fontSize: 13, color: "rgba(27,23,20,0.45)", margin: 0, fontStyle: "italic" }}>
+          Saved to your computer
+        </p>
+      )}
     </div>
   );
 }
@@ -239,7 +272,7 @@ export default function Watch() {
               >
                 {isAudio || isDocument ? (
                   /* Tier 2 — recovered to files, presented warmly (never a black box) */
-                  <RescuedFilesCard kind={isAudio ? "audio" : "document"} />
+                  <RescuedFilesCard kind={isAudio ? "audio" : "document"} path={disc.videoPath} />
                 ) : hasMedia && isPhoto && !mediaError ? (
                   <img
                     src={mediaSrc ?? undefined}
@@ -273,7 +306,7 @@ export default function Watch() {
                   />
                 ) : hasMedia && mediaError ? (
                   /* Recovered, but the webview can't preview this file — stay kind, never show a codec error */
-                  <CantPreviewCard />
+                  <CantPreviewCard path={disc.videoPath} />
                 ) : (
                   <>
                     <div

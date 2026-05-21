@@ -175,6 +175,11 @@ export const ipc = {
 
   // Shell / OS
   openFolder: (path: string) => invoke<void>("open_folder", { path }),
+  /** Reveal a file or folder in the OS file manager (Explorer on Windows,
+   *  Finder on macOS, Files on Linux). Selects the item if it's a file.
+   *  Delegates to the existing `open_folder` command which runs
+   *  `explorer /select,<path>` on Windows and `xdg-open` on Linux/macOS. */
+  revealInFolder: (path: string) => invoke<void>("open_folder", { path }),
 
   // Preflight
   getPreflightStatus: () =>
