@@ -39,10 +39,11 @@ const GIFT_SCHEMA = JSON.stringify({
   name: "Heirvo — The gift of recovered home videos",
   description:
     "Heirvo turns your parents' shoebox of damaged DVDs and CDs into a searchable archive of family memories. The most personal gift you can give for Mother's Day, Father's Day, birthdays, and Christmas.",
+  image: "https://heirvo.com/assets/hero.png",
   brand: { "@type": "Brand", name: "Heirvo" },
   offers: {
     "@type": "Offer",
-    price: "39.00",
+    price: "59.00",
     priceCurrency: "USD",
     availability: "https://schema.org/InStock",
     url: "https://heirvo.com/gift",

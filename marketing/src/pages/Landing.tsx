@@ -124,12 +124,14 @@ const SOFTWARE_SCHEMA = JSON.stringify({
   "name": "Heirvo",
   "operatingSystem": "Windows 10, Windows 11",
   "applicationCategory": "UtilitiesApplication",
+  "image": "https://heirvo.com/assets/hero.png",
   "offers": [
     { "@type": "Offer", "price": "0",  "priceCurrency": "USD", "name": "Free scan" },
     { "@type": "Offer", "price": "59", "priceCurrency": "USD", "name": "Recover" },
-    { "@type": "Offer", "price": "99", "priceCurrency": "USD", "name": "Archivist" },
+    { "@type": "Offer", "price": "99", "priceCurrency": "USD", "name": "Archive" },
+    { "@type": "Offer", "price": "149", "priceCurrency": "USD", "name": "Family" },
   ],
-  "description": "DVD and CD recovery software. Rescues photos and videos from scratched, damaged, or unreadable discs.",
+  "description": "DVD and CD recovery software. Rescues photos and videos from scratched, damaged, or unreadable discs. Includes personal media vault, Whisper transcription, and family memory archive.",
   "url": "https://heirvo.com",
 });
 
