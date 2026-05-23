@@ -5,7 +5,7 @@ import { useLenis } from "./lib/useLenis";
 import { Cursor } from "./components/Cursor";
 import { LoadSequence } from "./components/LoadSequence";
 
-const LandingMin1  = lazy(() => import("./pages/LandingMin1"));
+const Landing      = lazy(() => import("./pages/Landing"));
 const Download     = lazy(() => import("./pages/Download"));
 const Activate     = lazy(() => import("./pages/Activate"));
 const RecoverH     = lazy(() => import("./pages/RecoverH"));
@@ -22,9 +22,6 @@ const Beta         = lazy(() => import("./pages/Beta"));
 const Labs         = lazy(() => import("./pages/Labs"));
 const LabsHandbook = lazy(() => import("./pages/LabsHandbook"));
 const LabsApply    = lazy(() => import("./pages/LabsApply"));
-const LandingCompA = lazy(() => import("./pages/LandingCompA"));
-const LandingCompB = lazy(() => import("./pages/LandingCompB"));
-const LandingCompC = lazy(() => import("./pages/LandingCompC"));
 const NotFound     = lazy(() => import("./pages/NotFound"));
 import "./index.css";
 
@@ -59,7 +56,7 @@ function AppRoot() {
       <Cursor />
       <Suspense fallback={<div style={{ minHeight: '100vh' }} />}>
         <Routes>
-          <Route path="/" element={<LandingMin1 />} />
+          <Route path="/" element={<Landing />} />
           <Route path="/download" element={<Download />} />
           <Route path="/activate" element={<Activate />} />
           <Route path="/privacy" element={<Privacy />} />
@@ -79,9 +76,6 @@ function AppRoot() {
           <Route path="/operators" element={<Labs />} />
           <Route path="/labs/handbook" element={<LabsHandbook />} />
           <Route path="/labs/apply"    element={<LabsApply />} />
-          <Route path="/comp-a" element={<LandingCompA />} />
-          <Route path="/comp-b" element={<LandingCompB />} />
-          <Route path="/comp-c" element={<LandingCompC />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Suspense>
