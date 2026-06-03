@@ -19,6 +19,7 @@ pub struct IsoResult {
     pub bytes_written: u64,
     pub good_sectors: u64,
     pub zero_filled_sectors: u64,
+    pub good_read_failed_sectors: u64,
 }
 
 #[tauri::command]
@@ -85,6 +86,7 @@ pub async fn create_iso(
         bytes_written: stats.bytes_written,
         good_sectors: stats.good_sectors,
         zero_filled_sectors: stats.zero_filled_sectors,
+        good_read_failed_sectors: stats.good_read_failed_sectors,
     })
 }
 

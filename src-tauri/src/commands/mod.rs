@@ -2,6 +2,7 @@
 //! commands; the top-level `lib.rs` registers them via `generate_handler!`.
 
 pub mod ai;
+pub mod autoplay;
 pub mod albums;
 pub mod audio;
 pub mod diagnostic;

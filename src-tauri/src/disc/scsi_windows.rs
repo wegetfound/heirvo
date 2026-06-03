@@ -18,6 +18,7 @@ use crate::disc::sector::{
 };
 use std::io;
 use std::os::windows::io::AsRawHandle;
+use std::sync::Arc;
 use std::time::Instant;
 
 /// Page-aligned heap buffer for SCSI DMA transfers.
@@ -78,8 +79,10 @@ impl Drop for AlignedBuffer {
     }
 }
 
+// SAFETY: AlignedBuffer owns heap memory via raw ptr; it is not aliased.
+// Send is sound because we transfer ownership exclusively (pool model).
+// Sync is intentionally NOT implemented — AlignedBuffer is single-owner.
 unsafe impl Send for AlignedBuffer {}
-unsafe impl Sync for AlignedBuffer {}
 
 use windows::core::PCWSTR;
 use windows::Win32::Foundation::{CloseHandle, GENERIC_READ, GENERIC_WRITE, HANDLE};
@@ -200,46 +203,86 @@ fn create_handle(path: &str) -> io::Result<HANDLE> {
     .map_err(|e| io::Error::other(format!("CreateFileW({path}): {e}")))
 }
 
+/// RAII wrapper around a raw Win32 HANDLE that calls `CloseHandle` on drop.
+///
+/// Wrapped in `Arc` so the underlying OS handle stays open as long as any
+/// pool worker still holds a clone.  `reopen()` atomically swaps the Arc in
+/// `DriveHandle::current_handle` — the old Arc (and thus the old OS handle)
+/// lives until the last worker clone drops it.
+struct OwnedHandle(HANDLE);
+
+impl Drop for OwnedHandle {
+    fn drop(&mut self) {
+        if !self.0.is_invalid() {
+            unsafe {
+                let _ = CloseHandle(self.0);
+            }
+        }
+    }
+}
+
+// SAFETY: Win32 HANDLE is a kernel object reference; it is safe to use from
+// any thread, and the OS reference count prevents premature invalidation.
+unsafe impl Send for OwnedHandle {}
+unsafe impl Sync for OwnedHandle {}
+
 /// Open a raw handle to an optical drive. The path should be `\\.\X:` form.
 pub fn open_drive(path: &str) -> io::Result<DriveHandle> {
     let handle = create_handle(path)?;
     Ok(DriveHandle {
-        handle: parking_lot::Mutex::new(handle),
+        current_handle: parking_lot::Mutex::new(Arc::new(OwnedHandle(handle))),
         path: path.to_string(),
     })
 }
 
 pub struct DriveHandle {
-    /// Mutex-protected so we can transparently re-open the handle if Windows
-    /// reports the device disconnected (common with bus-powered USB drives
-    /// that brown out under load).
-    handle: parking_lot::Mutex<HANDLE>,
+    /// `Arc<OwnedHandle>` behind a mutex.
+    ///
+    /// Workers clone the Arc *before* calling the blocking IOCTL; as long as
+    /// a worker holds its clone the underlying OS HANDLE stays open (the Arc
+    /// refcount is > 0).  `reopen()` swaps the `Arc` under the mutex, placing
+    /// a fresh handle into `current_handle`.  The old Arc is then released by
+    /// `reopen()` — if no worker holds a clone it drops (closing the old OS
+    /// handle) immediately; if a worker is mid-IOCTL the old handle stays open
+    /// until the worker finishes and drops its clone.  No use-after-close.
+    current_handle: parking_lot::Mutex<Arc<OwnedHandle>>,
     pub path: String,
 }
 
 impl DriveHandle {
     /// Close the current handle and open a fresh one. Used as a recovery
     /// step when the OS reports the drive vanished mid-IOCTL.
+    ///
+    /// After this call any new `scsi_passthrough` call will use the new handle.
+    /// In-flight workers that already cloned the old Arc continue safely against
+    /// the old OS handle until they finish and drop their clone.
     pub fn reopen(&self) -> io::Result<()> {
-        let mut guard = self.handle.lock();
-        let old = *guard;
-        if !old.is_invalid() {
-            unsafe {
-                let _ = CloseHandle(old);
-            }
-        }
-        let new = create_handle(&self.path)?;
-        *guard = new;
-        drop(guard);
+        let new_raw = create_handle(&self.path)?;
+        let new_arc = Arc::new(OwnedHandle(new_raw));
+        let old_arc = {
+            let mut guard = self.current_handle.lock();
+            std::mem::replace(&mut *guard, new_arc)
+        };
+        // Drop `old_arc` here.  If no worker holds a clone → CloseHandle fires
+        // now.  If a worker holds a clone → CloseHandle fires when that worker
+        // drops its clone.  Either way: no UAF.
+        drop(old_arc);
         // Recovery mode settings don't persist across handle reopens — the drive
         // resets MODE SELECT page 01h to defaults on UNIT ATTENTION. Reapply.
         apply_recovery_mode_settings(self);
         Ok(())
     }
 
-    /// Get the current raw handle for an IOCTL call.
+    /// Snapshot the current Arc so a pool worker can hold it independently.
+    fn snapshot_handle(&self) -> Arc<OwnedHandle> {
+        Arc::clone(&*self.current_handle.lock())
+    }
+
+    /// Get the current raw HANDLE value (for one-shot non-pool callers such as
+    /// `has_media` which use a direct DeviceIoControl — they run on the calling
+    /// thread and complete synchronously before any reopen can occur).
     pub fn current(&self) -> HANDLE {
-        *self.handle.lock()
+        self.current_handle.lock().0
     }
 }
 
@@ -251,30 +294,110 @@ impl AsRawHandle for DriveHandle {
 
 impl Drop for DriveHandle {
     fn drop(&mut self) {
-        let h = *self.handle.lock();
-        if !h.is_invalid() {
-            unsafe {
-                let _ = CloseHandle(h);
-            }
-        }
+        // The Arc in `current_handle` will be dropped here; OwnedHandle::drop
+        // calls CloseHandle when the refcount reaches zero.  If a worker still
+        // holds a clone, the close is deferred until the worker finishes.
+        // Nothing explicit needed — just let the Arc do its job.
     }
 }
 
 unsafe impl Send for DriveHandle {}
 unsafe impl Sync for DriveHandle {}
 
+// ── Bounded worker pool for SCSI IOCTLs ─────────────────────────────────────
+//
+// Problem: the raw `DeviceIoControl` call can block indefinitely when a USB-
+// ATAPI bridge enters a hosed state.  The previous fix spawned an *unbounded*
+// thread per call; on a damaged disc this leaks hundreds of threads until the
+// process hits the OS thread limit.
+//
+// Fix: a module-level pool of exactly POOL_SIZE long-lived worker threads.
+// Jobs are submitted via a bounded sync_channel; timed-out jobs stay *owned*
+// by the pool (the worker eventually completes or doesn't, but no new thread
+// is ever created after startup).  The caller receives a watchdog timeout
+// error and moves on; the worker will eventually free the channel slot when
+// the OS releases the IRP.
+//
+// Pool size: 8 matches the maximum concurrent optical drives Windows supports
+// on typical consumer hardware (one per USB root hub port).  Each thread
+// blocks at most one IRP, so 8 threads bound the worst-case leaked IRP count.
+
+const POOL_SIZE: usize = 8;
+
+type ScsiJob = Box<dyn FnOnce() + Send + 'static>;
+
+struct ScsiWorkerPool {
+    tx: std::sync::Mutex<std::sync::mpsc::SyncSender<ScsiJob>>,
+}
+
+impl ScsiWorkerPool {
+    fn new() -> Self {
+        // Capacity = POOL_SIZE: back-pressure so a flood of timed-out jobs
+        // doesn't queue without bound.  When the channel is full, submit()
+        // returns Err and the caller gets TimedOut immediately.
+        let (tx, rx) = std::sync::mpsc::sync_channel::<ScsiJob>(POOL_SIZE);
+        let rx = std::sync::Arc::new(std::sync::Mutex::new(rx));
+        for _ in 0..POOL_SIZE {
+            let rx2 = std::sync::Arc::clone(&rx);
+            std::thread::spawn(move || {
+                loop {
+                    let job = {
+                        let guard = rx2.lock().unwrap();
+                        match guard.recv() {
+                            Ok(j) => j,
+                            Err(_) => break, // channel closed → pool shutdown
+                        }
+                    };
+                    job();
+                }
+            });
+        }
+        Self { tx: std::sync::Mutex::new(tx) }
+    }
+
+    /// Submit a job.  Returns `Err` if the queue is full (all workers busy
+    /// with hung IOCTLs).
+    fn submit(&self, job: ScsiJob) -> Result<(), ()> {
+        self.tx.lock().unwrap().try_send(job).map_err(|_| ())
+    }
+}
+
+static SCSI_POOL: once_cell::sync::Lazy<ScsiWorkerPool> =
+    once_cell::sync::Lazy::new(ScsiWorkerPool::new);
+
 // Windows error codes that indicate the drive has likely become unresponsive
 // or temporarily disconnected (typical on bus-powered USB DVD drives under
 // power stress). When we see these, a re-open + brief pause often recovers:
 //
-// - 0x80070079 ERROR_SEM_TIMEOUT       — kernel I/O timeout
-// - 0x80070037 ERROR_DEV_NOT_EXIST     — drive vanished mid-IOCTL
-// - 0x8007001F ERROR_GEN_FAILURE       — drive in error state
-// - 0x80070015 ERROR_NOT_READY         — drive spinning up / not ready
+// Win32 decimal / hex:
+//   121  / 0x79  ERROR_SEM_TIMEOUT           — kernel I/O timeout
+//    55  / 0x37  ERROR_DEV_NOT_EXIST         — drive vanished mid-IOCTL
+//    31  / 0x1F  ERROR_GEN_FAILURE           — drive in error state
+//    21  / 0x15  ERROR_NOT_READY             — drive spinning up / not ready
+//  1112  / 0x458 ERROR_NO_MEDIA_IN_DRIVE     — media ejected under load
+//  1167  / 0x48F ERROR_DEVICE_NOT_CONNECTED  — USB bus-power loss
 
 fn is_drive_disconnect_error(e: &io::Error) -> bool {
+    // Primary path: compare against the raw Win32 error code.
+    // `raw_os_error()` returns the Win32 error (not the HRESULT), so
+    // ERROR_SEM_TIMEOUT is 121 (not 0x80070079).  This works regardless of
+    // Windows locale / error message formatting.
+    if let Some(code) = e.raw_os_error() {
+        return matches!(
+            code,
+            121    // ERROR_SEM_TIMEOUT
+            | 55   // ERROR_DEV_NOT_EXIST
+            | 31   // ERROR_GEN_FAILURE
+            | 21   // ERROR_NOT_READY
+            | 1112 // ERROR_NO_MEDIA_IN_DRIVE
+            | 1167 // ERROR_DEVICE_NOT_CONNECTED
+        );
+    }
+    // Fallback for errors constructed without a raw OS code (e.g. wrapped via
+    // io::Error::other).  Match on the HRESULT hex strings the windows crate
+    // previously embedded in the message.
     let s = e.to_string();
-    s.contains("0x80070079")  // ERROR_SEM_TIMEOUT
+    s.contains("0x80070079")  // ERROR_SEM_TIMEOUT   (HRESULT form)
         || s.contains("0x80070037")  // ERROR_DEV_NOT_EXIST
         || s.contains("0x8007001F")  // ERROR_GEN_FAILURE
         || s.contains("0x80070015")  // ERROR_NOT_READY
@@ -283,8 +406,10 @@ fn is_drive_disconnect_error(e: &io::Error) -> bool {
 /// Check whether the drive currently has readable media inserted.
 /// Returns `true` for "media present", `false` otherwise. Never spins the drive.
 pub fn has_media(drive: &DriveHandle) -> bool {
+    // Fast path: CHECK_VERIFY through the Windows storage stack (no SCSI bridge,
+    // never hangs). Success means a disc is present AND ready.
     let mut bytes_returned: u32 = 0;
-    let result = unsafe {
+    let ready = unsafe {
         DeviceIoControl(
             drive.current(),
             IOCTL_STORAGE_CHECK_VERIFY,
@@ -295,8 +420,34 @@ pub fn has_media(drive: &DriveHandle) -> bool {
             Some(&mut bytes_returned),
             None,
         )
-    };
-    result.is_ok()
+    }
+    .is_ok();
+    if ready {
+        return true;
+    }
+
+    // CHECK_VERIFY failed. Crucially, this happens in TWO different situations:
+    //   1. the disc is genuinely absent (ejected), and
+    //   2. the drive spun DOWN while idle and is now spinning back up — it
+    //      reports "NOT READY / becoming ready" for several seconds.
+    // Treating case 2 as "no disc" made the UI tear down and re-identify the
+    // disc on a ~60-90s loop (every idle/spin-up cycle). Ask the drive directly
+    // with TEST UNIT READY and read the sense data, so we only report the disc
+    // as gone on an explicit MEDIUM NOT PRESENT.
+    let cdb = [0u8; 6]; // TEST UNIT READY (opcode 0x00)
+    let mut empty: [u8; 0] = [];
+    match scsi_passthrough(drive, &cdb, &mut empty, SCSI_IOCTL_DATA_IN, 2) {
+        // GOOD status → ready, media present.
+        Ok((0, _)) => true,
+        // Check condition — decode fixed-format sense (byte 2 low nibble = sense
+        // key, byte 12 = ASC). NOT READY (0x02) + ASC 0x3A = MEDIUM NOT PRESENT
+        // is the only "no disc" verdict; becoming-ready (0x04), unit attention,
+        // etc. all mean the disc IS there, just not ready this instant.
+        Ok((_, sense)) => !((sense[2] & 0x0F) == 0x02 && sense[12] == 0x3A),
+        // Couldn't reach the drive (timeout / vanished). Report no media this
+        // tick; the watcher's hysteresis absorbs a one-off blip.
+        Err(_) => false,
+    }
 }
 
 /// Raw SCSI pass-through — issues `IOCTL_SCSI_PASS_THROUGH_DIRECT` and blocks
@@ -364,17 +515,16 @@ fn scsi_passthrough_raw(
 /// respond, and `DeviceIoControl` blocks the caller indefinitely. We've
 /// observed real waits of tens of minutes on a single dead sector.
 ///
-/// This wrapper spawns a worker thread to run the raw IOCTL, then waits at
-/// most `watchdog_secs` (≈ drive timeout + 2s) for a result via a channel.
-/// On timeout we return `ErrorKind::TimedOut`, the engine marks the block
-/// failed, skip-ahead jumps past the damaged region, and the scan keeps
-/// progressing. The orphaned worker thread eventually completes (or doesn't)
-/// when the OS gives up on the IRP — we don't care, because we've already
-/// moved on.
+/// ## Thread-pool design (P0 fix)
 ///
-/// Trade-off: each call costs one thread spawn + one channel send/recv,
-/// roughly 100–200 µs of overhead. Negligible compared to even a healthy
-/// optical read (~10 ms minimum), and the alternative is infinite blocking.
+/// Jobs are dispatched to the module-level `SCSI_POOL` (8 fixed threads).
+/// If all threads are occupied by hung IOCTLs the submit fails immediately
+/// and the caller gets `TimedOut` — no new thread is ever leaked.
+///
+/// The `HANDLE` is shared via `Arc<Mutex<HANDLE>>` cloned from the
+/// `DriveHandle`.  The worker holds its own Arc clone for the lifetime of the
+/// IOCTL, so `reopen()` can swap the inner HANDLE without racing against an
+/// in-flight IRP.
 fn scsi_passthrough(
     drive: &DriveHandle,
     cdb: &[u8],
@@ -382,10 +532,10 @@ fn scsi_passthrough(
     direction: u8,
     timeout_secs: u32,
 ) -> io::Result<(u8, [u8; 32])> {
-    // Windows kernel handles are thread-agnostic, but `HANDLE` wraps a raw
-    // pointer so it's not auto-`Send`. Round-trip through `usize` for the
-    // ride across to the watchdog worker thread.
-    let handle_raw: usize = drive.current().0 as usize;
+    // Clone the Arc *before* submitting to the pool.  The worker captures the
+    // Arc — the underlying OS HANDLE stays open for the entire IOCTL duration,
+    // even if `reopen()` swaps the DriveHandle's current handle in parallel.
+    let handle_arc = drive.snapshot_handle();
     let cdb_owned: Vec<u8> = cdb.to_vec();
     let buf_len = data_buf.len();
 
@@ -403,12 +553,39 @@ fn scsi_passthrough(
     let watchdog_secs = (timeout_secs as u64 + 2).clamp(5, 30);
 
     let (tx, rx) = std::sync::mpsc::sync_channel::<io::Result<(u8, [u8; 32], AlignedBuffer)>>(1);
-    std::thread::spawn(move || {
-        let handle = HANDLE(handle_raw as *mut std::ffi::c_void);
+
+    // Keep a caller-side clone of the SAME OS handle the worker will block on,
+    // so the watchdog can CancelIoEx it on timeout (see below).
+    let cancel_arc = std::sync::Arc::clone(&handle_arc);
+
+    // Submit to the bounded pool.  The closure captures the Arc clone; if the
+    // pool queue is full all workers are stuck on hung IOCTLs and we must not
+    // add more work — return timeout immediately.
+    let job: ScsiJob = Box::new(move || {
+        // Read the HANDLE value from the Arc.  The Arc keeps the OS handle
+        // alive for the entire blocking call below.
+        let handle = handle_arc.0;
         let mut buf = worker_buf;
         let outcome = scsi_passthrough_raw(handle, &cdb_owned, buf.as_mut_slice(), direction, timeout_secs);
         let _ = tx.send(outcome.map(|(s, sense)| (s, sense, buf)));
+        // `handle_arc` (Arc<OwnedHandle>) drops here; if this was the last
+        // clone, CloseHandle fires now (but only if reopen already replaced it).
     });
+
+    if SCSI_POOL.submit(job).is_err() {
+        tracing::warn!(
+            "SCSI pool queue full ({} workers); backing off before timeout",
+            POOL_SIZE
+        );
+        // Brief back-off so a transiently-full pool doesn't make the engine
+        // hot-loop on immediate timeouts (which burns a CPU core for nothing).
+        // With CancelIoEx now freeing stuck workers, saturation is short-lived.
+        std::thread::sleep(std::time::Duration::from_millis(200));
+        return Err(io::Error::new(
+            io::ErrorKind::TimedOut,
+            "SCSI worker pool exhausted — all workers busy with hung IOCTLs",
+        ));
+    }
 
     match rx.recv_timeout(std::time::Duration::from_secs(watchdog_secs)) {
         Ok(Ok((status, sense, buf))) => {
@@ -419,8 +596,20 @@ fn scsi_passthrough(
         }
         Ok(Err(e)) => Err(e),
         Err(_) => {
+            // Abort the worker's stuck kernel IRP. On a truly hung USB-ATAPI
+            // bridge the IRP would otherwise NEVER complete, so the worker would
+            // never return and its pool slot would be lost forever — after
+            // POOL_SIZE such hangs the whole pool deadlocks. CancelIoEx tells the
+            // kernel to abort outstanding I/O on this handle, so the worker's
+            // DeviceIoControl returns (ERROR_OPERATION_ABORTED), it frees its slot,
+            // and recovery keeps moving. NULL overlapped = cancel all I/O on the
+            // handle (all stuck reads on this drive at once).
+            unsafe {
+                use windows::Win32::System::IO::CancelIoEx;
+                let _ = CancelIoEx(cancel_arc.0, None);
+            }
             tracing::warn!(
-                "SCSI watchdog tripped after {}s; declaring failure and orphaning worker thread (kernel IRP will finish on its own)",
+                "SCSI watchdog tripped after {}s; CancelIoEx issued to abort the stuck IRP and free the pool worker",
                 watchdog_secs
             );
             Err(io::Error::new(
@@ -682,13 +871,20 @@ fn read_disc_information(drive: &DriveHandle) -> Option<DiscInformationRaw> {
 
 /// Issue READ TOC Format=0x01 (Session Info) and parse per-session entries.
 ///
-/// Each 11-byte descriptor contains the session number, first/last track in that
-/// session, and the lead-in LBA (first physical sector of the session track area).
-/// This is the only command that reveals hidden sessions on multi-session CD-Rs.
+/// Per MMC-6 §6.27.3.3, Format=01h Session Info descriptors are **8 bytes**:
+///
+///   byte 0 — Session Number
+///   byte 1 — ADR | Control
+///   byte 2 — First Track Number (in this session)
+///   byte 3 — Last Track Number (in this session)
+///   bytes 4..8 — Lead-In Start Address (LBA, big-endian u32)
+///
+/// The response header is 4 bytes (Data Length MSB, LSB, First Session, Last Session).
+/// Total allocation = 4 + (100 sessions × 8 bytes).
 fn read_session_toc(drive: &DriveHandle) -> Option<Vec<crate::disc::drive::TocSession>> {
     // Format=0x01 → "Session Info". Allocation: 4-byte header + up to 100
-    // sessions × 11 bytes each. Practical discs have ≤ 5 sessions.
-    let alloc: u16 = 4 + 100 * 11;
+    // sessions × 8 bytes each (MMC-6 §6.27.3.3). Practical discs have ≤ 5 sessions.
+    let alloc: u16 = 4 + 100 * 8;
     let cdb: [u8; 10] = [
         SCSI_OP_READ_TOC,
         0x00,                          // MSF=0 → LBA addressing
@@ -712,17 +908,19 @@ fn read_session_toc(drive: &DriveHandle) -> Option<Vec<crate::disc::drive::TocSe
     if total < 4 || total > buf.len() {
         return None;
     }
-    // Session descriptors start at byte 4; each is 11 bytes.
+    // Session descriptors start at byte 4; each is 8 bytes (MMC-6 §6.27.3.3).
     let descriptors = &buf[4..total.min(buf.len())];
     let mut sessions = Vec::new();
-    for chunk in descriptors.chunks_exact(11) {
-        let session_num = chunk[3];
-        let first_track = chunk[4];
-        let control = chunk[5];
-        let last_track = chunk[6];
-        // Bytes 7..11 = lead-in LBA (BE u32).
-        let lead_in = u32::from_be_bytes([chunk[7], chunk[8], chunk[9], chunk[10]]);
-        let _ = control; // ADR/control nibbles — not needed for routing
+    for chunk in descriptors.chunks_exact(8) {
+        // byte 0 = Session Number
+        let session_num = chunk[0];
+        // byte 1 = ADR | Control (not needed for routing, discard)
+        // byte 2 = First Track Number in this session
+        let first_track = chunk[2];
+        // byte 3 = Last Track Number in this session
+        let last_track = chunk[3];
+        // bytes 4..8 = Lead-In Start LBA (big-endian u32)
+        let lead_in = u32::from_be_bytes([chunk[4], chunk[5], chunk[6], chunk[7]]);
         sessions.push(crate::disc::drive::TocSession {
             session_number: session_num,
             first_track,
@@ -1076,47 +1274,159 @@ fn inquiry(drive: &DriveHandle) -> io::Result<(String, String, String)> {
     Ok((trim(&buf[8..16]), trim(&buf[16..32]), trim(&buf[32..36])))
 }
 
-/// Enumerate available optical drives by probing every drive letter A:..Z:
-/// and checking which ones respond to INQUIRY.
+/// Lightweight drive state: just the path, letter, and media-present flag.
+/// No SCSI INQUIRY is issued — only `GetDriveTypeW` and
+/// `IOCTL_STORAGE_CHECK_VERIFY` (which does not touch the SCSI bus).
+/// Used by the drive watcher to do cheap per-tick polling.
+pub struct OpticalDriveState {
+    /// Win32 device path (`\\\\.\\D:`).
+    pub path: String,
+    /// Drive letter (`D:`).
+    pub letter: String,
+    /// True if media is currently inserted.
+    pub has_media: bool,
+}
+
+/// Enumerate optical drives cheaply — no SCSI INQUIRY, no bus traffic.
+///
+/// For each drive letter identified as `DRIVE_CDROM` by `GetDriveTypeW` we
+/// open a raw handle and call `IOCTL_STORAGE_CHECK_VERIFY` to test media
+/// presence. That IOCTL goes through the Windows storage stack (not the SCSI
+/// pass-through bridge), so it completes in microseconds and never stalls on
+/// an idle USB-ATAPI chip.
+///
+/// Callers that need vendor/model/firmware should call `inquiry_single_drive`
+/// on the returned paths (once, when the drive first appears).
+pub fn enumerate_optical_drive_states() -> io::Result<Vec<OpticalDriveState>> {
+    use windows::Win32::Storage::FileSystem::GetDriveTypeW;
+    const DRIVE_CDROM: u32 = 5;
+
+    let mut states = Vec::new();
+    for letter in b'A'..=b'Z' {
+        let letter_str = format!("{}:", letter as char);
+        let root = format!("{}\\", letter_str);
+        let wide: Vec<u16> = root.encode_utf16().chain(std::iter::once(0)).collect();
+        let drive_type = unsafe { GetDriveTypeW(PCWSTR(wide.as_ptr())) };
+        if drive_type != DRIVE_CDROM {
+            continue;
+        }
+        let path = format!("\\\\.\\{}", letter_str);
+        let media = match open_drive(&path) {
+            Ok(d) => has_media(&d),
+            Err(_) => false,
+        };
+        states.push(OpticalDriveState { path, letter: letter_str, has_media: media });
+    }
+    Ok(states)
+}
+
+/// Issue SCSI INQUIRY for a single drive and return `(vendor, model, firmware)`.
+///
+/// Uses a 3-second watchdog — same as the per-drive INQUIRY inside
+/// `enumerate_optical_drives`. Returns stub strings on timeout or failure so
+/// the drive is still usable.
+pub fn inquiry_single_drive(path: &str) -> (String, String, String) {
+    match open_drive(path) {
+        Ok(drive) => {
+            let cdb = [SCSI_OP_INQUIRY, 0, 0, 0, 96, 0, 0, 0, 0, 0];
+            let mut buf = [0u8; 96];
+            match scsi_passthrough(&drive, &cdb, &mut buf, SCSI_IOCTL_DATA_IN, 3) {
+                Ok((0, _)) if (buf[0] & 0x1F) == 0x05 => {
+                    let trim = |b: &[u8]| String::from_utf8_lossy(b).trim().to_string();
+                    (trim(&buf[8..16]), trim(&buf[16..32]), trim(&buf[32..36]))
+                }
+                _ => {
+                    tracing::debug!(
+                        "INQUIRY timed out or rejected for {path} — using stub strings"
+                    );
+                    ("Unknown".into(), "Unknown".into(), "Unknown".into())
+                }
+            }
+        }
+        Err(e) => {
+            tracing::debug!("Could not open {path} for INQUIRY: {e}");
+            ("Unknown".into(), "Unknown".into(), "Unknown".into())
+        }
+    }
+}
+
+/// Enumerate available optical drives by probing every drive letter A:..Z:.
+///
+/// Two-phase detection to avoid stalling on idle USB-ATAPI bridges:
+///
+/// 1. `GetDriveTypeW` — pure Win32 filesystem API, zero SCSI traffic.
+///    Returns `DRIVE_CDROM` (5) only for optical drives. This never touches
+///    the USB-ATAPI bridge at all, so it cannot hang even when the drive
+///    is idle or the bridge chip is asleep.
+///
+/// 2. INQUIRY via SCSI pass-through — called only for confirmed optical drives,
+///    with a short (3 s) watchdog. If INQUIRY times out or is rejected the
+///    drive is still added to the list using stub vendor/model strings; the
+///    user can see it and the next poll that succeeds will fill in the names.
+///
+/// The previous implementation called INQUIRY on every drive letter without a
+/// pre-filter, causing the watcher to block for 7 s on every poll cycle when
+/// the TSSTcorp SH-224DB bridge entered idle state with no disc inserted.
 pub fn enumerate_optical_drives() -> io::Result<Vec<DriveInfo>> {
+    use windows::Win32::Storage::FileSystem::GetDriveTypeW;
+    // DRIVE_CDROM = 5
+    const DRIVE_CDROM: u32 = 5;
+
     let mut drives = Vec::new();
     for letter in b'A'..=b'Z' {
         let letter_str = format!("{}:", letter as char);
+
+        // ── Phase 1: cheap OS-level check — is this an optical drive?
+        let root = format!("{}\\", letter_str);
+        let wide: Vec<u16> = root.encode_utf16().chain(std::iter::once(0)).collect();
+        let drive_type = unsafe { GetDriveTypeW(PCWSTR(wide.as_ptr())) };
+        if drive_type != DRIVE_CDROM {
+            continue;
+        }
+
+        // ── Phase 2: open a raw handle for SCSI commands.
         let path = format!("\\\\.\\{}", letter_str);
         let drive = match open_drive(&path) {
             Ok(d) => d,
             Err(_) => continue,
         };
 
-        // Try INQUIRY — only optical drives will succeed with peripheral type 0x05.
-        let cdb = [SCSI_OP_INQUIRY, 0, 0, 0, 96, 0, 0, 0, 0, 0];
-        let mut buf = [0u8; 96];
-        match scsi_passthrough(&drive, &cdb, &mut buf, SCSI_IOCTL_DATA_IN, 5) {
-            Ok((0, _)) => {
-                // Peripheral device type is in low 5 bits of byte 0.
-                // 0x05 = CD/DVD-ROM device.
-                if (buf[0] & 0x1F) != 0x05 {
-                    continue;
+        // ── Media presence check — goes through Windows storage stack, not SCSI bridge.
+        let has_media_flag = has_media(&drive);
+
+        // ── INQUIRY — best-effort, 3 s watchdog. If the bridge is idle this may
+        // time out; we still add the drive so the user can see it.
+        let (vendor, model, firmware) = {
+            let cdb = [SCSI_OP_INQUIRY, 0, 0, 0, 96, 0, 0, 0, 0, 0];
+            let mut buf = [0u8; 96];
+            match scsi_passthrough(&drive, &cdb, &mut buf, SCSI_IOCTL_DATA_IN, 3) {
+                Ok((0, _)) if (buf[0] & 0x1F) == 0x05 => {
+                    let trim = |b: &[u8]| String::from_utf8_lossy(b).trim().to_string();
+                    (trim(&buf[8..16]), trim(&buf[16..32]), trim(&buf[32..36]))
                 }
-                let (vendor, model, firmware) = inquiry(&drive).unwrap_or_default();
-                let has_media_flag = has_media(&drive);
-                drives.push(DriveInfo {
-                    path,
-                    letter: letter_str,
-                    vendor,
-                    model,
-                    firmware,
-                    capabilities: DriveCapabilities {
-                        reads_dvd: true,
-                        reads_cd: true,
-                        reads_bluray: false,
-                        supports_speed_control: true,
-                    },
-                    has_media: has_media_flag,
-                });
+                _ => {
+                    tracing::debug!(
+                        "INQUIRY skipped or timed out for {letter_str} — using stub strings"
+                    );
+                    ("Unknown".into(), "Unknown".into(), "Unknown".into())
+                }
             }
-            _ => continue,
-        }
+        };
+
+        drives.push(DriveInfo {
+            path,
+            letter: letter_str,
+            vendor,
+            model,
+            firmware,
+            capabilities: DriveCapabilities {
+                reads_dvd: true,
+                reads_cd: true,
+                reads_bluray: false,
+                supports_speed_control: true,
+            },
+            has_media: has_media_flag,
+        });
     }
     Ok(drives)
 }

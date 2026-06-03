@@ -12,8 +12,79 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/cn";
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Grouping helpers
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Stable key for a disc — fingerprint when available, label as fallback. */
+function discKey(s: Session): string {
+  return s.disc_fingerprint ? `fp:${s.disc_fingerprint}` : `lbl:${s.disc_label}`;
+}
+
+/**
+ * Status rank — higher = more advanced/useful. Used to pick the representative
+ * session from a group: prefer completed, then in-progress, then newest.
+ */
+const STATUS_RANK: Record<SessionStatus, number> = {
+  completed: 6,
+  recovering: 5,
+  scanning: 4,
+  paused: 3,
+  failed: 2,
+  cancelled: 1,
+  created: 0,
+};
+
+interface DiscGroup {
+  key: string;
+  /** The session shown as the primary row. */
+  primary: Session;
+  /** All sessions in the group, including primary. */
+  all: Session[];
+}
+
+function groupSessions(sessions: Session[]): DiscGroup[] {
+  const map = new Map<string, Session[]>();
+  for (const s of sessions) {
+    const k = discKey(s);
+    const arr = map.get(k) ?? [];
+    arr.push(s);
+    map.set(k, arr);
+  }
+
+  const groups: DiscGroup[] = [];
+  for (const [key, arr] of map) {
+    // Sort: highest rank first, then newest created_at first.
+    const sorted = [...arr].sort((a, b) => {
+      const rankDiff = STATUS_RANK[b.status] - STATUS_RANK[a.status];
+      if (rankDiff !== 0) return rankDiff;
+      return b.created_at - a.created_at;
+    });
+    groups.push({ key, primary: sorted[0], all: sorted });
+  }
+
+  // Sort groups by the primary session's updated_at (most recent first).
+  groups.sort((a, b) => b.primary.updated_at - a.primary.updated_at);
+  return groups;
+}
+
+/**
+ * Sessions eligible for "Clear empty attempts" pruning:
+ * - status === "created" (never actually started)
+ * - NOT the only/primary session for their disc group
+ * - NOT a completed or in-progress session
+ */
+function prunableSessions(sessions: Session[]): Session[] {
+  const groups = groupSessions(sessions);
+  const primaryIds = new Set(groups.map((g) => g.primary.id));
+  return sessions.filter(
+    (s) => s.status === "created" && !primaryIds.has(s.id),
+  );
+}
+
 export function SessionHistory() {
   const [sessions, setSessions] = useState<Session[]>([]);
+  const [pruning, setPruning] = useState(false);
 
   const refresh = async () => setSessions(await ipc.listSessions());
 
@@ -23,29 +94,63 @@ export function SessionHistory() {
     return () => clearInterval(t);
   }, []);
 
+  const prunable = prunableSessions(sessions);
+  const groups = groupSessions(sessions);
+
+  const clearEmptyAttempts = async () => {
+    if (pruning) return;
+    if (
+      !confirm(
+        `Remove ${prunable.length} abandoned attempt${prunable.length === 1 ? "" : "s"} that were never started? Completed and in-progress sessions are not affected.`,
+      )
+    )
+      return;
+    setPruning(true);
+    try {
+      await Promise.all(prunable.map((s) => ipc.deleteSession(s.id)));
+      await refresh();
+    } finally {
+      setPruning(false);
+    }
+  };
+
   return (
     <div className="mx-auto max-w-4xl px-10 py-6">
       <header className="mb-5">
         <span className="eyebrow">Your archive</span>
         <h1 className="mt-1.5 font-display text-[24px] font-semibold tracking-[-0.025em] text-ink-900">
-          Sessions
+          My Discs
         </h1>
-        <p className="mt-1 text-[13px] text-ink-500">
-          Every disc you've rescued, in the order you rescued them.
-        </p>
+        <div className="mt-1 flex items-center justify-between gap-4">
+          <p className="text-[13px] text-ink-500">
+            Every disc you've rescued, in the order you rescued them.
+          </p>
+          {prunable.length > 0 && (
+            <button
+              type="button"
+              onClick={clearEmptyAttempts}
+              disabled={pruning}
+              className="shrink-0 text-[12px] text-ink-400 underline underline-offset-2 transition hover:text-ink-600 disabled:opacity-50"
+            >
+              {pruning ? "Clearing…" : `Clear ${prunable.length} empty attempt${prunable.length === 1 ? "" : "s"}`}
+            </button>
+          )}
+        </div>
       </header>
 
-      {sessions.length === 0 ? (
+      {groups.length === 0 ? (
         <EmptyState />
       ) : (
         <ul className="divide-y divide-ink-200/70 border-y border-ink-200/70">
-          {sessions.map((s) => (
+          {groups.map((g) => (
             <SessionRow
-              key={s.id}
-              session={s}
+              key={g.key}
+              session={g.primary}
+              attemptCount={g.all.length}
               onDelete={async () => {
-                if (!confirm(`Delete session "${s.user_label ?? s.disc_label}"?`)) return;
-                await ipc.deleteSession(s.id);
+                const label = g.primary.user_label ?? g.primary.disc_label;
+                if (!confirm(`Delete "${label}"?`)) return;
+                await ipc.deleteSession(g.primary.id);
                 refresh();
               }}
               onRenamed={refresh}
@@ -104,10 +209,13 @@ function EmptyMark() {
 
 function SessionRow({
   session: s,
+  attemptCount = 1,
   onDelete,
   onRenamed,
 }: {
   session: Session;
+  /** Total number of sessions for this disc (including the primary). */
+  attemptCount?: number;
   onDelete: () => void;
   onRenamed: () => void;
 }) {
@@ -195,6 +303,11 @@ function SessionRow({
           {dateText}
         </div>
         <div className="text-[11px] tabular-nums text-ink-400">{timeText}</div>
+        {attemptCount > 1 && (
+          <div className="mt-0.5 text-[10px] text-ink-400">
+            · {attemptCount} attempts
+          </div>
+        )}
       </div>
 
       <div className="min-w-0 flex-1">

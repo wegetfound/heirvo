@@ -10,6 +10,8 @@
 //! - `commands` — Tauri IPC command handlers
 
 pub mod ai;
+pub mod autoplay;
+pub mod autoplay_handler;
 pub mod commands;
 pub mod disc;
 pub mod dvd;
@@ -24,6 +26,15 @@ pub mod transcription;
 pub mod util;
 
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
+
+/// Pull a disc drive path (e.g. `E:\`) out of a process argument list. AutoPlay
+/// launches us as `heirvo.exe "E:\"`, so we look for a `X:`-shaped argument.
+fn extract_disc_path(args: Vec<String>) -> Option<String> {
+    args.into_iter().find(|a| {
+        let b = a.as_bytes();
+        b.len() >= 2 && b[0].is_ascii_alphabetic() && b[1] == b':'
+    })
+}
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -61,7 +72,23 @@ pub fn run() {
 
     tracing::info!("Heirvo starting up — log file at {}", log_path.display());
 
+    // Cold launch via AutoPlay runs `heirvo.exe "E:\"` — stash that disc path so
+    // the UI can route straight into the rescue flow once it mounts.
+    autoplay_handler::set_pending_disc(extract_disc_path(std::env::args().skip(1).collect()));
+
     let builder = tauri::Builder::default()
+        // Single-instance MUST be registered first. When AutoPlay launches a
+        // second instance (disc inserted while Heirvo is already open), focus the
+        // existing window and forward the disc path instead of opening a duplicate.
+        .plugin(tauri_plugin_single_instance::init(|app, argv, _cwd| {
+            if let Some(win) = tauri::Manager::get_webview_window(app, "main") {
+                let _ = win.unminimize();
+                let _ = win.set_focus();
+            }
+            let path = extract_disc_path(argv.into_iter().skip(1).collect());
+            autoplay_handler::set_pending_disc(path.clone());
+            let _ = tauri::Emitter::emit(app, "autoplay:open-disc", serde_json::json!({ "path": path }));
+        }))
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_opener::init());
@@ -82,6 +109,13 @@ pub fn run() {
                 }
                 Ok(())
             })?;
+
+            // Stop Windows AutoPlay from popping a disc-player prompt over Heirvo
+            // when the user inserts a disc to recover. No-op if the window or the
+            // platform hook is unavailable.
+            if let Some(win) = tauri::Manager::get_webview_window(app, "main") {
+                autoplay::install(&win);
+            }
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -168,6 +202,9 @@ pub fn run() {
             commands::transcription::retry_transcription,
             commands::transcription::get_whisper_model_info,
             commands::transcription::set_whisper_model,
+            commands::autoplay::autoplay_get_enabled,
+            commands::autoplay::autoplay_set_enabled,
+            commands::autoplay::get_pending_disc,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

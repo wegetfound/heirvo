@@ -25,16 +25,30 @@ pub async fn create_session(
     state: State<'_, AppState>,
     args: CreateSessionArgs,
 ) -> AppResult<Session> {
+    // Hard guard: strip NUL/control chars from the label and output path before
+    // they're stored. A Joliet (UCS-2) disc label carries invisible NUL bytes,
+    // and any path containing a NUL makes every later filesystem call fail with
+    // "strings passed to WinAPI cannot contain NULs" — which would silently
+    // poison the whole session. This is the single choke point that guarantees a
+    // session can always be saved, regardless of what the frontend sent.
+    let disc_label = strip_control_chars(&args.disc_label);
+    let output_dir = strip_control_chars(&args.output_dir);
     manager::create(
         &state.db,
-        &args.disc_label,
+        &disc_label,
         &args.disc_fingerprint,
         &args.drive_path,
         args.total_sectors,
-        &args.output_dir,
+        &output_dir,
         args.disc_type.as_deref(),
     )
     .await
+}
+
+/// Remove NUL and other ASCII control characters from a string (keeps the path
+/// separators and printable text intact).
+fn strip_control_chars(s: &str) -> String {
+    s.chars().filter(|&c| c >= ' ' || c == '\t').collect()
 }
 
 #[tauri::command]

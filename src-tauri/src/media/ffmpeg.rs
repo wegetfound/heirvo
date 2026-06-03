@@ -72,11 +72,34 @@ pub fn locate(app: &AppHandle, binary: &str) -> Option<PathBuf> {
             return Some(p);
         }
     }
-    // 3. System PATH.
+    // 3. System PATH — but only TRUSTED directories. On Windows, %PATH% (and the
+    //    implicit current directory) frequently includes user-writable locations;
+    //    executing the first `ffmpeg.exe` found there is an arbitrary-code-execution
+    //    risk (an attacker drops a malicious ffmpeg.exe in Temp/Downloads/CWD).
+    //    We skip empty entries (current dir), relative paths, and anything inside
+    //    the temp directory.
     if let Ok(path_var) = std::env::var("PATH") {
         let sep = if cfg!(windows) { ';' } else { ':' };
+        let temp = std::env::temp_dir();
         for entry in path_var.split(sep) {
-            let p = Path::new(entry).join(binary);
+            if entry.is_empty() {
+                continue; // empty PATH entry resolves to the current directory
+            }
+            let dir = Path::new(entry);
+            if dir.is_relative() {
+                continue; // relative PATH entries are attacker-controllable
+            }
+            // Skip the temp tree (and its canonical form) — a classic plant site.
+            if dir.starts_with(&temp)
+                || dir
+                    .canonicalize()
+                    .ok()
+                    .zip(temp.canonicalize().ok())
+                    .is_some_and(|(d, t)| d.starts_with(t))
+            {
+                continue;
+            }
+            let p = dir.join(binary);
             if p.exists() {
                 return Some(p);
             }

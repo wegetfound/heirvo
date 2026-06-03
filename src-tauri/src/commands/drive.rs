@@ -63,13 +63,38 @@ pub async fn check_disc(drive_path: String) -> AppResult<Option<DiscInfo>> {
             let reader = match ScsiSectorReader::open(&drive_path) {
                 Ok(r) => r,
                 Err(e) => {
-                    tracing::warn!("Failed to open drive {drive_path}: {e}");
+                    tracing::warn!("check_disc: failed to OPEN drive {drive_path}: {e}");
                     return Ok(None);
                 }
             };
+            tracing::info!("check_disc: drive opened, reading PVD (sector 16)…");
 
             // Read sector 16 = ISO 9660 primary volume descriptor.
-            let result = reader.read_sector(16, ReadOptions::default());
+            // An optical drive that has been idle spins DOWN, and the first read
+            // after that returns nothing while it spins back up ("becoming
+            // ready"). Identifying the disc the instant media is detected can
+            // therefore land in that spin-up window and wrongly look "unreadable".
+            // Retry the PVD read a few times with a short delay so a perfectly
+            // good disc gets the second or two it needs to come ready.
+            let mut result = reader.read_sector(16, ReadOptions::default());
+            let mut spinups = 0;
+            while result.data.is_none() && spinups < 6 {
+                tracing::info!(
+                    "check_disc: PVD read attempt {} returned no data (error: {:?}); retrying after spin-up delay",
+                    spinups + 1,
+                    result.error
+                );
+                std::thread::sleep(std::time::Duration::from_millis(800));
+                result = reader.read_sector(16, ReadOptions::default());
+                spinups += 1;
+            }
+            tracing::info!(
+                "check_disc: PVD read done after {} retr{} — data: {} bytes, error: {:?}",
+                spinups,
+                if spinups == 1 { "y" } else { "ies" },
+                result.data.as_ref().map(|d| d.len()).unwrap_or(0),
+                result.error
+            );
             let total_capacity = reader.capacity();
             let has_iso_pvd = result
                 .data

@@ -11,6 +11,8 @@
 use crate::error::{AppError, AppResult};
 use crate::media::ffmpeg_install::{InstallProgress, InstallStage};
 use futures_util::StreamExt;
+use sha2::{Digest, Sha256};
+use std::io::Write;
 use std::path::Path;
 use std::sync::Arc;
 use tauri::{AppHandle, Emitter, Manager};
@@ -18,6 +20,14 @@ use tauri::{AppHandle, Emitter, Manager};
 /// GitHub Releases API — resolve the latest portable-Q16-x64.7z asset.
 const IM_GH_API_LATEST: &str =
     "https://api.github.com/repos/ImageMagick/ImageMagick/releases/latest";
+
+/// SHA-256 of the ImageMagick portable-Q16-x64.7z artifact.
+///
+/// TODO(release): pin the real published hash before shipping.
+/// GitHub Releases publishes a `.sha256` sidecar for each asset; compute it
+/// via `sha256sum ImageMagick-*-portable-Q16-x64.7z` after a trusted download.
+/// Set to `Some("abcdef…64-hex-chars…")` — the check is enforced at that point.
+const IM_EXPECTED_SHA256: Option<&str> = None;
 
 pub async fn install(app: AppHandle) -> AppResult<String> {
     let data_dir = app
@@ -97,14 +107,23 @@ pub async fn install(app: AppHandle) -> AppResult<String> {
 
     let total = resp.content_length().unwrap_or(0);
     let mut downloaded: u64 = 0;
-    let mut buf: Vec<u8> = Vec::with_capacity(total as usize);
-    let mut stream = resp.bytes_stream();
+    let mut hasher = Sha256::new();
 
+    // Stream to a `.partial` temp file — avoids holding the full archive in RAM.
+    let partial_path = target_dir.join("imagemagick-portable-Q16-x64.7z.partial");
+    let mut partial_file = std::fs::File::create(&partial_path)
+        .map_err(|e| AppError::Media(format!("create partial: {e}")))?;
+
+    let mut stream = resp.bytes_stream();
     let mut next_emit = std::time::Instant::now();
+
     while let Some(chunk) = stream.next().await {
         let chunk = chunk.map_err(|e| AppError::Media(format!("download chunk: {e}")))?;
         downloaded += chunk.len() as u64;
-        buf.extend_from_slice(&chunk);
+        partial_file
+            .write_all(&chunk)
+            .map_err(|e| AppError::Media(format!("write partial: {e}")))?;
+        hasher.update(&chunk);
 
         if next_emit.elapsed() >= std::time::Duration::from_millis(250) {
             emit(InstallProgress {
@@ -120,6 +139,45 @@ pub async fn install(app: AppHandle) -> AppResult<String> {
             next_emit = std::time::Instant::now();
         }
     }
+    partial_file
+        .sync_all()
+        .map_err(|e| AppError::Media(format!("sync partial: {e}")))?;
+    drop(partial_file);
+
+    // --- SHA-256 integrity check (BEFORE extraction) ---
+    match IM_EXPECTED_SHA256 {
+        Some(expected) => {
+            emit(InstallProgress {
+                stage: InstallStage::Extracting,
+                bytes_done: downloaded,
+                bytes_total: total,
+                message: "Verifying SHA-256…".into(),
+            });
+            let actual = format!("{:x}", hasher.finalize());
+            if !actual.eq_ignore_ascii_case(expected) {
+                let _ = std::fs::remove_file(&partial_path);
+                let msg = format!(
+                    "ImageMagick archive hash mismatch: expected {expected}, got {actual}"
+                );
+                let _ = app.emit(
+                    "imagemagick:install_progress",
+                    &InstallProgress {
+                        stage: InstallStage::Failed,
+                        bytes_done: downloaded,
+                        bytes_total: total,
+                        message: msg.clone(),
+                    },
+                );
+                return Err(AppError::Media(msg));
+            }
+        }
+        None => {
+            tracing::warn!(
+                "ImageMagick download integrity check skipped — hash not pinned \
+                 (set IM_EXPECTED_SHA256 before release)"
+            );
+        }
+    }
 
     emit(InstallProgress {
         stage: InstallStage::Extracting,
@@ -128,7 +186,12 @@ pub async fn install(app: AppHandle) -> AppResult<String> {
         message: "Extracting archive…".into(),
     });
 
-    extract_imagemagick_portable(&buf, &target_dir).map_err(|e| {
+    // Read the verified archive from disk for extraction.
+    let sevenz_bytes = std::fs::read(&partial_path)
+        .map_err(|e| AppError::Media(format!("read partial for extract: {e}")))?;
+    let _ = std::fs::remove_file(&partial_path);
+
+    extract_imagemagick_portable(&sevenz_bytes, &target_dir).map_err(|e| {
         let msg = format!("extract: {e}");
         let app2 = app.clone();
         let _ = app2.emit(

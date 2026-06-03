@@ -25,7 +25,7 @@
 //! recordings. Long-form content needs the pipe-based pipeline.
 
 use crate::ai::backend::AiBackend;
-use crate::ai::models::AiModel;
+use crate::ai::models::{model_path, AiModel};
 use crate::ai::pipeline::{EnhancementOp, Preset};
 use crate::ai::tiling::{process_image, RgbImage};
 use crate::error::{AppError, AppResult};
@@ -33,7 +33,7 @@ use crate::media::ffmpeg as ff;
 use std::path::{Path, PathBuf};
 use std::process::Stdio;
 use std::sync::Arc;
-use tauri::AppHandle;
+use tauri::{AppHandle, Manager};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::process::Command;
 
@@ -125,8 +125,21 @@ pub async fn enhance_video(
         _ => None,
     });
     if let Some(model) = upscale_model {
+        let data_dir = app
+            .path()
+            .app_data_dir()
+            .map_err(|e| AppError::Internal(format!("app_data_dir: {e}")))?;
+        let path = model_path(&data_dir, model);
+        if !path.is_file() {
+            return Err(AppError::Ai(format!(
+                "AI model file not found at {}. Please download the model first \
+                 (Settings → AI Models → {}).",
+                path.display(),
+                model.id()
+            )));
+        }
         backend
-            .load_model(model, Path::new("placeholder"))
+            .load_model(model, &path)
             .map_err(|e| AppError::Ai(format!("load_model: {e}")))?;
     }
 
@@ -258,8 +271,21 @@ pub async fn enhance_video_piped(
     let out_h = in_h * scale;
 
     if let Some(model) = upscale_model {
+        let data_dir = app
+            .path()
+            .app_data_dir()
+            .map_err(|e| AppError::Internal(format!("app_data_dir: {e}")))?;
+        let path = model_path(&data_dir, model);
+        if !path.is_file() {
+            return Err(AppError::Ai(format!(
+                "AI model file not found at {}. Please download the model first \
+                 (Settings → AI Models → {}).",
+                path.display(),
+                model.id()
+            )));
+        }
         backend
-            .load_model(model, Path::new("placeholder"))
+            .load_model(model, &path)
             .map_err(|e| AppError::Ai(format!("load_model: {e}")))?;
     }
 

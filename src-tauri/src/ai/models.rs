@@ -68,6 +68,20 @@ impl AiModel {
     pub fn expected_sha256(&self) -> Option<&'static str> {
         None
     }
+
+    /// Returns `true` when this model has a hosted download URL and can be
+    /// fetched automatically. When `false`, attempting to call
+    /// `download_model` will hard-error. UI layers **must** check this before
+    /// showing or enabling a "Download" button — do not rely on the downloader
+    /// to surface a friendly error to the user.
+    ///
+    /// All models currently return `false` because we have no hosted mirrors
+    /// yet. This will flip to `true` model-by-model as URLs are pinned in
+    /// `download_url()`. Users can still install any model manually by dropping
+    /// the correct `.onnx` file into `<app_data_dir>/models/`.
+    pub fn is_available_for_download(&self) -> bool {
+        self.download_url().is_some()
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -84,6 +98,11 @@ pub struct ModelEntry {
     pub download_url: Option<String>,
     pub has_pinned_hash: bool,
     pub description: String,
+    /// Whether an automatic download is currently possible. `false` means the
+    /// model has no hosted URL yet — the UI should disable the Download button
+    /// and show "Not available in this build" rather than letting the user
+    /// attempt a download that will always fail.
+    pub available_for_download: bool,
 }
 
 /// Static fallback used when the app can't resolve an `app_data_dir` (very
@@ -107,6 +126,7 @@ pub fn default_catalog() -> ModelCatalog {
                 download_url: m.download_url().map(str::to_string),
                 has_pinned_hash: m.expected_sha256().is_some(),
                 description: m.description().to_string(),
+                available_for_download: m.is_available_for_download(),
             })
             .collect(),
     }
@@ -141,6 +161,7 @@ pub fn catalog_for(app_data_dir: &Path) -> ModelCatalog {
                     download_url: m.download_url().map(str::to_string),
                     has_pinned_hash: m.expected_sha256().is_some(),
                     description: m.description().to_string(),
+                    available_for_download: m.is_available_for_download(),
                 }
             })
             .collect(),

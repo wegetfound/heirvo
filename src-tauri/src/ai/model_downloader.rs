@@ -48,7 +48,8 @@ pub async fn download_model(app: AppHandle, model: AiModel) -> AppResult<Downloa
     let url = model
         .download_url()
         .ok_or_else(|| AppError::Ai(format!(
-            "No download URL configured for {}. Drop the ONNX file at the model directory manually.",
+            "AI enhancement models are not yet available for download in this build. \
+             You can install '{}' manually by placing its ONNX file in the app's models folder.",
             model.id()
         )))?;
 

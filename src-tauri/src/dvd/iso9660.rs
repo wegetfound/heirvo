@@ -66,7 +66,16 @@ pub fn read_volume(reader: &dyn SectorReader) -> std::io::Result<IsoVolume> {
             "not an ISO 9660 volume",
         ));
     }
-    let label = String::from_utf8_lossy(&data[40..72]).trim().to_string();
+    // Drop control chars (incl. NUL) before trimming. On Joliet (UCS-2) discs
+    // the label is wide chars, so raw it's ASCII interleaved with NULs — those
+    // NULs are invisible in the UI but break every filesystem call once the label
+    // becomes the output folder name (std::fs rejects paths containing NUL).
+    let label = String::from_utf8_lossy(&data[40..72])
+        .chars()
+        .filter(|&c| c >= ' ')
+        .collect::<String>()
+        .trim()
+        .to_string();
     // Root directory record at offset 156 (length byte first).
     let root_lba = read_u32_le(&data[158..162]) as u64;
     let root_size = read_u32_le(&data[166..170]) as u64;
@@ -131,12 +140,26 @@ pub fn read_directory(
             continue;
         }
 
+        // Joliet (UCS-2/UTF-16) discs store names as wide chars; read raw they
+        // look like ASCII interleaved with NUL bytes (e.g. "V\0I\0D\0E\0O\0_..").
+        // Dropping control chars (incl. NUL) recovers the ASCII text AND keeps
+        // interior NULs out of later WinAPI path calls — std::fs rejects any path
+        // containing a NUL with a hard "strings passed to WinAPI cannot contain
+        // NULs" error, which otherwise blocks extraction of the whole disc.
+        let raw: String = String::from_utf8_lossy(name_bytes)
+            .chars()
+            .filter(|&c| c >= ' ')
+            .collect();
         // Strip ISO9660 ";1" version suffix.
-        let raw = String::from_utf8_lossy(name_bytes).to_string();
         let name = match raw.rfind(';') {
             Some(i) => raw[..i].to_string(),
             None => raw,
         };
+        // Skip anything that sanitized down to nothing.
+        if name.trim().is_empty() {
+            off += len;
+            continue;
+        }
 
         entries.push(IsoEntry { name, is_dir, start_lba: extent_lba, size_bytes: data_len });
         off += len;

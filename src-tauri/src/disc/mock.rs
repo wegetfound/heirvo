@@ -12,11 +12,24 @@ use crate::disc::sector::{ReadOptions, SectorError, SectorReadResult, SectorRead
 pub enum MockSectorBehavior {
     /// Reads succeed and return the canned bytes.
     Good,
-    /// Reads always return a SectorError::MediumError.
+    /// Reads always return a SectorError::MediumError (permanent physical damage).
     BadAlways,
-    /// First N attempts fail, then it starts succeeding (simulates a borderline
-    /// sector that succeeds on retry passes).
+    /// First N attempts fail with MediumError, then the sector starts succeeding.
+    /// Simulates a borderline sector that recovers on a later retry pass.
+    /// Attempt counting starts at 1 on the first read call.
     BadUntilAttempt(u32),
+    /// Every read returns SectorError::Timeout regardless of attempt count.
+    /// Simulates the hung-IOCTL case: the drive acknowledges the command but
+    /// never responds (watchdog must kill it externally; the mock just returns
+    /// the error immediately so tests stay fast — no real sleeping).
+    AlwaysTimeout,
+    /// Every read returns SectorError::Uncorrectable.
+    /// Models a sector whose ECC is too corrupt to recover even with retries.
+    AlwaysUncorrectable,
+    /// First N attempts return SectorError::HardwareError (transient drive fault),
+    /// after which reads succeed. Lets tests exercise the HardwareError branch
+    /// of the engine without conflating it with MediumError.
+    HardwareErrorUntilAttempt(u32),
 }
 
 #[derive(Debug)]
@@ -50,6 +63,13 @@ impl MockSectorReader {
         }
     }
 
+    /// Mark a contiguous run of LBAs with the same behavior.
+    pub fn set_range(&mut self, start: u64, len: u64, behavior: MockSectorBehavior) {
+        for lba in start..(start + len) {
+            self.behaviors[lba as usize] = behavior;
+        }
+    }
+
     pub fn attempts_for(&self, lba: u64) -> u32 {
         self.attempts.lock()[lba as usize]
     }
@@ -80,6 +100,23 @@ impl SectorReader for MockSectorReader {
                     SectorReadResult::ok(lba, bytes, 1)
                 } else {
                     SectorReadResult::err(lba, SectorError::MediumError, 1, 1)
+                }
+            }
+            MockSectorBehavior::AlwaysTimeout => {
+                // Returns immediately — no actual sleeping. The engine's
+                // watchdog is expected to handle a real Timeout; here we just
+                // exercise the error-recording and map-update paths.
+                SectorReadResult::err(lba, SectorError::Timeout, 0, 30_000)
+            }
+            MockSectorBehavior::AlwaysUncorrectable => {
+                SectorReadResult::err(lba, SectorError::Uncorrectable, 0, 1)
+            }
+            MockSectorBehavior::HardwareErrorUntilAttempt(n) => {
+                if attempt > n {
+                    let bytes = vec![lba as u8; DVD_SECTOR_SIZE];
+                    SectorReadResult::ok(lba, bytes, 1)
+                } else {
+                    SectorReadResult::err(lba, SectorError::HardwareError, 1, 1)
                 }
             }
         }

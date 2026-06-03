@@ -25,48 +25,79 @@ impl SectorState {
     }
 }
 
-/// Packed 2-bits-per-sector map.
+/// Packed 2-bits-per-sector map with O(1) per-state counters.
 #[derive(Debug, Clone)]
 pub struct SectorMap {
     total: u64,
     /// Each byte holds 4 sectors.
     bits: Vec<u8>,
+    /// Running counts for each state (indexed by SectorState discriminant).
+    /// counts[0]=Unknown, [1]=Good, [2]=Failed, [3]=Skipped.
+    counts: [u64; 4],
 }
 
 impl SectorMap {
     pub fn new(total_sectors: u64) -> Self {
         let bytes = total_sectors.div_ceil(4) as usize;
-        Self { total: total_sectors, bits: vec![0u8; bytes] }
+        // All sectors start as Unknown (0b00 = all-zero bits).
+        Self {
+            total: total_sectors,
+            bits: vec![0u8; bytes],
+            counts: [total_sectors, 0, 0, 0],
+        }
     }
 
     pub fn total(&self) -> u64 {
         self.total
     }
 
+    /// Returns the state of `lba`. Returns `SectorState::Unknown` for
+    /// out-of-range LBAs (safe in release builds; corrupt disc entries won't panic).
     pub fn get(&self, lba: u64) -> SectorState {
-        debug_assert!(lba < self.total);
+        // OOB is a handled input (corrupt disc directory entries can point past
+        // the end of the disc), not a programming bug — no debug_assert here.
+        if lba >= self.total {
+            return SectorState::Unknown;
+        }
         let byte_idx = (lba / 4) as usize;
         let shift = ((lba % 4) * 2) as u8;
         SectorState::from_bits(self.bits[byte_idx] >> shift)
     }
 
+    /// Sets the state of `lba`. Silently no-ops for out-of-range LBAs
+    /// (safe in release builds; corrupt disc entries won't panic).
     pub fn set(&mut self, lba: u64, state: SectorState) {
-        debug_assert!(lba < self.total);
+        // OOB is a handled input (see `get`), not a programming bug — no assert.
+        if lba >= self.total {
+            return;
+        }
         let byte_idx = (lba / 4) as usize;
         let shift = ((lba % 4) * 2) as u8;
         let mask = 0b11u8 << shift;
+        let old_bits = (self.bits[byte_idx] & mask) >> shift;
+        let old_state = SectorState::from_bits(old_bits);
+        // Update running counters.
+        self.counts[old_state as usize] -= 1;
+        self.counts[state as usize] += 1;
         self.bits[byte_idx] = (self.bits[byte_idx] & !mask) | ((state as u8) << shift);
     }
 
-    /// Count sectors in a given state. O(n) — call sparingly, or cache via stats.
+    /// Count sectors in a given state. O(1) — maintained incrementally by `set`.
     pub fn count(&self, state: SectorState) -> u64 {
-        let mut n = 0u64;
+        self.counts[state as usize]
+    }
+
+    /// Recompute the running counters from scratch. Call this after any bulk
+    /// operation that writes `bits` directly without going through `set()`
+    /// (e.g. `from_compressed` or `decode` paths that bypass `set`).
+    fn recompute_counts(&mut self) {
+        self.counts = [0u64; 4];
         for lba in 0..self.total {
-            if self.get(lba) == state {
-                n += 1;
-            }
+            let byte_idx = (lba / 4) as usize;
+            let shift = ((lba % 4) * 2) as u8;
+            let s = SectorState::from_bits(self.bits[byte_idx] >> shift);
+            self.counts[s as usize] += 1;
         }
-        n
     }
 
     /// Iterate over contiguous runs of a given state.
@@ -88,7 +119,10 @@ impl SectorMap {
                 format!("sector map size mismatch: got {} expected {}", bits.len(), expected),
             ));
         }
-        Ok(Self { total, bits })
+        // bits were written directly, not via set() — recompute counters.
+        let mut map = Self { total, bits, counts: [0u64; 4] };
+        map.recompute_counts();
+        Ok(map)
     }
 
     /// Down-sampled snapshot suitable for the frontend canvas (<= max_buckets entries).
@@ -160,6 +194,38 @@ mod tests {
     }
 
     #[test]
+    fn oob_get_returns_unknown() {
+        let m = SectorMap::new(10);
+        assert_eq!(m.get(10), SectorState::Unknown);
+        assert_eq!(m.get(u64::MAX), SectorState::Unknown);
+    }
+
+    #[test]
+    fn oob_set_is_noop() {
+        let mut m = SectorMap::new(10);
+        m.set(10, SectorState::Good); // must not panic
+        assert_eq!(m.count(SectorState::Good), 0);
+    }
+
+    #[test]
+    fn counters_are_consistent() {
+        let mut m = SectorMap::new(100);
+        assert_eq!(m.count(SectorState::Unknown), 100);
+        assert_eq!(m.count(SectorState::Good), 0);
+        m.set(0, SectorState::Good);
+        m.set(1, SectorState::Failed);
+        m.set(99, SectorState::Skipped);
+        assert_eq!(m.count(SectorState::Unknown), 97);
+        assert_eq!(m.count(SectorState::Good), 1);
+        assert_eq!(m.count(SectorState::Failed), 1);
+        assert_eq!(m.count(SectorState::Skipped), 1);
+        // Overwrite — counters must stay consistent.
+        m.set(0, SectorState::Failed);
+        assert_eq!(m.count(SectorState::Good), 0);
+        assert_eq!(m.count(SectorState::Failed), 2);
+    }
+
+    #[test]
     fn round_trip_compressed() {
         let mut m = SectorMap::new(10_000);
         for lba in 0..10_000 {
@@ -168,8 +234,11 @@ mod tests {
         let bytes = m.to_compressed().unwrap();
         let m2 = SectorMap::from_compressed(10_000, &bytes).unwrap();
         for lba in 0..10_000 {
-            assert_eq!(m.get(lba), m2.get(lba));
+            assert_eq!(m.get(lba), m2.get(lba), "mismatch at {lba}");
         }
+        // Counters must survive the round-trip.
+        assert_eq!(m.count(SectorState::Good), m2.count(SectorState::Good));
+        assert_eq!(m.count(SectorState::Unknown), m2.count(SectorState::Unknown));
     }
 
     #[test]

@@ -76,7 +76,11 @@ export const ipc = {
     invoke<Session>("change_output_dir", { sessionId, newOutputDir }),
 
   // Recovery
-  startRecovery: (sessionId: string, mode: RecoveryMode = "standard") =>
+  /** Start (or restart) a recovery pass for a session.
+   *  `mode` defaults to "quick" — the fast first pass. Pass "overnight" to
+   *  retry only the remaining damaged sectors with slower re-reads, cool-downs,
+   *  and bidirectional seeks. */
+  startRecovery: (sessionId: string, mode: RecoveryMode = "quick") =>
     invoke<void>("start_recovery", { sessionId, mode }),
   pauseRecovery: (sessionId: string) =>
     invoke<void>("pause_recovery", { sessionId }),
@@ -309,6 +313,12 @@ export const ipc = {
       invoke<WhisperModelInfo>("set_whisper_model", { model }),
   },
 
+  // AutoPlay / disc insertion
+  autoplayGetEnabled: () => invoke<boolean>("autoplay_get_enabled"),
+  autoplaySetEnabled: (enabled: boolean) =>
+    invoke<void>("autoplay_set_enabled", { enabled }),
+  getPendingDisc: () => invoke<string | null>("get_pending_disc"),
+
   // Diagnostics
   exportDiagnosticBundle: (sessionId: string, outputPath?: string) =>
     invoke<{ zip_path: string; bytes: number; session_id: string }>(
@@ -444,6 +454,11 @@ export const events = {
   /** Fired for each photo converted during a photo-disc promotion.
    * Payload: `{ sessionId, done, total }` (camelCase from Rust
    * `PromoteProgressPayload { session_id, done, total }`). */
+  onAutoplayOpenDisc(handler: (path: string | null) => void): Promise<UnlistenFn> {
+    return listen<{ path: string | null }>("autoplay:open-disc", (e) =>
+      handler(e.payload.path),
+    );
+  },
   onPromoteProgress(
     handler: (p: { sessionId: string; done: number; total: number }) => void,
   ): Promise<UnlistenFn> {

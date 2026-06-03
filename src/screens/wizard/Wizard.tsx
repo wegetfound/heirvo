@@ -30,10 +30,10 @@ import { RecoveryPlanCard } from "./RecoveryPlanCard";
  *   - Destination is auto-picked (Documents/Heirvo/<disc-label>) with a
  *     small "Save somewhere else" link for the 1-in-50 who want a different
  *     folder.
- *   - No upfront Standard/Patient choice — recovery always starts Standard,
- *     and the Dashboard already exposes a "Retry failed sectors" button that
- *     runs Patient mode after the first pass finds damage. That's the right
- *     moment to make a choice — when the question is concrete.
+ *   - No upfront mode choice — recovery always starts in Quick mode, and the
+ *     Dashboard offers Overnight mode after the Quick pass finds damage. That's
+ *     the right moment to make a choice — when the question is concrete (we can
+ *     tell the user exactly how many spots still need more time).
  *   - Engineering details (sectors, firmware, type enum) live behind an
  *     "Advanced" expander, collapsed by default forever.
  */
@@ -59,6 +59,10 @@ export function Wizard() {
 
   const scopeRef = useRef<HTMLDivElement>(null);
   const headlineRef = useRef<HTMLHeadingElement>(null);
+  // Tracks which (drive, media-present) episode we have already probed, so a
+  // disc swap re-probes exactly once without the stale-guard lockup that the
+  // old `if (disc) return` + `disc` dependency could cause under rapid events.
+  const probedKeyRef = useRef<string | null>(null);
 
   // Initial drive list + live updates as drives are plugged in/out and
   // discs are inserted/ejected.
@@ -107,10 +111,18 @@ export function Wizard() {
     if (!pickedDrive || !pickedDrive.has_media) {
       setDisc(null);
       setError(null);
+      probedKeyRef.current = null;
       return;
     }
-    if (disc) return; // already identified
+    // One probe per (drive, media-present) episode. `pickedDrive` gets a fresh
+    // object identity on every 1s poll, so this effect re-runs constantly — the
+    // ref guard makes all but the first run for a given disc a no-op, while a
+    // genuine disc swap (media false→true) resets the key above and re-probes.
+    const key = pickedDrive.path;
+    if (probedKeyRef.current === key) return;
+    probedKeyRef.current = key;
     let cancelled = false;
+    setDisc(null);
     setIdentifying(true);
     setError(null);
     (async () => {
@@ -131,7 +143,7 @@ export function Wizard() {
     return () => {
       cancelled = true;
     };
-  }, [pickedDrive, disc]);
+  }, [pickedDrive]);
 
   // If the disc is ejected mid-flow, clear our probe results.
   useEffect(() => {
@@ -151,6 +163,8 @@ export function Wizard() {
     if (outputDir) return;
     const safeLabel =
       disc.label
+        // eslint-disable-next-line no-control-regex
+        .replace(/[\u0000-\u001f]/g, "") // strip NUL/control chars (Joliet wide-char artifacts)
         .replace(/[<>:"/\\|?*]/g, "_")
         .replace(/_+/g, "_")
         .trim() || "Untitled disc";
@@ -197,6 +211,44 @@ export function Wizard() {
     if (!pickedDrive || !disc || !outputDir) return;
     setStarting(true);
     try {
+      // De-dup: check for an existing session for this disc before creating a new one.
+      // Only match on fingerprint when it's a non-empty string — fingerprint is the
+      // reliable key; an empty string means the backend couldn't derive one and we
+      // must NOT conflate unrelated discs that both have empty fingerprints.
+      let existingId: string | null = null;
+      if (disc.fingerprint) {
+        const all = await ipc.listSessions();
+        const match = all.find(
+          (s) => s.disc_fingerprint && s.disc_fingerprint === disc.fingerprint,
+        );
+        if (match) existingId = match.id;
+      }
+
+      if (existingId !== null) {
+        // Disc already has a session.
+        const all = await ipc.listSessions();
+        const existing = all.find((s) => s.id === existingId)!;
+        if (existing.status === "completed") {
+          // Recovery already finished — just open the result, don't re-run.
+          navigate(`/session/${existingId}`);
+          return;
+        }
+        // Resume (or start if still "created") — startRecovery picks up from
+        // the saved sector map, skipping already-good sectors.
+        try {
+          await ipc.startRecovery(existingId);
+        } catch (resumeErr) {
+          // "RecoveryInProgress" / already running is fine — navigate anyway.
+          const msg = String(resumeErr);
+          if (!msg.includes("RecoveryInProgress") && !msg.toLowerCase().includes("already")) {
+            throw resumeErr;
+          }
+        }
+        navigate(`/session/${existingId}`);
+        return;
+      }
+
+      // No existing session — create one as before.
       const session = await ipc.createSession({
         disc_label: disc.label,
         disc_fingerprint: disc.fingerprint,
@@ -231,6 +283,10 @@ export function Wizard() {
             onRetry={() => {
               setError(null);
               setDisc(null);
+              // Clear the probe guard so the effect actually re-reads the disc.
+              // Without this, "Try again" did nothing — the key (drive path) was
+              // unchanged, so the probe short-circuited and never fired.
+              probedKeyRef.current = null;
             }}
           />
         )}
@@ -620,10 +676,11 @@ function Advanced({
       )}
 
       <p className="text-[11px] leading-relaxed">
-        We always start with the careful-but-quick "Standard" mode. If a few
-        spots come back damaged, the next screen will offer to retry just
-        those spots with our "Patient" mode — sometimes overnight, but it can
-        recover more.
+        We always start with "Quick" mode — a careful first pass that works
+        through the whole disc. If any spots come back damaged, the next
+        screen will offer "Overnight" mode, which retries just those spots
+        with slower re-reads and cool-downs. Leave it running while you
+        sleep; stop anytime and keep everything already rescued.
       </p>
     </div>
   );
@@ -668,6 +725,10 @@ function friendlyDiscKind(t: string | null | undefined): string {
       return "data DVD";
     case "Cd":
       return "CD";
+    case "AudioCd":
+      return "music CD";
+    case "Bluray":
+      return "Blu-ray disc";
     case "Unknown":
     case null:
     case undefined:
@@ -689,6 +750,13 @@ function describeDisc(disc: DiscInfo): string {
     case "DvdRom":
       return `About ${sizeGb.toFixed(1)} GB of files — photos, documents, or whatever you backed up. We'll copy them to your Documents folder.`;
     case "Cd":
+      return `About ${sizeGb.toFixed(1)} GB of content. We'll save it to your Documents folder.`;
+    case "AudioCd": {
+      // Audio CDs are 75 sectors/sec; describe in minutes, not gigabytes.
+      const audioMin = Math.max(1, Math.ceil(disc.total_sectors / 75 / 60));
+      return `About ${audioMin} minutes of music. We'll save each track to your Documents folder.`;
+    }
+    case "Bluray":
       return `About ${sizeGb.toFixed(1)} GB of content. We'll save it to your Documents folder.`;
     default:
       return `About ${sizeGb.toFixed(1)} GB of content. We'll save it to your Documents folder.`;

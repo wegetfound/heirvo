@@ -19,6 +19,7 @@ pub struct ExtractedFile {
     pub size_bytes: u64,
     pub good_sectors: u64,
     pub zero_filled_sectors: u64,
+    pub good_read_failed_sectors: u64,
 }
 
 pub fn extract_files(
@@ -33,6 +34,28 @@ pub fn extract_files(
     let opts = ReadOptions { retries: 2, slow_mode: false, timeout_ms: 15_000 };
 
     for entry in files {
+        // Defensive: never let an empty or NUL-bearing name reach a WinAPI path
+        // call (std::fs hard-errors on interior NULs). The iso9660 parser already
+        // strips these, but skip just in case rather than failing the whole save.
+        if entry.name.trim().is_empty() || entry.name.contains('\0') {
+            continue;
+        }
+        // Path-traversal guard: reject any entry whose name contains `..`,
+        // an absolute root/prefix, or any non-Normal component (same pattern
+        // as imagemagick_install.rs). Legitimate subdirectory paths such as
+        // "PHOTOS/2003/IMG.JPG" consist entirely of Normal components and pass.
+        if std::path::Path::new(&entry.name).components().any(|c| {
+            !matches!(
+                c,
+                std::path::Component::Normal(_) | std::path::Component::CurDir
+            )
+        }) {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::InvalidData,
+                format!("unsafe ISO entry path rejected: {}", entry.name),
+            ));
+        }
+
         let out_path = output_dir.join(&entry.name);
         // Ensure parent directories exist for nested entries (data-disc
         // recovery passes paths like "PHOTOS/2003/IMG.JPG").
@@ -45,6 +68,7 @@ pub fn extract_files(
         let total = entry.sector_count();
         let mut good = 0u64;
         let mut zeroed = 0u64;
+        let mut good_read_failed = 0u64;
         let mut bytes_remaining = entry.size_bytes;
 
         for i in 0..total {
@@ -70,6 +94,7 @@ pub fn extract_files(
                     None => {
                         writer.write_all(&zero_block[..bytes_to_write])?;
                         zeroed += 1;
+                        good_read_failed += 1;
                     }
                 }
             }
@@ -83,6 +108,7 @@ pub fn extract_files(
             size_bytes: entry.size_bytes,
             good_sectors: good,
             zero_filled_sectors: zeroed,
+            good_read_failed_sectors: good_read_failed,
         });
     }
 

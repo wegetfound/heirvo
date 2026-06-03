@@ -117,14 +117,33 @@ pub fn parse_toc(buf: &[u8]) -> io::Result<AudioToc> {
         .map(|(_, lba, _)| *lba)
         .unwrap_or(0);
 
+    // Sanity guard: READ TOC is a CD/MMC command, but DVD/BD drives will often
+    // answer it with a single bogus descriptor whose lead-out is the FULL disc
+    // capacity — yielding one absurd "track" (e.g. a 3.3 GB DVD shows up as a
+    // 357-minute audio track). A real CD-DA disc tops out at 99:59:74 ≈ 449,850
+    // frames. Anything beyond that (or a zero lead-out) is not an audio CD.
+    const CDDA_MAX_LEADOUT_FRAMES: u32 = 450_000;
+    if lead_out_lba == 0 || lead_out_lba > CDDA_MAX_LEADOUT_FRAMES {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidData,
+            format!("not an audio CD (lead-out {lead_out_lba} frames out of CD-DA range)"),
+        ));
+    }
+
+    // Emit AUDIO tracks only. The control nibble's bit 2 (0x04) marks a DATA
+    // track; audio tracks have it clear. End LBA is the NEXT descriptor's start
+    // regardless of its type, so durations stay correct on mixed-mode discs.
     let mut tracks: Vec<AudioTrack> = Vec::new();
     let real: Vec<&(u8, u32, u8)> = entries.iter().filter(|(n, _, _)| *n != 0xAA).collect();
-    for (i, (n, lba, _control)) in real.iter().enumerate() {
+    for (i, (n, lba, control)) in real.iter().enumerate() {
         let next_lba = if i + 1 < real.len() {
             real[i + 1].1
         } else {
             lead_out_lba
         };
+        if control & 0x04 != 0 {
+            continue; // data track — not extractable as CD audio
+        }
         let frames = next_lba.saturating_sub(*lba);
         tracks.push(AudioTrack {
             number: *n,
@@ -132,6 +151,13 @@ pub fn parse_toc(buf: &[u8]) -> io::Result<AudioToc> {
             end_lba: next_lba,
             duration_secs: frames as f32 / CDDA_SECTORS_PER_SEC as f32,
         });
+    }
+
+    if tracks.is_empty() {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidData,
+            "no audio tracks present (not an audio CD)",
+        ));
     }
 
     Ok(AudioToc { tracks, lead_out_lba })
@@ -448,5 +474,44 @@ mod tests {
         assert_eq!(toc.tracks[1].number, 2);
         assert_eq!(toc.tracks[1].start_lba, 22_500);
         assert_eq!(toc.tracks[1].end_lba, 45_000);
+    }
+
+    /// A DVD answered READ TOC with a single descriptor whose lead-out is the
+    /// full disc capacity — must be rejected, not parsed as a 357-minute track.
+    #[test]
+    fn parse_toc_rejects_dvd_capacity_leadout() {
+        let mut buf = vec![0u8; 4 + 2 * 8];
+        let data_len: u16 = 2 + 2 * 8;
+        buf[0] = (data_len >> 8) as u8;
+        buf[1] = (data_len & 0xFF) as u8;
+        buf[2] = 1;
+        buf[3] = 1;
+        // Track 1: data track at LBA 0
+        buf[4 + 1] = 0x14; // ADR=1, control bit2 set => DATA track
+        buf[4 + 2] = 1;
+        // Lead-out at the DVD's full capacity (~1.6M frames => ~357 min)
+        buf[12 + 1] = 0x14;
+        buf[12 + 2] = 0xAA;
+        buf[12 + 4..12 + 8].copy_from_slice(&1_608_896u32.to_be_bytes());
+        let err = parse_toc(&buf).unwrap_err();
+        assert_eq!(err.kind(), io::ErrorKind::InvalidData);
+    }
+
+    /// A sane CD lead-out but every track is a DATA track => not an audio CD.
+    #[test]
+    fn parse_toc_rejects_data_only_disc() {
+        let mut buf = vec![0u8; 4 + 2 * 8];
+        let data_len: u16 = 2 + 2 * 8;
+        buf[0] = (data_len >> 8) as u8;
+        buf[1] = (data_len & 0xFF) as u8;
+        buf[2] = 1;
+        buf[3] = 1;
+        buf[4 + 1] = 0x14; // data track
+        buf[4 + 2] = 1;
+        buf[4 + 4..4 + 8].copy_from_slice(&0u32.to_be_bytes());
+        buf[12 + 1] = 0x14;
+        buf[12 + 2] = 0xAA;
+        buf[12 + 4..12 + 8].copy_from_slice(&100_000u32.to_be_bytes());
+        assert!(parse_toc(&buf).is_err());
     }
 }

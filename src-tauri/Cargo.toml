@@ -20,6 +20,9 @@ tauri-plugin-fs = "2.0"
 tauri-plugin-updater = "2.3"
 tauri-plugin-process = "2.0"
 tauri-plugin-opener = "2.0"
+# Focus the existing window (and forward the disc path) when AutoPlay launches
+# a second instance, instead of opening a duplicate window.
+tauri-plugin-single-instance = "2.0"
 
 # Async runtime
 tokio = { version = "1.41", features = ["full"] }
@@ -84,7 +87,11 @@ windows = { version = "0.58", features = [
     "Win32_Devices_DeviceAndDriverInstallation",
     "Win32_Security",
     "Win32_System_Threading",
+    "Win32_UI_Shell",
+    "Win32_UI_WindowsAndMessaging",
 ] }
+# User-scoped (HKCU) registry access to register Heirvo as an AutoPlay handler.
+winreg = "0.52"
 
 [features]
 # v1 default: NO statically-linked ONNX. Ships one installer for all CPUs.
@@ -96,6 +103,9 @@ custom-protocol = ["tauri/custom-protocol"]
 # Enabled by default in production builds. The runtime DLL is downloaded
 # on first AI use (~50MB) so the installer stays small.
 onnx = ["dep:ort", "dep:ort-sys", "dep:ndarray"]
+
+[dev-dependencies]
+tempfile = "3"
 
 [profile.release]
 opt-level = 3

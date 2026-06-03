@@ -28,7 +28,7 @@ import LibraryAlbumDetail from "@/screens/library/AlbumDetail";
 import IsoBrowser from "@/screens/iso/IsoBrowser";
 // UpdateBanner disabled until signing keypair is generated.
 // import UpdateBanner from "@/components/UpdateBanner";
-import { ipc } from "@/lib/ipc";
+import { ipc, events } from "@/lib/ipc";
 import { cn } from "@/lib/cn";
 import { prefersReducedMotion } from "@/utils/gsap-fx";
 import { useLicense } from "@/lib/useLicense";
@@ -61,6 +61,220 @@ function ScrollLayout() {
   );
 }
 
+// ─── AutoPlayManager ──────────────────────────────────────────────────────────
+
+/**
+ * Handles two disc-insertion paths:
+ * 1. Cold launch — Windows launched Heirvo via AutoPlay, backend stored the
+ *    drive path in `get_pending_disc`. We consume it and navigate straight in.
+ * 2. Hot event — Heirvo is already running and a disc goes in while it's open.
+ *    We subscribe to `autoplay:open-disc` and navigate when it fires.
+ *
+ * Both paths are non-fatal: if the IPC command or event subscription fails,
+ * the app just stays on whatever screen it was on.
+ */
+function AutoPlayManager() {
+  const nav = useNavigate();
+
+  useEffect(() => {
+    let cancelled = false;
+
+    // Cold launch
+    ipc.getPendingDisc()
+      .then((path) => {
+        if (!cancelled && path != null) {
+          nav("/wizard", { replace: true });
+        }
+      })
+      .catch(() => { /* non-fatal */ });
+
+    // Hot event — disc inserted while already running
+    const unlistenPromise = events.onAutoplayOpenDisc(() => {
+      if (!cancelled) nav("/wizard");
+    }).catch(() => undefined as unknown as () => void);
+
+    return () => {
+      cancelled = true;
+      unlistenPromise.then((unlisten) => unlisten?.());
+    };
+  // nav is stable — intentionally omit from deps to run once on mount
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return null;
+}
+
+// ─── AutoPlayPrompt ───────────────────────────────────────────────────────────
+
+const AUTOPLAY_PROMPTED_KEY = "heirvo.autoplayPrompted";
+
+/**
+ * One-time opt-in prompt for the "open on disc insert" feature.
+ * Shown only if: (a) the feature is currently off, AND (b) the user has not
+ * yet been asked (localStorage flag not set).
+ *
+ * Follows the iTunes "ask, don't hijack" pattern — never enables silently.
+ */
+function AutoPlayPrompt() {
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const alreadyPrompted = localStorage.getItem(AUTOPLAY_PROMPTED_KEY) === "1";
+    if (alreadyPrompted) return;
+
+    ipc.autoplayGetEnabled()
+      .then((enabled) => {
+        if (!enabled) setVisible(true);
+      })
+      .catch(() => { /* non-fatal — don't show if backend unavailable */ });
+  }, []);
+
+  const dismiss = () => {
+    localStorage.setItem(AUTOPLAY_PROMPTED_KEY, "1");
+    setVisible(false);
+  };
+
+  const enable = () => {
+    ipc.autoplaySetEnabled(true).catch(() => { /* non-fatal */ });
+    dismiss();
+  };
+
+  if (!visible) return null;
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="false"
+      aria-label="Open Heirvo when you insert a disc"
+      style={{
+        position: "fixed",
+        bottom: 24,
+        left: "50%",
+        transform: "translateX(-50%)",
+        zIndex: 100,
+        width: "min(480px, calc(100vw - 48px))",
+        borderRadius: 16,
+        background: "rgba(255,255,255,0.96)",
+        backdropFilter: "blur(18px)",
+        WebkitBackdropFilter: "blur(18px)",
+        border: "1px solid rgba(225,230,238,0.85)",
+        boxShadow: "0 8px 32px rgba(10,23,41,0.13), 0 1.5px 4px rgba(10,23,41,0.07)",
+        padding: "20px 20px 18px",
+        display: "flex",
+        flexDirection: "column",
+        gap: 12,
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+        {/* Disc icon */}
+        <div
+          style={{
+            flexShrink: 0,
+            width: 38,
+            height: 38,
+            borderRadius: 10,
+            background: "rgba(10,132,255,0.10)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          {/* Simple inline disc SVG — no extra import needed */}
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0A84FF" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10" />
+            <circle cx="12" cy="12" r="3" />
+            <path d="M12 9V5" />
+          </svg>
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p
+            style={{
+              margin: 0,
+              fontSize: 14,
+              fontWeight: 600,
+              color: "#0A1729",
+              lineHeight: 1.35,
+              letterSpacing: "-0.01em",
+            }}
+          >
+            Open Heirvo when you insert a disc?
+          </p>
+          <p
+            style={{
+              margin: "5px 0 0",
+              fontSize: 12.5,
+              color: "#5C6B82",
+              lineHeight: 1.55,
+            }}
+          >
+            We can launch Heirvo automatically the moment you put a disc in,
+            so you skip the Windows pop-up. You can change this anytime in Settings.
+          </p>
+        </div>
+        {/* Dismiss X */}
+        <button
+          onClick={dismiss}
+          aria-label="Dismiss"
+          style={{
+            flexShrink: 0,
+            width: 22,
+            height: 22,
+            borderRadius: 99,
+            border: "none",
+            background: "transparent",
+            cursor: "pointer",
+            color: "#8A95A3",
+            fontSize: 16,
+            lineHeight: 1,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 0,
+            marginTop: -2,
+          }}
+        >
+          ×
+        </button>
+      </div>
+
+      <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+        <button
+          onClick={dismiss}
+          style={{
+            padding: "7px 14px",
+            borderRadius: 99,
+            border: "1px solid rgba(0,0,0,0.12)",
+            background: "white",
+            fontSize: 12.5,
+            fontWeight: 500,
+            color: "#5C6B82",
+            cursor: "pointer",
+            transition: "border-color 0.15s",
+          }}
+        >
+          Not now
+        </button>
+        <button
+          onClick={enable}
+          style={{
+            padding: "7px 16px",
+            borderRadius: 99,
+            border: "none",
+            background: "linear-gradient(135deg, #0A84FF 0%, #5AC8FA 100%)",
+            boxShadow: "0 2px 10px rgba(10,132,255,0.35)",
+            fontSize: 12.5,
+            fontWeight: 600,
+            color: "white",
+            cursor: "pointer",
+          }}
+        >
+          Yes, do that
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ─── RecoveryPromotionManager ─────────────────────────────────────────────────
 
 /**
@@ -80,6 +294,8 @@ export default function App() {
   return (
     <div className="flex h-screen text-ink-900 bg-ink-50">
       <RecoveryPromotionManager />
+      <AutoPlayManager />
+      <AutoPlayPrompt />
       <PreflightGate />
       <Sidebar />
       <main className="flex-1 flex flex-col overflow-hidden bg-ink-50">

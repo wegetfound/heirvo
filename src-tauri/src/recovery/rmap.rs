@@ -90,8 +90,12 @@ pub fn encode(map: &SectorMap, header: &RmapHeader) -> String {
 }
 
 fn emit_run(out: &mut String, start_lba: u64, len_sectors: u64, state: SectorState) {
+    // Use plain {:x} (no zero-padding) to match ddrescue's own output and to
+    // avoid truncation: {:08x} caps at 8 hex digits = 4 GB, which silently
+    // corrupts mapfiles for dual-layer DVDs (8.5 GB). The decoder uses
+    // parse_hex_or_dec() which handles both padded and unpadded hex widths.
     out.push_str(&format!(
-        "0x{:08x}  0x{:08x}  {}\n",
+        "0x{:x}  0x{:x}  {}\n",
         start_lba * SECTOR,
         len_sectors * SECTOR,
         state_char(state),

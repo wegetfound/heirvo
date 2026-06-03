@@ -159,6 +159,9 @@ export function Settings() {
       {/* Sound */}
       <SoundPanel />
 
+      {/* AutoPlay */}
+      <AutoPlayPanel />
+
       {/* Appearance */}
       <AppearancePanel />
 
@@ -530,6 +533,80 @@ function MailInPanel() {
           <p className="mt-2 text-center text-[10px]" style={{ color: "rgba(255,255,255,0.28)" }}>
             Separate paid service — pricing on the page
           </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── AutoPlay panel ───────────────────────────────────────────────────────────
+
+function AutoPlayPanel() {
+  const [enabled, setEnabled] = useState<boolean | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+
+  useEffect(() => {
+    ipc.autoplayGetEnabled()
+      .then(setEnabled)
+      .catch(() => { /* non-fatal */ });
+  }, []);
+
+  const toggle = async () => {
+    if (enabled === null) return;
+    const next = !enabled;
+    setEnabled(next); // optimistic
+    setErr(null);
+    try {
+      await ipc.autoplaySetEnabled(next);
+    } catch (e) {
+      setEnabled(!next); // revert
+      setErr(String(e));
+    }
+  };
+
+  // Don't render the row at all if the backend command is unavailable
+  if (enabled === null) return null;
+
+  return (
+    <div className="mt-4 rounded-2xl border border-ink-200/70 bg-white/60 p-5">
+      <div className="flex items-start gap-3">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-ink-100">
+          {/* Simple disc icon — no extra import */}
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className="text-ink-600">
+            <circle cx="12" cy="12" r="10" />
+            <circle cx="12" cy="12" r="3" />
+            <path d="M12 9V5" />
+          </svg>
+        </div>
+        <div className="flex-1 min-w-0">
+          <span className="micro-label">Disc insertion</span>
+          <div className="mt-3 flex items-center justify-between">
+            <div>
+              <p className="text-[13px] font-medium text-ink-800">
+                Open Heirvo when I insert a disc
+              </p>
+              <p className="mt-0.5 text-[12px] text-ink-500">
+                When on, you can choose Heirvo to launch automatically as soon as a disc goes in — no more Windows pop-up asking what to do.
+              </p>
+              {err && (
+                <p className="mt-1 text-[11px] text-ios-red">{err}</p>
+              )}
+            </div>
+            {/* Toggle pill — same pattern as AppearancePanel */}
+            <button
+              onClick={() => void toggle()}
+              aria-label={enabled ? "Disable open on disc insert" : "Enable open on disc insert"}
+              className="relative ml-4 h-7 w-12 shrink-0 rounded-full transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400"
+              style={{
+                background: enabled ? "#0A84FF" : "#E2DDD6",
+              }}
+            >
+              <span
+                className="absolute top-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-white shadow-sm transition-transform duration-200"
+                style={{ transform: enabled ? "translateX(20px)" : "translateX(2px)" }}
+              />
+            </button>
+          </div>
         </div>
       </div>
     </div>

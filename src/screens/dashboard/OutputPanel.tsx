@@ -30,6 +30,7 @@ export function OutputPanel({
   onMp4Saved?: (outputPath: string) => void;
 }) {
   const [health, setHealth] = useState<HealthReport | null>(null);
+  const [healthHidden, setHealthHidden] = useState(false);
   const [mp4, setMp4] = useState<Mp4Result | null>(null);
   const [iso, setIso] = useState<IsoResult | null>(null);
   const [extracted, setExtracted] = useState<ExtractedFile[] | null>(null);
@@ -84,6 +85,16 @@ export function OutputPanel({
     return () => { cancelled = true; };
   }, [sessionId]);
   const isAudioCd = audioToc !== null;
+
+  // Auto-fetch disc health on mount — no button needed; the user already
+  // read the disc and the data is ready on the backend.
+  useEffect(() => {
+    let cancelled = false;
+    ipc.healthScore(sessionId)
+      .then((h) => { if (!cancelled) setHealth(h); })
+      .catch(() => { if (!cancelled) setHealthHidden(true); });
+    return () => { cancelled = true; };
+  }, [sessionId]);
 
   // Disc-type-aware Save UX. NULL/Unknown -> show everything (graceful fallback).
   const t = session?.disc_type ?? null;
@@ -195,80 +206,91 @@ export function OutputPanel({
       )}
 
       <div className="grid grid-cols-1 gap-4">
-        {/* Disc health — custom progress arc */}
-        <div className="card">
-          <div className="micro-label mb-3">Disc health</div>
-          {health ? (
-            <>
-              <div className="flex items-center gap-4">
-                <HealthArc score={health.score} />
-                <div className="min-w-0 flex-1">
-                  <p className="text-[13px] leading-snug text-ink-700">
-                    {health.summary}
-                  </p>
-                  <details className="mt-2">
-                    <summary className="cursor-pointer text-[11px] text-ink-500 hover:text-ink-700">
-                      Details
-                    </summary>
-                    <dl className="mt-2 space-y-0.5 text-[11px] text-ink-500">
-                      <div>Coverage: {health.coverage_pct.toFixed(1)}%</div>
-                      <div>
-                        Critical files:{" "}
-                        {health.critical_intact ? "intact" : "damaged"}
-                      </div>
-                      <div>
-                        Largest unreadable run:{" "}
-                        {health.largest_failed_run.toLocaleString()} sections
-                      </div>
-                    </dl>
-                  </details>
-                </div>
-              </div>
-
-              {/* Mail-in handoff — shown when damage is beyond what software can recover */}
-              {health.score < 50 && (
-                <div
-                  className="mt-4 rounded-xl border p-3"
-                  style={{
-                    background: "linear-gradient(135deg, rgba(255,149,0,0.08) 0%, rgba(255,149,0,0.03) 100%)",
-                    borderColor: "rgba(255,149,0,0.30)",
-                  }}
-                >
-                  <div className="text-[12px] font-semibold text-ink-800 mb-1">
-                    Some damage is beyond what software can fix.
+        {/* Disc health — auto-fetched on mount, shown as a calm inline summary */}
+        {!healthHidden && (
+          <div className="card">
+            <div className="micro-label mb-3">Disc health</div>
+            {health ? (
+              <>
+                <div className="flex items-center gap-4">
+                  <HealthArc score={health.score} />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[13px] font-medium leading-snug" style={{
+                      color: health.score >= 90
+                        ? "#1A8750"
+                        : health.score >= 70
+                          ? "#C47700"
+                          : "#C53030",
+                    }}>
+                      {health.score >= 90
+                        ? "Excellent — every sector read cleanly."
+                        : health.score >= 70
+                          ? `Good — ${health.coverage_pct.toFixed(0)}% recovered, ${health.failed_sectors.toLocaleString()} spot${health.failed_sectors === 1 ? "" : "s"} couldn't be read.`
+                          : `Some damage — ${health.coverage_pct.toFixed(0)}% recovered, ${health.failed_sectors.toLocaleString()} spot${health.failed_sectors === 1 ? "" : "s"} were unreadable.`}
+                    </p>
+                    <p className="mt-1 text-[12px] leading-snug text-ink-500">
+                      {health.summary}
+                    </p>
+                    <details className="mt-2">
+                      <summary className="cursor-pointer text-[11px] text-ink-500 hover:text-ink-700">
+                        Details
+                      </summary>
+                      <dl className="mt-2 space-y-0.5 text-[11px] text-ink-500">
+                        <div>Coverage: {health.coverage_pct.toFixed(1)}%</div>
+                        <div>
+                          Critical files:{" "}
+                          {health.critical_intact ? "intact" : "damaged"}
+                        </div>
+                        <div>
+                          Largest unreadable run:{" "}
+                          {health.largest_failed_run.toLocaleString()} sections
+                        </div>
+                      </dl>
+                    </details>
                   </div>
-                  <p className="text-[11px] leading-snug text-ink-600 mb-2.5">
-                    Our lab reads discs with specialised optical equipment — including ones that score this low. Recovery starts at $89, and your Heirvo purchase counts toward it.
-                  </p>
-                  <a
-                    href="https://heirvo.com/recover"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[12px] font-medium transition"
-                    style={{
-                      background: "rgba(255,149,0,0.12)",
-                      color: "#C47700",
-                    }}
-                    onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "rgba(255,149,0,0.2)"; }}
-                    onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "rgba(255,149,0,0.12)"; }}
-                  >
-                    Get a lab estimate
-                    <ArrowRight className="h-3 w-3" aria-hidden />
-                  </a>
                 </div>
-              )}
-            </>
-          ) : (
-            <button
-              className="btn btn-ghost"
-              onClick={() => wrap("health", async () => setHealth(await ipc.healthScore(sessionId)))}
-              disabled={busy !== null}
-            >
-              {busy === "health" && <Loader2 className="h-4 w-4 animate-spin" />}
-              Check disc health
-            </button>
-          )}
-        </div>
+
+                {/* Mail-in handoff — shown when damage is beyond what software can recover */}
+                {health.score < 50 && (
+                  <div
+                    className="mt-4 rounded-xl border p-3"
+                    style={{
+                      background: "linear-gradient(135deg, rgba(255,149,0,0.08) 0%, rgba(255,149,0,0.03) 100%)",
+                      borderColor: "rgba(255,149,0,0.30)",
+                    }}
+                  >
+                    <div className="text-[12px] font-semibold text-ink-800 mb-1">
+                      Some damage is beyond what software can fix.
+                    </div>
+                    <p className="text-[11px] leading-snug text-ink-600 mb-2.5">
+                      Our lab reads discs with specialised optical equipment — including ones that score this low. Recovery starts at $89, and your Heirvo purchase counts toward it.
+                    </p>
+                    <a
+                      href="https://heirvo.com/recover"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[12px] font-medium transition"
+                      style={{
+                        background: "rgba(255,149,0,0.12)",
+                        color: "#C47700",
+                      }}
+                      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "rgba(255,149,0,0.2)"; }}
+                      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "rgba(255,149,0,0.12)"; }}
+                    >
+                      Get a lab estimate
+                      <ArrowRight className="h-3 w-3" aria-hidden />
+                    </a>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="flex items-center gap-2 text-[12px] text-ink-400">
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                Checking…
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Save your video / music */}
         <div className="card">
@@ -503,6 +525,11 @@ export function OutputPanel({
                 recovered
                 {iso.zero_filled_sectors > 0 &&
                   `, ${iso.zero_filled_sectors.toLocaleString()} damaged`}
+                {iso.good_read_failed_sectors > 0 && (
+                  <span className="ml-1 text-ios-orange">
+                    · {iso.good_read_failed_sectors.toLocaleString()} sectors degraded since scan — re-run the rescue soon
+                  </span>
+                )}
               </div>
             </div>
           )}
@@ -532,6 +559,11 @@ export function OutputPanel({
                       {f.zero_filled_sectors > 0 && (
                         <span className="ml-2 text-ios-orange">
                           ({f.zero_filled_sectors} damaged)
+                        </span>
+                      )}
+                      {f.good_read_failed_sectors > 0 && (
+                        <span className="ml-2 text-ios-orange">
+                          ({f.good_read_failed_sectors.toLocaleString()} degraded since scan — re-run soon)
                         </span>
                       )}
                     </span>

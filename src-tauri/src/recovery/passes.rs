@@ -6,6 +6,18 @@
 //! - Reverse: read Failed sectors in reverse order (some drives handle this better).
 //! - ThermalPause: long pause + retry the worst remaining sectors.
 //! - ZeroFill: mark remaining Failed sectors as Skipped, fill with zeros at output time.
+//!
+//! # Recovery modes
+//!
+//! **Quick** (default): ddrescue-style — grab all healthy media fast (Triage with
+//! skip-ahead), then one cheap SlowRead to catch marginal sectors, then stop.
+//! No thermal grinding. Designed to complete in minutes to a few hours.
+//!
+//! **Overnight**: patient retry phase for the remaining holes. The engine loops
+//! `pass_plan(Overnight)` until a full cycle recovers 0 new Good sectors, or
+//! [`OVERNIGHT_MAX_CYCLES`] is hit. One cycle = Reverse → ThermalPause → SlowRead
+//! → ThermalPause. Works ONLY on marginal sectors — it cannot recover physically
+//! destroyed data.
 
 use crate::disc::sector::ReadOptions;
 use serde::{Deserialize, Serialize};
@@ -72,60 +84,75 @@ pub struct RecoveryPass {
     pub sectors_failed: u64,
 }
 
-/// Default sequence of passes for a fresh recovery.
-pub fn default_pass_plan() -> Vec<PassStrategy> {
-    vec![
-        PassStrategy::Triage,
-        PassStrategy::SlowRead,
-        PassStrategy::Reverse,
-        PassStrategy::ThermalPause,
-    ]
-}
+/// Hard backstop on Overnight cycles. The engine loops `pass_plan(Overnight)`
+/// until a full cycle recovers 0 new Good sectors OR this limit is hit,
+/// whichever comes first. Prevents infinite grinding on a disc that will never
+/// yield more data.
+pub const OVERNIGHT_MAX_CYCLES: u32 = 12;
 
 /// User-facing recovery mode. Controls pass plan and per-sector pacing.
 ///
-/// Standard: balanced — block triage first, slow retry, reverse, thermal pause.
-///   Best for healthy drives + mostly-readable discs.
+/// **Quick** (default): ddrescue-style — fast block triage grabs all readable
+/// data, then one SlowRead pass catches marginal sectors, then stops.
+/// Best for most discs; completes in minutes to a few hours.
 ///
-/// Patient: kind to weak drives. Skips block triage entirely (which can
-///   stall on a brownout-prone bus-powered USB drive); reads every sector
-///   one at a time with a long inter-read pause so the drive can recover
-///   power and heat. Designed to run for hours overnight without disconnects.
+/// **Overnight**: patient retry phase for the remaining holes. Intended to run
+/// unattended for many hours. The engine loops the plan returned by
+/// `pass_plan(Overnight)` until convergence or [`OVERNIGHT_MAX_CYCLES`] is hit.
+/// Uses Reverse approach + ThermalPause cool-downs + a 2 s inter-sector floor
+/// to keep bus-powered USB drives alive. Note: recovers MARGINAL sectors only —
+/// it cannot recover physically destroyed data.
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
 #[serde(rename_all = "lowercase")]
 pub enum RecoveryMode {
+    /// Fast "get the easy data" pass. Completes quickly; use first.
     #[default]
-    Standard,
-    Patient,
+    Quick,
+    /// Patient retry phase for remaining holes. Engine loops this plan until
+    /// convergence or [`OVERNIGHT_MAX_CYCLES`] is reached.
+    Overnight,
 }
 
 impl RecoveryMode {
-    /// Minimum pause between sector reads in this mode. Strategy-level delay
-    /// is used if larger than this floor.
+    /// Minimum pause between sector reads in this mode. The effective delay is
+    /// `max(mode.delay_floor_ms(), strategy.inter_sector_delay_ms())`.
     pub fn delay_floor_ms(&self) -> u64 {
         match self {
-            RecoveryMode::Standard => 0,
+            RecoveryMode::Quick => 0,
             // 2 seconds between reads — gives a bus-powered USB drive time
             // to recover power before the next IOCTL. Empirically this is
             // the threshold below which cheap drives keep browning out on
-            // home-burned DVDs.
-            RecoveryMode::Patient => 2_000,
+            // home-burned DVDs during multi-hour unattended runs.
+            RecoveryMode::Overnight => 2_000,
         }
     }
 }
 
 /// Pass plan keyed to recovery mode.
+///
+/// For `Overnight`, call this once per cycle. The engine is responsible for
+/// looping until 0 new Good sectors are recovered or [`OVERNIGHT_MAX_CYCLES`]
+/// is hit.
 pub fn pass_plan(mode: RecoveryMode) -> Vec<PassStrategy> {
     match mode {
-        RecoveryMode::Standard => default_pass_plan(),
-        RecoveryMode::Patient => vec![
-            // No block triage — patient mode reads sector-by-sector from
-            // start so a brownout doesn't waste a 64-sector block. We give
-            // the disc two slow passes and a thermal break in between.
-            PassStrategy::SlowRead,
+        // Quick: block triage sweeps healthy media fast, then one SlowRead
+        // pass catches marginal sectors. Stop there — no thermal grinding.
+        RecoveryMode::Quick => vec![PassStrategy::Triage, PassStrategy::SlowRead],
+        // Overnight one cycle: reverse approach (some drives handle this
+        // better), thermal cool-down, slow retry, another cool-down before
+        // the engine decides whether to loop again.
+        RecoveryMode::Overnight => vec![
             PassStrategy::Reverse,
             PassStrategy::ThermalPause,
             PassStrategy::SlowRead,
+            PassStrategy::ThermalPause,
         ],
     }
+}
+
+/// Default pass plan for a fresh recovery. Delegates to `Quick` mode.
+///
+/// Kept for backwards compatibility with engine tests that call this directly.
+pub fn default_pass_plan() -> Vec<PassStrategy> {
+    pass_plan(RecoveryMode::Quick)
 }

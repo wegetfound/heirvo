@@ -102,11 +102,18 @@ export type SessionStatus =
 
 /**
  * Recovery pacing mode.
- * - "standard": balanced — block triage first, fast on healthy drives.
- * - "patient": kind to weak / bus-powered drives. Sector-by-sector reads with
- *   ~2s rest between each, designed to run for hours without disconnects.
+ * - "quick": balanced first pass — block triage, fast on healthy drives.
+ * - "overnight": deep retry pass for remaining damaged sectors. Slower
+ *   re-reads, cool-down pauses, bidirectional seeks. Designed to run
+ *   unattended for hours; works only the holes Quick couldn't fill.
  */
-export type RecoveryMode = "standard" | "patient";
+export type RecoveryMode = "quick" | "overnight";
+
+/** Convenience type for the holes count after a Quick pass completes. */
+export interface OvernightReadiness {
+  /** Total sectors that are still failed or unknown after a Quick pass. */
+  holes_remaining: number;
+}
 
 /** Freemium license status. Returned by get_license_status IPC.
  *
@@ -250,6 +257,12 @@ export interface RecoveryStats {
 export interface RecoveryProgress {
   session_id: string;
   stats: RecoveryStats;
+  /**
+   * Convenience count of sectors still unrecovered (failed + unknown).
+   * If the backend omits this field, the UI derives it from stats.failed +
+   * stats.unknown directly. Zero means a clean recovery with no holes.
+   */
+  holes_remaining?: number;
 }
 
 export interface IsoEntry {
@@ -270,6 +283,7 @@ export interface ExtractedFile {
   size_bytes: number;
   good_sectors: number;
   zero_filled_sectors: number;
+  good_read_failed_sectors: number;
 }
 
 export interface HealthReport {
@@ -286,6 +300,7 @@ export interface IsoResult {
   bytes_written: number;
   good_sectors: number;
   zero_filled_sectors: number;
+  good_read_failed_sectors: number;
 }
 
 export type OutputCodec = "h264" | "h265" | "av1";
@@ -407,6 +422,9 @@ export interface ModelEntry {
   download_url: string | null;
   has_pinned_hash: boolean;
   description: string;
+  /** False until model hosting URLs are configured — UI should disable the
+   *  download action and show "install manually" when this is false. */
+  available_for_download: boolean;
 }
 
 export interface ModelCatalog {
