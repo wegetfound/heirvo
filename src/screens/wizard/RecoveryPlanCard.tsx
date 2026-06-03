@@ -50,8 +50,12 @@ export function RecoveryPlanCard({ drivePath }: { drivePath: string | null }) {
 
   return (
     <div
-      className="mb-4 rounded-2xl border bg-white/60 p-4 shadow-sm backdrop-blur"
-      style={{ borderColor: tone.border }}
+      className="mb-4 rounded-2xl p-4"
+      style={{
+        background: "var(--db-surface)",
+        border: `1px solid ${tone.border}`,
+        boxShadow: "var(--db-shadow)",
+      }}
     >
       <div className="flex items-start gap-3">
         <div
@@ -62,7 +66,12 @@ export function RecoveryPlanCard({ drivePath }: { drivePath: string | null }) {
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline gap-2">
-            <h3 className="text-sm font-semibold text-ink-900">Recovery Plan</h3>
+            <h3
+              className="text-sm font-semibold"
+              style={{ color: "var(--db-text)" }}
+            >
+              Recovery Plan
+            </h3>
             <span
               className="rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide"
               style={{ background: tone.bg, color: tone.fg }}
@@ -71,16 +80,27 @@ export function RecoveryPlanCard({ drivePath }: { drivePath: string | null }) {
             </span>
           </div>
 
-          <div className="mt-2 grid grid-cols-1 gap-2 text-[13px] text-ink-700 sm:grid-cols-2">
+          <div
+            className="mt-2 grid grid-cols-1 gap-2 text-[13px] sm:grid-cols-2"
+            style={{ color: "var(--db-text-muted)" }}
+          >
             <Row label="Drive">
-              <span className="font-medium text-ink-900">
+              <span
+                className="font-medium"
+                style={{ color: "var(--db-text)" }}
+              >
                 {disc.vendor} {disc.model}
               </span>
-              <span className="text-ink-500"> ({drive_assessment.category})</span>
+              <span style={{ color: "var(--db-text-faint)" }}> ({drive_assessment.category})</span>
             </Row>
             <Row label="Disc">
-              <span className="font-medium text-ink-900">{disc.profile_name}</span>
-              <span className="text-ink-500">
+              <span
+                className="font-medium"
+                style={{ color: "var(--db-text)" }}
+              >
+                {disc.profile_name}
+              </span>
+              <span style={{ color: "var(--db-text-faint)" }}>
                 {" · "}
                 {disc.disc_status}
                 {disc.num_sessions > 0 ? ` · ${disc.num_sessions} session${disc.num_sessions === 1 ? "" : "s"}` : ""}
@@ -90,14 +110,24 @@ export function RecoveryPlanCard({ drivePath }: { drivePath: string | null }) {
           </div>
 
           {drive_assessment.notes && (
-            <p className="mt-3 text-[12.5px] leading-relaxed text-ink-600">
+            <p
+              className="mt-3 text-[12.5px] leading-relaxed"
+              style={{ color: "var(--db-text-muted)" }}
+            >
               {drive_assessment.notes}
             </p>
           )}
 
           {disc.disc_status === "incomplete" && (
-            <p className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-[12px] text-amber-900">
-              <strong>Heads up:</strong> this disc was never finalized.
+            <p
+              className="mt-2 rounded-lg px-3 py-2 text-[12px]"
+              style={{
+                background: "var(--db-amber-light)",
+                color: "var(--db-text-muted)",
+                border: "1px solid var(--db-border-soft)",
+              }}
+            >
+              <strong style={{ color: "var(--db-amber)" }}>Heads up:</strong> this disc was never finalized.
               Standard players often refuse to read it, but the data sectors
               are usually still there. Heirvo will recover what's recorded.
             </p>
@@ -111,7 +141,10 @@ export function RecoveryPlanCard({ drivePath }: { drivePath: string | null }) {
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col">
-      <span className="text-[10.5px] font-semibold uppercase tracking-wider text-ink-500">
+      <span
+        className="text-[10.5px] font-semibold uppercase tracking-wider"
+        style={{ color: "var(--db-text-faint)" }}
+      >
         {label}
       </span>
       <span className="truncate">{children}</span>
@@ -129,38 +162,38 @@ function qualityTone(q: DriveQuality): {
     case "pro":
     case "good":
       return {
-        bg: "rgba(34,197,94,0.12)",
-        fg: "#15803d",
-        border: "rgba(34,197,94,0.30)",
+        bg: "var(--db-green-light)",
+        fg: "var(--db-green)",
+        border: "var(--db-green)",
         icon: <CheckCircle2 className="h-5 w-5" />,
       };
     case "acceptable":
       return {
-        bg: "rgba(59,130,246,0.12)",
-        fg: "#1d4ed8",
-        border: "rgba(59,130,246,0.30)",
+        bg: "var(--db-amber-light)",
+        fg: "var(--db-amber)",
+        border: "var(--db-amber)",
         icon: <Info className="h-5 w-5" />,
       };
     case "marginal":
       return {
-        bg: "rgba(245,158,11,0.14)",
-        fg: "#b45309",
-        border: "rgba(245,158,11,0.35)",
+        bg: "var(--db-amber-light)",
+        fg: "var(--db-amber)",
+        border: "var(--db-amber)",
         icon: <AlertTriangle className="h-5 w-5" />,
       };
     case "avoid":
       return {
-        bg: "rgba(239,68,68,0.14)",
-        fg: "#b91c1c",
-        border: "rgba(239,68,68,0.35)",
+        bg: "color-mix(in srgb, var(--db-red) 12%, transparent)",
+        fg: "var(--db-red)",
+        border: "var(--db-red)",
         icon: <ShieldAlert className="h-5 w-5" />,
       };
     case "unknown":
     default:
       return {
-        bg: "rgba(148,163,184,0.18)",
-        fg: "#475569",
-        border: "rgba(148,163,184,0.30)",
+        bg: "var(--db-surface-2)",
+        fg: "var(--db-text-faint)",
+        border: "var(--db-border)",
         icon: <Info className="h-5 w-5" />,
       };
   }

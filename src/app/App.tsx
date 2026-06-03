@@ -1,4 +1,5 @@
 import { Routes, Route, Link, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { TitleBar } from "./TitleBar";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { gsap } from "gsap";
 import {
@@ -292,14 +293,16 @@ function RecoveryPromotionManager() {
 
 export default function App() {
   return (
-    <div className="flex h-screen text-ink-900 bg-ink-50">
-      <RecoveryPromotionManager />
-      <AutoPlayManager />
-      <AutoPlayPrompt />
-      <PreflightGate />
-      <Sidebar />
-      <main className="flex-1 flex flex-col overflow-hidden bg-ink-50">
-        <Routes>
+    <div className="flex flex-col h-screen">
+      <TitleBar />
+      <div className="flex flex-1 min-h-0">
+        <RecoveryPromotionManager />
+        <AutoPlayManager />
+        <AutoPlayPrompt />
+        <PreflightGate />
+        <Sidebar />
+        <main className="flex-1 flex flex-col overflow-hidden">
+          <Routes>
           {/* Dashboard owns its full height — two-column, no outer scroll. */}
           <Route path="/session/:id" element={<Dashboard />} />
           {/* All other screens are wrapped in a scrollable container. */}
@@ -321,7 +324,8 @@ export default function App() {
             <Route path="*" element={<Home />} />
           </Route>
         </Routes>
-      </main>
+        </main>
+      </div>
     </div>
   );
 }
@@ -684,9 +688,17 @@ function Sidebar() {
   // In light world, treat collapsed (48px) the same as sliver for icon-only layout
   const isIconOnly = isSliver || (!isDark && collapsed);
 
+  // Chrome color is driven by the THEME (warm dark by default), independent of
+  // the immersive `/library` behavior. So the rail is dark everywhere, but the
+  // hidden hover-reveal sliver stays exclusive to the Memories room.
+  const chromeDark =
+    isDark ||
+    (typeof document !== "undefined" &&
+      document.documentElement.dataset.theme !== "light");
+
   // ── Styles ────────────────────────────────────────────────────────────────
-  const railBg = isDark ? "rgba(20,13,7,0.82)" : "rgba(255,255,255,0.62)";
-  const railBorder = isDark
+  const railBg = chromeDark ? "rgba(18,24,38,0.82)" : "rgba(255,255,255,0.62)";
+  const railBorder = chromeDark
     ? "1px solid rgba(255,255,255,0.09)"
     : "1px solid rgba(225,230,238,0.80)";
   const railBackdrop = "blur(22px)";
@@ -713,8 +725,8 @@ function Sidebar() {
         transition: prefersReducedMotion()
           ? "none"
           : `background ${DUR}s ease, border-color ${DUR}s ease`,
-        boxShadow: isDark
-          ? "4px 0 32px rgba(194,116,31,0.08), inset -1px 0 0 rgba(194,116,31,0.06)"
+        boxShadow: chromeDark
+          ? "4px 0 32px rgba(245,166,35,0.08), inset -1px 0 0 rgba(245,166,35,0.06)"
           : "none",
       }}
     >
@@ -725,8 +737,8 @@ function Sidebar() {
           position: "absolute",
           inset: "0 0 auto 0",
           height: 1,
-          background: isDark
-            ? "linear-gradient(90deg, transparent, rgba(194,116,31,0.20), transparent)"
+          background: chromeDark
+            ? "linear-gradient(90deg, transparent, rgba(245,166,35,0.20), transparent)"
             : "linear-gradient(90deg, transparent, rgba(255,255,255,0.90), transparent)",
           pointerEvents: "none",
           zIndex: 2,
@@ -766,7 +778,7 @@ function Sidebar() {
           minWidth: 0,
         }}
       >
-        <BrandMark size={28} dark={isDark} />
+        <BrandMark size={28} dark={chromeDark} />
         <span
           ref={wordmarkRef}
           style={{
@@ -774,7 +786,7 @@ function Sidebar() {
             fontSize: 17,
             fontWeight: 700,
             letterSpacing: "-0.03em",
-            color: isDark ? "rgba(255,255,255,0.92)" : "#0A1729",
+            color: chromeDark ? "rgba(255,255,255,0.92)" : "#0A1729",
             whiteSpace: "nowrap",
             opacity: isIconOnly ? 0 : 1, // initial; GSAP takes over
             transition: prefersReducedMotion() ? "none" : `color ${DUR}s ease`,
@@ -795,7 +807,7 @@ function Sidebar() {
                 textTransform: "uppercase",
                 letterSpacing: "0.08em",
                 color: "white",
-                background: isDark
+                background: chromeDark
                   ? "linear-gradient(135deg, #C2741F 0%, #E9B97A 100%)"
                   : "linear-gradient(135deg, #0A84FF 0%, #5AC8FA 100%)",
                 verticalAlign: "middle",
@@ -829,7 +841,7 @@ function Sidebar() {
               label={label}
               Icon={Icon}
               active={active}
-              isDark={isDark}
+              isDark={chromeDark}
               isSliver={isIconOnly}
             />
           );
@@ -873,7 +885,7 @@ function Sidebar() {
             <span
               style={{
                 fontSize: 11,
-                color: isDark ? "rgba(255,255,255,0.38)" : "#5C6B82",
+                color: chromeDark ? "rgba(255,255,255,0.38)" : "#5C6B82",
                 fontFamily: "system-ui, -apple-system, sans-serif",
                 letterSpacing: "0.01em",
                 transition: prefersReducedMotion() ? "none" : `color ${DUR}s ease`,

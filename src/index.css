@@ -537,3 +537,75 @@
     filter: blur(2px);
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   GLOBAL WARM-CINEMATIC DARK — app-wide.
+   Generalizes the per-panel dark overrides so EVERY screen adopts the --db-*
+   midnight/amber palette, not just the Dashboard. Pages built with hardcoded
+   Tailwind ink/brand utilities are remapped to dark tokens here. This is the
+   foundation sweep; per-screen editorial polish layers on top.
+═══════════════════════════════════════════════════════════════════════════ */
+
+/* The canvas — a warm amber glow over the midnight base (the Memories feel). */
+[data-theme="dark"] body,
+[data-theme="dark"] #root {
+  background:
+    radial-gradient(115% 75% at 100% -5%, rgba(245,166,35,0.10), transparent 55%),
+    radial-gradient(90% 70% at -5% 105%, rgba(245,166,35,0.06), transparent 50%),
+    var(--db-base) !important;
+  color: var(--db-text);
+}
+
+/* Home's cool mesh → warm amber in the dark world. */
+[data-theme="dark"] .mesh-bg {
+  background:
+    radial-gradient(60% 42% at 14% 6%,  rgba(245,166,35,0.16), transparent 62%),
+    radial-gradient(46% 36% at 90% 16%, rgba(245,166,35,0.10), transparent 66%),
+    radial-gradient(58% 42% at 82% 98%, rgba(120,90,200,0.10), transparent 66%);
+}
+
+/* Surfaces (cards, panels, glassy whites) → dark surface. */
+[data-theme="dark"] .bg-white,
+[data-theme="dark"] .bg-white\/90,
+[data-theme="dark"] .bg-white\/80,
+[data-theme="dark"] .bg-white\/70,
+[data-theme="dark"] .bg-white\/60,
+[data-theme="dark"] .bg-white\/50,
+[data-theme="dark"] .bg-ink-50\/80 { background-color: var(--db-surface) !important; }
+[data-theme="dark"] .bg-ink-50  { background-color: var(--db-base) !important; }
+[data-theme="dark"] .bg-ink-100 { background-color: var(--db-surface-2) !important; }
+[data-theme="dark"] .bg-ink-900 { background-color: var(--db-surface-2) !important; }
+
+/* Borders → faint white hairlines. */
+[data-theme="dark"] .border-ink-100,
+[data-theme="dark"] .border-ink-200,
+[data-theme="dark"] .border-ink-200\/70,
+[data-theme="dark"] .border-ink-300 { border-color: var(--db-border) !important; }
+
+/* Text → light on dark. */
+[data-theme="dark"] .text-ink-900,
+[data-theme="dark"] .text-ink-800,
+[data-theme="dark"] .text-ink-700 { color: var(--db-text) !important; }
+[data-theme="dark"] .text-ink-600,
+[data-theme="dark"] .text-ink-500 { color: var(--db-text-muted) !important; }
+[data-theme="dark"] .text-ink-400,
+[data-theme="dark"] .text-ink-300 { color: var(--db-text-faint) !important; }
+
+/* Brand → electric amber. */
+[data-theme="dark"] .text-brand-400,
+[data-theme="dark"] .text-brand-500,
+[data-theme="dark"] .text-brand-600,
+[data-theme="dark"] .text-brand-700 { color: var(--db-amber) !important; }
+[data-theme="dark"] .border-brand-200,
+[data-theme="dark"] .border-brand-300 { border-color: var(--db-amber-glow) !important; }
+[data-theme="dark"] .hover\:bg-brand-50:hover { background-color: var(--db-amber-light) !important; }
+
+/* Shadows read heavier on dark. */
+[data-theme="dark"] .shadow-sm,
+[data-theme="dark"] .shadow,
+[data-theme="dark"] .shadow-md,
+[data-theme="dark"] .shadow-lg { box-shadow: var(--db-shadow) !important; }
+
+/* Selection + scrollbar polish. */
+[data-theme="dark"] ::selection { background: var(--db-amber); color: #160E02; }
+[data-theme="dark"] * { scrollbar-color: var(--db-border) transparent; }

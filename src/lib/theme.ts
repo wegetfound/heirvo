@@ -10,7 +10,9 @@ export function useTheme() {
   const [theme, setTheme] = useState<Theme>(() => {
     try {
       const stored = localStorage.getItem("heirvo-theme") as Theme | null;
-      return stored === "dark" ? "dark" : "light";
+      // Warm cinematic dark is Heirvo's signature — default to it unless the
+      // user explicitly chose light.
+      return stored === "light" ? "light" : "dark";
     } catch {
       return "light";
     }
@@ -33,6 +35,6 @@ export function useTheme() {
 export function initTheme() {
   try {
     const stored = localStorage.getItem("heirvo-theme") as Theme | null;
-    applyTheme(stored === "dark" ? "dark" : "light");
+    applyTheme(stored === "light" ? "light" : "dark");
   } catch { /* ignore */ }
 }
