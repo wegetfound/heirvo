@@ -23,8 +23,14 @@ type ReceiptManifest = { manifest: string; sector_count: number };
 export function OutputPanel({
   sessionId,
   onMp4Saved,
+  recoveryPct = 0,
+  recoveryDone = false,
 }: {
   sessionId: string;
+  /** 0–100: percentage of sectors read so far. Used to gate save buttons. */
+  recoveryPct?: number;
+  /** True once the backend fires the `complete` event. */
+  recoveryDone?: boolean;
   /** Notifies the parent (Dashboard) that a video file is now on disk so it
    *  can offer the optional one-click "make it sharper" follow-up. */
   onMp4Saved?: (outputPath: string) => void;
@@ -353,6 +359,19 @@ export function OutputPanel({
                   </div>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* Recovery-in-progress notice — shown when the user hasn't started
+              (or barely started) a recovery. Prevents confusing "save at 0%". */}
+          {!recoveryDone && recoveryPct < 5 && (
+            <div className="mb-3 flex items-start gap-2 rounded-xl border border-amber-200/60 bg-amber-50/60 px-3 py-2.5 text-[12px] text-amber-800">
+              <span className="mt-0.5 flex-shrink-0 text-base leading-none">⏳</span>
+              <span>
+                <strong>Recovery hasn't started yet.</strong>{" "}
+                Click <strong>Start</strong> in the left panel to begin reading your disc.
+                Save options will work once recovery is underway.
+              </span>
             </div>
           )}
 

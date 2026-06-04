@@ -251,6 +251,11 @@ impl RecoveryEngine {
         *self.state.lock() = EngineState::Running;
         *self.started_at.lock() = Some(Instant::now());
 
+        // Emit an immediate snapshot so the UI reflects any sectors already
+        // recovered from a prior run. Without this, resuming an already-complete
+        // session shows 0% because no pass has work to do and thus never emits.
+        self.emit_progress(self.plan.first().copied().unwrap_or(PassStrategy::Triage));
+
         match self.mode {
             RecoveryMode::Quick => {
                 // Quick mode: run the plan exactly once.
@@ -307,6 +312,10 @@ impl RecoveryEngine {
         }
 
         self.flush_receipts();
+        // Final snapshot so the frontend's `stats` reflects the true cumulative
+        // result before the `recovery:complete` event fires. Guards against the
+        // "All done! 0 minutes saved" bug on re-runs where no pass had work.
+        self.emit_progress(self.plan.last().copied().unwrap_or(PassStrategy::Triage));
         *self.state.lock() = EngineState::Completed;
         EngineState::Completed
     }

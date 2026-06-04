@@ -198,16 +198,30 @@ export function Dashboard() {
   const recovered = minsRecovered(stats);
   const remaining = minsRemaining(stats);
 
+  // Distinguish between "never started" (no stats yet), "resting mid-read" (stats + pct>0),
+  // and "just inserted, warming up" (stats but pct still 0).
+  const neverStarted = idle && !stats;
+  const warmingUp    = idle && !!stats && pct === 0;
+  const midRest      = idle && !!stats && pct > 0;
+
   const headline = recoveryDone
     ? "All done!"
-    : idle
-    ? "Resting the drive…"
+    : neverStarted
+    ? "Ready when you are."
+    : warmingUp
+    ? "Getting started…"
+    : midRest
+    ? "Taking a short break."
     : isOvernightRunning
     ? "Working through the last few spots."
     : "We're saving your video.";
 
   const subline = recoveryDone
     ? `We saved ${recovered} minute${recovered !== 1 ? "s" : ""} of video.`
+    : neverStarted
+    ? "Insert your disc and click Start — we'll begin reading right away."
+    : warmingUp
+    ? "Drive detected. Click Resume to begin reading your disc."
     : isOvernightRunning && stats
     ? `Recovering the last few spots — leave it running, stop anytime. ${stats.failed + stats.unknown > 0 ? `${(stats.failed + stats.unknown).toLocaleString()} spots still to go.` : "Almost there."}`
     : stats
@@ -370,7 +384,7 @@ export function Dashboard() {
                 tone="amber"
                 icon="◷"
                 title={remaining != null ? `~${remaining} min left` : "Calculating…"}
-                sub={isActive ? "Reading sector by sector" : idle ? "Drive resting" : "—"}
+                sub={isActive ? "Reading sector by sector" : idle ? (pct === 0 ? "Click Resume to start" : "Drive resting — click Resume") : "—"}
               />
             </div>
           )}
@@ -399,7 +413,7 @@ export function Dashboard() {
                 </select>
                 <ActionBtn primary onClick={resume} disabled={resuming}>
                   {resuming ? <Loader2 size={15} className="animate-spin" /> : <Play size={15} />}
-                  Resume
+                  {pct === 0 ? "Start" : "Resume"}
                 </ActionBtn>
               </>
             )}
@@ -520,7 +534,12 @@ export function Dashboard() {
 
       {/* ══ OUTPUT PANEL ════════════════════════════════════════════ */}
       <div style={{ ...S.surface, borderRadius: 20 }}>
-        <OutputPanel sessionId={id} onMp4Saved={setSavedVideoPath} />
+        <OutputPanel
+          sessionId={id}
+          onMp4Saved={setSavedVideoPath}
+          recoveryPct={pct}
+          recoveryDone={recoveryDone}
+        />
       </div>
 
       {/* ══ ENHANCEMENT OFFER ══════════════════════════════════════ */}
@@ -633,10 +652,12 @@ const DoneBanner = React.forwardRef<HTMLDivElement, { stats: RecoveryStats | nul
   const damaged = minsDamaged(stats);
   const total = minsTotal(stats);
 
-  let bg = "rgba(255,255,255,0.72)";
-  let border = "#E1E6EE";
-  let headline = "";
-  let detail = "";
+  // Theme-aware defaults (the old hardcoded white bg rendered as an invisible
+  // gray box in dark mode when stats hadn't arrived yet).
+  let bg = "var(--db-surface-2)";
+  let border = "var(--db-border)";
+  let headline = "Recovery complete.";
+  let detail = "Use the Save buttons to keep your video or extract files.";
 
   if (stats) {
     if (damaged === 0) {

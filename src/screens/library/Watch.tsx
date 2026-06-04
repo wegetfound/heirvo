@@ -5,7 +5,7 @@ import {
   useSearchParams,
   Link,
 } from "react-router-dom";
-import { ChevronLeft, Play, Pause, Search as SearchIcon, Music, FileText, FolderOpen, Heart, ExternalLink } from "lucide-react";
+import { ChevronLeft, Play, Pause, Search as SearchIcon, Music, FileText, FolderOpen, Heart, ExternalLink, Maximize, Minimize } from "lucide-react";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { tsToSec } from "./data/mockDiscs";
 import { gradientCss } from "./components/GradientArt";
@@ -151,6 +151,8 @@ export default function Watch() {
   const [playing, setPlaying] = useState(false);
   const [filterQ, setFilterQ] = useState("");
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const playerRef = useRef<HTMLDivElement | null>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   // Resolve the local media path to an asset URL the webview can load.
   // Falls back to null when the disc has no recovered file (mock/demo data).
@@ -196,6 +198,69 @@ export default function Watch() {
       v.pause();
     }
   }, [playing]);
+
+  // Keep `isFullscreen` in sync with the browser, including when the user
+  // presses Esc or uses the native fullscreen control. Covers the standard
+  // and webkit-prefixed events (WebView2 / older WebKit).
+  useEffect(() => {
+    const onFsChange = () => {
+      const fsEl =
+        document.fullscreenElement ||
+        // @ts-expect-error vendor-prefixed fallback
+        document.webkitFullscreenElement ||
+        null;
+      setIsFullscreen(!!fsEl);
+    };
+    document.addEventListener("fullscreenchange", onFsChange);
+    document.addEventListener("webkitfullscreenchange", onFsChange);
+    return () => {
+      document.removeEventListener("fullscreenchange", onFsChange);
+      document.removeEventListener("webkitfullscreenchange", onFsChange);
+    };
+  }, []);
+
+  // Toggle fullscreen on the player container (video + scrubber stay together).
+  // Falls back to the video element, then to the Tauri window, so it always
+  // does *something* even if the webview blocks the element Fullscreen API.
+  const toggleFullscreen = async () => {
+    const fsEl =
+      document.fullscreenElement ||
+      // @ts-expect-error vendor-prefixed fallback
+      document.webkitFullscreenElement ||
+      null;
+    try {
+      if (fsEl) {
+        if (document.exitFullscreen) await document.exitFullscreen();
+        // @ts-expect-error vendor-prefixed fallback
+        else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+        return;
+      }
+      const target = playerRef.current ?? videoRef.current;
+      if (target?.requestFullscreen) {
+        await target.requestFullscreen();
+        return;
+      }
+      // @ts-expect-error vendor-prefixed fallback
+      if (target?.webkitRequestFullscreen) {
+        // @ts-expect-error vendor-prefixed fallback
+        target.webkitRequestFullscreen();
+        return;
+      }
+      throw new Error("Fullscreen API unavailable");
+    } catch {
+      // Last resort: toggle the Tauri OS window to fullscreen so the user still
+      // gets a big-screen view even when the element API is unavailable.
+      try {
+        const { getCurrentWindow } = await import("@tauri-apps/api/window");
+        const w = getCurrentWindow();
+        const cur = await w.isFullscreen();
+        await w.setFullscreen(!cur);
+        setIsFullscreen(!cur);
+      } catch {
+        /* nothing else we can do — leave UI as-is */
+      }
+    }
+  };
 
   if (!disc) {
     return (
@@ -269,6 +334,8 @@ export default function Watch() {
         <div className="lib-watch-wrap">
           <div className="lib-watch-left">
             <div
+              ref={playerRef}
+              className="lib-player-card"
               style={{
                 background: "var(--lib-paper)",
                 border: "1px solid var(--lib-line)",
@@ -278,6 +345,7 @@ export default function Watch() {
               }}
             >
               <div
+                className="lib-player-stage"
                 style={{
                   aspectRatio: "4 / 3",
                   background: (isPlayable && hasMedia && !mediaError) ? "#000" : gradientCss(disc.gradient),
@@ -314,7 +382,11 @@ export default function Watch() {
                     onPause={() => setPlaying(false)}
                     onEnded={() => setPlaying(false)}
                     onError={() => setMediaError(true)}
-                    onClick={() => setPlaying((p) => !p)}
+                    onDoubleClick={toggleFullscreen}
+                    onClick={() => !isFullscreen && setPlaying((p) => !p)}
+                    // Native controls (scrubber, volume) while fullscreen; our
+                    // custom minimal bar is used at normal size.
+                    controls={isFullscreen}
                     style={{
                       width: "100%",
                       height: "100%",
@@ -465,6 +537,24 @@ export default function Watch() {
                 >
                   {fmtTime(currentSec)} / {disc.durationFormatted}
                 </span>
+                <button
+                  type="button"
+                  onClick={toggleFullscreen}
+                  disabled={!hasMedia}
+                  title={isFullscreen ? "Exit full screen" : "Full screen"}
+                  aria-label={isFullscreen ? "Exit full screen" : "Full screen"}
+                  style={{
+                    background: "transparent",
+                    border: 0,
+                    cursor: hasMedia ? "pointer" : "not-allowed",
+                    color: "var(--lib-ink-2)",
+                    padding: 4,
+                    display: "flex",
+                    opacity: hasMedia ? 1 : 0.4,
+                  }}
+                >
+                  {isFullscreen ? <Minimize size={18} /> : <Maximize size={18} />}
+                </button>
               </div>
               )}
             </div>
