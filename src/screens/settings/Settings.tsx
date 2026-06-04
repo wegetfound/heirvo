@@ -8,9 +8,9 @@ import { audio, type AudioPrefs } from "@/lib/audio";
 import type { PreflightStatus, WhisperModelInfo, ImagemagickStatus, InstallProgress } from "@/lib/types";
 import { PRICING } from "@/lib/pricing";
 
-const CHECKOUT_RECOVER_URL = "https://heirvo.com/buy?tier=recover";
-const CHECKOUT_ARCHIVE_URL = "https://heirvo.com/buy?tier=archive";
-const CHECKOUT_FAMILY_URL  = "https://heirvo.com/buy?tier=family";
+const CHECKOUT_RECOVER_URL = "https://heirvo.lemonsqueezy.com/checkout/buy/a98b575c-fe61-48ee-835f-984b590ec4e2";
+const CHECKOUT_ARCHIVE_URL = "https://heirvo.lemonsqueezy.com/checkout/buy/61a31119-78f7-4612-ade8-d9897eaf7015";
+const CHECKOUT_FAMILY_URL  = "https://heirvo.lemonsqueezy.com/checkout/buy/b7b36e1f-e286-4508-b58b-2ec90ea4a75e";
 const SUPPORT_URL = "https://heirvo.com/support";
 const MAILIN_URL = "https://heirvo.com/recover";
 
