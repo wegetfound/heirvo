@@ -152,13 +152,18 @@ export interface ImportGate {
   reason: string | null;
 }
 
-/** Returned by delete_library_disc. `vaultFileRemoved` is false if the disc
- * was a recovered DVD whose video_path lived outside the vault — in that
- * case only the DB row is dropped, the original file is untouched. */
+/** Returned by delete_library_disc.
+ * `vaultFileRemoved` is false if the disc was a recovered DVD whose
+ * video_path lived outside the vault — in that case only the DB row is
+ * dropped, the original file is untouched.
+ * `deliverableKept` is the Documents\Heirvo path that was preserved when
+ * `permanent = false` and the file exists on disk; null when `permanent = true`
+ * (file was deleted) or when there was no deliverable to preserve. */
 export interface DeleteResult {
   id: string;
   vaultFileRemoved: boolean;
   bytesFreed: number;
+  deliverableKept: string | null;
 }
 
 /** Returned by delete_library_discs_bulk. Partial success is allowed. */

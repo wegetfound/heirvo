@@ -158,6 +158,10 @@ pub fn record_export(app_data_dir: &PathBuf) {
 /// Dev-mode stub: accepts any non-empty key with at least one `-` and ≥8 chars.
 /// Used when no `HEIRVO_LS_*_PRODUCT_ID` is set at build time.
 ///
+/// SECURITY (H3): This is the DEV stub — the on-disk key is trusted without
+/// online revalidation. Build with `HEIRVO_LS_*_PRODUCT_ID` env vars set to
+/// enable the real Lemon Squeezy online validation path in `validate_online`.
+///
 /// Tier inference for dev keys:
 ///   prefix `RECOVER-…`  → Recover
 ///   prefix `FAMILY-…`   → Family

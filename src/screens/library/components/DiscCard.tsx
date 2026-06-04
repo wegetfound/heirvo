@@ -89,8 +89,8 @@ export function DiscCard({ disc, showStatus = true, showSource = true }: Props) 
               position: "absolute",
               top: 10,
               left: 10,
-              background: "rgba(255,255,255,.9)",
-              color: "var(--lib-ink)",
+              background: disc.status === "incomplete" ? "rgba(255,248,235,.95)" : "rgba(255,255,255,.9)",
+              color: disc.status === "incomplete" ? "#92400e" : "var(--lib-ink)",
               fontSize: 10.5,
               fontWeight: 600,
               padding: "4px 8px",
@@ -103,8 +103,23 @@ export function DiscCard({ disc, showStatus = true, showSource = true }: Props) 
               gap: 5,
             }}
           >
-            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#2E9E4F" }} />
-            {disc.status === "recovered" ? "Restored" : disc.status === "partial" ? "Partial" : "In progress"}
+            <span style={{
+              width: 6,
+              height: 6,
+              borderRadius: "50%",
+              background: disc.status === "incomplete"
+                ? "#d97706"
+                : disc.status === "partial"
+                ? "#d97706"
+                : "#2E9E4F",
+            }} />
+            {disc.status === "recovered"
+              ? "Restored"
+              : disc.status === "partial"
+              ? "Partial"
+              : disc.status === "incomplete"
+              ? "Incomplete"
+              : "In progress"}
           </span>
         )}
         <span

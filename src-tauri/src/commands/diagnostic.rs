@@ -21,6 +21,7 @@ use sqlx::Row;
 use std::io::Write;
 use std::path::PathBuf;
 use tauri::{AppHandle, Manager, State};
+use tauri_plugin_opener::OpenerExt;
 use uuid::Uuid;
 
 #[derive(Debug, Serialize)]
@@ -210,57 +211,28 @@ pub async fn get_log_path() -> AppResult<String> {
     Ok(log_file_path().to_string_lossy().to_string())
 }
 
-/// Reveal the log folder in the user's file manager (Explorer on Windows).
+/// Reveal the log folder in the user's file manager.
 /// Falls back to opening the parent directory if the log file doesn't exist
-/// yet.
+/// yet. Uses `tauri-plugin-opener` (ShellExecuteW / xdg-open etc.) —
+/// no shell interpreter, no string concatenation into a command line.
 #[tauri::command]
-pub async fn open_log_folder() -> AppResult<()> {
+pub async fn open_log_folder(app: AppHandle) -> AppResult<()> {
     let path = log_file_path();
-    let target: PathBuf = if path.exists() {
-        // Open Explorer with the file selected.
-        return reveal_in_explorer(&path);
+    if path.exists() {
+        // Reveal the log file itself (parent opens, file is selected).
+        app.opener()
+            .reveal_item_in_dir(&path)
+            .map_err(|e| AppError::Internal(format!("opener reveal_item_in_dir: {e}")))?;
     } else {
-        // No log yet — open the parent dir at least.
-        path.parent().map(|p| p.to_path_buf()).unwrap_or(path)
-    };
-    if let Some(parent) = target.parent() {
-        let _ = std::fs::create_dir_all(parent);
+        // No log yet — open (or create) the parent dir.
+        let target: PathBuf = path.parent().map(|p| p.to_path_buf()).unwrap_or(path);
+        if let Some(parent) = target.parent() {
+            let _ = std::fs::create_dir_all(parent);
+        }
+        let _ = std::fs::create_dir_all(&target);
+        app.opener()
+            .open_path(target.to_string_lossy().as_ref(), None::<&str>)
+            .map_err(|e| AppError::Internal(format!("opener open_path: {e}")))?;
     }
-    let _ = std::fs::create_dir_all(&target);
-    open_path(&target)
-}
-
-#[cfg(windows)]
-fn reveal_in_explorer(path: &std::path::Path) -> AppResult<()> {
-    // /select, asks Explorer to open the parent and highlight the file.
-    let arg = format!("/select,{}", path.display());
-    std::process::Command::new("explorer.exe")
-        .arg(&arg)
-        .spawn()
-        .map(|_| ())
-        .map_err(|e| AppError::Internal(format!("explorer.exe: {e}")))
-}
-
-#[cfg(not(windows))]
-fn reveal_in_explorer(path: &std::path::Path) -> AppResult<()> {
-    open_path(path.parent().unwrap_or(path))
-}
-
-#[cfg(windows)]
-fn open_path(path: &std::path::Path) -> AppResult<()> {
-    std::process::Command::new("explorer.exe")
-        .arg(path)
-        .spawn()
-        .map(|_| ())
-        .map_err(|e| AppError::Internal(format!("explorer.exe: {e}")))
-}
-
-#[cfg(not(windows))]
-fn open_path(path: &std::path::Path) -> AppResult<()> {
-    let cmd = if cfg!(target_os = "macos") { "open" } else { "xdg-open" };
-    std::process::Command::new(cmd)
-        .arg(path)
-        .spawn()
-        .map(|_| ())
-        .map_err(|e| AppError::Internal(format!("{cmd}: {e}")))
+    Ok(())
 }

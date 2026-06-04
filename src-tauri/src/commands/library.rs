@@ -10,6 +10,37 @@ use sqlx::Row;
 use std::path::{Path, PathBuf};
 use tauri::{AppHandle, Manager, State};
 
+/// Sanitize a source filename before placing it in the vault.
+///
+/// Strips Windows-illegal chars (`< > : " / \ | ? *` and control chars),
+/// then checks if the stem is a Windows reserved device name (CON, NUL,
+/// COM1–COM9, LPT1–LPT9 etc.) and appends `_` if so (M2/L4 guard).
+/// Falls back to "imported" if the result would otherwise be empty.
+fn sanitize_vault_filename(raw: &str) -> String {
+    const ILLEGAL: &[char] = &['<', '>', ':', '"', '/', '\\', '|', '?', '*'];
+    let cleaned: String = raw
+        .chars()
+        .filter(|c| {
+            let code = *c as u32;
+            code >= 0x20 && code != 0x7F && !ILLEGAL.contains(c)
+        })
+        .collect();
+    let result = cleaned.trim().to_string();
+    let result = if result.is_empty() { "imported".to_string() } else { result };
+    // Reserved device name guard: check the stem (part before first '.').
+    let stem = result.split('.').next().unwrap_or(&result);
+    let upper = stem.to_ascii_uppercase();
+    let is_reserved = matches!(
+        upper.as_str(),
+        "CON" | "PRN" | "AUX" | "NUL"
+            | "COM1" | "COM2" | "COM3" | "COM4" | "COM5"
+            | "COM6" | "COM7" | "COM8" | "COM9"
+            | "LPT1" | "LPT2" | "LPT3" | "LPT4" | "LPT5"
+            | "LPT6" | "LPT7" | "LPT8" | "LPT9"
+    );
+    if is_reserved { format!("{}_", result) } else { result }
+}
+
 #[tauri::command]
 pub async fn list_library_discs(state: State<'_, AppState>) -> AppResult<Vec<Disc>> {
     queries::list_discs(&state.db).await
@@ -505,10 +536,13 @@ pub async fn import_media_disc(
     let vault_root = vault_dir(&app)?;
     let prefix = hash.as_deref().unwrap_or("nohash");
     let prefix_short = &prefix[..prefix.len().min(16)];
-    let filename = Path::new(&media_path)
+    let raw_filename = Path::new(&media_path)
         .file_name()
         .map(|s| s.to_string_lossy().to_string())
         .unwrap_or_else(|| "imported".to_string());
+    // Guard: strip Windows-illegal chars and reserved device names so a disc
+    // labelled "NUL" or "CON" can't write to a Windows device path (M2/L4).
+    let filename = sanitize_vault_filename(&raw_filename);
     let vault_slot = vault_root.join(prefix_short);
     tokio::fs::create_dir_all(&vault_slot)
         .await
@@ -659,12 +693,28 @@ pub async fn import_media_disc(
         }
     }
 
+    // Materialize the human-findable Documents\Heirvo copy.  Non-fatal — a
+    // failed deliverable must never fail the import.
+    let _ = crate::library::deliverable::materialize_deliverable(&app, &state.db.pool, &id).await;
+
     Ok(ImportResult { id, is_duplicate: false })
 }
 
-/// Delete a disc from the library. If the disc's video_path lives inside the
-/// vault dir (i.e. it was an imported file, not a recovered DVD), the vault
-/// copy is removed too — and its parent hash-prefix dir is removed if empty.
+/// Delete a disc from the library with two distinct safety modes.
+///
+/// **`permanent = false` — "Remove from Heirvo" (default, safe):**
+/// Deletes the DB row (CASCADE), the internal vault copy, and the cached
+/// thumbnail — but **keeps** the `Documents\Heirvo` deliverable file on disk.
+/// The deliverable path is returned in `deliverable_kept` so the UI can
+/// reassure the user where their video still lives.
+///
+/// **`permanent = true` — "Delete permanently":**
+/// Everything in the safe mode, plus the `Documents\Heirvo` deliverable file
+/// is deleted and its (now empty) per-title directory is pruned. The deletion
+/// is strictly bounded to files inside `Documents\Heirvo`.
+///
+/// In both modes, the internal vault file and thumbnail are always cleaned up
+/// (they are internal scratch — always safe to remove with the DB row).
 ///
 /// Safety: vault-path check is strict — only files under `<app_data>/vault/`
 /// are eligible for deletion. A recovered DVD whose video_path points at an
@@ -677,10 +727,11 @@ pub async fn delete_library_disc(
     app: AppHandle,
     state: State<'_, AppState>,
     id: String,
+    permanent: bool,
 ) -> AppResult<DeleteResult> {
     // 1. Look up the video_path before deleting so we know what to free on disk.
     let row = sqlx::query(
-        "SELECT video_path, source_hash FROM library_discs WHERE id = ?",
+        "SELECT video_path, source_hash, deliverable_path FROM library_discs WHERE id = ?",
     )
     .bind(&id)
     .fetch_optional(&state.db.pool)
@@ -691,6 +742,7 @@ pub async fn delete_library_disc(
     };
     let video_path: Option<String> = row.try_get("video_path").ok().flatten();
     let source_hash: Option<String> = row.try_get("source_hash").ok().flatten();
+    let deliverable_path: Option<String> = row.try_get("deliverable_path").ok().flatten();
 
     // 2. Delete the DB row — CASCADE clears the rest.
     let res = sqlx::query("DELETE FROM library_discs WHERE id = ?")
@@ -745,10 +797,55 @@ pub async fn delete_library_disc(
         }
     }
 
+    // Handle the deliverable (Documents\Heirvo copy) based on the `permanent` flag.
+    // Safety: only delete files strictly inside Documents\Heirvo to prevent
+    // accidental deletion of files outside Heirvo's own folder.
+    let mut deliverable_kept: Option<String> = None;
+    if let Some(ref dp_str) = deliverable_path {
+        if !dp_str.is_empty() {
+            let dp = Path::new(dp_str);
+            // Resolve the Documents\Heirvo root — if we can't, skip GC.
+            let heirvo_docs_ok = crate::library::deliverable::documents_heirvo_dir(&app);
+            if let Ok(heirvo_docs) = heirvo_docs_ok {
+                let inside_heirvo = match (dp.canonicalize(), heirvo_docs.canonicalize()) {
+                    (Ok(p), Ok(h)) => p.starts_with(&h),
+                    _ => dp.starts_with(&heirvo_docs), // fallback without canonicalize
+                };
+                if inside_heirvo {
+                    if permanent {
+                        // Permanent delete: remove the deliverable file and prune its
+                        // now-empty per-title directory.
+                        if let Ok(meta) = std::fs::metadata(dp) {
+                            bytes_freed = bytes_freed.saturating_add(meta.len());
+                        }
+                        if std::fs::remove_file(dp).is_ok() {
+                            // Prune the per-title directory if now empty.
+                            if let Some(parent) = dp.parent() {
+                                let _ = std::fs::remove_dir(parent);
+                            }
+                        }
+                    } else {
+                        // Safe remove: keep the deliverable. Return its path so the
+                        // UI can reassure the user where their video still lives.
+                        if dp.exists() {
+                            deliverable_kept = Some(dp_str.clone());
+                        }
+                    }
+                } else {
+                    tracing::warn!(
+                        "delete_library_disc: deliverable_path {} is outside Documents\\Heirvo — skipping GC",
+                        dp_str
+                    );
+                }
+            }
+        }
+    }
+
     Ok(DeleteResult {
         id,
         vault_file_removed,
         bytes_freed,
+        deliverable_kept,
     })
 }
 
@@ -758,6 +855,10 @@ pub struct DeleteResult {
     pub id: String,
     pub vault_file_removed: bool,
     pub bytes_freed: u64,
+    /// When `permanent = false`, the Documents\Heirvo deliverable path that
+    /// was preserved (Some only if the file exists on disk). None when
+    /// `permanent = true` (file was deleted) or when there was no deliverable.
+    pub deliverable_kept: Option<String>,
 }
 
 // ─── Image conversion commands ──────────────────────────────────────────────
@@ -988,18 +1089,22 @@ fn special_format_stub(sf: SpecialFormat, ext: String) -> ConvertImageResult {
 /// Batch-delete multiple discs in one IPC call. Loops `delete_library_disc`
 /// internally and accumulates totals. Partial success is allowed — failures
 /// are counted but do not abort the remaining deletes.
+///
+/// `permanent` is forwarded to each `delete_library_disc` call — see that
+/// command for the two-mode semantics.
 #[tauri::command]
 pub async fn delete_library_discs_bulk(
     app: AppHandle,
     state: State<'_, AppState>,
     ids: Vec<String>,
+    permanent: bool,
 ) -> AppResult<BulkDeleteResult> {
     let mut success_count: u32 = 0;
     let mut fail_count: u32 = 0;
     let mut bytes_freed: u64 = 0;
 
     for id in ids {
-        match delete_library_disc(app.clone(), state.clone(), id).await {
+        match delete_library_disc(app.clone(), state.clone(), id, permanent).await {
             Ok(r) => {
                 success_count += 1;
                 bytes_freed = bytes_freed.saturating_add(r.bytes_freed);
@@ -1198,21 +1303,32 @@ async fn sha256_path(path: &str) -> Option<String> {
 /// viewer can load the normalized MP4 path rather than the raw recovered file.
 ///
 /// `status` is optional — omit (pass `None`) to leave the current status
-/// unchanged. Typical values: `"recovered"` (done) or `"partial"` (issues).
+/// unchanged. Typical values: `"recovered"` (done), `"partial"` (sector
+/// failures), or `"incomplete"` (no output file produced).
+///
+/// When the new status is a final/playable state ("recovered" or "partial"),
+/// materializes the human-findable Documents\Heirvo copy as a side-effect.
+/// "incomplete" discs do not get a deliverable (there is no file to copy).
 #[tauri::command]
 pub async fn update_disc_video_path(
+    app: AppHandle,
     state: State<'_, AppState>,
     disc_id: String,
     video_path: String,
     status: Option<String>,
 ) -> AppResult<()> {
     let now = chrono::Utc::now().timestamp();
-    if let Some(s) = status {
+    let is_final = status
+        .as_deref()
+        .map(|s| s == "recovered" || s == "partial")
+        .unwrap_or(false);
+
+    if let Some(ref s) = status {
         sqlx::query(
             "UPDATE library_discs SET video_path = ?, status = ?, updated_at = ? WHERE id = ?",
         )
         .bind(&video_path)
-        .bind(&s)
+        .bind(s)
         .bind(now)
         .bind(&disc_id)
         .execute(&state.db.pool)
@@ -1227,6 +1343,15 @@ pub async fn update_disc_video_path(
         .execute(&state.db.pool)
         .await?;
     }
+
+    // Materialize the Documents\Heirvo copy once the disc is in a final/playable
+    // state.  Non-fatal — a failed deliverable must never fail this command.
+    if is_final {
+        let _ =
+            crate::library::deliverable::materialize_deliverable(&app, &state.db.pool, &disc_id)
+                .await;
+    }
+
     Ok(())
 }
 

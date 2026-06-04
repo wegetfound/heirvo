@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { ChevronLeft, Play, Download, Share2, Trash2, Images, Music, FileText } from "lucide-react";
-import { getDiscById } from "./data/mockDiscs";
+// getDiscById from mockDiscs intentionally NOT imported — DiscDetail only shows real discs.
 import type { Disc } from "./data/types";
 import { GradientArt, gradientCss } from "./components/GradientArt";
 import { Monogram } from "./components/Monogram";
@@ -12,9 +12,7 @@ import type { TranscriptionJob } from "../../lib/types";
 export default function DiscDetail() {
   const { discId } = useParams<{ discId: string }>();
   const nav = useNavigate();
-  const [disc, setDisc] = useState<Disc | undefined>(() =>
-    discId ? getDiscById(discId) : undefined,
-  );
+  const [disc, setDisc] = useState<Disc | undefined>(undefined);
   const [exportMsg, setExportMsg] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
   const [activeJob, setActiveJob] = useState<TranscriptionJob | null>(null);
@@ -23,6 +21,8 @@ export default function DiscDetail() {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteErr, setDeleteErr] = useState<string | null>(null);
+  // Second-step confirm for the permanently-destructive path.
+  const [permanentConfirmOpen, setPermanentConfirmOpen] = useState(false);
 
   // Poll for the latest transcription job for this disc + subscribe to
   // progress events so the status block updates live.
@@ -94,24 +94,49 @@ export default function DiscDetail() {
     }
   }
 
-  /** Remove this disc from the library. Backend handles cascade + vault file. */
-  async function handleDelete() {
+  /** Remove disc from Heirvo (safe — keeps the Documents\Heirvo file). */
+  async function handleRemove() {
     if (!discId || deleting) return;
     setDeleting(true);
     setDeleteErr(null);
     try {
-      const r = await ipc.library.deleteDisc(discId);
+      const r = await ipc.library.deleteDisc(discId, false);
       setDeleteOpen(false);
-      // Tiny success cue in the navigated-to library so user knows it worked.
-      const note = r.vaultFileRemoved
-        ? `Removed “${disc?.title ?? "disc"}” · freed ${(r.bytesFreed / 1024 / 1024 / 1024).toFixed(2)} GB`
-        : `Removed “${disc?.title ?? "disc"}” from the library`;
+      // Build a reassuring toast that tells the user where their video still is.
+      let note: string;
+      if (r.deliverableKept) {
+        // Trim to just the filename for brevity in the toast.
+        const filename = r.deliverableKept.split(/[\\/]/).pop() ?? r.deliverableKept;
+        note = `Removed from Heirvo. Your video "${filename}" is still saved in your Documents › Heirvo folder.`;
+      } else {
+        note = `Removed "${disc?.title ?? "disc"}" from Heirvo.`;
+      }
       try {
         sessionStorage.setItem("lib_toast", note);
       } catch {/* private mode → just navigate */}
       nav("/library");
     } catch (e) {
       setDeleteErr(e instanceof Error ? e.message : "Remove failed — please try again.");
+      setDeleting(false);
+    }
+  }
+
+  /** Delete disc AND its Documents\Heirvo file permanently. */
+  async function handleDeletePermanently() {
+    if (!discId || deleting) return;
+    setDeleting(true);
+    setDeleteErr(null);
+    try {
+      await ipc.library.deleteDisc(discId, true);
+      setDeleteOpen(false);
+      setPermanentConfirmOpen(false);
+      const note = `Deleted "${disc?.title ?? "disc"}" permanently from your computer.`;
+      try {
+        sessionStorage.setItem("lib_toast", note);
+      } catch {/* private mode → just navigate */}
+      nav("/library");
+    } catch (e) {
+      setDeleteErr(e instanceof Error ? e.message : "Delete failed — please try again.");
       setDeleting(false);
     }
   }
@@ -164,13 +189,12 @@ export default function DiscDetail() {
       setDisc(undefined);
       return;
     }
-    setDisc(getDiscById(discId));
     (async () => {
       try {
         const real = await ipc.library.get(discId);
-        if (!cancelled && real) setDisc(real);
+        if (!cancelled) setDisc(real ?? undefined);
       } catch {
-        // mock fallback already shown
+        if (!cancelled) setDisc(undefined);
       }
     })();
     return () => {
@@ -491,7 +515,7 @@ export default function DiscDetail() {
                           ? "1px solid #E8B0A6"
                           : "1px solid var(--lib-line)",
                       background:
-                        activeJob.status === "error" ? "#FFF1EC" : "#FFFDF7",
+                        activeJob.status === "error" ? "#FFF1EC" : "var(--lib-paper)",
                       maxWidth: 560,
                       fontFamily: "var(--lib-sans)",
                       fontSize: 12.5,
@@ -550,7 +574,7 @@ export default function DiscDetail() {
                           style={{
                             marginLeft: "auto",
                             border: "1px solid var(--lib-line)",
-                            background: "#fff",
+                            background: "var(--lib-surface)",
                             borderRadius: 6,
                             padding: "3px 10px",
                             fontSize: 12,
@@ -800,7 +824,7 @@ export default function DiscDetail() {
                     display: "inline-flex",
                     alignItems: "center",
                     gap: 8,
-                    background: "#fff",
+                    background: "var(--lib-surface)",
                     border: "1px solid var(--lib-line)",
                     padding: "5px 11px 5px 5px",
                     borderRadius: 99,
@@ -856,45 +880,273 @@ export default function DiscDetail() {
         )}
       </div>
 
-      {/* Remove-from-library confirm modal */}
-      {deleteOpen && disc && (
+      {/* Two-tier delete modal — "Remove from Heirvo" vs "Delete permanently" */}
+      {deleteOpen && disc && !permanentConfirmOpen && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-ink-900/50 p-4 backdrop-blur-sm"
           role="dialog"
           aria-modal="true"
           aria-labelledby="delete-disc-title"
         >
-          <div className="w-full max-w-sm overflow-hidden rounded-2xl bg-white shadow-2xl p-6">
+          <div
+            style={{
+              background: "var(--lib-paper)",
+              borderRadius: 20,
+              width: "100%",
+              maxWidth: 420,
+              padding: "28px 28px 24px",
+              boxShadow: "0 32px 80px rgba(30,20,10,0.30)",
+              border: "1px solid var(--lib-line)",
+            }}
+          >
             <h3
               id="delete-disc-title"
-              className="font-display text-[18px] font-bold tracking-[-0.01em] text-ink-900"
+              style={{
+                fontFamily: "var(--lib-serif)",
+                fontWeight: 500,
+                fontSize: 20,
+                letterSpacing: "-0.015em",
+                color: "var(--lib-ink)",
+                margin: "0 0 8px",
+              }}
             >
-              Remove “{disc.title}” from your library?
+              Remove "{disc.title}"?
             </h3>
-            <p className="mt-2 text-[13.5px] leading-[1.55] text-ink-600">
-              The disc entry, transcript, and any vault copy of the imported
-              file will be deleted from this device. <span className="font-medium text-ink-900">
-              Your original disc and any source file outside the vault are untouched.</span>
+            <p
+              style={{
+                fontFamily: "var(--lib-sans)",
+                fontSize: 13.5,
+                lineHeight: 1.55,
+                color: "var(--lib-ink-2)",
+                margin: "0 0 20px",
+              }}
+            >
+              Choose how you want to remove this memory.
             </p>
+
+            {/* Option 1 — safe remove */}
+            <button
+              type="button"
+              onClick={() => void handleRemove()}
+              disabled={deleting}
+              style={{
+                display: "block",
+                width: "100%",
+                textAlign: "left",
+                background: "var(--lib-surface)",
+                border: "1px solid var(--lib-line)",
+                borderRadius: 14,
+                padding: "16px 18px",
+                marginBottom: 10,
+                cursor: deleting ? "default" : "pointer",
+                opacity: deleting ? 0.6 : 1,
+                transition: "background .15s ease",
+              }}
+              onMouseEnter={(e) => { if (!deleting) (e.currentTarget as HTMLButtonElement).style.background = "var(--lib-paper-2)"; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "var(--lib-surface)"; }}
+            >
+              <div
+                style={{
+                  fontFamily: "var(--lib-sans)",
+                  fontWeight: 600,
+                  fontSize: 14,
+                  color: "var(--lib-ink)",
+                  marginBottom: 4,
+                }}
+              >
+                {deleting ? "Removing…" : "Remove from Heirvo"}
+              </div>
+              <div
+                style={{
+                  fontFamily: "var(--lib-sans)",
+                  fontSize: 12.5,
+                  lineHeight: 1.45,
+                  color: "var(--lib-muted)",
+                }}
+              >
+                Removes the disc from this app. Your video file stays saved in your Documents &rsaquo; Heirvo folder — you can still find it there.
+              </div>
+            </button>
+
+            {/* Option 2 — permanent delete (opens second confirm) */}
+            <button
+              type="button"
+              onClick={() => { setDeleteErr(null); setPermanentConfirmOpen(true); }}
+              disabled={deleting}
+              style={{
+                display: "block",
+                width: "100%",
+                textAlign: "left",
+                background: "transparent",
+                border: "1px solid var(--lib-line)",
+                borderRadius: 14,
+                padding: "16px 18px",
+                marginBottom: 20,
+                cursor: deleting ? "default" : "pointer",
+                opacity: deleting ? 0.5 : 1,
+                transition: "background .15s ease",
+              }}
+              onMouseEnter={(e) => { if (!deleting) (e.currentTarget as HTMLButtonElement).style.background = "rgba(239,68,68,0.04)"; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}
+            >
+              <div
+                style={{
+                  fontFamily: "var(--lib-sans)",
+                  fontWeight: 600,
+                  fontSize: 14,
+                  color: "#b91c1c",
+                  marginBottom: 4,
+                }}
+              >
+                Delete permanently from my computer
+              </div>
+              <div
+                style={{
+                  fontFamily: "var(--lib-sans)",
+                  fontSize: 12.5,
+                  lineHeight: 1.45,
+                  color: "var(--lib-muted)",
+                }}
+              >
+                Removes the disc from this app AND deletes the video file from your Documents &rsaquo; Heirvo folder. This cannot be undone.
+              </div>
+            </button>
+
             {deleteErr && (
-              <p className="mt-3 text-[12.5px] text-ios-red">{deleteErr}</p>
+              <p
+                style={{
+                  fontFamily: "var(--lib-sans)",
+                  fontSize: 12.5,
+                  color: "#b91c1c",
+                  margin: "-12px 0 14px",
+                }}
+              >
+                {deleteErr}
+              </p>
             )}
-            <div className="mt-5 flex gap-2 justify-end">
+
+            <div style={{ display: "flex", justifyContent: "flex-end" }}>
               <button
                 type="button"
                 onClick={() => { setDeleteOpen(false); setDeleteErr(null); }}
                 disabled={deleting}
-                className="rounded-xl border border-ink-200 px-4 py-2 text-[13px] font-medium text-ink-700 transition hover:bg-ink-50 disabled:opacity-50"
+                style={{
+                  background: "transparent",
+                  border: "1px solid var(--lib-line)",
+                  borderRadius: 10,
+                  padding: "8px 18px",
+                  fontFamily: "var(--lib-sans)",
+                  fontSize: 13,
+                  fontWeight: 500,
+                  color: "var(--lib-ink-2)",
+                  cursor: deleting ? "default" : "pointer",
+                  opacity: deleting ? 0.5 : 1,
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Second-step confirm for permanent delete */}
+      {deleteOpen && disc && permanentConfirmOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-ink-900/50 p-4 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="perm-delete-title"
+        >
+          <div
+            style={{
+              background: "var(--lib-paper)",
+              borderRadius: 20,
+              width: "100%",
+              maxWidth: 400,
+              padding: "28px 28px 24px",
+              boxShadow: "0 32px 80px rgba(30,20,10,0.30)",
+              border: "1px solid rgba(185,28,28,0.25)",
+            }}
+          >
+            <h3
+              id="perm-delete-title"
+              style={{
+                fontFamily: "var(--lib-serif)",
+                fontWeight: 500,
+                fontSize: 20,
+                letterSpacing: "-0.015em",
+                color: "var(--lib-ink)",
+                margin: "0 0 10px",
+              }}
+            >
+              Delete permanently?
+            </h3>
+            <p
+              style={{
+                fontFamily: "var(--lib-sans)",
+                fontSize: 13.5,
+                lineHeight: 1.6,
+                color: "var(--lib-ink-2)",
+                margin: "0 0 22px",
+              }}
+            >
+              This will permanently delete <strong style={{ color: "var(--lib-ink)" }}>{disc.title}</strong> from your computer — including the video file in your Documents &rsaquo; Heirvo folder. <strong style={{ color: "#b91c1c" }}>This cannot be undone.</strong>
+            </p>
+
+            {deleteErr && (
+              <p
+                style={{
+                  fontFamily: "var(--lib-sans)",
+                  fontSize: 12.5,
+                  color: "#b91c1c",
+                  margin: "-10px 0 16px",
+                }}
+              >
+                {deleteErr}
+              </p>
+            )}
+
+            <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+              <button
+                type="button"
+                onClick={() => { setPermanentConfirmOpen(false); setDeleteErr(null); }}
+                disabled={deleting}
+                style={{
+                  background: "transparent",
+                  border: "1px solid var(--lib-line)",
+                  borderRadius: 10,
+                  padding: "8px 18px",
+                  fontFamily: "var(--lib-sans)",
+                  fontSize: 13,
+                  fontWeight: 500,
+                  color: "var(--lib-ink-2)",
+                  cursor: deleting ? "default" : "pointer",
+                  opacity: deleting ? 0.5 : 1,
+                }}
               >
                 Cancel
               </button>
               <button
                 type="button"
-                onClick={() => void handleDelete()}
+                onClick={() => void handleDeletePermanently()}
                 disabled={deleting}
-                className="rounded-xl bg-ios-red px-4 py-2 text-[13px] font-semibold text-white transition hover:bg-red-500 disabled:opacity-60"
+                style={{
+                  background: deleting ? "rgba(185,28,28,0.6)" : "#b91c1c",
+                  border: "none",
+                  borderRadius: 10,
+                  padding: "8px 18px",
+                  fontFamily: "var(--lib-sans)",
+                  fontSize: 13,
+                  fontWeight: 600,
+                  color: "#fff",
+                  cursor: deleting ? "default" : "pointer",
+                  transition: "background .15s ease",
+                }}
+                onMouseEnter={(e) => { if (!deleting) (e.currentTarget as HTMLButtonElement).style.background = "#991b1b"; }}
+                onMouseLeave={(e) => { if (!deleting) (e.currentTarget as HTMLButtonElement).style.background = "#b91c1c"; }}
               >
-                {deleting ? "Removing…" : "Remove from library"}
+                {deleting ? "Deleting…" : "Yes, delete permanently"}
               </button>
             </div>
           </div>

@@ -108,6 +108,7 @@ fn build_demo_discs() -> Vec<Disc> {
             video_path: None,
             media_type: "video".to_string(),
             photos: None,
+            deliverable_path: None,
         },
         Disc {
             id: "wedding-sarah-mike".into(),
@@ -146,6 +147,7 @@ fn build_demo_discs() -> Vec<Disc> {
             video_path: None,
             media_type: "video".to_string(),
             photos: None,
+            deliverable_path: None,
         },
         Disc {
             id: "christmas-1992".into(),
@@ -181,6 +183,7 @@ fn build_demo_discs() -> Vec<Disc> {
             video_path: None,
             media_type: "video".to_string(),
             photos: None,
+            deliverable_path: None,
         },
         Disc {
             id: "dads-60th".into(),
@@ -223,6 +226,7 @@ fn build_demo_discs() -> Vec<Disc> {
             video_path: None,
             media_type: "video".to_string(),
             photos: None,
+            deliverable_path: None,
         },
         Disc {
             id: "kids-first-day-school".into(),
@@ -256,6 +260,7 @@ fn build_demo_discs() -> Vec<Disc> {
             video_path: None,
             media_type: "video".to_string(),
             photos: None,
+            deliverable_path: None,
         },
         Disc {
             id: "eleanor-80th".into(),
@@ -307,6 +312,7 @@ fn build_demo_discs() -> Vec<Disc> {
             video_path: None,
             media_type: "video".to_string(),
             photos: None,
+            deliverable_path: None,
         },
         Disc {
             id: "family-reunion-lake-house".into(),
@@ -342,6 +348,7 @@ fn build_demo_discs() -> Vec<Disc> {
             video_path: None,
             media_type: "video".to_string(),
             photos: None,
+            deliverable_path: None,
         },
         Disc {
             id: "camping-yellowstone".into(),
@@ -378,6 +385,7 @@ fn build_demo_discs() -> Vec<Disc> {
             video_path: None,
             media_type: "video".to_string(),
             photos: None,
+            deliverable_path: None,
         },
         Disc {
             id: "thanksgiving-aunt-mary".into(),
@@ -413,6 +421,7 @@ fn build_demo_discs() -> Vec<Disc> {
             video_path: None,
             media_type: "video".to_string(),
             photos: None,
+            deliverable_path: None,
         },
         Disc {
             id: "baby-emma-first-steps".into(),
@@ -447,6 +456,7 @@ fn build_demo_discs() -> Vec<Disc> {
             video_path: None,
             media_type: "video".to_string(),
             photos: None,
+            deliverable_path: None,
         },
         Disc {
             id: "graduation-michael".into(),
@@ -482,6 +492,7 @@ fn build_demo_discs() -> Vec<Disc> {
             video_path: None,
             media_type: "video".to_string(),
             photos: None,
+            deliverable_path: None,
         },
         Disc {
             id: "road-trip-route-66".into(),
@@ -516,6 +527,7 @@ fn build_demo_discs() -> Vec<Disc> {
             video_path: None,
             media_type: "video".to_string(),
             photos: None,
+            deliverable_path: None,
         },
     ]
 }

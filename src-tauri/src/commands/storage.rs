@@ -5,8 +5,9 @@
 //! HDD as the recovery output target. Critical when the system drive is
 //! too full to hold a 10–15 GB rescued ISO + VOBs + MP4.
 
-use crate::error::AppResult;
+use crate::error::{AppError, AppResult};
 use serde::Serialize;
+use tauri_plugin_opener::OpenerExt;
 
 #[derive(Debug, Clone, Serialize)]
 pub struct StorageDrive {
@@ -34,23 +35,28 @@ pub async fn list_storage_drives() -> AppResult<Vec<StorageDrive>> {
     }
 }
 
-/// Open a folder (or the parent of a file) in Windows Explorer.
-/// On Windows, `explorer /select,<path>` highlights the specific file if a
-/// file path is given; opening a folder path just opens it.
+/// Open a folder (or the parent of a file) in the OS file manager, selecting
+/// the item. Uses `tauri-plugin-opener` (ShellExecuteW / xdg-open etc.) —
+/// no shell interpreter, no string concatenation into a command line.
 #[tauri::command]
-pub async fn open_folder(path: String) -> AppResult<()> {
-    #[cfg(windows)]
-    {
-        // Normalise to backslashes so Explorer is happy.
-        let p = path.replace('/', "\\");
-        let _ = std::process::Command::new("explorer")
-            .arg(format!("/select,{p}"))
-            .spawn();
-    }
-    #[cfg(not(windows))]
-    {
-        let _ = std::process::Command::new("xdg-open").arg(&path).spawn();
-    }
+pub async fn open_folder(app: tauri::AppHandle, path: String) -> AppResult<()> {
+    app.opener()
+        .reveal_item_in_dir(&path)
+        .map_err(|e| AppError::Internal(format!("opener reveal_item_in_dir: {e}")))?;
+    Ok(())
+}
+
+/// Open a file (or folder) with the OS default handler — the user's normal
+/// video player, photo viewer, etc.  Unlike `open_folder` (which selects the
+/// file in Explorer), this OPENS it.
+///
+/// Uses `tauri-plugin-opener` (ShellExecuteW / xdg-open etc.) — no shell
+/// interpreter, eliminating command-injection via attacker-controlled paths.
+#[tauri::command]
+pub async fn open_file(app: tauri::AppHandle, path: String) -> AppResult<()> {
+    app.opener()
+        .open_path(&path, None::<&str>)
+        .map_err(|e| AppError::Internal(format!("opener open_path: {e}")))?;
     Ok(())
 }
 

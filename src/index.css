@@ -36,6 +36,43 @@
   --lib-sans:         var(--font-sans);
   --lib-shadow-soft:  0 1px 2px rgba(40,30,20,.04), 0 10px 30px rgba(40,30,20,.06);
   --lib-shadow-card:  0 1px 2px rgba(40,30,20,.05), 0 20px 60px rgba(40,30,20,.10);
+  /* light surface for card / panel backgrounds */
+  --lib-surface:      var(--lib-paper-2);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Library dark-mode overrides — warm "archive at night" palette.
+   Scoped under [data-theme="dark"] so the cream LIGHT values (above) are
+   preserved exactly; only the dark world changes.
+───────────────────────────────────────────────────────────────────────────── */
+[data-theme="dark"] {
+  --lib-paper:        #171210;
+  --lib-paper-2:      #1D1714;
+  --lib-paper-3:      #231A16;
+  --lib-ink:          #F3ECE3;
+  --lib-ink-2:        #D4C5B2;
+  --lib-muted:        rgba(243,236,227,0.52);
+  --lib-line:         rgba(243,236,227,0.10);
+  --lib-amber:        #E8A24A;
+  --lib-amber-soft:   #C47B38;
+  --lib-hl:           rgba(232,162,74,0.28);
+  --lib-shadow-soft:  0 1px 2px rgba(0,0,0,0.25), 0 10px 30px rgba(0,0,0,0.30);
+  --lib-shadow-card:  0 1px 2px rgba(0,0,0,0.30), 0 20px 60px rgba(0,0,0,0.45);
+  /* lib-surface: used for inline card backgrounds that must match --lib-paper-2 */
+  --lib-surface:      #1D1714;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Chrome tokens — shared surface for TitleBar + Sidebar.
+   Single source of truth so both surfaces are always identical.
+───────────────────────────────────────────────────────────────────────────── */
+:root {
+  --chrome-bg:        #EEF1F6;
+  --chrome-border:    rgba(225,230,238,0.80);
+}
+[data-theme="dark"] {
+  --chrome-bg:        #121826;
+  --chrome-border:    rgba(255,255,255,0.09);
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -201,6 +238,12 @@
   border-color: var(--lib-amber-soft);
   box-shadow: 0 0 0 4px rgba(194,116,31,.12);
 }
+[data-theme="dark"] .lib-search-input {
+  background: rgba(255,255,255,.06);
+}
+[data-theme="dark"] .lib-search-input:focus {
+  background: rgba(255,255,255,.10);
+}
 
 /* Hide horizontal scrollbar inside rails (webkit + firefox) */
 .lib-rail::-webkit-scrollbar { display: none; }
@@ -224,7 +267,7 @@
   cursor: pointer;
 }
 .lib-btn-primary {
-  background: #1B1714;
+  background: var(--lib-ink);
   color: var(--lib-paper);
   box-shadow: 0 6px 18px rgba(27,23,20,.25);
 }
@@ -234,11 +277,18 @@
 }
 .lib-btn-ghost {
   background: rgba(255,255,255,.55);
-  color: #2B1E12;
+  color: var(--lib-ink-2);
   border: 1px solid rgba(27,23,20,.12);
   backdrop-filter: blur(8px);
 }
 .lib-btn-ghost:hover { background: rgba(255,255,255,.85); }
+[data-theme="dark"] .lib-btn-ghost {
+  background: rgba(255,255,255,.08);
+  border-color: rgba(243,236,227,.14);
+}
+[data-theme="dark"] .lib-btn-ghost:hover {
+  background: rgba(255,255,255,.14);
+}
 
 .lib-btn-flat {
   padding: 8px 14px;
@@ -272,6 +322,10 @@
   font-weight: 600;
   font-size: 12px;
   color: var(--lib-ink-2);
+}
+[data-theme="dark"] .lib-pill {
+  background: rgba(255,255,255,.08);
+  border-color: rgba(243,236,227,.12);
 }
 .lib-bullet {
   width: 3px;

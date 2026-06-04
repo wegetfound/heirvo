@@ -66,7 +66,43 @@ impl AppState {
             }
         }
 
+        // Reconcile any library_discs rows that ended up with status='recovered'
+        // or 'partial' but have no video_path — these are video/audio discs whose
+        // rescue was interrupted before any output was written (e.g. power brownout
+        // mid-recovery, current_pass=0). Mark them 'incomplete' so the user sees
+        // an honest, actionable message instead of a silent unplayable disc.
+        let reconcile_result = sqlx::query(
+            "UPDATE library_discs
+             SET status = 'incomplete', updated_at = ?
+             WHERE status IN ('recovered', 'partial')
+               AND media_type IN ('video', 'audio')
+               AND (video_path IS NULL OR video_path = '')",
+        )
+        .bind(chrono::Utc::now().timestamp())
+        .execute(&db.pool)
+        .await;
+        match reconcile_result {
+            Ok(r) => {
+                let n = r.rows_affected();
+                if n > 0 {
+                    tracing::warn!(
+                        "Startup: corrected {} disc(s) from 'recovered'/'partial' → 'incomplete' \
+                         (video/audio disc with no output file — likely interrupted rescue)",
+                        n
+                    );
+                } else {
+                    tracing::debug!("Startup: no incomplete disc rows to reconcile");
+                }
+            }
+            Err(e) => {
+                tracing::error!("Startup: incomplete-disc reconciliation failed (non-fatal): {e}");
+            }
+        }
+
         let db_for_worker = db.clone();
+        // Clone the pool for the deliverable backfill BEFORE spawn_worker
+        // consumes db_for_worker.
+        let pool_for_backfill = db_for_worker.pool.clone();
         let state = Self {
             db,
             engines: Arc::new(RwLock::new(HashMap::new())),
@@ -83,6 +119,13 @@ impl AppState {
         let app_handle = app.clone();
         tauri::async_runtime::spawn(async move {
             run_drive_watcher(app_handle).await;
+        });
+
+        // Backfill friendly Documents copies for any pre-existing discs that predate
+        // the deliverable feature. Best-effort, runs in the background after startup.
+        let app_for_backfill = app.clone();
+        tauri::async_runtime::spawn(async move {
+            crate::library::deliverable::backfill_missing(&app_for_backfill, &pool_for_backfill).await;
         });
 
         Ok(())

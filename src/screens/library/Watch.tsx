@@ -5,9 +5,9 @@ import {
   useSearchParams,
   Link,
 } from "react-router-dom";
-import { ChevronLeft, Play, Pause, Search as SearchIcon, Music, FileText, FolderOpen, Heart } from "lucide-react";
+import { ChevronLeft, Play, Pause, Search as SearchIcon, Music, FileText, FolderOpen, Heart, ExternalLink } from "lucide-react";
 import { convertFileSrc } from "@tauri-apps/api/core";
-import { getDiscById, tsToSec } from "./data/mockDiscs";
+import { tsToSec } from "./data/mockDiscs";
 import { gradientCss } from "./components/GradientArt";
 import { TranscriptLine } from "./components/TranscriptLine";
 import { PhotoGalleryView } from "./components/PhotoGallery";
@@ -44,20 +44,39 @@ function RescuedFilesCard({ kind, path }: { kind: "audio" | "document"; path?: s
 
   return (
     <div style={{ textAlign: "center", padding: "32px 28px", maxWidth: 420, position: "relative", zIndex: 1 }}>
-      <div style={{ width: 64, height: 64, borderRadius: "50%", background: "rgba(255,255,255,0.88)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 18px", boxShadow: "0 8px 28px rgba(40,20,10,0.18)" }}>
+      <div style={{ width: 64, height: 64, borderRadius: "50%", background: "var(--lib-surface)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 18px", boxShadow: "0 8px 28px rgba(40,20,10,0.18)" }}>
         <Icon size={26} style={{ color: "var(--lib-amber)" }} />
       </div>
-      <div style={{ fontFamily: "var(--lib-serif)", fontSize: 24, color: "#2B1E12", marginBottom: 8 }}>{title}</div>
-      <p style={{ fontFamily: "var(--lib-sans)", fontSize: 14, lineHeight: 1.55, color: "rgba(27,23,20,0.72)", margin: "0 0 18px" }}>{body}</p>
+      <div style={{ fontFamily: "var(--lib-serif)", fontSize: 24, color: "var(--lib-ink)", marginBottom: 8 }}>{title}</div>
+      <p style={{ fontFamily: "var(--lib-sans)", fontSize: 14, lineHeight: 1.55, color: "var(--lib-ink-2)", margin: "0 0 18px" }}>{body}</p>
       {path ? (
         <button type="button" className="lib-btn lib-btn-primary" style={{ margin: "0 auto" }} onClick={() => { void handleReveal(); }}>
           <FolderOpen size={15} /> Open files
         </button>
       ) : (
-        <p style={{ fontFamily: "var(--lib-sans)", fontSize: 13, color: "rgba(27,23,20,0.45)", margin: 0, fontStyle: "italic" }}>
+        <p style={{ fontFamily: "var(--lib-sans)", fontSize: 13, color: "var(--lib-muted)", margin: 0, fontStyle: "italic" }}>
           Saved to your computer
         </p>
       )}
+    </div>
+  );
+}
+
+/* ── Humane "rescue didn't finish" card (incomplete — no output file saved) ── */
+function IncompleteRescueCard() {
+  return (
+    <div style={{ textAlign: "center", padding: "32px 28px", maxWidth: 440, position: "relative", zIndex: 1 }}>
+      <div style={{ width: 64, height: 64, borderRadius: "50%", background: "var(--lib-surface)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 18px", boxShadow: "0 8px 28px rgba(40,20,10,0.18)" }}>
+        <Play size={26} style={{ color: "var(--lib-amber)", marginLeft: 3 }} />
+      </div>
+      <div style={{ fontFamily: "var(--lib-serif)", fontSize: 24, color: "var(--lib-ink)", marginBottom: 8 }}>
+        This disc didn&rsquo;t finish rescuing
+      </div>
+      <p style={{ fontFamily: "var(--lib-sans)", fontSize: 14, lineHeight: 1.55, color: "var(--lib-ink-2)", margin: "0 0 18px" }}>
+        We started rescuing this disc but it didn&rsquo;t complete, so no video was saved yet.
+        This often happens if the drive lost power mid-rescue. You can try rescuing it again
+        from the Home screen.
+      </p>
     </div>
   );
 }
@@ -76,11 +95,11 @@ function CantPreviewCard({ path }: { path?: string }) {
 
   return (
     <div style={{ textAlign: "center", padding: "32px 28px", maxWidth: 440, position: "relative", zIndex: 1 }}>
-      <div style={{ width: 64, height: 64, borderRadius: "50%", background: "rgba(255,255,255,0.88)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 18px", boxShadow: "0 8px 28px rgba(40,20,10,0.18)" }}>
+      <div style={{ width: 64, height: 64, borderRadius: "50%", background: "var(--lib-surface)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 18px", boxShadow: "0 8px 28px rgba(40,20,10,0.18)" }}>
         <Heart size={26} style={{ color: "var(--lib-amber)" }} />
       </div>
-      <div style={{ fontFamily: "var(--lib-serif)", fontSize: 24, color: "#2B1E12", marginBottom: 8 }}>This memory is safe</div>
-      <p style={{ fontFamily: "var(--lib-sans)", fontSize: 14, lineHeight: 1.55, color: "rgba(27,23,20,0.72)", margin: "0 0 18px" }}>
+      <div style={{ fontFamily: "var(--lib-serif)", fontSize: 24, color: "var(--lib-ink)", marginBottom: 8 }}>This memory is safe</div>
+      <p style={{ fontFamily: "var(--lib-sans)", fontSize: 14, lineHeight: 1.55, color: "var(--lib-ink-2)", margin: "0 0 18px" }}>
         We rescued it and saved it to your computer. We can&rsquo;t show a preview here, but your file is ready and waiting for you.
       </p>
       {path ? (
@@ -88,7 +107,7 @@ function CantPreviewCard({ path }: { path?: string }) {
           <FolderOpen size={15} /> Open files
         </button>
       ) : (
-        <p style={{ fontFamily: "var(--lib-sans)", fontSize: 13, color: "rgba(27,23,20,0.45)", margin: 0, fontStyle: "italic" }}>
+        <p style={{ fontFamily: "var(--lib-sans)", fontSize: 13, color: "var(--lib-muted)", margin: 0, fontStyle: "italic" }}>
           Saved to your computer
         </p>
       )}
@@ -100,24 +119,21 @@ export default function Watch() {
   const { discId } = useParams<{ discId: string }>();
   const [params] = useSearchParams();
   const nav = useNavigate();
-  // Start with the mock so the UI never goes blank, then upgrade to the
-  // real DB-backed disc once IPC resolves.
-  const [disc, setDisc] = useState<Disc | undefined>(() =>
-    discId ? getDiscById(discId) : undefined,
-  );
+  // Start with undefined — load from the real DB only. Never pre-populate with
+  // fabricated mock data so users only ever see their own recovered memories.
+  const [disc, setDisc] = useState<Disc | undefined>(undefined);
   useEffect(() => {
     let cancelled = false;
     if (!discId) {
       setDisc(undefined);
       return;
     }
-    setDisc(getDiscById(discId));
     (async () => {
       try {
         const real = await ipc.library.get(discId);
-        if (!cancelled && real) setDisc(real);
+        if (!cancelled) setDisc(real ?? undefined);
       } catch {
-        // mock fallback already shown
+        if (!cancelled) setDisc(undefined);
       }
     })();
     return () => {
@@ -202,6 +218,7 @@ export default function Watch() {
 
   const total = disc.durationSec || 1;
   const progressPct = Math.max(0, Math.min(100, (currentSec / total) * 100));
+  const userFilePath = disc.deliverablePath ?? disc.videoPath ?? undefined;
 
   const handleSeek = (line: TLine) => {
     setCurrentSec(line.timeSec);
@@ -253,7 +270,7 @@ export default function Watch() {
           <div className="lib-watch-left">
             <div
               style={{
-                background: "#fff",
+                background: "var(--lib-paper)",
                 border: "1px solid var(--lib-line)",
                 borderRadius: 18,
                 overflow: "hidden",
@@ -270,9 +287,12 @@ export default function Watch() {
                   justifyContent: "center",
                 }}
               >
-                {isAudio || isDocument ? (
+                {disc.status === "incomplete" && !hasMedia ? (
+                  /* Incomplete rescue — no output file was saved; never show a silent black box */
+                  <IncompleteRescueCard />
+                ) : isAudio || isDocument ? (
                   /* Tier 2 — recovered to files, presented warmly (never a black box) */
-                  <RescuedFilesCard kind={isAudio ? "audio" : "document"} path={disc.videoPath} />
+                  <RescuedFilesCard kind={isAudio ? "audio" : "document"} path={disc.deliverablePath ?? disc.videoPath} />
                 ) : hasMedia && isPhoto && !mediaError ? (
                   <img
                     src={mediaSrc ?? undefined}
@@ -306,7 +326,7 @@ export default function Watch() {
                   />
                 ) : hasMedia && mediaError ? (
                   /* Recovered, but the webview can't preview this file — stay kind, never show a codec error */
-                  <CantPreviewCard path={disc.videoPath} />
+                  <CantPreviewCard path={disc.deliverablePath ?? disc.videoPath} />
                 ) : (
                   <>
                     <div
@@ -346,7 +366,7 @@ export default function Watch() {
                         width: 64,
                         height: 64,
                         borderRadius: "50%",
-                        background: "rgba(255,255,255,0.92)",
+                        background: "var(--lib-surface)",
                         border: 0,
                         cursor: "not-allowed",
                         display: "flex",
@@ -426,7 +446,7 @@ export default function Watch() {
                       width: 12,
                       height: 12,
                       borderRadius: "50%",
-                      background: "#fff",
+                      background: "var(--lib-paper)",
                       border: "1.5px solid var(--lib-ink)",
                       transform: "translate(-50%, -50%)",
                       transition: "left 0.3s ease",
@@ -471,16 +491,42 @@ export default function Watch() {
                   </>
                 )}
               </div>
+              {disc.deliverablePath && (
+                <button
+                  type="button"
+                  onClick={() => { void ipc.revealInFolder(disc.deliverablePath!).catch(() => {}); }}
+                  style={{
+                    background: "transparent", border: 0, padding: "8px 0 0", cursor: "pointer",
+                    display: "inline-flex", alignItems: "center", gap: 6,
+                    fontFamily: "var(--lib-sans)", fontSize: 12.5, color: "var(--lib-amber)",
+                  }}
+                  title="Open the folder where your video is saved"
+                >
+                  <FolderOpen size={13} /> Saved in your Documents › Heirvo folder
+                </button>
+              )}
               <div style={{ marginTop: 18, display: "flex", gap: 10, flexWrap: "wrap" }}>
                 <Link to={`/disc/${disc.id}`} className="lib-btn-flat lib-btn-flat-primary">
                   View disc
                 </Link>
-                <button type="button" className="lib-btn-flat">
-                  Export clip
-                </button>
-                <button type="button" className="lib-btn-flat">
-                  Share moment
-                </button>
+                {userFilePath && (
+                  <>
+                    <button
+                      type="button"
+                      className="lib-btn-flat"
+                      onClick={() => { void ipc.openFile(userFilePath).catch((e) => console.warn("[Heirvo] openFile:", e)); }}
+                    >
+                      <ExternalLink size={14} style={{ marginRight: 6 }} /> Open
+                    </button>
+                    <button
+                      type="button"
+                      className="lib-btn-flat"
+                      onClick={() => { void ipc.revealInFolder(userFilePath).catch((e) => console.warn("[Heirvo] revealInFolder:", e)); }}
+                    >
+                      <FolderOpen size={14} style={{ marginRight: 6 }} /> Show in folder
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -546,7 +592,7 @@ export default function Watch() {
                   onChange={(e) => setFilterQ(e.target.value)}
                   placeholder="Find in transcript"
                   style={{
-                    background: "#fff",
+                    background: "var(--lib-surface)",
                     border: "1px solid var(--lib-line)",
                     borderRadius: 10,
                     padding: "7px 12px 7px 32px",

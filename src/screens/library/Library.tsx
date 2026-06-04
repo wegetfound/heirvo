@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Search, Activity, ArrowRight, Upload } from "lucide-react";
-import { MOCK_DISCS, getDiscById } from "./data/mockDiscs";
+// mockDiscs intentionally NOT imported here — Library only shows real recovered discs.
 import type { Disc } from "./data/types";
 import { HeroFeatured } from "./components/HeroFeatured";
 import { DiscRail } from "./components/DiscRail";
@@ -14,7 +14,7 @@ import { convertFileSrc } from "@tauri-apps/api/core";
 export default function Library() {
   const nav = useNavigate();
   const [q, setQ] = useState("");
-  const [discs, setDiscs] = useState<Disc[]>(MOCK_DISCS);
+  const [discs, setDiscs] = useState<Disc[]>([]);
   const [nextCursor, setNextCursor] = useState<number | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
   const [activeSession, setActiveSession] = useState<Session | null>(null);
@@ -43,24 +43,18 @@ export default function Library() {
     return () => clearInterval(t);
   }, []);
 
-  // Pull real discs from the backend. If the library is empty on first
-  // launch, seed it with the same demo content the UI shows so the user gets
-  // an instantly-interactive, DB-backed (and searchable) library.
+  // Pull real discs from the backend.
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        let page = await ipc.library.listPage(0, PAGE_SIZE);
-        if (!cancelled && page.discs.length === 0) {
-          await ipc.library.seedDemo();
-          page = await ipc.library.listPage(0, PAGE_SIZE);
-        }
-        if (!cancelled && page.discs.length > 0) {
+        const page = await ipc.library.listPage(0, PAGE_SIZE);
+        if (!cancelled) {
           setDiscs(page.discs);
           setNextCursor(page.nextCursor);
         }
       } catch {
-        // Dev mode without Tauri shell, or backend error — fall back to mock.
+        // Dev mode without Tauri shell, or backend error — leave empty.
       }
     })();
     return () => {
@@ -111,6 +105,8 @@ export default function Library() {
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [bulkDeleting, setBulkDeleting] = useState(false);
   const [bulkDeleteErr, setBulkDeleteErr] = useState<string | null>(null);
+  // Second-step confirm for the bulk permanent-delete path.
+  const [bulkPermanentConfirmOpen, setBulkPermanentConfirmOpen] = useState(false);
 
   // Clear selection when leaving a filter tab or exiting select mode.
   function exitSelectMode() {
@@ -118,6 +114,7 @@ export default function Library() {
     setSelected(new Set());
     setBulkDeleteOpen(false);
     setBulkDeleteErr(null);
+    setBulkPermanentConfirmOpen(false);
   }
 
   function toggleSelectMode() {
@@ -138,15 +135,38 @@ export default function Library() {
     });
   }
 
-  async function handleBulkDelete() {
+  async function handleBulkRemove() {
     if (bulkDeleting || selected.size === 0) return;
     setBulkDeleting(true);
     setBulkDeleteErr(null);
     try {
-      await ipc.library.deleteDiscsBulk(Array.from(selected));
+      await ipc.library.deleteDiscsBulk(Array.from(selected), false);
       setBulkDeleteOpen(false);
       exitSelectMode();
-      // Refresh library list.
+      setImportMsg(`Removed ${selected.size} ${selected.size === 1 ? "disc" : "discs"} from Heirvo. Video files are still saved in your Documents › Heirvo folder.`);
+      setTimeout(() => setImportMsg(null), 6000);
+      try {
+        const page = await ipc.library.listPage(0, PAGE_SIZE);
+        setDiscs(page.discs);
+        setNextCursor(page.nextCursor);
+      } catch {/* ignore refresh error */}
+    } catch (e) {
+      setBulkDeleteErr(e instanceof Error ? e.message : "Remove failed — please try again.");
+      setBulkDeleting(false);
+    }
+  }
+
+  async function handleBulkDeletePermanently() {
+    if (bulkDeleting || selected.size === 0) return;
+    setBulkDeleting(true);
+    setBulkDeleteErr(null);
+    try {
+      await ipc.library.deleteDiscsBulk(Array.from(selected), true);
+      setBulkDeleteOpen(false);
+      setBulkPermanentConfirmOpen(false);
+      exitSelectMode();
+      setImportMsg(`Permanently deleted ${selected.size} ${selected.size === 1 ? "disc" : "discs"} from your computer.`);
+      setTimeout(() => setImportMsg(null), 6000);
       try {
         const page = await ipc.library.listPage(0, PAGE_SIZE);
         setDiscs(page.discs);
@@ -200,40 +220,38 @@ export default function Library() {
     disc: discs.filter((d) => bucketOf(d) === "disc").length,
   };
 
-  const findById = (id: string): Disc | undefined =>
-    discs.find((d) => d.id === id) ?? getDiscById(id);
-
-  const featured = findById("hawaii-vacation") ?? discs[0] ?? MOCK_DISCS[0];
+  const featured = discs[0] ?? null;
 
   const recentlyRecovered = discs.slice(0, 8);
-  const onThisDay = [
-    "hawaii-vacation",
-    "baby-emma-first-steps",
-    "graduation-michael",
-    "family-reunion-lake-house",
-    "road-trip-route-66",
-    "thanksgiving-aunt-mary",
-  ]
-    .map((id) => findById(id))
-    .filter((d): d is NonNullable<typeof d> => Boolean(d));
 
-  const birthdays = [
-    "dads-60th",
-    "eleanor-80th",
-    "baby-emma-first-steps",
-    "kids-first-day-school",
-  ]
-    .map((id) => findById(id))
-    .filter((d): d is NonNullable<typeof d> => Boolean(d));
+  // "On this day" — discs whose date matches today's month+day.
+  const todayM = new Date().getMonth();
+  const todayD = new Date().getDate();
+  const MONTHS_LC = ["january","february","march","april","may","june",
+    "july","august","september","october","november","december"];
+  const onThisDay = discs.filter((d) => {
+    const m = d.date?.match(/^(\w+)\s+(\d+)/);
+    if (!m) return false;
+    const mi = MONTHS_LC.findIndex((n) => n.startsWith(m[1].toLowerCase().slice(0, 3)));
+    return mi === todayM && parseInt(m[2]) === todayD;
+  });
 
-  const trips = [
-    "hawaii-vacation",
-    "camping-yellowstone",
-    "road-trip-route-66",
-    "family-reunion-lake-house",
-  ]
-    .map((id) => findById(id))
-    .filter((d): d is NonNullable<typeof d> => Boolean(d));
+  // "Birthdays" — discs with birthday-related topics.
+  const birthdays = discs.filter((d) =>
+    d.topics?.some((t) => {
+      const l = t.label.toLowerCase();
+      return l.includes("birthday") || l.includes("cake") || l.includes("candle");
+    })
+  );
+
+  // "Trips" — discs with travel-related topics.
+  const trips = discs.filter((d) =>
+    d.topics?.some((t) => {
+      const l = t.label.toLowerCase();
+      return l.includes("trip") || l.includes("vacation") || l.includes("travel") ||
+             l.includes("road") || l.includes("cruise");
+    })
+  );
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
@@ -564,7 +582,7 @@ export default function Library() {
               padding: "7px 13px",
               borderRadius: 8,
               border: "1px solid var(--lib-line)",
-              background: "#fff",
+              background: "var(--lib-surface)",
               color: "var(--lib-ink-2)",
               fontFamily: "var(--lib-sans)",
               fontSize: 12.5,
@@ -714,11 +732,11 @@ export default function Library() {
           <AlbumGrid albums={albums} />
         ) : filter === "all" ? (
           <>
-            <HeroFeatured disc={featured} />
+            {featured && <HeroFeatured disc={featured} />}
 
             <DiscRail
               title="Recently recovered"
-              sub="From the last 30 days · 7 discs, 14 hours restored"
+              sub={recentlyRecovered.length > 0 ? `${recentlyRecovered.length} disc${recentlyRecovered.length === 1 ? "" : "s"} recovered` : "From the last 30 days"}
               discs={recentlyRecovered}
               seeAllHref="/library/all?title=Recently+recovered&filter=recent"
             />
@@ -772,7 +790,7 @@ export default function Library() {
                 padding: "10px 22px",
                 borderRadius: 10,
                 border: "1px solid var(--lib-line)",
-                background: "#fff",
+                background: "var(--lib-surface)",
                 color: "var(--lib-ink-2)",
                 fontFamily: "var(--lib-sans)",
                 fontSize: 13,
@@ -826,47 +844,274 @@ export default function Library() {
         </div>
       )}
 
-      {/* ── Bulk-delete confirm modal ────────────────────────────────── */}
-      {bulkDeleteOpen && (
+      {/* ── Bulk-delete two-tier modal ──────────────────────────────── */}
+      {bulkDeleteOpen && !bulkPermanentConfirmOpen && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-ink-900/50 p-4 backdrop-blur-sm"
           role="dialog"
           aria-modal="true"
           aria-labelledby="bulk-delete-title"
         >
-          <div className="w-full max-w-sm overflow-hidden rounded-2xl bg-white shadow-2xl p-6">
+          <div
+            style={{
+              background: "var(--lib-paper)",
+              borderRadius: 20,
+              width: "100%",
+              maxWidth: 420,
+              padding: "28px 28px 24px",
+              boxShadow: "0 32px 80px rgba(30,20,10,0.30)",
+              border: "1px solid var(--lib-line)",
+            }}
+          >
             <h3
               id="bulk-delete-title"
-              className="font-display text-[18px] font-bold tracking-[-0.01em] text-ink-900"
+              style={{
+                fontFamily: "var(--lib-serif)",
+                fontWeight: 500,
+                fontSize: 20,
+                letterSpacing: "-0.015em",
+                color: "var(--lib-ink)",
+                margin: "0 0 8px",
+              }}
             >
-              Remove {selected.size} {selected.size === 1 ? "disc" : "discs"} from your library?
+              Remove {selected.size} {selected.size === 1 ? "disc" : "discs"}?
             </h3>
-            <p className="mt-2 text-[13.5px] leading-[1.55] text-ink-600">
-              The disc entries, transcripts, and any vault copies of imported
-              files will be deleted from this device.{" "}
-              <span className="font-medium text-ink-900">
-                Your original discs and any source files outside the vault are untouched.
-              </span>
+            <p
+              style={{
+                fontFamily: "var(--lib-sans)",
+                fontSize: 13.5,
+                lineHeight: 1.55,
+                color: "var(--lib-ink-2)",
+                margin: "0 0 20px",
+              }}
+            >
+              Choose how you want to remove {selected.size === 1 ? "this memory" : "these memories"}.
             </p>
+
+            {/* Option 1 — safe remove */}
+            <button
+              type="button"
+              onClick={() => void handleBulkRemove()}
+              disabled={bulkDeleting}
+              style={{
+                display: "block",
+                width: "100%",
+                textAlign: "left",
+                background: "var(--lib-surface)",
+                border: "1px solid var(--lib-line)",
+                borderRadius: 14,
+                padding: "16px 18px",
+                marginBottom: 10,
+                cursor: bulkDeleting ? "default" : "pointer",
+                opacity: bulkDeleting ? 0.6 : 1,
+                transition: "background .15s ease",
+              }}
+              onMouseEnter={(e) => { if (!bulkDeleting) (e.currentTarget as HTMLButtonElement).style.background = "var(--lib-paper-2)"; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "var(--lib-surface)"; }}
+            >
+              <div
+                style={{
+                  fontFamily: "var(--lib-sans)",
+                  fontWeight: 600,
+                  fontSize: 14,
+                  color: "var(--lib-ink)",
+                  marginBottom: 4,
+                }}
+              >
+                {bulkDeleting ? "Removing…" : "Remove from Heirvo"}
+              </div>
+              <div
+                style={{
+                  fontFamily: "var(--lib-sans)",
+                  fontSize: 12.5,
+                  lineHeight: 1.45,
+                  color: "var(--lib-muted)",
+                }}
+              >
+                Removes {selected.size === 1 ? "the disc" : "the discs"} from this app. Video files stay saved in your Documents &rsaquo; Heirvo folder.
+              </div>
+            </button>
+
+            {/* Option 2 — permanent delete */}
+            <button
+              type="button"
+              onClick={() => { setBulkDeleteErr(null); setBulkPermanentConfirmOpen(true); }}
+              disabled={bulkDeleting}
+              style={{
+                display: "block",
+                width: "100%",
+                textAlign: "left",
+                background: "transparent",
+                border: "1px solid var(--lib-line)",
+                borderRadius: 14,
+                padding: "16px 18px",
+                marginBottom: 20,
+                cursor: bulkDeleting ? "default" : "pointer",
+                opacity: bulkDeleting ? 0.5 : 1,
+                transition: "background .15s ease",
+              }}
+              onMouseEnter={(e) => { if (!bulkDeleting) (e.currentTarget as HTMLButtonElement).style.background = "rgba(239,68,68,0.04)"; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}
+            >
+              <div
+                style={{
+                  fontFamily: "var(--lib-sans)",
+                  fontWeight: 600,
+                  fontSize: 14,
+                  color: "#b91c1c",
+                  marginBottom: 4,
+                }}
+              >
+                Delete permanently from my computer
+              </div>
+              <div
+                style={{
+                  fontFamily: "var(--lib-sans)",
+                  fontSize: 12.5,
+                  lineHeight: 1.45,
+                  color: "var(--lib-muted)",
+                }}
+              >
+                Removes {selected.size === 1 ? "the disc" : "the discs"} from this app AND deletes the video files from your Documents &rsaquo; Heirvo folder. This cannot be undone.
+              </div>
+            </button>
+
             {bulkDeleteErr && (
-              <p className="mt-3 text-[12.5px] text-ios-red">{bulkDeleteErr}</p>
+              <p
+                style={{
+                  fontFamily: "var(--lib-sans)",
+                  fontSize: 12.5,
+                  color: "#b91c1c",
+                  margin: "-12px 0 14px",
+                }}
+              >
+                {bulkDeleteErr}
+              </p>
             )}
-            <div className="mt-5 flex gap-2 justify-end">
+
+            <div style={{ display: "flex", justifyContent: "flex-end" }}>
               <button
                 type="button"
                 onClick={() => { setBulkDeleteOpen(false); setBulkDeleteErr(null); }}
                 disabled={bulkDeleting}
-                className="rounded-xl border border-ink-200 px-4 py-2 text-[13px] font-medium text-ink-700 transition hover:bg-ink-50 disabled:opacity-50"
+                style={{
+                  background: "transparent",
+                  border: "1px solid var(--lib-line)",
+                  borderRadius: 10,
+                  padding: "8px 18px",
+                  fontFamily: "var(--lib-sans)",
+                  fontSize: 13,
+                  fontWeight: 500,
+                  color: "var(--lib-ink-2)",
+                  cursor: bulkDeleting ? "default" : "pointer",
+                  opacity: bulkDeleting ? 0.5 : 1,
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk permanent-delete second-step confirm */}
+      {bulkDeleteOpen && bulkPermanentConfirmOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-ink-900/50 p-4 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="bulk-perm-delete-title"
+        >
+          <div
+            style={{
+              background: "var(--lib-paper)",
+              borderRadius: 20,
+              width: "100%",
+              maxWidth: 400,
+              padding: "28px 28px 24px",
+              boxShadow: "0 32px 80px rgba(30,20,10,0.30)",
+              border: "1px solid rgba(185,28,28,0.25)",
+            }}
+          >
+            <h3
+              id="bulk-perm-delete-title"
+              style={{
+                fontFamily: "var(--lib-serif)",
+                fontWeight: 500,
+                fontSize: 20,
+                letterSpacing: "-0.015em",
+                color: "var(--lib-ink)",
+                margin: "0 0 10px",
+              }}
+            >
+              Delete permanently?
+            </h3>
+            <p
+              style={{
+                fontFamily: "var(--lib-sans)",
+                fontSize: 13.5,
+                lineHeight: 1.6,
+                color: "var(--lib-ink-2)",
+                margin: "0 0 22px",
+              }}
+            >
+              This will permanently delete <strong style={{ color: "var(--lib-ink)" }}>{selected.size} {selected.size === 1 ? "disc" : "discs"}</strong> from your computer — including the video files in your Documents &rsaquo; Heirvo folder.{" "}
+              <strong style={{ color: "#b91c1c" }}>This cannot be undone.</strong>
+            </p>
+
+            {bulkDeleteErr && (
+              <p
+                style={{
+                  fontFamily: "var(--lib-sans)",
+                  fontSize: 12.5,
+                  color: "#b91c1c",
+                  margin: "-10px 0 16px",
+                }}
+              >
+                {bulkDeleteErr}
+              </p>
+            )}
+
+            <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+              <button
+                type="button"
+                onClick={() => { setBulkPermanentConfirmOpen(false); setBulkDeleteErr(null); }}
+                disabled={bulkDeleting}
+                style={{
+                  background: "transparent",
+                  border: "1px solid var(--lib-line)",
+                  borderRadius: 10,
+                  padding: "8px 18px",
+                  fontFamily: "var(--lib-sans)",
+                  fontSize: 13,
+                  fontWeight: 500,
+                  color: "var(--lib-ink-2)",
+                  cursor: bulkDeleting ? "default" : "pointer",
+                  opacity: bulkDeleting ? 0.5 : 1,
+                }}
               >
                 Cancel
               </button>
               <button
                 type="button"
-                onClick={() => void handleBulkDelete()}
+                onClick={() => void handleBulkDeletePermanently()}
                 disabled={bulkDeleting}
-                className="rounded-xl bg-ios-red px-4 py-2 text-[13px] font-semibold text-white transition hover:bg-red-500 disabled:opacity-60"
+                style={{
+                  background: bulkDeleting ? "rgba(185,28,28,0.6)" : "#b91c1c",
+                  border: "none",
+                  borderRadius: 10,
+                  padding: "8px 18px",
+                  fontFamily: "var(--lib-sans)",
+                  fontSize: 13,
+                  fontWeight: 600,
+                  color: "#fff",
+                  cursor: bulkDeleting ? "default" : "pointer",
+                  transition: "background .15s ease",
+                }}
+                onMouseEnter={(e) => { if (!bulkDeleting) (e.currentTarget as HTMLButtonElement).style.background = "#991b1b"; }}
+                onMouseLeave={(e) => { if (!bulkDeleting) (e.currentTarget as HTMLButtonElement).style.background = "#b91c1c"; }}
               >
-                {bulkDeleting ? "Removing…" : `Remove ${selected.size}`}
+                {bulkDeleting ? "Deleting…" : `Yes, delete ${selected.size} permanently`}
               </button>
             </div>
           </div>

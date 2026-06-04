@@ -41,6 +41,8 @@ pub async fn insert_disc(db: &Db, disc: &Disc) -> AppResult<()> {
     .bind(now)
     .execute(&mut *tx)
     .await?;
+    // Note: deliverable_path is not inserted here — it is written later by
+    // materialize_deliverable once the file copy completes.
 
     for (i, line) in disc.transcript.iter().enumerate() {
         sqlx::query(
@@ -343,6 +345,10 @@ pub async fn get_disc(db: &Db, id: &str) -> AppResult<Option<Disc>> {
     let media_type: String = row
         .try_get::<String, _>("media_type")
         .unwrap_or_else(|_| "video".to_string());
+    let deliverable_path: Option<String> = row
+        .try_get::<Option<String>, _>("deliverable_path")
+        .ok()
+        .flatten();
 
     Ok(Some(Disc {
         id: row.try_get("id")?,
@@ -367,6 +373,7 @@ pub async fn get_disc(db: &Db, id: &str) -> AppResult<Option<Disc>> {
         video_path,
         media_type,
         photos,
+        deliverable_path,
     }))
 }
 
@@ -505,11 +512,24 @@ pub async fn search(db: &Db, query: &str) -> AppResult<Vec<SearchHit>> {
     if terms.is_empty() {
         return Ok(Vec::new());
     }
-    let fts_query = terms
+    // FTS5 boolean operator tokens that must not appear as standalone terms;
+    // they would be interpreted as query operators and could corrupt the query.
+    const FTS5_OPS: &[&str] = &["and", "or", "not"];
+    let fts_terms: Vec<String> = terms
         .iter()
-        .map(|t| format!("\"{}\"", t.replace('"', "\"\"")))
-        .collect::<Vec<_>>()
-        .join(" OR ");
+        // Drop bare boolean operator tokens (case-insensitive already lowercased above).
+        .filter(|t| !FTS5_OPS.contains(&t.as_str()))
+        .map(|t| {
+            // Strip FTS5 column-filter syntax characters (':') then
+            // double any internal double-quotes (FTS5 phrase-quote escaping).
+            let sanitized = t.replace(':', "").replace('"', "\"\"");
+            format!("\"{}\"", sanitized)
+        })
+        .collect();
+    if fts_terms.is_empty() {
+        return Ok(Vec::new());
+    }
+    let fts_query = fts_terms.join(" OR ");
 
     // Join FTS → lines → discs. Order by FTS rank (lower = better in sqlite FTS5).
     let sql = "SELECT l.time_display, l.time_sec, l.speaker, l.text,

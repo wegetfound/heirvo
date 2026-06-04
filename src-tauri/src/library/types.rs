@@ -73,7 +73,7 @@ pub struct Disc {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub location: Option<String>,
     pub source: String,
-    /// "recovered" | "partial" | "recovering".
+    /// "recovered" | "partial" | "recovering" | "incomplete".
     pub status: String,
     pub duration_formatted: String,
     pub duration_sec: i64,
@@ -102,6 +102,11 @@ pub struct Disc {
     /// video/audio discs so existing callers are unaffected.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub photos: Option<Vec<PhotoAsset>>,
+    /// Filesystem path to the human-findable Documents\Heirvo copy of the
+    /// media file.  `None` until the deliverable has been materialized.
+    /// Serializes as `deliverablePath` on the wire.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub deliverable_path: Option<String>,
 }
 
 fn default_media_type() -> String {

@@ -11,6 +11,7 @@
 
 pub mod ai;
 pub mod autoplay;
+pub mod autoplay_guard;
 pub mod autoplay_handler;
 pub mod commands;
 pub mod disc;
@@ -25,14 +26,24 @@ pub mod state;
 pub mod transcription;
 pub mod util;
 
+use tauri::Manager as _;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 
 /// Pull a disc drive path (e.g. `E:\`) out of a process argument list. AutoPlay
-/// launches us as `heirvo.exe "E:\"`, so we look for a `X:`-shaped argument.
+/// launches us as `heirvo.exe "E:\"`, so we look for an exact optical-drive
+/// root argument.
+///
+/// Accepts only: a single ASCII letter, a colon, and an optional trailing
+/// backslash or forward slash — i.e. `^[A-Za-z]:[\\/]?$` (length 2 or 3).
+/// This rejects traversal attempts like `C:\..\evil` or `X:whatever`.
 fn extract_disc_path(args: Vec<String>) -> Option<String> {
     args.into_iter().find(|a| {
         let b = a.as_bytes();
-        b.len() >= 2 && b[0].is_ascii_alphabetic() && b[1] == b':'
+        match b.len() {
+            2 => b[0].is_ascii_alphabetic() && b[1] == b':',
+            3 => b[0].is_ascii_alphabetic() && b[1] == b':' && (b[2] == b'\\' || b[2] == b'/'),
+            _ => false,
+        }
     })
 }
 
@@ -110,10 +121,23 @@ pub fn run() {
                 Ok(())
             })?;
 
-            // Stop Windows AutoPlay from popping a disc-player prompt over Heirvo
-            // when the user inserts a disc to recover. No-op if the window or the
-            // platform hook is unavailable.
+            // ── Suppress Windows AutoPlay while Heirvo is running ─────────────
+            //
+            // Layer 1 (global): set HKCU DisableAutoplay=1 so NO popup appears
+            // regardless of focus, and restore on clean exit.
+            // Layer 2 (foreground): subclass the window so Heirvo also replies
+            // TRUE to QueryCancelAutoPlay when it IS the foreground window.
+            let data_dir = app
+                .path()
+                .app_data_dir()
+                .unwrap_or_else(|_| std::path::PathBuf::from("."));
+            autoplay_guard::suppress_on_startup(&data_dir);
+
             if let Some(win) = tauri::Manager::get_webview_window(app, "main") {
+                // Enforce frameless on every launch. The app owns its chrome via a
+                // custom TitleBar; if a prior session left native decorations on
+                // (e.g. the old fullscreen-exit bug), this guarantees a clean start.
+                let _ = win.set_decorations(false);
                 autoplay::install(&win);
             }
             Ok(())
@@ -162,6 +186,7 @@ pub fn run() {
             commands::diagnostic::open_log_folder,
             commands::storage::list_storage_drives,
             commands::storage::open_folder,
+            commands::storage::open_file,
             commands::session::rename_session,
             commands::license::get_license_status,
             commands::license::activate_license,
@@ -206,6 +231,19 @@ pub fn run() {
             commands::autoplay::autoplay_set_enabled,
             commands::autoplay::get_pending_disc,
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application")
+        .run(|app_handle, event| {
+            if let tauri::RunEvent::Exit = event {
+                // Restore the user's AutoPlay setting on every clean exit path
+                // (window closed, ⌘Q / Alt-F4, process::exit via the updater,
+                // etc.). If the app is killed the restore file acts as a self-
+                // heal sentinel for the next startup — see autoplay_guard docs.
+                let data_dir = app_handle
+                    .path()
+                    .app_data_dir()
+                    .unwrap_or_else(|_| std::path::PathBuf::from("."));
+                autoplay_guard::restore_on_exit(&data_dir);
+            }
+        });
 }

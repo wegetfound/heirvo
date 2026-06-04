@@ -2,6 +2,7 @@
 //!
 //! See `migrations/20260516000000_library.sql` for the schema.
 
+pub mod deliverable;
 pub mod html_export;
 pub mod promote;
 pub mod queries;

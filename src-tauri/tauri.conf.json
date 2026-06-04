@@ -28,7 +28,24 @@
       "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: asset: https://asset.localhost; media-src 'self' blob: asset: https://asset.localhost; connect-src 'self' ipc: http://ipc.localhost https://api.lemonsqueezy.com; worker-src 'self' blob:; object-src 'none'; frame-src 'none'; base-uri 'self'; form-action 'self'",
       "assetProtocol": {
         "enable": true,
-        "scope": ["**"]
+        "scope": {
+          "allow": [
+            "$APPDATA/com.heirvo.app/vault/**",
+            "$DOCUMENT/**",
+            "$VIDEO/**",
+            "$PICTURE/**",
+            "$MUSIC/**",
+            "$DOWNLOAD/**",
+            "$DESKTOP/**"
+          ],
+          "deny": [
+            "$APPDATA/com.heirvo.app/license.key",
+            "$APPDATA/com.heirvo.app/*.db",
+            "$APPDATA/com.heirvo.app/*.log",
+            "$APPDATA/com.heirvo.app/*.json",
+            "$APPDATA/com.heirvo.app/*.key"
+          ]
+        }
       }
     }
   },

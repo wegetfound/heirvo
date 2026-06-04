@@ -38,7 +38,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { MOCK_DISCS, getDiscById } from "./data/mockDiscs";
+// mockDiscs intentionally NOT imported here — Memories only shows real recovered discs.
 import { gradientCss } from "./components/GradientArt";
 import type { Disc } from "./data/types";
 import { ipc, events } from "../../lib/ipc";
@@ -196,22 +196,7 @@ function Scrubber({ currentSec, durationSec, onSeek, ambient }: ScrubberProps) {
 }
 
 // ─── PHRASE CHIPS ─────────────────────────────────────────────────────────────
-
-const FEATURED_CHIPS = ["pretzel", "the leis", "rental keys", "I could die here"];
-const CHIP_MAP: Record<string, string[]> = {
-  "hawaii-vacation": ["pretzel", "the leis", "rental keys", "I could die here"],
-  "wedding-sarah-mike": ["I do", "lawfully wedded", "lucky", "first kiss"],
-  "christmas-1992": ["Nintendo", "five-thirty", "down the stairs", "stockings"],
-  "dads-60th": ["surprise", "I'm not crying", "sixty more", "dark room"],
-  "kids-first-day-school": ["the camera", "ten", "the bus", "goodbye"],
-  "eleanor-80th": ["pancakes", "eighty candles", "make my wish", "champion"],
-  "family-reunion-lake-house": ["donate a boat", "Grandpa", "ninety", "cordless"],
-  "camping-yellowstone": ["don't run", "squirrel", "earth is breathing", "bear"],
-  "thanksgiving-aunt-mary": ["two turkeys", "seconds", "extra grateful", "pie"],
-  "baby-emma-first-steps": ["she did it", "one step", "let go", "coffee table"],
-  "graduation-michael": ["every day", "eighteen years", "you proud", "Italian"],
-  "road-trip-route-66": ["hon", "Pacific Ocean", "from the kitchen", "fries"],
-};
+// No fabricated example phrases — the user's own transcript content drives search.
 
 // ─── COVER-FLOW CAROUSEL ──────────────────────────────────────────────────────
 
@@ -823,12 +808,11 @@ function ImmersivePlayer({
 
 export default function Memories() {
   const nav = useNavigate();
-  const INITIAL = getDiscById("hawaii-vacation") ?? MOCK_DISCS[0];
 
-  // Start from the bundled demo discs so the room is never empty, then upgrade
-  // to the real DB-backed library once IPC resolves (mock fallback in dev).
-  const [discs, setDiscs] = useState<Disc[]>(MOCK_DISCS);
-  const [disc, setDisc] = useState<Disc>(INITIAL);
+  // Start empty — real library loads via IPC. Never pre-populate with mock
+  // data so a brand-new user only ever sees their own recovered memories.
+  const [discs, setDiscs] = useState<Disc[]>([]);
+  const [disc, setDisc] = useState<Disc | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentSec, setCurrentSec] = useState(0);
   const [fullscreen, setFullscreen] = useState(false);
@@ -844,15 +828,15 @@ export default function Memories() {
   // URL passthrough (http/https/blob/data) lets this work without a Tauri shell.
   // Local paths go through convertFileSrc (Tauri asset protocol).
   const mediaSrc = useMemo<string | null>(() => {
-    if (!disc.videoPath) return null;
+    if (!disc?.videoPath) return null;
     if (/^(https?:|blob:|data:)/i.test(disc.videoPath)) return disc.videoPath;
     try {
       return convertFileSrc(disc.videoPath);
     } catch {
       return null;
     }
-  }, [disc.videoPath]);
-  const hasVideo = mediaSrc !== null && disc.mediaType !== "photo";
+  }, [disc?.videoPath]);
+  const hasVideo = mediaSrc !== null && disc?.mediaType !== "photo";
 
   // Refs for GSAP targets
   const rootRef = useRef<HTMLDivElement>(null);
@@ -866,17 +850,22 @@ export default function Memories() {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const gsapKbRef = useRef<ReturnType<typeof gsap.to> | null>(null);
 
-  // ── Load the real library (IPC), falling back to demo discs ──────────────────
+  // ── Load the real library (IPC) ───────────────────────────────────────────────
   const loadDiscs = useCallback(async () => {
     try {
       const page = await ipc.library.listPage(0, 200);
-      if (!page?.discs?.length) return;
-      setDiscs(page.discs);
-      // Keep the featured "on this day" disc if it still exists, else feature
-      // the most recently recovered real disc.
-      setDisc((cur) => page.discs.find((d) => d.id === cur.id) ?? page.discs[0]);
+      // Always update state — even an empty page clears any stale data.
+      setDiscs(page?.discs ?? []);
+      if (page?.discs?.length) {
+        // Keep the active disc if it still exists, else feature the most
+        // recently recovered real disc.
+        setDisc((cur) => page.discs.find((d) => d.id === cur?.id) ?? page.discs[0]);
+      } else {
+        // Library is empty — no disc to feature.
+        setDisc(null);
+      }
     } catch {
-      // demo discs already shown
+      // Non-Tauri dev environment — leave state as-is (already empty).
     }
   }, []);
 
@@ -958,8 +947,9 @@ export default function Memories() {
   // ── Lazy-load full detail for the active disc ────────────────────────────────
   // The list endpoint may return lightweight rows (no transcript/people). When
   // the active memory lacks a transcript, fetch its full record so search and
-  // the people row work — mirrors the Watch screen's mock→real upgrade.
+  // the people row work.
   useEffect(() => {
+    if (!disc) return;
     if (disc.transcript && disc.transcript.length) return;
     let cancelled = false;
     (async () => {
@@ -973,13 +963,13 @@ export default function Memories() {
     return () => {
       cancelled = true;
     };
-  }, [disc.id]);
+  }, [disc?.id]);
 
   // ── Playback simulation (poster / no-video path only) ───────────────────────
   // When a real <video> is present its onTimeUpdate drives currentSec instead.
   useEffect(() => {
     if (hasVideo) return; // real video drives time — do not double-advance
-    if (isPlaying) {
+    if (isPlaying && disc) {
       intervalRef.current = setInterval(() => {
         setCurrentSec((s) => {
           if (s >= disc.durationSec) {
@@ -995,7 +985,7 @@ export default function Memories() {
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [isPlaying, disc.durationSec, hasVideo]);
+  }, [isPlaying, disc?.durationSec, hasVideo, disc]);
 
   // ── Ambient Ken Burns pulse on the poster (poster / no-video path only) ─────
   // When real video is playing there is no poster element to animate.
@@ -1011,7 +1001,7 @@ export default function Memories() {
     return () => {
       gsapKbRef.current?.kill();
     };
-  }, [disc.id, hasVideo]);
+  }, [disc?.id, hasVideo]);
 
   // ── Entrance animation (once on mount) ──────────────────────────────────────
   useEffect(() => {
@@ -1043,7 +1033,7 @@ export default function Memories() {
   // ── Cross-fade when switching memory ────────────────────────────────────────
   const switchDisc = useCallback(
     (next: Disc) => {
-      if (next.id === disc.id || transitioning) return;
+      if (next.id === disc?.id || transitioning) return;
       setTransitioning(true);
       setIsPlaying(false);
       setCurrentSec(0);
@@ -1091,7 +1081,7 @@ export default function Memories() {
         },
       });
     },
-    [disc.id, transitioning]
+    [disc?.id, transitioning]
   );
 
   // ── Fullscreen entrance ──────────────────────────────────────────────────────
@@ -1111,7 +1101,11 @@ export default function Memories() {
           await w.setFullscreen(true);
           await w.setDecorations(false);
         } else {
-          await w.setDecorations(true);
+          // The app is frameless by design (tauri.conf decorations:false) with a
+          // custom TitleBar. Exiting fullscreen must restore that frameless state,
+          // NOT enable the native OS title bar — otherwise the native chrome stacks
+          // on top of our custom bar (the "two title bars" bug).
+          await w.setDecorations(false);
           await w.setFullscreen(false);
         }
       } catch {
@@ -1142,10 +1136,50 @@ export default function Memories() {
   }, [fullscreen]);
 
   // ── Derived ───────────────────────────────────────────────────────────────────
-  const chips = CHIP_MAP[disc.id] ?? FEATURED_CHIPS;
-  const glow = roomGlow(disc);
-  const posterBg = gradientCss(disc.gradient);
-  const yearsAgo = new Date().getFullYear() - disc.year;
+  // disc may be null while the library loads or when the library is empty.
+  const glow = disc ? roomGlow(disc) : "rgba(194,116,31,0.45)";
+  const posterBg = disc ? gradientCss(disc.gradient) : "transparent";
+  const yearsAgo = disc ? new Date().getFullYear() - disc.year : 0;
+
+  // ── Empty-library state ───────────────────────────────────────────────────────
+  // Show an honest waiting / empty state rather than fabricated demo memories.
+  if (!disc) {
+    return (
+      <div
+        className="lib-root"
+        style={{
+          position: "relative",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          height: "100%",
+          background: "#1A120B",
+          color: "rgba(248,244,236,0.55)",
+          fontFamily: "var(--lib-sans)",
+          gap: 12,
+          padding: "40px 28px",
+          textAlign: "center",
+        }}
+      >
+        <div style={{ fontSize: 38, marginBottom: 4 }}>💿</div>
+        <div
+          style={{
+            fontFamily: "var(--lib-serif)",
+            fontSize: 24,
+            fontWeight: 300,
+            color: "rgba(248,244,236,0.85)",
+            letterSpacing: "-0.01em",
+          }}
+        >
+          No memories yet
+        </div>
+        <p style={{ fontSize: 14, lineHeight: 1.55, maxWidth: 360, margin: 0 }}>
+          Rescue a disc to begin — your recovered videos and transcripts will appear here.
+        </p>
+      </div>
+    );
+  }
 
   // ── FULLSCREEN OVERLAY ────────────────────────────────────────────────────────
   if (fullscreen) {
@@ -1664,70 +1698,20 @@ export default function Memories() {
               )}
             </div>
 
-            {/* Phrase chips */}
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                flexWrap: "nowrap",
-                gap: 6,
-                marginTop: 8,
-                overflowX: "auto",
-              }}
-            >
-              <span
+            {/* Search hint — no fabricated example phrases */}
+            {!query && (
+              <div
                 style={{
+                  marginTop: 8,
                   fontSize: 10,
-                  color: "rgba(255,255,255,0.35)",
+                  color: "rgba(255,255,255,0.30)",
                   fontFamily: "var(--lib-sans)",
-                  whiteSpace: "nowrap",
-                  flexShrink: 0,
+                  fontStyle: "italic",
                 }}
               >
-                Try:
-              </span>
-              {chips.map((chip) => (
-                <button
-                  key={chip}
-                  onClick={() => setQuery(chip)}
-                  style={{
-                    flexShrink: 0,
-                    background:
-                      query === chip
-                        ? "rgba(194,116,31,0.30)"
-                        : "rgba(255,255,255,0.08)",
-                    border:
-                      query === chip
-                        ? "1px solid rgba(194,116,31,0.50)"
-                        : "1px solid rgba(255,255,255,0.12)",
-                    borderRadius: 99,
-                    padding: "3px 10px",
-                    fontFamily: "var(--lib-sans)",
-                    fontSize: 11,
-                    fontWeight: 500,
-                    color:
-                      query === chip
-                        ? "rgba(233,185,122,1)"
-                        : "rgba(255,255,255,0.65)",
-                    cursor: "pointer",
-                    transition: "all 0.15s",
-                    whiteSpace: "nowrap",
-                  }}
-                  onMouseEnter={(e) => {
-                    if (query !== chip)
-                      (e.currentTarget as HTMLButtonElement).style.background =
-                        "rgba(255,255,255,0.14)";
-                  }}
-                  onMouseLeave={(e) => {
-                    if (query !== chip)
-                      (e.currentTarget as HTMLButtonElement).style.background =
-                        "rgba(255,255,255,0.08)";
-                  }}
-                >
-                  "{chip}"
-                </button>
-              ))}
-            </div>
+                Search names, places, or anything that was said
+              </div>
+            )}
           </div>
 
           {/* Transcript snippet when searching */}

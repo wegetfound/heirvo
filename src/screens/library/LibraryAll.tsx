@@ -277,7 +277,7 @@ export default function LibraryAll() {
                 padding: "10px 24px",
                 borderRadius: 10,
                 border: "1px solid var(--lib-line)",
-                background: "#fff",
+                background: "var(--lib-surface)",
                 color: "var(--lib-ink-2)",
                 fontFamily: "var(--lib-sans)",
                 fontSize: 13,

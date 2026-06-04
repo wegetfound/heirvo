@@ -1,7 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import type { SearchHit } from "../data/types";
 import { GradientArt } from "./GradientArt";
-import { getDiscById } from "../data/mockDiscs";
 
 interface Props {
   hit: SearchHit;
@@ -9,8 +8,6 @@ interface Props {
 
 export function SearchResultRow({ hit }: Props) {
   const nav = useNavigate();
-  const disc = getDiscById(hit.discId);
-  if (!disc) return null;
 
   const handleClick = () => {
     nav(`/watch/${hit.discId}?t=${hit.time}`);
@@ -38,7 +35,7 @@ export function SearchResultRow({ hit }: Props) {
       className="lib-result-row"
     >
       <GradientArt
-        gradient={disc.gradient}
+        gradient="capecod"
         style={{
           width: 200,
           aspectRatio: "16 / 10",
@@ -73,7 +70,7 @@ export function SearchResultRow({ hit }: Props) {
             letterSpacing: ".06em",
           }}
         >
-          {disc.title} · {disc.year}
+          {hit.discTitle} · {hit.discDate}
         </div>
         <div
           style={{

@@ -247,10 +247,13 @@ pub async fn delete_album(
         for r in rows {
             let did: String = r.try_get("id")?;
             // Reuse the disc deletion path so vault cleanup runs.
+            // `permanent = true` because the user explicitly chose "delete
+            // album and members" — remove the Documents\Heirvo copy too.
             match crate::commands::library::delete_library_disc(
                 app.clone(),
                 state.clone(),
                 did,
+                true,
             )
             .await
             {

@@ -187,6 +187,10 @@ export const ipc = {
    *  Delegates to the existing `open_folder` command which runs
    *  `explorer /select,<path>` on Windows and `xdg-open` on Linux/macOS. */
   revealInFolder: (path: string) => invoke<void>("open_folder", { path }),
+  /** Open a file in the OS default app (the user's normal video player,
+   *  photo viewer, etc.). Unlike revealInFolder which selects it in Explorer,
+   *  this OPENS it. */
+  openFile: (path: string) => invoke<void>("open_file", { path }),
 
   // Preflight
   getPreflightStatus: () =>
@@ -214,14 +218,21 @@ export const ipc = {
      * "this will use X GB" confirmation before committing to a multi-GB copy. */
     getImportSizePreview: (mediaPath: string) =>
       invoke<ImportPreview>("get_import_size_preview", { mediaPath }),
-    /** Remove a disc from the library. If the disc was an imported file
-     * (video_path inside the vault), the vault copy is deleted too. */
-    deleteDisc: (id: string) =>
-      invoke<DeleteResult>("delete_library_disc", { id }),
+    /** Remove a disc from the library.
+     *
+     * `permanent = false` (safe default): deletes the DB row, internal vault
+     * copy, and cached thumbnail — but **keeps** the Documents\Heirvo
+     * deliverable file. Returns `deliverableKept` with the preserved path.
+     *
+     * `permanent = true`: same as above plus the Documents\Heirvo deliverable
+     * is permanently deleted from the computer. `deliverableKept` will be null. */
+    deleteDisc: (id: string, permanent: boolean) =>
+      invoke<DeleteResult>("delete_library_disc", { id, permanent }),
     /** Bulk-delete multiple discs. Loops delete_library_disc internally and
-     * returns aggregate totals. Partial success is allowed. */
-    deleteDiscsBulk: (ids: string[]) =>
-      invoke<BulkDeleteResult>("delete_library_discs_bulk", { ids }),
+     * returns aggregate totals. Partial success is allowed.
+     * `permanent` has the same two-mode semantics as deleteDisc. */
+    deleteDiscsBulk: (ids: string[], permanent: boolean) =>
+      invoke<BulkDeleteResult>("delete_library_discs_bulk", { ids, permanent }),
     /** Aggregate vault stats — total files, bytes used, free space. */
     getVaultStats: () => invoke<VaultStats>("get_vault_stats"),
     /** Walk a directory (recursively, capped) and return all importable media

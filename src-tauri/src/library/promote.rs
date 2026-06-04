@@ -200,11 +200,19 @@ pub async fn promote_session_to_library(
     // "getting your video ready" state; the frontend flips it to its final status
     // once normalize_for_playback completes. Otherwise use the recovered/partial
     // result from the sector map.
+    //
+    // If this is a video or audio disc but NO playable file was produced (e.g.
+    // the recovery process was interrupted before any output was written), we
+    // mark it "incomplete" so the user sees an honest, actionable message rather
+    // than a false "recovered" badge with nothing to play.
     let needs_normalization = media_type == "video" && video_path.is_some();
+    let has_video_path = video_path.is_some();
     let status = if needs_normalization {
         "recovering".to_string()
     } else {
-        check_partial_status(db, session_id).await
+        let sector_status = check_partial_status(db, session_id).await;
+        let is_partial = sector_status == "partial";
+        resolve_status(media_type, has_video_path, is_partial).to_string()
     };
 
     let disc_id = format!("{}-{}", slugify(&title), &Uuid::new_v4().to_string()[..8]);
@@ -370,6 +378,7 @@ pub async fn promote_session_to_library(
         video_path: video_path.clone(),
         media_type: media_type.to_string(),
         photos: photo_assets,
+        deliverable_path: None,
     };
 
     // Use INSERT OR IGNORE so a race on the unique index is silently won by
@@ -561,6 +570,26 @@ fn collect_images(output_dir: &Path) -> Vec<PathBuf> {
     images
 }
 
+// ── Status resolution ────────────────────────────────────────────────────────
+
+/// Decide the final disc status from three observable facts, with no I/O
+/// dependencies. This is the single source of truth for promote status logic
+/// and is unit-tested directly.
+///
+/// Rules:
+/// - `"video"` or `"audio"` with no playable file → `"incomplete"` (the rescue
+///   didn't finish; no output was saved — being honest is better than a silent
+///   unplayable disc).
+/// - Photos are unaffected: a gallery disc legitimately has `video_path = None`
+///   (all photos live in `disc_photos`).
+/// - Otherwise: `"partial"` if the sector map had failures, else `"recovered"`.
+pub(crate) fn resolve_status(media_type: &str, has_video_path: bool, is_partial: bool) -> &'static str {
+    if (media_type == "video" || media_type == "audio") && !has_video_path {
+        return "incomplete";
+    }
+    if is_partial { "partial" } else { "recovered" }
+}
+
 /// Check whether the sector map has any Failed sectors (→ "partial").
 async fn check_partial_status(db: &Db, session_id: Uuid) -> String {
     use crate::recovery::map::SectorState;
@@ -628,4 +657,46 @@ fn title_hash(s: &str) -> u64 {
         h = h.wrapping_mul(33).wrapping_add(b as u64);
     }
     h
+}
+
+// ── Unit tests ───────────────────────────────────────────────────────────────
+
+#[cfg(test)]
+mod tests {
+    use super::resolve_status;
+
+    // ── video disc, no output file → must be "incomplete" ─────────────────
+    #[test]
+    fn video_no_file_is_incomplete() {
+        assert_eq!(resolve_status("video", false, false), "incomplete");
+        assert_eq!(resolve_status("video", false, true),  "incomplete");
+    }
+
+    // ── audio disc, no output file → must be "incomplete" ─────────────────
+    #[test]
+    fn audio_no_file_is_incomplete() {
+        assert_eq!(resolve_status("audio", false, false), "incomplete");
+        assert_eq!(resolve_status("audio", false, true),  "incomplete");
+    }
+
+    // ── video disc with a file → recovered or partial ──────────────────────
+    #[test]
+    fn video_with_file_uses_sector_status() {
+        assert_eq!(resolve_status("video", true, false), "recovered");
+        assert_eq!(resolve_status("video", true, true),  "partial");
+    }
+
+    // ── audio disc with a file → recovered or partial ──────────────────────
+    #[test]
+    fn audio_with_file_uses_sector_status() {
+        assert_eq!(resolve_status("audio", true, false), "recovered");
+        assert_eq!(resolve_status("audio", true, true),  "partial");
+    }
+
+    // ── photo gallery (video_path = None) must NOT be incomplete ──────────
+    #[test]
+    fn photo_gallery_no_file_is_recovered() {
+        assert_eq!(resolve_status("photo", false, false), "recovered");
+        assert_eq!(resolve_status("photo", false, true),  "partial");
+    }
 }

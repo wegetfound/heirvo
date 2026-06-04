@@ -1,4 +1,4 @@
-export type DiscStatus = "recovered" | "partial" | "recovering";
+export type DiscStatus = "recovered" | "partial" | "recovering" | "incomplete";
 
 export type GradientId =
   | "wedding"
@@ -81,6 +81,10 @@ export interface Disc {
   /** Local filesystem path to the recovered media file. Loaded via Tauri's
    *  asset protocol (convertFileSrc) in the Watch screen. */
   videoPath?: string;
+  /** Friendly copy of the recovered/imported file saved in Documents\Heirvo\<Title>\<Title>.mp4.
+   *  Use deliverablePath ?? videoPath for user-facing file operations (open, reveal).
+   *  Optional — may be undefined for older/mock discs. */
+  deliverablePath?: string;
   /** "video" | "audio" | "photo" | "document". Drives conditional render in
    *  the Watch screen (img vs video) and DiscDetail (transcript visibility).
    *  Defaults to "video" for all existing recovered DVD rows. */

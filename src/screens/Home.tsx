@@ -298,14 +298,15 @@ export default function Home() {
               className="text-[15px] italic leading-[1.55]"
               style={{ color: "var(--db-text-muted)", fontFamily: "var(--db-serif)" }}
             >
-              It read the disc nine times. The ninth pass found my daughter's
-              first birthday.
+              A scratched disc isn&rsquo;t always lost. Reading it again and
+              again &mdash; slowly, patiently &mdash; is often what brings a
+              faded photo or video back.
             </blockquote>
             <figcaption
               className="mt-2 text-[11px] uppercase tracking-[0.16em]"
               style={{ color: "var(--db-text-faint)", fontFamily: "var(--db-sans)" }}
             >
-              — From a recovered family disc
+              — How Heirvo rescues a disc
             </figcaption>
           </div>
         </figure>
