@@ -60,9 +60,19 @@ pub async fn stream_copy_vobs(
         "+discardcorrupt+genpts".into(),
         "-i".into(),
         concat_arg,
-        // Lossless: no re-encode, just remux.
-        "-c".into(),
+        // Video: lossless passthrough (fast — no re-encode).
+        "-c:v".into(),
         "copy".into(),
+        // Audio: transcode AC3 → AAC. DVDs store Dolby Digital (AC3), and
+        // AC3-inside-MP4 is non-standard — Windows Media Player, browsers, and
+        // even VLC frequently play the video but NO sound. AAC in MP4 plays
+        // everywhere. Audio re-encode is cheap, so the save stays fast.
+        "-c:a".into(),
+        "aac".into(),
+        "-b:a".into(),
+        "192k".into(),
+        "-ac".into(),
+        "2".into(),
         "-map".into(),
         "0:v?".into(),
         "-map".into(),

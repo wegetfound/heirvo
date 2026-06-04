@@ -231,12 +231,16 @@ pub async fn save_as_mp4(
                 .map(|s| s.eq_ignore_ascii_case("VOB"))
                 .unwrap_or(false)
         })
-        // Skip the menu VOB (VTS_NN_0.VOB) — we want title content only.
+        // Skip menu VOBs — we want title content only. Both the VMG menu
+        // (VIDEO_TS.VOB) and each title set's menu (VTS_NN_0.VOB) are menus; the
+        // VMG one is often 0 bytes and has no audio, which can confuse the muxer.
         .filter(|p| {
-            !p.file_name()
+            let name = p
+                .file_name()
                 .and_then(|n| n.to_str())
-                .map(|s| s.to_ascii_uppercase().ends_with("_0.VOB"))
-                .unwrap_or(false)
+                .map(|s| s.to_ascii_uppercase())
+                .unwrap_or_default();
+            name != "VIDEO_TS.VOB" && !name.ends_with("_0.VOB")
         })
         .collect();
     vobs.sort();
