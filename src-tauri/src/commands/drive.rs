@@ -60,6 +60,24 @@ pub async fn check_disc(drive_path: String) -> AppResult<Option<DiscInfo>> {
             use crate::disc::scsi_windows::ScsiSectorReader;
             use crate::disc::sector::{ReadOptions, SectorReader};
 
+            // Identification must be FAST-FAIL. A marginal/scratched older disc
+            // makes every SCSI read grind through retries (the green drive light
+            // is the firmware re-reading bad sectors), and the default read
+            // options (retries:1, 30 s timeout) let a single read block ~60 s.
+            // Chained across the PVD spin-up loop + the directory walk that was
+            // enough to wedge the "Found a disc. Taking a look…" screen forever.
+            //
+            // The probe only needs CLEAN structural sectors (PVD + root dir),
+            // which on a readable disc come back in milliseconds. If they don't,
+            // we degrade to a capacity-based classification and let the recovery
+            // engine — which owns the real retry budget — do the heavy lifting.
+            let probe_opts = ReadOptions { retries: 0, slow_mode: false, timeout_ms: 4_000 };
+            // Hard wall-clock budget for the whole identification. Past this we
+            // return our best-effort guess rather than keep the user staring at
+            // a spinner. Frontend has its own longer timeout as a final net.
+            let probe_started = std::time::Instant::now();
+            let probe_budget = std::time::Duration::from_secs(20);
+
             let reader = match ScsiSectorReader::open(&drive_path) {
                 Ok(r) => r,
                 Err(e) => {
@@ -76,16 +94,19 @@ pub async fn check_disc(drive_path: String) -> AppResult<Option<DiscInfo>> {
             // therefore land in that spin-up window and wrongly look "unreadable".
             // Retry the PVD read a few times with a short delay so a perfectly
             // good disc gets the second or two it needs to come ready.
-            let mut result = reader.read_sector(16, ReadOptions::default());
+            let mut result = reader.read_sector(16, probe_opts);
             let mut spinups = 0;
-            while result.data.is_none() && spinups < 6 {
+            while result.data.is_none()
+                && spinups < 6
+                && probe_started.elapsed() < probe_budget
+            {
                 tracing::info!(
                     "check_disc: PVD read attempt {} returned no data (error: {:?}); retrying after spin-up delay",
                     spinups + 1,
                     result.error
                 );
                 std::thread::sleep(std::time::Duration::from_millis(800));
-                result = reader.read_sector(16, ReadOptions::default());
+                result = reader.read_sector(16, probe_opts);
                 spinups += 1;
             }
             tracing::info!(
@@ -151,10 +172,18 @@ pub async fn check_disc(drive_path: String) -> AppResult<Option<DiscInfo>> {
             let total = reader.capacity();
 
             // Walk the root directory to detect VIDEO_TS / AUDIO_TS folders.
-            let (has_video_ts, has_audio_ts) =
-                match crate::dvd::iso9660::read_volume(&reader) {
-                    Ok(vol) => match crate::dvd::iso9660::read_directory(
-                        &reader, vol.root_lba, vol.root_size, "/",
+            // Skip entirely if we've already burned the probe budget on a slow
+            // disc — classification by capacity (below) is a fine fallback, and
+            // the recovery engine's VOB/VIDEO_TS scan repairs the type later.
+            let (has_video_ts, has_audio_ts) = if probe_started.elapsed() >= probe_budget {
+                tracing::warn!(
+                    "check_disc: probe budget exhausted before directory walk; classifying by capacity"
+                );
+                (false, false)
+            } else {
+                match crate::dvd::iso9660::read_volume_with(&reader, probe_opts) {
+                    Ok(vol) => match crate::dvd::iso9660::read_directory_with(
+                        &reader, vol.root_lba, vol.root_size, "/", probe_opts,
                     ) {
                         Ok(root) => {
                             let video = root.entries.iter().any(|e| {
@@ -168,7 +197,8 @@ pub async fn check_disc(drive_path: String) -> AppResult<Option<DiscInfo>> {
                         Err(_) => (false, false),
                     },
                     Err(_) => (false, false),
-                };
+                }
+            };
 
             let disc_type = if has_video_ts {
                 DiscType::DvdVideo

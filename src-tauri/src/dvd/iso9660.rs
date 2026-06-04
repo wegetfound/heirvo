@@ -56,7 +56,16 @@ fn read_u32_le(b: &[u8]) -> u32 {
 
 /// Parse the Primary Volume Descriptor at sector 16.
 pub fn read_volume(reader: &dyn SectorReader) -> std::io::Result<IsoVolume> {
-    let res = reader.read_sector(16, ReadOptions::default());
+    read_volume_with(reader, ReadOptions::default())
+}
+
+/// Like [`read_volume`] but with caller-chosen read options.
+///
+/// Disc *identification* wants fast-fail reads (low/no retries, short timeout)
+/// so a marginal disc can't wedge the probe for minutes — the heavy retry
+/// budget belongs to the recovery engine, not the structural pre-scan.
+pub fn read_volume_with(reader: &dyn SectorReader, opts: ReadOptions) -> std::io::Result<IsoVolume> {
+    let res = reader.read_sector(16, opts);
     let data = res
         .data
         .ok_or_else(|| std::io::Error::other("PVD sector 16 unreadable"))?;
@@ -91,10 +100,25 @@ pub fn read_directory(
     size_bytes: u64,
     path: &str,
 ) -> std::io::Result<IsoDirectory> {
-    let sector_count = size_bytes.div_ceil(DVD_SECTOR_SIZE as u64);
+    read_directory_with(reader, start_lba, size_bytes, path, ReadOptions::default())
+}
+
+/// Like [`read_directory`] but with caller-chosen read options (see
+/// [`read_volume_with`] for why identification uses fast-fail options).
+pub fn read_directory_with(
+    reader: &dyn SectorReader,
+    start_lba: u64,
+    size_bytes: u64,
+    path: &str,
+    opts: ReadOptions,
+) -> std::io::Result<IsoDirectory> {
+    // Guard against a corrupt/huge directory length pinning us in a long read
+    // loop. Real ISO directories are a handful of sectors; cap the walk.
+    const MAX_DIR_SECTORS: u64 = 4096; // 8 MB of directory records — far beyond any real disc
+    let sector_count = size_bytes.div_ceil(DVD_SECTOR_SIZE as u64).min(MAX_DIR_SECTORS);
     let mut buf = Vec::with_capacity((sector_count * DVD_SECTOR_SIZE as u64) as usize);
     for i in 0..sector_count {
-        let res = reader.read_sector(start_lba + i, ReadOptions::default());
+        let res = reader.read_sector(start_lba + i, opts);
         match res.data {
             Some(d) => buf.extend_from_slice(&d),
             None => buf.extend_from_slice(&[0u8; DVD_SECTOR_SIZE]),
