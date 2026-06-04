@@ -6,7 +6,7 @@ import { OutputPanel } from "./OutputPanel";
 import { EnhancementOffer } from "./EnhancementOffer";
 import { Pause, Play, Loader2, RefreshCw, X } from "lucide-react";
 import type { DriveInfo } from "@/lib/types";
-import { sectorsToMinutes } from "@/lib/human";
+import { sectorsToMinutes, sectorsToBytes, bytesToHuman } from "@/lib/human";
 import { friendlyError } from "@/lib/friendly-errors";
 import { audio } from "@/lib/audio";
 import { pulseIn, sparkleBurst } from "@/utils/gsap-fx";
@@ -16,15 +16,20 @@ import { Disc3 } from "lucide-react";
 function minsRecovered(stats: RecoveryStats | null) {
   return stats ? sectorsToMinutes(stats.good) : 0;
 }
-function minsTotal(stats: RecoveryStats | null) {
-  return stats ? sectorsToMinutes(stats.total) : 0;
-}
 function minsRemaining(stats: RecoveryStats | null): number | null {
   if (!stats?.eta_secs) return null;
   return Math.round(stats.eta_secs / 60);
 }
 function minsDamaged(stats: RecoveryStats | null) {
   return stats ? sectorsToMinutes(stats.failed + stats.skipped) : 0;
+}
+// Honest, content-agnostic metrics: % of the disc recovered and the GB saved.
+// These don't depend on the variable-bitrate guess that made "minutes" unreliable.
+function pctRecovered(stats: RecoveryStats | null): number {
+  return stats && stats.total > 0 ? Math.round((stats.good / stats.total) * 100) : 0;
+}
+function gbRecovered(stats: RecoveryStats | null): string {
+  return stats ? bytesToHuman(sectorsToBytes(stats.good)) : "";
 }
 
 /* ─── CSS-var-aware inline style helpers ───────────────────────── */
@@ -218,11 +223,11 @@ export function Dashboard() {
   if (!id) return null;
 
   /* ── headline / subline ─────────────────────────────────────── */
-  // In-progress minutes come from the sector estimate (no file/IFO yet). Once
-  // recovery is done we prefer the exact IFO runtime when available.
-  const recovered = recoveryDone && realRuntimeMin != null
-    ? realRuntimeMin
-    : minsRecovered(stats);
+  // Primary metric is % + GB (always accurate). Minutes is shown only as a
+  // secondary "about N min of video" note, and only when we have the exact
+  // IFO runtime — never as a bitrate-guess headline.
+  const savedGb = gbRecovered(stats);
+  const videoNote = realRuntimeMin != null ? ` · about ${realRuntimeMin} min of video` : "";
   const remaining = minsRemaining(stats);
 
   // Distinguish between "never started" (no stats yet), "resting mid-read" (stats + pct>0),
@@ -244,15 +249,15 @@ export function Dashboard() {
     : "We're saving your video.";
 
   const subline = recoveryDone
-    ? `We saved ${recovered} minute${recovered !== 1 ? "s" : ""} of video.`
+    ? (savedGb ? `We saved ${savedGb} from your disc${videoNote}.` : "Your disc is saved.")
     : neverStarted
     ? "Insert your disc and click Start — we'll begin reading right away."
     : warmingUp
     ? "Drive detected. Click Resume to begin reading your disc."
     : isOvernightRunning && stats
     ? `Recovering the last few spots — leave it running, stop anytime. ${stats.failed + stats.unknown > 0 ? `${(stats.failed + stats.unknown).toLocaleString()} spots still to go.` : "Almost there."}`
-    : stats
-    ? `Found ${recovered} minute${recovered !== 1 ? "s" : ""} of video so far.${remaining != null ? ` About ${remaining} minute${remaining !== 1 ? "s" : ""} to go.` : ""}`
+    : stats && savedGb
+    ? `Recovered ${savedGb} so far.${remaining != null ? ` About ${remaining} min to go.` : ""}`
     : "Getting ready — listening for your disc…";
 
   const damaged = minsDamaged(stats);
@@ -675,33 +680,33 @@ function DriveHealthBanner({
 
 const DoneBanner = React.forwardRef<HTMLDivElement, { stats: RecoveryStats | null; realMinutes?: number | null } & React.HTMLAttributes<HTMLDivElement>>(
 ({ stats, realMinutes, ...props }, ref) => {
-  // Prefer the exact IFO runtime for a clean full recovery; fall back to the
-  // sector estimate (the only signal available for partial/damaged discs).
-  const recovered = realMinutes ?? minsRecovered(stats);
-  const damaged = minsDamaged(stats);
-  const total = minsTotal(stats);
+  // Lead with % + GB (always accurate). Append the exact IFO runtime as a
+  // secondary note only when we have it (video discs).
+  const pct = pctRecovered(stats);
+  const gb = gbRecovered(stats);
+  const videoNote = realMinutes != null ? ` · about ${realMinutes} min of video` : "";
 
   // Theme-aware defaults (the old hardcoded white bg rendered as an invisible
   // gray box in dark mode when stats hadn't arrived yet).
   let bg = "var(--db-surface-2)";
   let border = "var(--db-border)";
   let headline = "Recovery complete.";
-  let detail = "Use the Save buttons to keep your video or extract files.";
+  let detail = "Use the Save buttons to keep an exact copy, the original files, or convert to a video.";
 
   if (stats) {
-    if (damaged === 0) {
+    if (pct >= 100) {
       bg = "linear-gradient(135deg, rgba(26,135,80,0.10), rgba(26,135,80,0.05))";
       border = "rgba(26,135,80,0.30)";
-      headline = `We saved everything — ${recovered} minutes recovered.`;
-      detail = "Use the Save buttons below to keep your video as an MP4 or extract individual chapters.";
-    } else if (recovered > damaged * 3) {
+      headline = `We saved everything — ${gb}${videoNote}.`;
+      detail = "Use the Save buttons below to keep an exact copy of the disc, the original files, or convert to a video (MP4).";
+    } else if (pct >= 75) {
       bg = "linear-gradient(135deg, rgba(194,116,31,0.10), rgba(194,116,31,0.05))";
       border = "rgba(194,116,31,0.30)";
-      headline = `We saved ${recovered} of ${total} minutes.`;
-      detail = `${damaged} minutes had damage we couldn't read. A second drive sometimes helps.`;
+      headline = `We saved ${pct}% of the disc — ${gb}.`;
+      detail = `The other ${100 - pct}% had damage we couldn't read. A second drive sometimes helps.`;
     } else {
-      headline = recovered > 0 ? `This disc is heavily damaged — we got ${recovered} minutes.` : "We weren't able to read this disc.";
-      detail = recovered > 0
+      headline = pct > 0 ? `This disc is heavily damaged — we saved ${pct}% (${gb}).` : "We weren't able to read this disc.";
+      detail = pct > 0
         ? "Even professional services often can't do much better. You can try a different drive."
         : "Try cleaning the disc, or use a different disc drive.";
     }
