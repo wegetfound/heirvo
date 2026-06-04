@@ -109,6 +109,10 @@ export const ipc = {
   // DVD
   analyzeStructure: (sessionId: string) =>
     invoke<StructureSummary>("analyze_structure", { sessionId }),
+  /** Real DVD runtime in seconds, read from the IFO files (accurate, unlike the
+   * sector-count estimate). Returns null if it can't be determined. */
+  dvdRuntimeSecs: (sessionId: string) =>
+    invoke<number | null>("dvd_runtime_secs", { sessionId }),
   extractVobs: (sessionId: string, fileNames: string[] = []) =>
     invoke<ExtractedFile[]>("extract_vobs", { sessionId, fileNames }),
   extractAllFiles: (sessionId: string) =>

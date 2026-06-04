@@ -160,6 +160,7 @@ pub fn run() {
             commands::recovery::import_rmap,
             commands::recovery::export_receipt_manifest,
             commands::dvd::analyze_structure,
+            commands::dvd::dvd_runtime_secs,
             commands::dvd::extract_vobs,
             commands::dvd::extract_all_files,
             commands::dvd::health_score,

@@ -68,6 +68,10 @@ export function Dashboard() {
   const [holesAtCompletion, setHolesAtCompletion] = useState<number | null>(null);
   // True while overnight is running (so progress copy changes).
   const [isOvernightRunning, setIsOvernightRunning] = useState(false);
+  // Accurate runtime (minutes) read from the DVD IFO once recovery completes.
+  // The sector-count estimate assumes a fixed bitrate and is often ~2× off; the
+  // IFO carries the exact playback time. Null until fetched / for non-DVDs.
+  const [realRuntimeMin, setRealRuntimeMin] = useState<number | null>(null);
 
   const scopeRef = useRef<HTMLDivElement>(null);
   const doneBannerRef = useRef<HTMLDivElement>(null);
@@ -149,6 +153,25 @@ export function Dashboard() {
     }
   }, [recoveryDone, stats]);
 
+  /* ── accurate runtime from the DVD IFO (replaces sector estimate) ── */
+  useEffect(() => {
+    if (!recoveryDone || !id) return;
+    let cancelled = false;
+    ipc
+      .dvdRuntimeSecs(id)
+      .then((secs) => {
+        if (!cancelled && secs && secs > 0) {
+          setRealRuntimeMin(Math.max(1, Math.round(secs / 60)));
+        }
+      })
+      .catch(() => {
+        /* non-DVD or unreadable IFO — keep the sector estimate */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [recoveryDone, id]);
+
   /* ── derived values ─────────────────────────────────────────── */
   const idle = now - lastProgressAt > 5000;
   const isActive = !idle && !recoveryDone;
@@ -195,7 +218,11 @@ export function Dashboard() {
   if (!id) return null;
 
   /* ── headline / subline ─────────────────────────────────────── */
-  const recovered = minsRecovered(stats);
+  // In-progress minutes come from the sector estimate (no file/IFO yet). Once
+  // recovery is done we prefer the exact IFO runtime when available.
+  const recovered = recoveryDone && realRuntimeMin != null
+    ? realRuntimeMin
+    : minsRecovered(stats);
   const remaining = minsRemaining(stats);
 
   // Distinguish between "never started" (no stats yet), "resting mid-read" (stats + pct>0),
@@ -447,7 +474,7 @@ export function Dashboard() {
       </div>
 
       {/* ══ DONE BANNER ════════════════════════════════════════════ */}
-      {recoveryDone && <DoneBanner ref={doneBannerRef} stats={stats} />}
+      {recoveryDone && <DoneBanner ref={doneBannerRef} stats={stats} realMinutes={realRuntimeMin} />}
 
       {/* ══ OVERNIGHT OFFER ════════════════════════════════════════ */}
       {recoveryDone && holesAtCompletion !== null && holesAtCompletion > 0 && (
@@ -646,9 +673,11 @@ function DriveHealthBanner({
   );
 }
 
-const DoneBanner = React.forwardRef<HTMLDivElement, { stats: RecoveryStats | null } & React.HTMLAttributes<HTMLDivElement>>(
-({ stats, ...props }, ref) => {
-  const recovered = minsRecovered(stats);
+const DoneBanner = React.forwardRef<HTMLDivElement, { stats: RecoveryStats | null; realMinutes?: number | null } & React.HTMLAttributes<HTMLDivElement>>(
+({ stats, realMinutes, ...props }, ref) => {
+  // Prefer the exact IFO runtime for a clean full recovery; fall back to the
+  // sector estimate (the only signal available for partial/damaged discs).
+  const recovered = realMinutes ?? minsRecovered(stats);
   const damaged = minsDamaged(stats);
   const total = minsTotal(stats);
 

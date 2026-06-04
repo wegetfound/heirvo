@@ -49,6 +49,112 @@ pub async fn analyze_structure(
     Ok(result)
 }
 
+/// Return the REAL total runtime of a DVD's titles, in seconds, read from the
+/// DVD IFO files — or `None` if it can't be determined.
+///
+/// This replaces the wildly inaccurate sector-count → minutes estimate for the
+/// "we saved N minutes of video" UI. That estimate assumed a fixed ~5 Mbps
+/// bitrate, but DVD video is variable (3–9.8 Mbps), so a disc that's physically
+/// near-full of ~9 Mbps video reads as roughly double its true runtime (e.g. a
+/// 60-minute disc shown as ~116 minutes).
+///
+/// The IFO stores the exact playback time (BCD-encoded) per title PGC — the same
+/// number a DVD player's counter shows. We extract just the small IFO files from
+/// the disc (a few KB each), parse them, and sum the DISTINCT titles (deduped by
+/// start sector + duration so multi-angle / duplicate title entries don't
+/// double-count).
+#[tauri::command]
+pub async fn dvd_runtime_secs(
+    state: State<'_, AppState>,
+    session_id: String,
+) -> AppResult<Option<u32>> {
+    let id = Uuid::parse_str(&session_id)
+        .map_err(|_| AppError::SessionNotFound(session_id.clone()))?;
+    let session = manager::get(&state.db, id).await?;
+    let map = manager::load_sector_map(&state.db, id).await?;
+    let drive_path = session.drive_path.clone();
+    let video_ts_dir = std::path::PathBuf::from(&session.output_dir).join("VIDEO_TS");
+
+    tokio::task::spawn_blocking(move || -> AppResult<Option<u32>> {
+        #[cfg(windows)]
+        {
+            use crate::disc::scsi_windows::ScsiSectorReader;
+
+            // If the IFOs were already extracted (e.g. after Save as MP4), parse
+            // them directly. Otherwise pull just the .IFO/.BUP files off the disc.
+            let have_ifos = std::fs::read_dir(&video_ts_dir)
+                .map(|rd| {
+                    rd.filter_map(|e| e.ok()).any(|e| {
+                        e.file_name()
+                            .to_string_lossy()
+                            .to_ascii_uppercase()
+                            .ends_with(".IFO")
+                    })
+                })
+                .unwrap_or(false);
+
+            if !have_ifos {
+                let reader = ScsiSectorReader::open(&drive_path)
+                    .map_err(|e| AppError::Drive(format!("open: {e}")))?;
+                let all = crate::dvd::iso9660::list_video_ts(&reader)
+                    .map_err(|e| AppError::DvdStructure(format!("list_video_ts: {e}")))?
+                    .unwrap_or_default();
+                // IFO + BUP only — tiny metadata files, not the multi-GB VOBs.
+                let ifos: Vec<_> = all
+                    .into_iter()
+                    .filter(|e| {
+                        let n = e.name.to_ascii_uppercase();
+                        n.ends_with(".IFO") || n.ends_with(".BUP")
+                    })
+                    .collect();
+                if ifos.is_empty() {
+                    return Ok(None);
+                }
+                crate::media::vob::extract_files(&reader, map.as_ref(), &ifos, &video_ts_dir)
+                    .map_err(|e| AppError::Media(format!("extract IFOs: {e}")))?;
+            }
+
+            let structure = match crate::dvd::ifo::parse_video_ts_dir(&video_ts_dir) {
+                Ok(s) => s,
+                Err(e) => {
+                    tracing::warn!("dvd_runtime_secs: parse_video_ts_dir failed: {e}");
+                    return Ok(None);
+                }
+            };
+
+            // Dedupe titles that point at the same content (angles / duplicate
+            // PGC references) before summing, so we don't overcount.
+            let mut seen: std::collections::HashSet<(u64, u32)> = std::collections::HashSet::new();
+            let mut total: u32 = 0;
+            for t in &structure.titles {
+                if t.duration_secs == 0 {
+                    continue;
+                }
+                if seen.insert((t.start_sector, t.duration_secs)) {
+                    total = total.saturating_add(t.duration_secs);
+                }
+            }
+            if total == 0 {
+                Ok(None)
+            } else {
+                tracing::info!(
+                    "dvd_runtime_secs: {} distinct title(s), {} s total",
+                    seen.len(),
+                    total
+                );
+                Ok(Some(total))
+            }
+        }
+        #[cfg(not(windows))]
+        {
+            let _ = (drive_path, video_ts_dir, map);
+            Ok(None)
+        }
+    })
+    .await
+    .map_err(|e| AppError::Internal(format!("join: {e}")))?
+}
+
 #[tauri::command]
 pub async fn extract_vobs(
     state: State<'_, AppState>,
