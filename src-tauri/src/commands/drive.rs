@@ -210,6 +210,15 @@ pub async fn check_disc(drive_path: String) -> AppResult<Option<DiscInfo>> {
                 DiscType::Cd
             };
 
+            tracing::info!(
+                "check_disc: identification complete in {}ms — type={:?} label={:?} video_ts={} audio_ts={}; returning to UI",
+                probe_started.elapsed().as_millis(),
+                disc_type,
+                label,
+                has_video_ts,
+                has_audio_ts
+            );
+
             Ok(Some(DiscInfo {
                 disc_type,
                 label,
