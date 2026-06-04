@@ -34,6 +34,7 @@ import { cn } from "@/lib/cn";
 import { prefersReducedMotion } from "@/utils/gsap-fx";
 import { useLicense } from "@/lib/useLicense";
 import { useRecoveryPromotion } from "@/lib/useRecoveryPromotion";
+import { useTheme } from "@/lib/theme";
 
 // ─── constants ────────────────────────────────────────────────────────────────
 
@@ -293,7 +294,7 @@ function RecoveryPromotionManager() {
 
 export default function App() {
   return (
-    <div className="flex flex-col h-screen">
+    <div className="flex flex-col h-screen" style={{ background: "var(--chrome-bg)" }}>
       <TitleBar />
       <div className="flex flex-1 min-h-0">
         <RecoveryPromotionManager />
@@ -531,6 +532,7 @@ function NavItem({ to, label, Icon, active, isDark, isSliver }: NavItemProps) {
 function Sidebar() {
   const loc = useLocation();
   const { status: license } = useLicense();
+  const { isDark: themeDark } = useTheme();
 
   // DARK IMMERSIVE: only the exact /library path (the Memories cinematic room)
   const isDark = loc.pathname === "/library";
@@ -688,13 +690,10 @@ function Sidebar() {
   // In light world, treat collapsed (48px) the same as sliver for icon-only layout
   const isIconOnly = isSliver || (!isDark && collapsed);
 
-  // Chrome color is driven by the THEME (warm dark by default), independent of
-  // the immersive `/library` behavior. So the rail is dark everywhere, but the
-  // hidden hover-reveal sliver stays exclusive to the Memories room.
-  const chromeDark =
-    isDark ||
-    (typeof document !== "undefined" &&
-      document.documentElement.dataset.theme !== "light");
+  // Chrome color driven by the THEME hook (reactive to toggle) + the immersive
+  // Memories room override. Previously read dataset.theme directly which didn't
+  // re-render on toggle — useTheme() subscribes correctly.
+  const chromeDark = isDark || themeDark;
 
   // ── Styles ────────────────────────────────────────────────────────────────
   const railBg = chromeDark ? "rgba(18,24,38,0.82)" : "rgba(255,255,255,0.62)";

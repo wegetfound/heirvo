@@ -71,7 +71,7 @@
   --chrome-border:    rgba(225,230,238,0.80);
 }
 [data-theme="dark"] {
-  --chrome-bg:        #121826;
+  --chrome-bg:        #1A120B;
   --chrome-border:    rgba(255,255,255,0.09);
 }
 

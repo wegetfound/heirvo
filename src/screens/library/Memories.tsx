@@ -646,46 +646,6 @@ function ImmersivePlayer({
         }}
       />
 
-      {/* Top bar — expand button */}
-      <div
-        style={{
-          position: "absolute",
-          top: 12,
-          right: 12,
-          display: "flex",
-          gap: 8,
-          zIndex: 10,
-        }}
-      >
-        {!ambient && (
-          <button
-            onClick={() => setFullscreen(true)}
-            title="Theater mode (F)"
-            style={{
-              width: 34,
-              height: 34,
-              borderRadius: "50%",
-              background: "rgba(0,0,0,0.40)",
-              backdropFilter: "blur(8px)",
-              border: "1px solid rgba(255,255,255,0.18)",
-              color: "rgba(255,255,255,0.90)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              cursor: "pointer",
-              transition: "background 0.2s",
-            }}
-            onMouseEnter={(e) => {
-              (e.currentTarget as HTMLButtonElement).style.background = "rgba(0,0,0,0.65)";
-            }}
-            onMouseLeave={(e) => {
-              (e.currentTarget as HTMLButtonElement).style.background = "rgba(0,0,0,0.40)";
-            }}
-          >
-            <Maximize2 size={15} />
-          </button>
-        )}
-      </div>
 
       {/* Controls overlay */}
       <div
@@ -774,12 +734,41 @@ function ImmersivePlayer({
             </div>
           </div>
 
-          {/* Right side: volume hint + fullscreen */}
+          {/* Right side: volume hint + theater/exit-theater */}
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <Volume2 size={14} style={{ color: "rgba(255,255,255,0.45)" }} />
+            {!ambient && (
+              <button
+                onClick={() => setFullscreen(true)}
+                title="Theater mode (F)"
+                style={{
+                  width: 34,
+                  height: 34,
+                  borderRadius: "50%",
+                  background: "rgba(0,0,0,0.40)",
+                  backdropFilter: "blur(8px)",
+                  border: "1px solid rgba(255,255,255,0.18)",
+                  color: "rgba(255,255,255,0.90)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "pointer",
+                  transition: "background 0.2s",
+                }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLButtonElement).style.background = "rgba(0,0,0,0.65)";
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLButtonElement).style.background = "rgba(0,0,0,0.40)";
+                }}
+              >
+                <Maximize2 size={15} />
+              </button>
+            )}
             {ambient && (
               <button
                 onClick={() => setFullscreen(false)}
+                title="Exit theater mode (Esc)"
                 style={{
                   width: 34,
                   height: 34,

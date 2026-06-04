@@ -4,8 +4,7 @@ import { ipc, events } from "@/lib/ipc";
 import type { RecoveryStats, RecoveryMode } from "@/lib/types";
 import { OutputPanel } from "./OutputPanel";
 import { EnhancementOffer } from "./EnhancementOffer";
-import { SectorMapCanvas } from "./SectorMapCanvas";
-import { Pause, Play, Loader2, RefreshCw, X, ChevronRight, Activity } from "lucide-react";
+import { Pause, Play, Loader2, RefreshCw, X } from "lucide-react";
 import type { DriveInfo } from "@/lib/types";
 import { sectorsToMinutes } from "@/lib/human";
 import { friendlyError } from "@/lib/friendly-errors";
@@ -49,7 +48,6 @@ const S = {
 export function Dashboard() {
   const { id } = useParams<{ id: string }>();
   const [stats, setStats] = useState<RecoveryStats | null>(null);
-  const [bucketRow, setBucketRow] = useState<number[]>([]);
   const [lastProgressAt, setLastProgressAt] = useState<number>(Date.now());
   const [now, setNow] = useState(Date.now());
   const [resuming, setResuming] = useState(false);
@@ -113,21 +111,11 @@ export function Dashboard() {
     };
   }, [id]);
 
-  /* ── clock + sector map ─────────────────────────────────────── */
+  /* ── clock ──────────────────────────────────────────────────── */
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(t);
   }, []);
-
-  useEffect(() => {
-    if (!id) return;
-    const tick = async () => {
-      try { setBucketRow(await ipc.getSectorMap(id, 4096)); } catch { /* ignore */ }
-    };
-    tick();
-    const t = setInterval(tick, 2000);
-    return () => clearInterval(t);
-  }, [id]);
 
   /* ── audio milestones ───────────────────────────────────────── */
   const lastMilestoneTierRef = useRef<number>(-1);
@@ -235,27 +223,35 @@ export function Dashboard() {
       style={{
         flex: 1,
         height: "100%",
-        overflowY: "auto",
-        overflowX: "hidden",
-        ...S.base,
-        padding: "40px 48px",
         display: "flex",
-        flexDirection: "column",
-        gap: 20,
-        scrollbarWidth: "thin",
+        flexDirection: "row",
+        overflow: "hidden",
+        ...S.base,
       }}
     >
+
+      {/* ── LEFT PANEL: progress + controls (always visible) ──── */}
+      <div style={{
+        width: 380,
+        flexShrink: 0,
+        overflowY: "auto",
+        scrollbarWidth: "thin",
+        padding: "32px 20px 32px 40px",
+        display: "flex",
+        flexDirection: "column",
+        gap: 16,
+      }}>
 
       {/* ══ HERO CARD ══════════════════════════════════════════════ */}
       <div
         style={{
           ...S.surface,
           borderRadius: 20,
-          padding: "40px 48px",
-          display: "grid",
-          gridTemplateColumns: "240px 1fr",
-          gap: 48,
+          padding: "28px 24px",
+          display: "flex",
+          flexDirection: "column",
           alignItems: "center",
+          gap: 20,
           position: "relative",
           overflow: "hidden",
         }}
@@ -306,12 +302,12 @@ export function Dashboard() {
             display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
             animation: isActive ? "db-breathe 3.5s ease-in-out infinite" : "none",
             position: "relative",
-            width: 200, height: 200,
+            width: 170, height: 170,
             margin: "0 auto",
           }}
         >
           <svg
-            width="200" height="200"
+            width="170" height="170"
             viewBox="0 0 200 200"
             style={{ transform: "rotate(-90deg)", filter: `drop-shadow(0 4px 16px var(--db-amber-glow))` }}
             aria-hidden
@@ -347,16 +343,16 @@ export function Dashboard() {
         </div>
 
         {/* ── Hero text ── */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-          <div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 16, width: "100%", alignItems: "center" }}>
+          <div style={{ textAlign: "center" }}>
             <h1 style={{
               ...S.serif, ...S.text,
-              fontSize: 36, fontWeight: 600, lineHeight: 1.15,
-              letterSpacing: "-0.025em", margin: 0,
+              fontSize: 24, fontWeight: 600, lineHeight: 1.2,
+              letterSpacing: "-0.02em", margin: 0,
             }}>
               {headline}
             </h1>
-            <p style={{ fontSize: 17, fontWeight: 500, ...S.textMuted, marginTop: 8, lineHeight: 1.5 }}>
+            <p style={{ fontSize: 14, fontWeight: 500, ...S.textMuted, marginTop: 6, lineHeight: 1.5 }}>
               {subline}
             </p>
           </div>
@@ -509,7 +505,20 @@ export function Dashboard() {
         </div>
       )}
 
-      {/* ══ OUTPUT PANEL (inline, full-width) ══════════════════════ */}
+      </div>{/* end LEFT PANEL */}
+
+      {/* ── RIGHT PANEL: output + sector map (scrollable) ───────── */}
+      <div style={{
+        flex: 1,
+        overflowY: "auto",
+        scrollbarWidth: "thin",
+        padding: "32px 40px 32px 0",
+        display: "flex",
+        flexDirection: "column",
+        gap: 16,
+      }}>
+
+      {/* ══ OUTPUT PANEL ════════════════════════════════════════════ */}
       <div style={{ ...S.surface, borderRadius: 20 }}>
         <OutputPanel sessionId={id} onMp4Saved={setSavedVideoPath} />
       </div>
@@ -522,42 +531,7 @@ export function Dashboard() {
         />
       )}
 
-      {/* ══ ADVANCED — sector map ══════════════════════════════════ */}
-      <details style={{ ...S.surface, borderRadius: 16 }}>
-        <summary
-          style={{
-            display: "flex", alignItems: "center", gap: 8,
-            padding: "14px 20px", cursor: "pointer", listStyle: "none",
-            fontSize: 13, fontWeight: 500, ...S.textMuted,
-            userSelect: "none",
-          }}
-        >
-          <Activity size={15} style={{ color: "var(--db-amber)" }} />
-          <span style={{ ...S.text, fontWeight: 600 }}>Sector map</span>
-          {stats && stats.total > 0 && (
-            <span style={{ marginLeft: "auto", fontSize: 12, ...S.textFaint }}>
-              {(((stats.good + stats.failed + stats.skipped) / stats.total) * 100).toFixed(0)}% scanned
-            </span>
-          )}
-          <ChevronRight size={15} style={{ ...S.textFaint }} />
-        </summary>
-        <div style={{ padding: "0 20px 20px" }}>
-          <SectorMapCanvas buckets={bucketRow} />
-          {stats && (
-            <div style={{
-              marginTop: 12, display: "grid", gridTemplateColumns: "repeat(3, 1fr)",
-              gap: "4px 16px", fontSize: 12, ...S.textMuted,
-            }}>
-              <span>Good: {stats.good.toLocaleString()}</span>
-              <span>Failed: {stats.failed.toLocaleString()}</span>
-              <span>Skipped: {stats.skipped.toLocaleString()}</span>
-              <span>Pending: {stats.unknown.toLocaleString()}</span>
-              <span>Total: {stats.total.toLocaleString()}</span>
-              <span>Pass: {stats.pass_strategy}</span>
-            </div>
-          )}
-        </div>
-      </details>
+      </div>{/* end RIGHT PANEL */}
 
       {/* Keyframe animations injected once */}
       <style>{`
