@@ -150,7 +150,7 @@ export function OutputPanel({
       <div className="mb-4 border-b border-ink-200/70 pb-3">
         <span className="micro-label">Output</span>
         <p className="mt-0.5 text-[11px] leading-relaxed text-ink-500">
-          Lossless — exactly what was on the disc.
+          Save it your way — keep the disc exactly as-is, or convert for easy playback.
         </p>
       </div>
 
@@ -303,7 +303,11 @@ export function OutputPanel({
           <div className="mb-3 flex items-center justify-between">
             <div className="micro-label flex items-center gap-1.5">
               {isAudioCd && <Music className="h-3 w-3 text-brand-600" />}
-              {isAudioCd ? "Save your music" : "Save your video"}
+              {isAudioCd
+                ? "Save your music"
+                : showVideoSaves
+                ? "Save your video"
+                : "Save your files"}
             </div>
           </div>
 
@@ -375,116 +379,108 @@ export function OutputPanel({
             </div>
           )}
 
-          {/* Primary button row — hierarchy: one bold, two quiet.
-              Buttons are hidden for non-applicable disc types (e.g. MP4
-              hides for data CDs; "All files" hides for DVD-Video). */}
-          <div className="flex flex-wrap items-center gap-2">
+          {/* Save options. Two tiers, human-first:
+              · Convert for easy playback (MP4) — the obvious default for video.
+              · "Other ways to save" — keep the disc exactly as-is, no
+                conversion (an exact .ISO copy, or the original files in a
+                folder). This is the path clients use to skip the MP4 encode.
+              Buttons adapt to the detected disc type. */}
+          <div className="space-y-5">
+            {/* Convert for easy playback — video discs */}
             {showVideoSaves && (
-              <button
-                className="btn btn-primary"
-                disabled={busy !== null}
-                onClick={() => guardedSave(async () => {
-                  const r = await ipc.saveAsMp4(sessionId);
-                  setMp4(r);
-                  onMp4Saved?.(r.output_path);
-                  // Refresh license so the next click reflects updated exports_used.
-                  refreshLicense().catch(() => {});
-                  // Auto-enroll: import into Library + kick off transcription.
-                  try {
-                    const label = session?.user_label || session?.disc_label || null;
-                    const base = r.output_path.split(/[\\/]/).pop() ?? r.output_path;
-                    const stem = base.replace(/\.[^.]+$/, "");
-                    const derived = stem.replace(/[_\-]+/g, " ").trim()
-                      .replace(/\b\w/g, (c) => c.toUpperCase()) || "Recovered disc";
-                    const title = label ?? derived;
-                    const enrolled = await ipc.library.importMedia(r.output_path, title);
-                    if (!enrolled.isDuplicate) {
-                      await ipc.transcription.enqueue(enrolled.id, r.output_path).catch(() => {});
+              <div>
+                <button
+                  className="btn btn-primary w-full justify-center"
+                  disabled={busy !== null}
+                  onClick={() => guardedSave(async () => {
+                    const r = await ipc.saveAsMp4(sessionId);
+                    setMp4(r);
+                    onMp4Saved?.(r.output_path);
+                    refreshLicense().catch(() => {});
+                    try {
+                      const label = session?.user_label || session?.disc_label || null;
+                      const base = r.output_path.split(/[\\/]/).pop() ?? r.output_path;
+                      const stem = base.replace(/\.[^.]+$/, "");
+                      const derived = stem.replace(/[_\-]+/g, " ").trim()
+                        .replace(/\b\w/g, (c) => c.toUpperCase()) || "Recovered disc";
+                      const title = label ?? derived;
+                      const enrolled = await ipc.library.importMedia(r.output_path, title);
+                      if (!enrolled.isDuplicate) {
+                        await ipc.transcription.enqueue(enrolled.id, r.output_path).catch(() => {});
+                      }
+                      setEnrolledDiscId(enrolled.id);
+                    } catch {
+                      // Non-fatal — user can add from History screen.
                     }
-                    setEnrolledDiscId(enrolled.id);
-                  } catch {
-                    // Non-fatal — user can add from History screen.
-                  }
-                })}
-              >
-                {busy === "mp4" && <Loader2 className="h-4 w-4 animate-spin" />}
-                <FileVideo className="h-4 w-4" />
-                Save as MP4
-                <span className="ml-1 text-[11px] font-normal opacity-80">instant</span>
-              </button>
+                  })}
+                >
+                  {busy === "mp4" && <Loader2 className="h-4 w-4 animate-spin" />}
+                  <FileVideo className="h-4 w-4" />
+                  Save as video (MP4)
+                </button>
+                <p className="mt-1.5 text-[11px] leading-snug text-ink-500">
+                  Plays on any phone, computer, or TV. Takes a few minutes to convert.
+                </p>
+              </div>
             )}
-            {showVideoSaves && showIso && <span className="mx-1 text-ink-300">·</span>}
-            {showIso && (
-              <button
-                className={cn(
-                  "transition disabled:opacity-50",
-                  showVideoSaves
-                    ? "text-[13px] font-medium text-ink-700 hover:text-brand-600"
-                    : "btn btn-primary",
-                )}
-                disabled={busy !== null}
-                onClick={() => wrap("iso", async () => {
-                  const result = await ipc.createIso(sessionId);
-                  setIso(result);
-                  ipc.library.rescanDiscForSession(sessionId).catch(() => {});
-                })}
-              >
-                {busy === "iso" ? (
-                  <Loader2 className="mr-1 inline h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <FileArchive className="mr-1 inline h-3.5 w-3.5" />
-                )}
-                Disc image
-              </button>
-            )}
-            {showVideoSaves && (
-              <button
-                className="text-[13px] font-medium text-ink-700 transition hover:text-brand-600 disabled:opacity-50"
-                disabled={busy !== null}
-                onClick={() =>
-                  wrap("vobs", async () => {
-                    const result = await ipc.extractVobs(sessionId);
+
+            {/* Data / photo disc primary: save the actual files */}
+            {!showVideoSaves && showFileSaves && (
+              <div>
+                <button
+                  className="btn btn-primary w-full justify-center"
+                  disabled={busy !== null}
+                  onClick={() => wrap("all-files", async () => {
+                    const result = await ipc.extractAllFiles(sessionId);
                     setExtracted(result);
                     ipc.library.rescanDiscForSession(sessionId).catch(() => {});
-                  })
-                }
-              >
-                {busy === "vobs" ? (
-                  <Loader2 className="mr-1 inline h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <Files className="mr-1 inline h-3.5 w-3.5" />
-                )}
-                Individual chapters
-              </button>
-            )}
-            {showFileSaves && (
-              <>
-                {showVideoSaves && <span className="mx-1 text-ink-300">·</span>}
-                <button
-                  className={cn(
-                    "transition disabled:opacity-50",
-                    showVideoSaves || showIso
-                      ? "text-[13px] font-medium text-ink-700 hover:text-brand-600"
-                      : "btn btn-primary",
-                  )}
-                  disabled={busy !== null}
-                  onClick={() =>
-                    wrap("all-files", async () => {
-                      const result = await ipc.extractAllFiles(sessionId);
-                      setExtracted(result);
-                      ipc.library.rescanDiscForSession(sessionId).catch(() => {});
-                    })
-                  }
-                  title="For data CDs / DVDs with photos, documents, or other files"
+                  })}
                 >
-                  {busy === "all-files" ? (
-                    <Loader2 className="mr-1 inline h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <Files className="mr-1 inline h-3.5 w-3.5" />
-                  )}
-                  All files (photos, docs)
+                  {busy === "all-files" && <Loader2 className="h-4 w-4 animate-spin" />}
+                  <Files className="h-4 w-4" />
+                  Save my files
                 </button>
-              </>
+                <p className="mt-1.5 text-[11px] leading-snug text-ink-500">
+                  Your photos, documents, and other files — in a folder.
+                </p>
+              </div>
+            )}
+
+            {/* Other ways to save — keep the disc exactly as-is, no conversion */}
+            {(showIso || showVideoSaves) && (
+              <div>
+                <div className="micro-label mb-2">Other ways to save</div>
+                <div className="space-y-2">
+                  {showIso && (
+                    <RawOption
+                      icon={<FileArchive className="h-4 w-4" />}
+                      title="Exact copy of the disc"
+                      desc="One backup file you can keep safe or use to make new discs. (.ISO)"
+                      loading={busy === "iso"}
+                      disabled={busy !== null}
+                      onClick={() => wrap("iso", async () => {
+                        const result = await ipc.createIso(sessionId);
+                        setIso(result);
+                        ipc.library.rescanDiscForSession(sessionId).catch(() => {});
+                      })}
+                    />
+                  )}
+                  {showVideoSaves && (
+                    <RawOption
+                      icon={<Files className="h-4 w-4" />}
+                      title="Original files"
+                      desc="Every file exactly as it was on the disc, in a folder. No conversion."
+                      loading={busy === "all-files"}
+                      disabled={busy !== null}
+                      onClick={() => wrap("all-files", async () => {
+                        const result = await ipc.extractAllFiles(sessionId);
+                        setExtracted(result);
+                        ipc.library.rescanDiscForSession(sessionId).catch(() => {});
+                      })}
+                    />
+                  )}
+                </div>
+              </div>
             )}
           </div>
 
@@ -569,7 +565,7 @@ export function OutputPanel({
             <div className="mt-4 rounded-xl border border-ink-200 bg-white/60 p-3 text-[12px]">
               <div className="mb-2 flex items-center justify-between">
                 <div className="font-medium text-ink-900">
-                  {extracted.length} chapter file{extracted.length === 1 ? "" : "s"} saved
+                  {extracted.length} file{extracted.length === 1 ? "" : "s"} saved
                 </div>
                 {extracted[0] && (
                   <button
@@ -763,6 +759,42 @@ export function OutputPanel({
         }}
       />
     </div>
+  );
+}
+
+/** A calm, plain-English "keep it as-is" save row: icon + title + one line of
+ *  description. Used for the no-conversion outputs (exact disc copy, original
+ *  files) so non-technical users never have to parse the word "ISO". */
+function RawOption({
+  icon,
+  title,
+  desc,
+  loading,
+  disabled,
+  onClick,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  desc: string;
+  loading?: boolean;
+  disabled?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onClick}
+      className="flex w-full items-start gap-3 rounded-xl border border-ink-200/70 bg-white/60 p-3 text-left transition hover:border-brand-300 hover:bg-brand-50/50 disabled:opacity-50"
+    >
+      <span className="mt-0.5 shrink-0 text-ink-500">
+        {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : icon}
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-[13px] font-medium text-ink-900">{title}</span>
+        <span className="mt-0.5 block text-[11px] leading-snug text-ink-500">{desc}</span>
+      </span>
+    </button>
   );
 }
 
