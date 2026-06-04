@@ -128,6 +128,13 @@ impl AppState {
             crate::library::deliverable::backfill_missing(&app_for_backfill, &pool_for_backfill).await;
         });
 
+        // Spawn background license revalidation:
+        // - refreshes last_validated_unix when the 14-day window expires,
+        // - downgrades to Free if LS says the key was revoked/refunded,
+        // - migrates old plaintext license.key → signed license.json (once).
+        // Non-fatal in all code paths.
+        crate::licensing::spawn_background_refresh(app.clone());
+
         Ok(())
     }
 }

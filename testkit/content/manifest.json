@@ -1,0 +1,33 @@
+﻿{
+  "generated_at": "2026-06-04 09:35:27",
+  "generator": "testkit/generate-test-content.ps1 v1.0.0",
+  "heic_generated": false,
+  "spoken_word": {
+    "script_file": "spoken-word/script.txt",
+    "target_words": ["birthday","Hawaii","grandmother","nineteen","summer","photograph","memory"],
+    "wav_file": "spoken-word/speech.wav",
+    "mp4_file": "spoken-word/spoken.mp4"
+  },
+  "files": [
+  {"path":"data-disc/test-video.mp4","sha256":"A62111A13DA2BBAD2337D97BAA234313560D1C4C231376E4354D97C61C73F82C","size":180250,"label":""},
+  {"path":"data-disc/testcard.jpg","sha256":"3312B48A154B27422AD94CB5659C1201D3CC5C5285CDE122AE3D25EE8481459F","size":21354,"label":""},
+  {"path":"data-disc/testcard.png","sha256":"7A70BA8DE0EEA3572005F9A608533A3FF2D5E7751F318148FC2EC8A086736754","size":24261,"label":""},
+  {"path":"data-disc/testcard.gif","sha256":"B4849236480D72CBED34EDB25E870D6E083CC3F244DB4137CE135025BEB4CC46","size":22715,"label":""},
+  {"path":"data-disc/testcard.bmp","sha256":"D1B1FCF38957E86E69D1145C0E903B77C6A050E457A4BC8333A186BB2E21BE20","size":1228938,"label":""},
+  {"path":"data-disc/testcard.tiff","sha256":"E45BB82F243DE65D9EC4BE1B7F2CA19582E2C1F505159F5DFED78E69DEC1698B","size":2457902,"label":""},
+  {"path":"data-disc/testcard.webp","sha256":"2B7A42AE1A909D75FFC148577E1A0F61381CD331EC720C9355431C15D29D421D","size":4388,"label":""},
+  {"path":"data-disc/test-document.pdf","sha256":"AB3C4941C8CB137AC57CC7E45ED2D24F0794695980369F38D2C8392864E8F2A8","size":9650,"label":""},
+  {"path":"data-disc/readme.txt","sha256":"E8666A9F02328A47C94067155B5CA5DE339DE31365F0AA7DDB70643A5742677B","size":556,"label":""},
+  {"path":"photos/photo.jpg","sha256":"0609FBDEE0F85F474DE2A92A2C34D6959884238E29E6963B08CF8F1AC3C9542C","size":68292,"label":""},
+  {"path":"photos/photo.png","sha256":"77656B0BA7B56CFBC3BE9DF1884DD620EC7866CEA1D031CAD9E8A4D0BF2408DA","size":48792,"label":""},
+  {"path":"photos/photo.gif","sha256":"4A9D825571AA8D88F594BB199FC99832CFEE674B439484EF0595EDA4C8DE1F63","size":98288,"label":""},
+  {"path":"photos/photo.bmp","sha256":"F6474F70FFA6F04BE52C99469AC2DD9DBFC10311C3DFC2CB59033FE1A9A05DC0","size":7680138,"label":""},
+  {"path":"photos/photo.tiff","sha256":"5A6EFF30C0F4FE82210DFEC4639ECE3981F64BD4E7B29710043B48C59BC82988","size":15360398,"label":""},
+  {"path":"photos/photo.webp","sha256":"B1392B8372C253C4DB99544291B5FEECF9725371A933FE603F49C6BA7925E0F1","size":10006,"label":""},
+  {"path":"spoken-word/speech.wav","sha256":"550CE9BAC7C243A9ED25FA3E9738B4F902F4618906AC890F358446ACC661AC14","size":1200244,"label":""},
+  {"path":"spoken-word/spoken.mp4","sha256":"F0B922F7754DBF3975BBC34B849B819173CBE76D429FD12E7EBBF9668812FE92","size":331558,"label":""},
+  {"path":"spoken-word/script.txt","sha256":"CA3E8458666EA2B87AEEA0DAB3DDF7192124A84DF300ACC51BA81B27A4A519D5","size":344,"label":""},
+  {"path":"video-ts-source/source-clip.mp4","sha256":"A62111A13DA2BBAD2337D97BAA234313560D1C4C231376E4354D97C61C73F82C","size":180250,"label":""},
+  {"path":"video-ts-source/HOW-TO-AUTHOR.txt","sha256":"5B241DE778CA49E3D042F58CC9B95E8E3775E0A4077889264AE6CA18B10493E9","size":1481,"label":""}
+  ]
+}

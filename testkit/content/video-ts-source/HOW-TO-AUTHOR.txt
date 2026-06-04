@@ -1,0 +1,36 @@
+﻿HOW TO AUTHOR A DVD-VIDEO (VIDEO_TS) AND BURN IT
+=================================================
+Required: DVDStyler (free, dvdstyler.org) + ImgBurn (already installed)
+
+Step 1 -- Author VIDEO_TS with DVDStyler:
+  a. Open DVDStyler > New Project > NTSC (or PAL for European)
+  b. Drag source-clip.mp4 onto the title area
+  c. File > Burn > tick 'just generate' to output VIDEO_TS to disk
+     Output folder: C:\Temp\dvdvideo\
+  This produces:
+    VIDEO_TS\VIDEO_TS.IFO
+    VIDEO_TS\VIDEO_TS.BUP
+    VIDEO_TS\VTS_01_0.IFO
+    VIDEO_TS\VTS_01_0.BUP
+    VIDEO_TS\VTS_01_1.VOB
+
+Step 2 -- Burn DVD-Video with ImgBurn:
+  a. ImgBurn > Mode > Write Files/Folders to Disc
+  b. Source: select C:\Temp\dvdvideo\ (parent of VIDEO_TS folder)
+  c. File System: UDF/ISO9660   Volume Label: HEIRVO_TEST_DVD
+  d. Insert blank DVD-R, click the burn button
+
+Step 3 -- Verify:
+  Eject and re-insert. Windows should show VIDEO_TS folder on the disc.
+
+What Heirvo tests:
+  * IFO path parsing and VOB structure detection
+  * Save as MP4 transcode of the VOB stream
+  * Duration detection and library entry creation
+
+Fallback if DVDStyler is unavailable:
+  Burn source-clip.mp4 as a plain DATA disc instead (see data-disc readme.txt).
+  Record result in the matrix as 'DATA DVD substitute' not 'DVD-Video'.
+
+Note: true DVD-Video authoring cannot be fully scripted -- a GUI DVD tool
+is required for the VIDEO_TS structure. This script provides the source MP4 only.

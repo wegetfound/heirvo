@@ -1734,6 +1734,8 @@ dependencies = [
  "chrono",
  "dirs 5.0.1",
  "futures-util",
+ "hex",
+ "hmac",
  "image",
  "kamadak-exif",
  "ndarray",

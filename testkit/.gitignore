@@ -1,0 +1,25 @@
+# Generated test media is regenerable via generate-test-content.ps1 — keep it
+# out of git. The manifest (ground-truth hashes), scripts, and instructions
+# ARE committed.
+content/data-disc/*.mp4
+content/data-disc/*.jpg
+content/data-disc/*.jpeg
+content/data-disc/*.png
+content/data-disc/*.gif
+content/data-disc/*.bmp
+content/data-disc/*.tif
+content/data-disc/*.tiff
+content/data-disc/*.webp
+content/data-disc/*.pdf
+content/photos/*.jpg
+content/photos/*.jpeg
+content/photos/*.png
+content/photos/*.gif
+content/photos/*.bmp
+content/photos/*.tif
+content/photos/*.tiff
+content/photos/*.webp
+content/photos/*.heic
+content/spoken-word/*.wav
+content/spoken-word/*.mp4
+content/video-ts-source/*.mp4

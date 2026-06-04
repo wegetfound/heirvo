@@ -1,0 +1,2 @@
+﻿HEIC file must be supplied manually -- ImageMagick build lacks libheif.
+AirDrop any .heic from an iPhone into this folder.
