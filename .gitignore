@@ -42,3 +42,9 @@ src-tauri/resources/whisper/*.bin
 
 # Claude Code internal state (worktrees, launch config)
 .claude/
+
+# Secrets — never commit
+sftp_key
+sftp_key.pub
+*.pem
+_secrets/

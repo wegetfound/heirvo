@@ -1,4 +1,4 @@
-# build-release.ps1 — builds a signed Heirvo installer with real license product IDs.
+﻿# build-release.ps1 â€” builds a signed Heirvo installer with real license product IDs.
 #
 # Usage:
 #   .\build-release.ps1            # production build (requires .env.heirvo)
@@ -18,9 +18,9 @@ $ErrorActionPreference = "Stop"
 
 $EnvFile = Join-Path $PSScriptRoot ".env.heirvo"
 
-# ── Load .env.heirvo ───────────────────────────────────────────────────────────
+# â”€â”€ Load .env.heirvo â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 if (-not (Test-Path $EnvFile)) {
-    Write-Error "Missing .env.heirvo — copy .env.example and fill in your product IDs + HMAC secret."
+    Write-Error "Missing .env.heirvo - copy .env.example and fill in your product IDs + HMAC secret."
     exit 1
 }
 
@@ -38,7 +38,7 @@ Get-Content $EnvFile | ForEach-Object {
     }
 }
 
-# ── Dev mode override ──────────────────────────────────────────────────────────
+# â”€â”€ Dev mode override â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 if ($DevMode) {
     Write-Host "DEV MODE: setting HEIRVO_ALLOW_DEV_LICENSE=1" -ForegroundColor Yellow
     $env:HEIRVO_ALLOW_DEV_LICENSE = "1"
@@ -48,7 +48,7 @@ if ($DevMode) {
     Remove-Item Env:\HEIRVO_LS_FAMILY_PRODUCT_ID  -ErrorAction SilentlyContinue
 }
 
-# ── Confirm product IDs are set (unless DevMode) ───────────────────────────────
+# â”€â”€ Confirm product IDs are set (unless DevMode) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 if (-not $DevMode) {
     $required = @(
         "HEIRVO_LS_RECOVER_PRODUCT_ID",
@@ -70,10 +70,10 @@ if (-not $DevMode) {
     Write-Host ""
 }
 
-# ── Build ──────────────────────────────────────────────────────────────────────
-Write-Host "Starting cargo tauri build ..." -ForegroundColor Cyan
+# â”€â”€ Build â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+Write-Host "Starting pnpm tauri build ..." -ForegroundColor Cyan
 Set-Location $PSScriptRoot
-cargo tauri build
+pnpm tauri build
 
 if ($LASTEXITCODE -ne 0) {
     Write-Error "Build failed (exit $LASTEXITCODE)"

@@ -404,7 +404,11 @@ export function OutputPanel({
                     : "btn btn-primary",
                 )}
                 disabled={busy !== null}
-                onClick={() => wrap("iso", async () => setIso(await ipc.createIso(sessionId)))}
+                onClick={() => wrap("iso", async () => {
+                  const result = await ipc.createIso(sessionId);
+                  setIso(result);
+                  ipc.library.rescanDiscForSession(sessionId).catch(() => {});
+                })}
               >
                 {busy === "iso" ? (
                   <Loader2 className="mr-1 inline h-3.5 w-3.5 animate-spin" />
@@ -419,7 +423,11 @@ export function OutputPanel({
                 className="text-[13px] font-medium text-ink-700 transition hover:text-brand-600 disabled:opacity-50"
                 disabled={busy !== null}
                 onClick={() =>
-                  wrap("vobs", async () => setExtracted(await ipc.extractVobs(sessionId)))
+                  wrap("vobs", async () => {
+                    const result = await ipc.extractVobs(sessionId);
+                    setExtracted(result);
+                    ipc.library.rescanDiscForSession(sessionId).catch(() => {});
+                  })
                 }
               >
                 {busy === "vobs" ? (
@@ -442,7 +450,11 @@ export function OutputPanel({
                   )}
                   disabled={busy !== null}
                   onClick={() =>
-                    wrap("all-files", async () => setExtracted(await ipc.extractAllFiles(sessionId)))
+                    wrap("all-files", async () => {
+                      const result = await ipc.extractAllFiles(sessionId);
+                      setExtracted(result);
+                      ipc.library.rescanDiscForSession(sessionId).catch(() => {});
+                    })
                   }
                   title="For data CDs / DVDs with photos, documents, or other files"
                 >

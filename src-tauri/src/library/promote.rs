@@ -34,7 +34,7 @@ const AUDIO_GRADIENTS: [&str; 5] = ["eleanor", "christmas", "winter", "autumn", 
 
 #[derive(serde::Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
-struct DiscAddedPayload {
+pub(crate) struct DiscAddedPayload {
     disc_id: String,
     needs_normalization: bool,
     video_path: Option<String>,
@@ -494,7 +494,7 @@ pub async fn promote_session_to_library(
 // ── Private helpers ──────────────────────────────────────────────────────────
 
 /// Scan the output dir for produced media files and fill in the path variables.
-fn scan_output_dir(
+pub(crate) fn scan_output_dir(
     output_dir: &Path,
     mp4_path: &mut Option<String>,
     iso_path: &mut Option<String>,
@@ -504,6 +504,7 @@ fn scan_output_dir(
     let candidates = [
         output_dir.join("Recovered Files"),
         output_dir.to_path_buf(),
+        output_dir.join("VIDEO_TS"),
     ];
     for dir in &candidates {
         let Ok(rd) = std::fs::read_dir(dir) else {
@@ -517,7 +518,7 @@ fn scan_output_dir(
                 .unwrap_or("")
                 .to_ascii_lowercase();
             match ext.as_str() {
-                "mp4" | "mov" | "m4v" => {
+                "mp4" | "mov" | "m4v" | "vob" => {
                     if mp4_path.is_none() {
                         *mp4_path = Some(p.to_string_lossy().to_string());
                     }

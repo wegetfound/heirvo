@@ -291,6 +291,9 @@ export const ipc = {
      * `status` is optional — omit to leave the current status unchanged. */
     updateDiscVideoPath: (discId: string, videoPath: string, status?: string) =>
       invoke<void>("update_disc_video_path", { discId, videoPath, status: status ?? null }),
+
+    rescanDiscForSession: (sessionId: string) =>
+      invoke<string | null>("rescan_disc_for_session", { sessionId }),
   },
 
   // Albums

@@ -1456,6 +1456,116 @@ fn short_month(m: u32) -> &'static str {
     }
 }
 
+/// Re-scan the output directory for a recovery session and repair the
+/// library disc that promote left as `incomplete` (race: promote ran before
+/// the file was fully written).  Called by the frontend after createIso /
+/// extractAllFiles / extractVobs completes.
+#[tauri::command]
+pub async fn rescan_disc_for_session(
+    state: State<'_, AppState>,
+    app: AppHandle,
+    session_id: String,
+) -> AppResult<Option<String>> {
+    use crate::library::promote::scan_output_dir;
+    use chrono::Utc;
+    use sqlx::Row;
+    use std::path::PathBuf;
+    use tauri::Emitter;
+
+    // ── 1. Parse UUID ────────────────────────────────────────────────────
+    let id = uuid::Uuid::parse_str(&session_id)
+        .map_err(|_| crate::error::AppError::SessionNotFound(session_id.clone()))?;
+
+    // ── 2. Find the disc for this session ────────────────────────────────
+    let disc_row = sqlx::query(
+        "SELECT id, video_path FROM library_discs WHERE session_id = ? LIMIT 1",
+    )
+    .bind(&session_id)
+    .fetch_optional(&state.db.pool)
+    .await?;
+
+    let (disc_id, existing_video_path) = match disc_row {
+        Some(row) => {
+            let disc_id: String = row.try_get("id")?;
+            let vp: Option<String> = row.try_get("video_path")?;
+            (disc_id, vp)
+        }
+        None => {
+            // Promote hasn't run yet — run it now.
+            tracing::info!("rescan_disc_for_session: no disc found for session {session_id}, running promote");
+            let disc_id = crate::library::promote::promote_session_to_library(&app, &state.db, id).await?;
+            return Ok(Some(disc_id));
+        }
+    };
+
+    // If already has a valid video_path, nothing to repair.
+    if existing_video_path.is_some() {
+        tracing::debug!("rescan_disc_for_session: disc {disc_id} already has video_path, skipping");
+        return Ok(Some(disc_id));
+    }
+
+    // ── 3. Get session output_dir ────────────────────────────────────────
+    let session = crate::session::manager::get(&state.db, id).await?;
+    let output_dir = PathBuf::from(&session.output_dir);
+
+    // ── 4. Re-scan ───────────────────────────────────────────────────────
+    let mut mp4_path: Option<String> = None;
+    let mut iso_path: Option<String> = None;
+    let mut wav_path: Option<String> = None;
+    scan_output_dir(&output_dir, &mut mp4_path, &mut iso_path, &mut wav_path);
+
+    let video_path = mp4_path.or(iso_path.clone()).or(wav_path);
+
+    let Some(vpath) = video_path else {
+        tracing::warn!("rescan_disc_for_session: still no file found in {}", output_dir.display());
+        return Ok(Some(disc_id));
+    };
+
+    tracing::info!("rescan_disc_for_session: found {vpath} for disc {disc_id}");
+
+    // ── 5. Determine whether normalization is needed ─────────────────────
+    let ext = std::path::Path::new(&vpath)
+        .extension()
+        .and_then(|e| e.to_str())
+        .unwrap_or("")
+        .to_ascii_lowercase();
+    // ISO files and VOB files need transcoding; MP4 goes through the
+    // normalizer too (it may already be H.264, normalizer handles that).
+    let needs_normalization = !matches!(ext.as_str(), "wav");
+    let status = if needs_normalization { "recovering" } else { "recovered" };
+
+    // ── 6. Update library_discs ──────────────────────────────────────────
+    let now_ts = Utc::now().timestamp();
+    sqlx::query(
+        "UPDATE library_discs SET video_path = ?, status = ?, updated_at = ? WHERE id = ?",
+    )
+    .bind(&vpath)
+    .bind(status)
+    .bind(now_ts)
+    .bind(&disc_id)
+    .execute(&state.db.pool)
+    .await?;
+
+    // ── 7. Emit library:disc_added so frontend triggers normalization ─────
+    #[derive(serde::Serialize, Clone)]
+    #[serde(rename_all = "camelCase")]
+    struct DiscAddedPayload {
+        disc_id: String,
+        needs_normalization: bool,
+        video_path: Option<String>,
+    }
+    let _ = app.emit(
+        "library:disc_added",
+        DiscAddedPayload {
+            disc_id: disc_id.clone(),
+            needs_normalization,
+            video_path: Some(vpath),
+        },
+    );
+
+    Ok(Some(disc_id))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
