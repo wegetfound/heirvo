@@ -143,7 +143,10 @@ fn is_already_webview_safe(probe: &ffmpeg::ProbeResult, input: &std::path::Path)
 
 /// Build the argument list for a remux (stream-copy) when the source is already
 /// H.264/AAC but is in a non-MP4 container (rare but handle it anyway).
-fn remux_args(input: &std::path::Path, output: &std::path::Path) -> Vec<String> {
+///
+/// `input_arg` is the raw FFmpeg `-i` value — a plain path, or a `concat:a|b|…`
+/// pseudo-input for multi-VOB DVD titles.
+fn remux_args(input_arg: &str, output: &std::path::Path) -> Vec<String> {
     vec![
         "-y".into(),
         "-hide_banner".into(),
@@ -153,7 +156,7 @@ fn remux_args(input: &std::path::Path, output: &std::path::Path) -> Vec<String> 
         "-fflags".into(),
         "+discardcorrupt+genpts".into(),
         "-i".into(),
-        input.to_string_lossy().to_string(),
+        input_arg.to_string(),
         "-c".into(),
         "copy".into(),
         "-map".into(),
@@ -169,7 +172,7 @@ fn remux_args(input: &std::path::Path, output: &std::path::Path) -> Vec<String> 
 /// Build the argument list for a full re-encode to H.264/AAC MP4 with webview-
 /// safe settings, error-tolerant input handling, and optional deinterlacing.
 fn reencode_args(
-    input: &std::path::Path,
+    input_arg: &str,
     output: &std::path::Path,
     deinterlace: bool,
 ) -> Vec<String> {
@@ -182,7 +185,7 @@ fn reencode_args(
         "-fflags".into(),
         "+discardcorrupt+genpts".into(),
         "-i".into(),
-        input.to_string_lossy().to_string(),
+        input_arg.to_string(),
     ];
 
     // Video filter chain: deinterlace first if needed, then force even
@@ -243,6 +246,75 @@ pub enum NormalizeMode {
     Reencode,
 }
 
+/// Resolve a DVD VOB input into the FFmpeg input that actually contains the
+/// movie — the concatenation of the TITLE VOBs.
+///
+/// DVD content is split across `VTS_nn_1.VOB, VTS_nn_2.VOB, …`. The menus — the
+/// VMG-level `VIDEO_TS.VOB` and each title set's `VTS_nn_0.VOB` — usually carry
+/// no audio (often just a still frame). Promotion's disk-scan fallback picks
+/// whatever VOB `read_dir` returns first, which is frequently the audio-less
+/// `VIDEO_TS.VOB` menu. Re-encoding that one file in isolation yields a silent,
+/// partial clip — the "video plays but there's no sound" bug on recovered DVDs.
+///
+/// Given any `.VOB` path, return `(ffmpeg_input, probe_path)` where
+/// `ffmpeg_input` is a `concat:` source spanning every title VOB in the same
+/// folder and `probe_path` is one representative title VOB to read codec /
+/// interlace info from. Non-VOB inputs (already-muxed MP4s, ISOs) pass through
+/// unchanged.
+fn resolve_dvd_title_input(input: &std::path::Path) -> (String, PathBuf) {
+    let passthrough = || (input.to_string_lossy().to_string(), input.to_path_buf());
+
+    let is_vob = input
+        .extension()
+        .and_then(|e| e.to_str())
+        .map(|e| e.eq_ignore_ascii_case("vob"))
+        .unwrap_or(false);
+    if !is_vob {
+        return passthrough();
+    }
+    let Some(dir) = input.parent() else {
+        return passthrough();
+    };
+
+    let mut titles: Vec<PathBuf> = match std::fs::read_dir(dir) {
+        Ok(rd) => rd
+            .filter_map(|e| e.ok())
+            .map(|e| e.path())
+            .filter(|p| {
+                let name = p
+                    .file_name()
+                    .and_then(|n| n.to_str())
+                    .unwrap_or("")
+                    .to_ascii_uppercase();
+                // Title VOBs only: VTS_<set>_<part>.VOB with part >= 1.
+                // Excludes the VMG menu (VIDEO_TS.VOB — doesn't start with VTS_)
+                // and every title-set menu (VTS_nn_0.VOB).
+                name.ends_with(".VOB") && name.starts_with("VTS_") && !name.ends_with("_0.VOB")
+            })
+            .collect(),
+        Err(_) => Vec::new(),
+    };
+    titles.sort();
+
+    if titles.is_empty() {
+        // No recognizable title VOBs (unusual layout) — encode the file we were
+        // given rather than nothing.
+        return passthrough();
+    }
+
+    let probe = titles[0].clone();
+    let parts: Vec<String> = titles
+        .iter()
+        .map(|p| p.to_string_lossy().replace('|', "_"))
+        .collect();
+    tracing::info!(
+        "resolve_dvd_title_input: {} → concat of {} title VOB(s)",
+        input.display(),
+        titles.len()
+    );
+    (format!("concat:{}", parts.join("|")), probe)
+}
+
 /// Convert an arbitrary recovered video into a webview-playable H.264/AAC MP4.
 ///
 /// The function probes the input first:
@@ -263,10 +335,17 @@ pub async fn normalize_for_playback(
     let ffmpeg_bin = ffmpeg::locate_ffmpeg(app)?;
     let ffprobe_bin = ffmpeg::locate_ffprobe(app)?;
 
-    let probe = ffmpeg::probe(&ffprobe_bin, &input).await?;
+    // For DVD VOBs, the real movie is the concatenation of the title VOBs — a
+    // single VOB (often the audio-less VIDEO_TS.VOB menu) would re-encode to a
+    // silent, partial clip. `ffmpeg_input` is what we feed ffmpeg's `-i`;
+    // `probe_path` is a representative title VOB to read codec info from.
+    let (ffmpeg_input, probe_path) = resolve_dvd_title_input(&input);
+
+    let probe = ffmpeg::probe(&ffprobe_bin, &probe_path).await?;
     tracing::info!(
-        "normalize_for_playback: {:?} → video={} audio={} interlaced={} size={}x{}",
-        input.file_name().unwrap_or_default(),
+        "normalize_for_playback: {:?} (input={}) → video={} audio={} interlaced={} size={}x{}",
+        probe_path.file_name().unwrap_or_default(),
+        ffmpeg_input,
         probe.video_codec,
         probe.audio_codec,
         probe.interlaced,
@@ -274,8 +353,10 @@ pub async fn normalize_for_playback(
         probe.height,
     );
 
-    // Fast path: input is already safe for the webview.
-    if is_already_webview_safe(&probe, &input) {
+    // Fast path: input is already safe for the webview. Only applies to a real
+    // single-file input — a multi-VOB concat must always be muxed/encoded.
+    let is_concat = ffmpeg_input.starts_with("concat:");
+    if !is_concat && is_already_webview_safe(&probe, &input) {
         tracing::info!("normalize_for_playback: already webview-safe, skipping encode");
         return Ok(NormalizeMode::AlreadySafe);
     }
@@ -285,25 +366,28 @@ pub async fn normalize_for_playback(
             .map_err(|e| AppError::Media(format!("create output dir: {e}")))?;
     }
 
-    // If codec is already H.264/AAC, just remux into MP4.
+    // If codec is already H.264/AAC, just remux into MP4. (Not for DVD concats —
+    // those are always MPEG-2/AC3 and need a real re-encode.)
     let h264 = probe.video_codec.eq_ignore_ascii_case("h264");
     let safe_audio = probe.audio_codec.eq_ignore_ascii_case("aac")
         || probe.audio_codec.eq_ignore_ascii_case("mp4a")
         || probe.audio_codec.is_empty();
 
-    if h264 && safe_audio {
+    if !is_concat && h264 && safe_audio {
         tracing::info!("normalize_for_playback: remux only (H.264/AAC → MP4)");
-        let args = remux_args(&input, &output);
+        let args = remux_args(&ffmpeg_input, &output);
         ffmpeg::run_with_progress(&ffmpeg_bin, &args, on_progress, cancel).await?;
         return Ok(NormalizeMode::Remux);
     }
 
-    // Full re-encode.
+    // Full re-encode → H.264 video + AAC audio (fixes AC3-in-MP4 that won't play
+    // in WebView2/Chromium or Windows Media Player).
     tracing::info!(
-        "normalize_for_playback: re-encoding (deinterlace={})",
-        probe.interlaced
+        "normalize_for_playback: re-encoding (deinterlace={}, concat={})",
+        probe.interlaced,
+        is_concat,
     );
-    let args = reencode_args(&input, &output, probe.interlaced);
+    let args = reencode_args(&ffmpeg_input, &output, probe.interlaced);
     ffmpeg::run_with_progress(&ffmpeg_bin, &args, on_progress, cancel).await?;
     Ok(NormalizeMode::Reencode)
 }

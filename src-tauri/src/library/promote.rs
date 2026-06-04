@@ -519,7 +519,19 @@ pub(crate) fn scan_output_dir(
                 .to_ascii_lowercase();
             match ext.as_str() {
                 "mp4" | "mov" | "m4v" | "vob" => {
-                    if mp4_path.is_none() {
+                    // Never seed video_path from a DVD MENU VOB — the VMG menu
+                    // (VIDEO_TS.VOB) and title-set menus (VTS_nn_0.VOB) usually
+                    // have no audio. Picking one made the disc preview silent and
+                    // fed the wrong file to normalization. Title VOBs and real
+                    // MP4s are fine.
+                    let name = p
+                        .file_name()
+                        .and_then(|n| n.to_str())
+                        .unwrap_or("")
+                        .to_ascii_uppercase();
+                    let is_menu_vob = ext == "vob"
+                        && (name == "VIDEO_TS.VOB" || name.ends_with("_0.VOB"));
+                    if mp4_path.is_none() && !is_menu_vob {
                         *mp4_path = Some(p.to_string_lossy().to_string());
                     }
                 }
