@@ -14,7 +14,12 @@ fn main() {
         || std::env::var("HEIRVO_LS_ARCHIVE_PRODUCT_ID").is_ok()
         || std::env::var("HEIRVO_LS_FAMILY_PRODUCT_ID").is_ok();
 
-    let hmac_secret_set = std::env::var("HEIRVO_LICENSE_HMAC_SECRET").is_ok();
+    // Require a REAL secret, not merely a set-but-empty/short value. The .env
+    // production secret is 256-bit base64 (44 chars); 32 is a safe floor. An
+    // empty or too-short value would silently fall back to the public dev key.
+    let hmac_secret_set = std::env::var("HEIRVO_LICENSE_HMAC_SECRET")
+        .map(|v| v.trim().len() >= 32)
+        .unwrap_or(false);
 
     let allow_dev = std::env::var("HEIRVO_ALLOW_DEV_LICENSE")
         .map(|v| v == "1")
@@ -46,13 +51,22 @@ fn main() {
             );
         }
 
-        if !hmac_secret_set {
-            // Non-fatal for release but very important — warn loudly.
-            println!("cargo:warning=RELEASE BUILD WARNING: HEIRVO_LICENSE_HMAC_SECRET is not set.");
-            println!("cargo:warning=The license HMAC will fall back to the compile-time DEV default.");
-            println!("cargo:warning=Set HEIRVO_LICENSE_HMAC_SECRET to a strong random secret for");
-            println!("cargo:warning=production builds so that license.json cannot be forged by");
-            println!("cargo:warning=copying a compiled-in default constant from another build.");
+        if !hmac_secret_set && !allow_dev {
+            // HARD GATE: a public release without a real secret embeds the known
+            // dev HMAC key (a public constant in this repo). Anyone could then
+            // forge a license.json granting any tier. This MUST NOT ship.
+            println!("cargo:warning=RELEASE BUILD BLOCKED: HEIRVO_LICENSE_HMAC_SECRET is missing or too short.");
+            println!("cargo:warning=The binary would embed the PUBLIC dev HMAC key, so any license.json");
+            println!("cargo:warning=could be forged to grant any tier. Set a strong 32+ char secret.");
+            panic!(
+                "refusing to build a public release without a strong HEIRVO_LICENSE_HMAC_SECRET \
+                 (>=32 chars); the binary would embed the public dev HMAC key and licenses could be \
+                 trivially forged. Set the secret, or pass HEIRVO_ALLOW_DEV_LICENSE=1 for an \
+                 intentional internal build you will NOT distribute."
+            );
+        }
+        if !hmac_secret_set && allow_dev {
+            println!("cargo:warning=INTENTIONAL DEV RELEASE: using the compile-time DEV HMAC key. Do NOT distribute.");
         }
 
         if !any_product_set && allow_dev {
