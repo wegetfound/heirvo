@@ -558,12 +558,37 @@ pub async fn activate(app_data_dir: &PathBuf, key: &str) -> AppResult<LicenseSta
             .map_err(|e| AppError::Internal(format!("Network error activating license: {e}")))?;
 
         if !resp.status().is_success() {
-            // Try to extract an error message from the LS response body.
-            let status_code = resp.status().as_u16();
+            // Parse LS's machine-readable `error` WITHOUT ever surfacing the raw
+            // body — it contains the customer's email and order IDs (PII). Map the
+            // known cases to calm, actionable messages.
             let body = resp.text().await.unwrap_or_default();
-            return Err(AppError::Internal(format!(
-                "License activation failed (HTTP {status_code}): {body}"
-            )));
+            let ls_err = serde_json::from_str::<serde_json::Value>(&body)
+                .ok()
+                .and_then(|v| v.get("error").and_then(|e| e.as_str()).map(str::to_owned))
+                .unwrap_or_default();
+            let lower = ls_err.to_lowercase();
+            let friendly: String = if lower.contains("activation limit") {
+                "This license key is already in use on the maximum number of devices. \
+                 If you reinstalled Heirvo or switched computers, contact support at \
+                 heirvo.com and we'll reset it right away."
+                    .to_string()
+            } else if lower.contains("expired") {
+                "This license key has expired.".to_string()
+            } else if lower.contains("not found") || lower.contains("does not exist") {
+                "We couldn't find that license key. Make sure it matches the one in \
+                 your purchase email."
+                    .to_string()
+            } else if lower.contains("disabled") || lower.contains("revoked") {
+                "This license key is no longer active. Contact support at heirvo.com \
+                 if you believe this is a mistake."
+                    .to_string()
+            } else if !ls_err.is_empty() {
+                // LS's own message is already user-safe (no PII) — use it verbatim.
+                ls_err
+            } else {
+                "Activation failed. Please double-check your key and try again.".to_string()
+            };
+            return Err(AppError::Internal(friendly));
         }
 
         let ls: LsActivateResp = resp.json().await.map_err(|e| {
