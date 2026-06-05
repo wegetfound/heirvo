@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Heirvo — Split layout (Extracting)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,600;1,9..144,300&family=Sora:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:#0A0D12; --surface-1:#121823; --surface-2:#171F2C; --surface-3:#1C2333;
+      --sidebar:#0B0F14;
+      --border:rgba(255,255,255,0.06); --border-med:rgba(255,255,255,0.10); --border-hi:rgba(255,255,255,0.14);
+      --text-primary:#F4F6F8; --text-secondary:#9AA4B2; --text-tertiary:#6B7480;
+      --amber:#E8902A; --amber-bright:#F5A623; --amber-dim:rgba(232,144,42,0.15); --amber-ring:rgba(232,144,42,0.22);
+      --blue:#2F6BFF; --blue-light:#3B82F6; --blue-glow:rgba(47,107,255,0.22);
+      --green:#36C46A; --green-dim:rgba(54,196,106,0.14);
+      --radius-sm:10px; --radius-md:14px; --radius-lg:18px;
+    }
+    html,body{ height:100%; background:var(--bg); font-family:'Sora',system-ui,sans-serif; font-size:14px; color:var(--text-primary); -webkit-font-smoothing:antialiased; }
+    .app{ display:flex; height:100vh; overflow:hidden; }
+
+    .sidebar{ width:230px; flex-shrink:0; background:var(--sidebar); border-right:1px solid var(--border); display:flex; flex-direction:column; }
+    .sb-logo{ display:flex; align-items:center; gap:9px; padding:20px 18px 16px; }
+    .sb-mark{ width:30px; height:30px; border-radius:8px; background:linear-gradient(135deg,#E8902A,#F5A623); display:flex; align-items:center; justify-content:center; }
+    .sb-word{ font-family:'Fraunces',serif; font-size:18px; font-weight:600; }
+    .sb-nav{ flex:1; padding:14px 10px; display:flex; flex-direction:column; gap:2px; }
+    .sb-item{ display:flex; align-items:center; gap:11px; padding:9px 12px; border-radius:8px; font-size:13.5px; font-weight:500; color:var(--text-secondary); }
+    .sb-item.active{ background:rgba(232,144,42,0.12); color:var(--amber-bright); }
+    .sb-item svg{ opacity:0.85; }
+    .sb-foot{ padding:14px 18px; display:flex; align-items:center; gap:8px; font-size:12px; color:var(--text-tertiary); border-top:1px solid var(--border); }
+    .dot-green{ width:8px; height:8px; border-radius:50%; background:var(--green); box-shadow:0 0 6px rgba(54,196,106,0.7); }
+
+    .content{ flex:1; overflow:hidden; padding:30px 34px; }
+    .split{ display:grid; grid-template-columns:380px 1fr; gap:16px; align-items:start; max-width:1180px; }
+
+    .hero{ background:var(--surface-1); border:1px solid var(--border-med); border-radius:var(--radius-lg); padding:34px 24px 26px; display:flex; flex-direction:column; align-items:center; gap:14px; position:relative; overflow:hidden; }
+    .hero-glow{ position:absolute; top:-110px; left:50%; transform:translateX(-50%); width:320px; height:320px; background:radial-gradient(circle,rgba(232,144,42,0.13) 0%,transparent 66%); pointer-events:none; }
+    .wheel-wrap{ position:relative; width:150px; height:150px; animation:breathe 3.6s ease-in-out infinite; }
+    @keyframes breathe{ 0%,100%{ transform:scale(1);} 50%{ transform:scale(1.02);} }
+    .wheel-svg{ width:150px; height:150px; transform:rotate(-90deg); }
+    .wheel-track{ fill:none; stroke:var(--amber-ring); stroke-width:7; }
+    .wheel-fill{ fill:none; stroke:var(--amber); stroke-width:7; stroke-linecap:round; stroke-dasharray:433.5; stroke-dashoffset:229.76; filter:drop-shadow(0 0 9px rgba(232,144,42,0.55)); animation:glow 2s ease-in-out infinite; }
+    @keyframes glow{ 0%,100%{ filter:drop-shadow(0 0 6px rgba(232,144,42,0.4)); } 50%{ filter:drop-shadow(0 0 13px rgba(232,144,42,0.75)); } }
+    .wheel-inner{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+    .wheel-pct{ font-family:'Fraunces',serif; font-size:42px; font-weight:400; color:var(--amber-bright); letter-spacing:-0.03em; line-height:1; }
+    .wheel-label{ font-size:10px; font-weight:600; letter-spacing:0.16em; text-transform:uppercase; color:var(--text-tertiary); margin-top:5px; }
+    .hero-title{ font-family:'Fraunces',serif; font-size:21px; font-weight:400; text-align:center; letter-spacing:-0.01em; line-height:1.25; }
+    .hero-sub{ font-size:12.5px; color:var(--text-secondary); text-align:center; line-height:1.5; max-width:30ch; }
+    .hero-sub strong{ color:var(--amber-bright); font-weight:600; }
+    .hero-badges{ display:flex; gap:8px; flex-wrap:wrap; justify-content:center; }
+    .badge{ display:inline-flex; align-items:center; gap:5px; padding:3px 10px; border-radius:100px; font-size:11px; font-weight:600; letter-spacing:0.02em; text-transform:uppercase; }
+    .badge-working{ background:var(--amber-dim); color:var(--amber-bright); border:1px solid rgba(232,144,42,0.28); }
+    .badge-health{ background:var(--green-dim); color:var(--green); border:1px solid rgba(54,196,106,0.22); }
+    .pulse-dot{ width:7px; height:7px; border-radius:50%; background:currentColor; animation:pulse 1.4s ease-in-out infinite; }
+    @keyframes pulse{ 0%,100%{ opacity:1; transform:scale(1);} 50%{ opacity:0.4; transform:scale(0.82);} }
+    .hero-actions{ display:flex; gap:10px; margin-top:2px; }
+    .btn-ghost{ display:inline-flex; align-items:center; gap:7px; padding:8px 16px; background:transparent; border:1px solid var(--border-hi); border-radius:9px; font-family:'Sora',sans-serif; font-size:12.5px; font-weight:500; color:var(--text-primary); }
+    .btn-ghost.danger{ color:var(--text-secondary); border-color:var(--border-med); }
+
+    .actions{ display:flex; flex-direction:column; gap:12px; }
+    .section-label{ font-size:10.5px; font-weight:600; letter-spacing:0.12em; text-transform:uppercase; color:var(--text-tertiary); padding:0 2px; }
+    .lock-note{ display:flex; align-items:center; gap:10px; background:var(--amber-dim); border:1px solid rgba(232,144,42,0.22); border-radius:var(--radius-sm); padding:11px 16px; font-size:12.5px; color:var(--amber-bright); }
+    .lock-note svg{ flex-shrink:0; }
+    .locked{ opacity:0.4; pointer-events:none; filter:saturate(0.7); }
+
+    .primary-card{ background:var(--surface-1); border:1px solid var(--border-med); border-radius:var(--radius-md); overflow:hidden; }
+    .pc-top{ padding:16px 18px 14px; display:flex; align-items:flex-start; gap:14px; }
+    .action-icon{ flex-shrink:0; width:38px; height:38px; border-radius:10px; background:var(--blue-glow); border:1px solid rgba(47,107,255,0.30); display:flex; align-items:center; justify-content:center; color:var(--blue-light); }
+    .action-icon.green{ background:var(--green-dim); border-color:rgba(54,196,106,0.22); color:var(--green); }
+    .action-text{ flex:1; min-width:0; }
+    .action-title{ font-size:14px; font-weight:600; margin-bottom:3px; }
+    .action-desc{ font-size:12px; color:var(--text-secondary); line-height:1.45; }
+    .btn-primary{ display:inline-flex; align-items:center; gap:7px; padding:9px 18px; background:linear-gradient(135deg,var(--blue),var(--blue-light)); color:#fff; border:none; border-radius:9px; font-family:'Sora',sans-serif; font-size:13px; font-weight:600; white-space:nowrap; flex-shrink:0; box-shadow:0 2px 12px rgba(47,107,255,0.35); }
+    .btn-secondary{ display:inline-flex; align-items:center; gap:6px; padding:8px 15px; background:transparent; border:1px solid var(--border-hi); border-radius:9px; font-family:'Sora',sans-serif; font-size:12.5px; font-weight:500; color:var(--text-primary); white-space:nowrap; flex-shrink:0; }
+    .pc-foot{ border-top:1px solid var(--border); padding:10px 18px; display:flex; align-items:center; gap:10px; }
+    .dest-label{ font-size:11px; color:var(--text-tertiary); flex-shrink:0; }
+    .dest-path{ flex:1; min-width:0; font-size:11.5px; color:var(--text-secondary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .btn-mini{ display:inline-flex; align-items:center; gap:5px; padding:5px 10px; background:transparent; border:1px solid var(--border-med); border-radius:7px; font-size:11px; font-weight:500; color:var(--text-secondary); }
+    .badge-free{ background:var(--green-dim); color:var(--green); border:1px solid rgba(54,196,106,0.22); }
+    .badge-instant{ background:rgba(47,107,255,0.12); color:var(--blue-light); border:1px solid rgba(59,130,246,0.22); }
+    .alt-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+    .alt-card{ background:var(--surface-1); border:1px solid var(--border); border-radius:var(--radius-sm); padding:13px; display:flex; flex-direction:column; gap:5px; }
+    .alt-top{ display:flex; align-items:center; justify-content:space-between; }
+    .alt-icon{ color:var(--text-tertiary); }
+    .alt-title{ font-size:12.5px; font-weight:600; }
+    .alt-desc{ font-size:11px; color:var(--text-tertiary); line-height:1.45; }
+    .adv-bar{ display:flex; align-items:center; gap:10px; padding:12px 16px; border-radius:var(--radius-sm); background:var(--surface-1); border:1px solid var(--border); }
+    .adv-label{ font-size:12px; font-weight:500; color:var(--text-secondary); }
+    .adv-chev{ color:var(--text-tertiary); margin-left:auto; }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <aside class="sidebar">
+    <div class="sb-logo"><div class="sb-mark"><svg width="16" height="16" viewBox="0 0 24 24" fill="#fff"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.4" fill="#0B0F14"/></svg></div><span class="sb-word">Heirvo</span></div>
+    <nav class="sb-nav">
+      <div class="sb-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>Home</div>
+      <div class="sb-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M7 4v16M17 4v16M2 9h5M2 15h5M17 9h5M17 15h5"/></svg>Memories</div>
+      <div class="sb-item active"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.5"/></svg>My Discs</div>
+      <div class="sb-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Export</div>
+      <div class="sb-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/></svg>Browse ISO</div>
+      <div class="sb-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1l2-1.5-2-3.5-2.4 1a7 7 0 0 0-1.7-1l-.4-2.5h-4l-.4 2.5a7 7 0 0 0-1.7 1l-2.4-1-2 3.5 2 1.5a7 7 0 0 0 0 2l-2 1.5 2 3.5 2.4-1a7 7 0 0 0 1.7 1l.4 2.5h4l.4-2.5a7 7 0 0 0 1.7-1l2.4 1 2-3.5-2-1.5a7 7 0 0 0 .1-1z"/></svg>Settings</div>
+    </nav>
+    <div class="sb-foot"><span class="dot-green"></span>Drive ready</div>
+  </aside>
+
+  <main class="content">
+    <div class="split">
+
+      <!-- LEFT: wheel box (active) -->
+      <section class="hero">
+        <div class="hero-glow"></div>
+        <div class="wheel-wrap" aria-hidden="true">
+          <svg class="wheel-svg" viewBox="0 0 150 150"><circle class="wheel-track" cx="75" cy="75" r="69"/><circle class="wheel-fill" cx="75" cy="75" r="69"/></svg>
+          <div class="wheel-inner"><span class="wheel-pct">47%</span><span class="wheel-label">Read</span></div>
+        </div>
+        <div class="hero-title">Reading your disc…</div>
+        <div class="hero-sub">Recovered <strong>1.83 GB</strong> so far · about 6 min to go</div>
+        <div class="hero-badges">
+          <span class="badge badge-working"><span class="pulse-dot"></span>Working</span>
+          <span class="badge badge-health">Disc healthy</span>
+        </div>
+        <div class="hero-actions">
+          <button class="btn-ghost"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>Pause</button>
+          <button class="btn-ghost danger">Cancel</button>
+        </div>
+      </section>
+
+      <!-- RIGHT: actions (locked) -->
+      <section class="actions">
+        <div class="lock-note">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          These unlock the moment the disc finishes reading — no scrolling, everything's right here.
+        </div>
+
+        <div class="primary-card locked">
+          <div class="pc-top">
+            <div class="action-icon"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="3"/><path d="M7 2v20M17 2v20M2 12h20M2 7h5M2 17h5M17 17h5M17 7h5"/></svg></div>
+            <div class="action-text">
+              <div class="action-title">Save as video (MP4)</div>
+              <div class="action-desc">Plays on any phone, computer, or TV — ideal if you want to share or stream your footage easily.</div>
+            </div>
+            <button class="btn-primary">Save as MP4</button>
+          </div>
+          <div class="pc-foot">
+            <span class="dest-label">Saving to</span>
+            <span class="dest-path">/Users/Family/Movies/Heirvo Recoveries</span>
+            <button class="btn-mini">Change folder</button>
+            <button class="btn-mini">Save to USB</button>
+          </div>
+        </div>
+
+        <div class="primary-card locked">
+          <div class="pc-top">
+            <div class="action-icon green"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8" fill="currentColor" stroke="none"/></svg></div>
+            <div class="action-text">
+              <div class="action-title" style="display:flex;align-items:center;gap:8px;">Watch &amp; search in Heirvo <span class="badge badge-free">Free</span></div>
+              <div class="action-desc">Play your footage right here and search every spoken word — no purchase needed. Saving a copy is the paid step.</div>
+            </div>
+            <button class="btn-secondary"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>Watch now</button>
+          </div>
+        </div>
+
+        <p class="section-label" style="margin-top:2px;">Other ways to save</p>
+        <div class="alt-grid locked">
+          <div class="alt-card"><div class="alt-top"><div class="alt-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg></div><span class="badge badge-instant">Instant</span></div><div class="alt-title">Exact copy of the disc</div><div class="alt-desc">.ISO image — a perfect replica, ready to mount or burn.</div></div>
+          <div class="alt-card"><div class="alt-top"><div class="alt-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></div><span class="badge badge-instant">Instant</span></div><div class="alt-title">Original files</div><div class="alt-desc">Every file exactly as it was on the disc, no conversion.</div></div>
+          <div class="alt-card"><div class="alt-top"><div class="alt-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.5"/></svg></div></div><div class="alt-title">Make a new disc</div><div class="alt-desc">Burn a backup DVD or CD you can store or give away.</div></div>
+        </div>
+
+        <div class="adv-bar locked"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text-tertiary)"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93A10 10 0 0 0 12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10"/></svg><span class="adv-label">Advanced — diagnostics &amp; archive</span><svg class="adv-chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="6 9 12 15 18 9"/></svg></div>
+      </section>
+
+    </div>
+  </main>
+</div>
+</body>
+</html>
