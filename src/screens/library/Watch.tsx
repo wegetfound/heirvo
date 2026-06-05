@@ -5,7 +5,7 @@ import {
   useSearchParams,
   Link,
 } from "react-router-dom";
-import { ChevronLeft, Play, Pause, Search as SearchIcon, Music, FileText, FolderOpen, Heart, ExternalLink, Maximize, Minimize } from "lucide-react";
+import { ChevronLeft, Play, Pause, Search as SearchIcon, Music, FileText, FolderOpen, Heart, ExternalLink, Maximize, Minimize, Loader2 } from "lucide-react";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { tsToSec } from "./data/mockDiscs";
 import { gradientCss } from "./components/GradientArt";
@@ -115,6 +115,27 @@ function CantPreviewCard({ path }: { path?: string }) {
   );
 }
 
+/* ── Calm "getting your video ready" state — shown while a recovered ISO/VOB is
+   transcoded to a webview-playable MP4 in the background. WebView2 cannot decode
+   a raw ISO/VOB, so we NEVER hand those to <video>; we show this and swap to the
+   player automatically once normalization finishes. ── */
+function PreparingCard() {
+  return (
+    <div style={{ textAlign: "center", padding: "32px 28px", maxWidth: 440, position: "relative", zIndex: 1 }}>
+      <div style={{ width: 64, height: 64, borderRadius: "50%", background: "var(--lib-surface)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 18px", boxShadow: "0 8px 28px rgba(40,20,10,0.18)" }}>
+        <Loader2 size={26} className="animate-spin" style={{ color: "var(--lib-amber)" }} />
+      </div>
+      <div style={{ fontFamily: "var(--lib-serif)", fontSize: 24, color: "var(--lib-ink)", marginBottom: 8 }}>
+        Getting your video ready&hellip;
+      </div>
+      <p style={{ fontFamily: "var(--lib-sans)", fontSize: 14, lineHeight: 1.55, color: "var(--lib-ink-2)", margin: 0 }}>
+        Your disc is safe. We&rsquo;re preparing it to play here &mdash; this usually takes a minute or
+        two, and it&rsquo;ll start automatically when it&rsquo;s ready.
+      </p>
+    </div>
+  );
+}
+
 export default function Watch() {
   const { discId } = useParams<{ discId: string }>();
   const [params] = useSearchParams();
@@ -174,6 +195,37 @@ export default function Watch() {
   // If a video file fails to decode in the webview, we swap to a human message
   // instead of a silent black frame.
   const [mediaError, setMediaError] = useState(false);
+
+  // A freshly-recovered DVD sets videoPath to the raw ISO/VOB and status
+  // "recovering" BEFORE the background normalizer produces a webview-playable
+  // MP4. WebView2 can't decode ISO/VOB, so we must never feed those to <video>.
+  const isPlayableFile = useMemo(() => {
+    const p = (disc?.videoPath ?? "").toLowerCase();
+    return /\.(mp4|m4v|mov|webm)$/.test(p);
+  }, [disc?.videoPath]);
+  const isPreparing =
+    !isAudio && !isDocument && !isPhoto &&
+    (disc?.status === "recovering" || (hasMedia && !isPlayableFile));
+
+  // Reset the decode-error flag whenever the file changes — otherwise a failed
+  // ISO load would keep showing "can't preview" even after the MP4 is ready.
+  useEffect(() => {
+    setMediaError(false);
+  }, [disc?.videoPath]);
+
+  // Re-fetch when the library changes. useRecoveryPromotion dispatches this after
+  // it swaps videoPath ISO→MP4 on normalize:complete, so the player picks up the
+  // playable file and flips out of the "getting ready" state on its own.
+  useEffect(() => {
+    if (!discId) return;
+    const onChanged = (e: Event) => {
+      const detail = (e as CustomEvent).detail as { discId?: string } | undefined;
+      if (detail?.discId && detail.discId !== discId) return;
+      ipc.library.get(discId).then((fresh) => { if (fresh) setDisc(fresh); }).catch(() => {});
+    };
+    window.addEventListener("heirvo:library-changed", onChanged as EventListener);
+    return () => window.removeEventListener("heirvo:library-changed", onChanged as EventListener);
+  }, [discId]);
 
   useEffect(() => {
     setCurrentSec(initialSec);
@@ -348,7 +400,7 @@ export default function Watch() {
                 className="lib-player-stage"
                 style={{
                   aspectRatio: "4 / 3",
-                  background: (isPlayable && hasMedia && !mediaError) ? "#000" : gradientCss(disc.gradient),
+                  background: (isPlayable && hasMedia && !mediaError && !isPreparing) ? "#000" : gradientCss(disc.gradient),
                   position: "relative",
                   display: "flex",
                   alignItems: "center",
@@ -373,6 +425,9 @@ export default function Watch() {
                       background: "#000",
                     }}
                   />
+                ) : isPreparing ? (
+                  /* Recovered ISO/VOB still transcoding to a playable MP4 — never feed it to <video> (WebView2 can't decode it) */
+                  <PreparingCard />
                 ) : hasMedia && !mediaError ? (
                   <video
                     ref={videoRef}
