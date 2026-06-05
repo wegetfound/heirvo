@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Heirvo — Recovery Complete</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;1,9..144,300&family=Sora:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:           #0A0D12;
+      --surface-1:    #121823;
+      --surface-2:    #171F2C;
+      --surface-3:    #1C2333;
+      --border:       rgba(255,255,255,0.06);
+      --border-med:   rgba(255,255,255,0.10);
+      --border-hi:    rgba(255,255,255,0.14);
+
+      --text-primary:   #F4F6F8;
+      --text-secondary: #9AA4B2;
+      --text-tertiary:  #6B7480;
+
+      --amber:        #E8902A;
+      --amber-bright: #F5A623;
+      --amber-dim:    rgba(232,144,42,0.15);
+      --amber-ring:   rgba(232,144,42,0.30);
+
+      --blue:         #2F6BFF;
+      --blue-light:   #3B82F6;
+      --blue-glow:    rgba(47,107,255,0.22);
+
+      --green:        #36C46A;
+      --green-dim:    rgba(54,196,106,0.14);
+
+      --archive:      #C2741F;
+      --archive-dim:  rgba(194,116,31,0.15);
+
+      --radius-sm:    10px;
+      --radius-md:    14px;
+      --radius-lg:    18px;
+
+      --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+      --ease-tap:      cubic-bezier(0.65, 0, 0.35, 1);
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      font-family: 'Sora', system-ui, sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+      color: var(--text-primary);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    body {
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 40px 20px 80px;
+    }
+
+    /* ─── PANEL ─────────────────────────────────────────────── */
+    .panel {
+      width: 100%;
+      max-width: 760px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    /* ─── STATUS STRIP ───────────────────────────────────────── */
+    .status-strip {
+      background: var(--surface-1);
+      border: 1px solid var(--border-med);
+      border-radius: var(--radius-md);
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .ring-wrap {
+      flex-shrink: 0;
+      position: relative;
+      width: 40px;
+      height: 40px;
+    }
+
+    .ring-svg {
+      width: 40px;
+      height: 40px;
+      transform: rotate(-90deg);
+    }
+
+    .ring-track {
+      fill: none;
+      stroke: var(--amber-ring);
+      stroke-width: 3;
+    }
+
+    .ring-fill {
+      fill: none;
+      stroke: var(--amber);
+      stroke-width: 3;
+      stroke-linecap: round;
+      stroke-dasharray: 100.53;
+      stroke-dashoffset: 0;
+      filter: drop-shadow(0 0 4px rgba(232,144,42,0.55));
+    }
+
+    .ring-inner {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .ring-check {
+      color: var(--amber);
+    }
+
+    .status-body {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .status-heading {
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .status-size {
+      font-family: 'Fraunces', Georgia, serif;
+      font-size: 15px;
+      font-weight: 400;
+      color: var(--amber-bright);
+      letter-spacing: -0.01em;
+    }
+
+    .status-dots {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 2px;
+      flex-wrap: wrap;
+    }
+
+    .dot-sep {
+      color: var(--text-tertiary);
+      font-size: 11px;
+    }
+
+    .status-sub {
+      font-size: 12px;
+      color: var(--text-tertiary);
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 8px;
+      border-radius: 100px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+    }
+
+    .badge-complete {
+      background: var(--green-dim);
+      color: var(--green);
+      border: 1px solid rgba(54,196,106,0.22);
+    }
+
+    .badge-free {
+      background: var(--green-dim);
+      color: var(--green);
+      border: 1px solid rgba(54,196,106,0.22);
+    }
+
+    .badge-instant {
+      background: rgba(47,107,255,0.12);
+      color: var(--blue-light);
+      border: 1px solid rgba(59,130,246,0.22);
+    }
+
+    .badge-archive {
+      background: var(--archive-dim);
+      color: var(--archive);
+      border: 1px solid rgba(194,116,31,0.24);
+    }
+
+    /* ─── SECTION LABEL ──────────────────────────────────────── */
+    .section-label {
+      font-size: 10.5px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-tertiary);
+      padding: 0 2px;
+      margin-top: 6px;
+      margin-bottom: -4px;
+    }
+
+    /* ─── PRIMARY ACTION CARD ────────────────────────────────── */
+    .primary-card {
+      background: var(--surface-1);
+      border: 1px solid var(--border-med);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+    }
+
+    .primary-card-top {
+      padding: 20px 22px 18px;
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+    }
+
+    .action-icon {
+      flex-shrink: 0;
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: var(--blue-glow);
+      border: 1px solid rgba(47,107,255,0.30);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--blue-light);
+    }
+
+    .action-text {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .action-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-primary);
+      line-height: 1.3;
+      margin-bottom: 4px;
+      text-wrap: balance;
+    }
+
+    .action-desc {
+      font-size: 13px;
+      color: var(--text-secondary);
+      line-height: 1.55;
+      max-width: 52ch;
+    }
+
+    .action-desc em {
+      font-style: normal;
+      color: var(--text-primary);
+    }
+
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 11px 22px;
+      background: linear-gradient(135deg, var(--blue) 0%, var(--blue-light) 100%);
+      color: #fff;
+      border: none;
+      border-radius: 9px;
+      font-family: 'Sora', system-ui, sans-serif;
+      font-size: 13.5px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      flex-shrink: 0;
+      transition: transform 150ms var(--ease-tap), box-shadow 250ms ease, filter 200ms ease;
+      box-shadow: 0 2px 12px rgba(47,107,255,0.35), 0 1px 2px rgba(0,0,0,0.2);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(47,107,255,0.48), 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    .btn-primary:active {
+      transform: translateY(0);
+    }
+
+    .btn-primary:focus-visible {
+      outline: 2px solid var(--blue-light);
+      outline-offset: 3px;
+    }
+
+    .primary-card-footer {
+      border-top: 1px solid var(--border);
+      padding: 12px 22px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .destination-label {
+      font-size: 11.5px;
+      color: var(--text-tertiary);
+      flex-shrink: 0;
+    }
+
+    .destination-path {
+      flex: 1;
+      min-width: 0;
+      font-size: 12px;
+      font-family: 'Sora', monospace;
+      color: var(--text-secondary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .btn-ghost {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 5px 10px;
+      background: transparent;
+      border: 1px solid var(--border-med);
+      border-radius: 7px;
+      font-family: 'Sora', system-ui, sans-serif;
+      font-size: 11.5px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: border-color 150ms ease, color 150ms ease, background 150ms ease;
+    }
+
+    .btn-ghost:hover {
+      border-color: var(--border-hi);
+      color: var(--text-primary);
+      background: rgba(255,255,255,0.04);
+    }
+
+    .btn-ghost:focus-visible {
+      outline: 2px solid var(--blue-light);
+      outline-offset: 2px;
+    }
+
+    /* ─── FREE WATCH CARD ────────────────────────────────────── */
+    .free-card {
+      background: var(--surface-1);
+      border: 1px solid var(--border-med);
+      border-radius: var(--radius-md);
+      padding: 18px 22px;
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+    }
+
+    .free-icon {
+      flex-shrink: 0;
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: var(--green-dim);
+      border: 1px solid rgba(54,196,106,0.22);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--green);
+    }
+
+    .free-text {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .free-title-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 4px;
+      flex-wrap: wrap;
+    }
+
+    .free-title {
+      font-size: 14.5px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .free-desc {
+      font-size: 12.5px;
+      color: var(--text-secondary);
+      line-height: 1.55;
+    }
+
+    .btn-secondary {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 9px 16px;
+      background: transparent;
+      border: 1px solid var(--border-hi);
+      border-radius: 9px;
+      font-family: 'Sora', system-ui, sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-primary);
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: border-color 150ms ease, background 150ms ease, transform 150ms var(--ease-tap);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255,255,255,0.05);
+      border-color: rgba(255,255,255,0.22);
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary:focus-visible {
+      outline: 2px solid var(--blue-light);
+      outline-offset: 2px;
+    }
+
+    /* ─── OTHER WAYS GRID ────────────────────────────────────── */
+    .alt-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+
+    .alt-card {
+      background: var(--surface-1);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 16px 16px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      cursor: pointer;
+      transition: border-color 200ms ease, background 200ms ease, transform 200ms var(--ease-out-expo);
+    }
+
+    .alt-card:hover {
+      border-color: var(--border-med);
+      background: var(--surface-2);
+      transform: translateY(-1px);
+    }
+
+    .alt-card:focus-visible {
+      outline: 2px solid var(--blue-light);
+      outline-offset: 2px;
+    }
+
+    .alt-card-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .alt-icon {
+      color: var(--text-tertiary);
+    }
+
+    .alt-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-primary);
+      line-height: 1.3;
+      text-wrap: balance;
+    }
+
+    .alt-desc {
+      font-size: 11.5px;
+      color: var(--text-tertiary);
+      line-height: 1.5;
+    }
+
+    /* ─── ADVANCED SECTION ───────────────────────────────────── */
+    .advanced-summary {
+      list-style: none;
+      background: var(--surface-1);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    details.advanced-details {
+      background: transparent;
+    }
+
+    details.advanced-details > summary {
+      list-style: none;
+      padding: 13px 18px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      border-radius: var(--radius-sm);
+      background: var(--surface-1);
+      border: 1px solid var(--border);
+      transition: background 150ms ease;
+    }
+
+    details.advanced-details > summary:hover {
+      background: var(--surface-2);
+    }
+
+    details.advanced-details > summary::-webkit-details-marker { display: none; }
+    details.advanced-details > summary::marker { display: none; }
+
+    .adv-chevron {
+      color: var(--text-tertiary);
+      margin-left: auto;
+      transition: transform 250ms var(--ease-out-expo);
+    }
+
+    details.advanced-details[open] > summary .adv-chevron {
+      transform: rotate(180deg);
+    }
+
+    .adv-summary-label {
+      font-size: 12.5px;
+      font-weight: 500;
+      color: var(--text-secondary);
+    }
+
+    .adv-body {
+      background: var(--surface-1);
+      border: 1px solid var(--border);
+      border-top: none;
+      border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+      padding: 16px 18px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .adv-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .adv-icon {
+      flex-shrink: 0;
+      width: 30px;
+      height: 30px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--surface-3);
+      border: 1px solid var(--border);
+      color: var(--text-tertiary);
+      margin-top: 1px;
+    }
+
+    .adv-icon.archive {
+      background: var(--archive-dim);
+      border-color: rgba(194,116,31,0.22);
+      color: var(--archive);
+    }
+
+    .adv-text {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .adv-title {
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 2px;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .adv-desc {
+      font-size: 11.5px;
+      color: var(--text-tertiary);
+      line-height: 1.5;
+    }
+
+    .adv-divider {
+      height: 1px;
+      background: var(--border);
+    }
+
+    .adv-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn-adv {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 6px 12px;
+      background: transparent;
+      border: 1px solid var(--border-med);
+      border-radius: 7px;
+      font-family: 'Sora', system-ui, sans-serif;
+      font-size: 11.5px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: border-color 150ms ease, color 150ms ease, background 150ms ease;
+    }
+
+    .btn-adv:hover {
+      border-color: var(--border-hi);
+      color: var(--text-primary);
+      background: rgba(255,255,255,0.04);
+    }
+
+    /* ─── DIVIDER ─────────────────────────────────────────────── */
+    .divider {
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* ─── SCROLLBAR ──────────────────────────────────────────── */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.10); border-radius: 3px; }
+
+    /* ─── SELECTION ──────────────────────────────────────────── */
+    ::selection { background: var(--blue); color: #fff; }
+  </style>
+</head>
+<body>
+
+<main class="panel">
+
+  <!-- ── STATUS STRIP ── -->
+  <div class="status-strip">
+    <div class="ring-wrap" aria-hidden="true">
+      <svg class="ring-svg" viewBox="0 0 36 36">
+        <circle class="ring-track" cx="18" cy="18" r="16"/>
+        <circle class="ring-fill" cx="18" cy="18" r="16"/>
+      </svg>
+      <div class="ring-inner ring-check">
+        <!-- checkmark icon -->
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
+      </div>
+    </div>
+
+    <div class="status-body">
+      <div class="status-heading">
+        <span>Disc read complete</span>
+        <span class="status-size">3.89 GB recovered</span>
+        <span class="badge badge-complete">
+          <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="12" cy="12" r="12"/></svg>
+          Complete
+        </span>
+      </div>
+      <div class="status-dots">
+        <span class="status-sub">Disc is healthy</span>
+        <span class="dot-sep">·</span>
+        <span class="status-sub">All data fully read</span>
+        <span class="dot-sep">·</span>
+        <span class="status-sub">Ready to save</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SECTION: SAVE ── -->
+  <p class="section-label">Choose how to keep your disc</p>
+
+  <!-- PRIMARY: Save as video -->
+  <div class="primary-card">
+    <div class="primary-card-top">
+      <div class="action-icon" aria-hidden="true">
+        <!-- film icon -->
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="2" width="20" height="20" rx="3"/>
+          <path d="M7 2v20M17 2v20M2 12h20M2 7h5M2 17h5M17 17h5M17 7h5"/>
+        </svg>
+      </div>
+      <div class="action-text">
+        <div class="action-title">Save as video (MP4)</div>
+        <div class="action-desc">
+          Creates a single video file that plays on <em>any phone, computer, or TV.</em>
+          Takes a few minutes to convert — ideal if you want to share or stream your footage easily.
+        </div>
+      </div>
+      <button class="btn-primary">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        Save as MP4
+      </button>
+    </div>
+    <div class="primary-card-footer">
+      <span class="destination-label">Saving to</span>
+      <span class="destination-path" title="/Users/Family/Movies/Heirvo Recoveries">
+        /Users/Family/Movies/Heirvo Recoveries
+      </span>
+      <button class="btn-ghost">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+        </svg>
+        Change folder
+      </button>
+      <button class="btn-ghost">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/>
+          <path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>
+        </svg>
+        Save to USB
+      </button>
+    </div>
+  </div>
+
+  <!-- FREE: Watch in Heirvo -->
+  <div class="free-card">
+    <div class="free-icon" aria-hidden="true">
+      <!-- play icon -->
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/>
+        <polygon points="10 8 16 12 10 16 10 8" fill="currentColor" stroke="none"/>
+      </svg>
+    </div>
+    <div class="free-text">
+      <div class="free-title-row">
+        <span class="free-title">Watch &amp; search in Heirvo</span>
+        <span class="badge badge-free">Free</span>
+      </div>
+      <div class="free-desc">
+        Play your footage right here and search every spoken word — no conversion, no waiting.
+        No purchase needed. Saving a copy to your computer is the paid step.
+      </div>
+    </div>
+    <button class="btn-secondary">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <polygon points="5 3 19 12 5 21 5 3" fill="currentColor" stroke="none"/>
+      </svg>
+      Watch now
+    </button>
+  </div>
+
+  <!-- SECTION: Other ways to save -->
+  <p class="section-label" style="margin-top: 4px;">Other ways to save</p>
+
+  <div class="alt-grid">
+
+    <!-- ISO -->
+    <div class="alt-card" tabindex="0" role="button" aria-label="Save as exact disc copy (.ISO)">
+      <div class="alt-card-top">
+        <div class="alt-icon" aria-hidden="true">
+          <!-- disc icon -->
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <circle cx="12" cy="12" r="3"/>
+          </svg>
+        </div>
+        <span class="badge badge-instant">Instant</span>
+      </div>
+      <div class="alt-title">Exact copy of the disc</div>
+      <div class="alt-desc">.ISO image — a perfect replica of the original disc, ready to mount or burn.</div>
+    </div>
+
+    <!-- Original files -->
+    <div class="alt-card" tabindex="0" role="button" aria-label="Save original files as a folder">
+      <div class="alt-card-top">
+        <div class="alt-icon" aria-hidden="true">
+          <!-- folder icon -->
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+          </svg>
+        </div>
+        <span class="badge badge-instant">Instant</span>
+      </div>
+      <div class="alt-title">Original files</div>
+      <div class="alt-desc">A folder with every file exactly as it was on the disc, no conversion.</div>
+    </div>
+
+    <!-- Burn a backup -->
+    <div class="alt-card" tabindex="0" role="button" aria-label="Burn a new backup disc">
+      <div class="alt-card-top">
+        <div class="alt-icon" aria-hidden="true">
+          <!-- refresh/burn icon -->
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="1 4 1 10 7 10"/>
+            <path d="M3.51 15a9 9 0 1 0 .49-4.5"/>
+          </svg>
+        </div>
+      </div>
+      <div class="alt-title">Make a new disc</div>
+      <div class="alt-desc">Burn a backup DVD or CD — a physical copy you can store or give away.</div>
+    </div>
+
+  </div>
+
+  <!-- ADVANCED -->
+  <details class="advanced-details">
+    <summary>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="color: var(--text-tertiary); flex-shrink:0;">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M19.07 4.93A10 10 0 0 0 12 2C6.48 2 2 6.48 2 12s4.48 10 10 10c2.76 0 5.26-1.12 7.07-2.93"/>
+        <path d="M19.07 4.93L22 2M19.07 4.93l-2.14 5.14"/>
+      </svg>
+      <span class="adv-summary-label">Advanced — diagnostics &amp; archive</span>
+      <svg class="adv-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <polyline points="6 9 12 15 18 9"/>
+      </svg>
+    </summary>
+    <div class="adv-body">
+
+      <!-- Recovery map -->
+      <div class="adv-row">
+        <div class="adv-icon" aria-hidden="true">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2"/>
+            <path d="M3 9h18M9 21V9"/>
+          </svg>
+        </div>
+        <div class="adv-text">
+          <div class="adv-title">Recovery map &amp; diagnostics</div>
+          <div class="adv-desc">Sector-by-sector read log (.rmap) and a full diagnostics report — useful if you want a record of what was damaged and what was recovered.</div>
+          <div class="adv-actions" style="margin-top: 8px;">
+            <button class="btn-adv">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+              Export .rmap
+            </button>
+            <button class="btn-adv">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+              </svg>
+              Export report
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="adv-divider"></div>
+
+      <!-- Archive manifest -->
+      <div class="adv-row">
+        <div class="adv-icon archive" aria-hidden="true">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+        </div>
+        <div class="adv-text">
+          <div class="adv-title">
+            Tamper-evident manifest
+            <span class="badge badge-archive">Archive</span>
+          </div>
+          <div class="adv-desc">Generates a SHA-256 hash of every recovered file and signs the manifest — proof that nothing has changed since the disc was read. Recommended for legal, family archive, or sentimental preservation.</div>
+          <div class="adv-actions" style="margin-top: 8px;">
+            <button class="btn-adv" style="border-color: rgba(194,116,31,0.28); color: var(--archive);">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              </svg>
+              Generate manifest
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </details>
+
+</main>
+
+</body>
+</html>
