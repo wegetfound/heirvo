@@ -12,8 +12,10 @@
   File "/oname=$PLUGINSDIR\heirvo-splash.bmp" "D:\WeGetFound\brands\heirvo\src-tauri\installer-splash.bmp"
 
   ; advsplash::show  <hold_ms> <fadein_ms> <fadeout_ms> <keycolor> <file-no-ext>
-  ; keycolor 0xFF00FF (magenta) is keyed transparent so the logo "floats".
-  advsplash::show 2500 600 600 0xFF00FF "$PLUGINSDIR\heirvo-splash"
+  ; KeyColor -1 disables color-keying: the bitmap shows as a solid rectangular
+  ; card (no transparency, so no magenta fringe). Design the BMP full-bleed with
+  ; its own background. ~6s hold + smooth fades so it reads on the final leg.
+  advsplash::show 6000 500 800 -1 "$PLUGINSDIR\heirvo-splash"
   ; advsplash pushes a result code onto the stack — discard it.
   Pop $0
 !macroend
