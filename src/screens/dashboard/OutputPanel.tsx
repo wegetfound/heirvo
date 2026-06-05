@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ipc } from "@/lib/ipc";
 import type { HealthReport, IsoResult, ExtractedFile, StorageDrive, Session, AudioToc, ExtractedAudioFile } from "@/lib/types";
-import { FileVideo, Files, Loader2, FileArchive, LifeBuoy, Save, Upload, Usb, HardDrive, Pencil, Music, FolderOpen, ArrowRight, ShieldCheck, Search } from "lucide-react";
+import { FileVideo, Files, Loader2, FileArchive, LifeBuoy, Save, Upload, Usb, HardDrive, Pencil, Music, FolderOpen, ArrowRight, ShieldCheck, Search, Disc3 } from "lucide-react";
 import { open as openDialog, save as saveDialog } from "@tauri-apps/plugin-dialog";
 import { bytesToHuman } from "@/lib/human";
 import { useLicense } from "@/lib/useLicense";
@@ -47,6 +47,7 @@ export function OutputPanel({
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [enrolledDiscId, setEnrolledDiscId] = useState<string | null>(null);
+  const [burnLaunched, setBurnLaunched] = useState(false);
 
   const { status: license, refresh: refreshLicense } = useLicense();
   const navigate = useNavigate();
@@ -511,7 +512,26 @@ export function OutputPanel({
                       })}
                     />
                   )}
+                  {showIso && (
+                    <RawOption
+                      icon={<Disc3 className="h-4 w-4" />}
+                      title="Make a new disc"
+                      desc="Burn an exact copy to a blank CD or DVD — great for a fresh backup of a failing disc."
+                      loading={busy === "burn"}
+                      disabled={busy !== null}
+                      onClick={() => wrap("burn", async () => {
+                        await ipc.burnImageToDisc(sessionId);
+                        setBurnLaunched(true);
+                      })}
+                    />
+                  )}
                 </div>
+                {burnLaunched && (
+                  <p className="mt-2 text-[11px] leading-snug text-ink-500">
+                    Windows' disc burner is opening — take the original disc out, pop in a blank one,
+                    and click <strong>Burn</strong>.
+                  </p>
+                )}
               </div>
             )}
           </div>

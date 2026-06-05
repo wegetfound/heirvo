@@ -48,6 +48,71 @@ pub(crate) fn open_extraction_reader(
     }
 }
 
+/// Burn the recovered disc image to a blank disc using Windows' built-in Disc
+/// Image Burner (`isoburn.exe`) — the same IMAPI2 engine Windows ships and
+/// maintains, so there's no third-party burner and no risk of a half-baked
+/// custom write path corrupting a disc. We hand it the recovered image and the
+/// optical drive; the user inserts a blank disc and confirms the burn.
+#[cfg(windows)]
+#[tauri::command]
+pub async fn burn_image_to_disc(
+    state: State<'_, AppState>,
+    session_id: String,
+) -> AppResult<()> {
+    let id = Uuid::parse_str(&session_id)
+        .map_err(|_| AppError::SessionNotFound(session_id.clone()))?;
+    let session = manager::get(&state.db, id).await?;
+
+    let image =
+        crate::recovery::image_sink::disc_image_path(&session.output_dir, &session.disc_label);
+    if !image.exists() {
+        return Err(AppError::Media(
+            "No disc image to burn yet — save an exact copy of the disc first.".into(),
+        ));
+    }
+
+    // Device path "\\.\E:" -> drive letter "E:".
+    let letter = session
+        .drive_path
+        .trim_start_matches("\\\\.\\")
+        .trim_end_matches('\\')
+        .to_string();
+    if letter.len() < 2 || !letter.ends_with(':') {
+        return Err(AppError::Drive(format!(
+            "couldn't determine the drive letter from {}",
+            session.drive_path
+        )));
+    }
+
+    let isoburn = {
+        let root = std::env::var("SystemRoot").unwrap_or_else(|_| "C:\\Windows".into());
+        PathBuf::from(root).join("System32").join("isoburn.exe")
+    };
+    if !isoburn.exists() {
+        return Err(AppError::Media(
+            "Windows Disc Image Burner (isoburn.exe) isn't available on this system.".into(),
+        ));
+    }
+
+    let image_str = image.to_string_lossy().to_string();
+    tracing::info!("burn_image_to_disc: launching isoburn for {} -> {}", image_str, letter);
+    std::process::Command::new(&isoburn)
+        .arg(&letter)
+        .arg(&image_str)
+        .spawn()
+        .map_err(|e| AppError::Media(format!("couldn't start the disc burner: {e}")))?;
+    Ok(())
+}
+
+#[cfg(not(windows))]
+#[tauri::command]
+pub async fn burn_image_to_disc(
+    _state: State<'_, AppState>,
+    _session_id: String,
+) -> AppResult<()> {
+    Err(AppError::NotImplemented("burn_image_to_disc (non-Windows)"))
+}
+
 #[tauri::command]
 pub async fn create_iso(
     state: State<'_, AppState>,

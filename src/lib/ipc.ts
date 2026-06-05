@@ -105,6 +105,11 @@ export const ipc = {
       "export_receipt_manifest",
       { sessionId, outputPath },
     ),
+  recoverySpaceCheck: (sessionId: string) =>
+    invoke<{ needed_bytes: number; free_bytes: number; fits: boolean }>(
+      "recovery_space_check",
+      { sessionId },
+    ),
 
   // DVD
   analyzeStructure: (sessionId: string) =>
@@ -137,6 +142,10 @@ export const ipc = {
   // Media
   createIso: (sessionId: string, outputPath?: string) =>
     invoke<IsoResult>("create_iso", { sessionId, outputPath }),
+  /** Hand the recovered disc image to Windows' built-in Disc Image Burner so the
+   * user can write it to a blank disc. */
+  burnImageToDisc: (sessionId: string) =>
+    invoke<void>("burn_image_to_disc", { sessionId }),
   saveAsMp4: (sessionId: string) =>
     invoke<{ output_path: string; bytes_written: number; source_files: string[] }>(
       "save_as_mp4",
