@@ -12,11 +12,13 @@
   File "/oname=$PLUGINSDIR\heirvo-splash.bmp" "D:\WeGetFound\brands\heirvo\src-tauri\installer-splash.bmp"
 
   ; advsplash::show  <hold_ms> <fadein_ms> <fadeout_ms> <keycolor> <file-no-ext>
-  ; KeyColor -1 disables color-keying: the bitmap shows as a solid rectangular
-  ; card (no transparency, so no magenta fringe). Design the BMP full-bleed with
-  ; its own background. 10s hold + fades (~11.6s total) — maxed out for impact,
-  ; just under the point where a static splash starts to feel like a hang.
-  advsplash::show 10000 600 1000 -1 "$PLUGINSDIR\heirvo-splash"
+  ; KeyColor -1 disables color-keying: solid rectangular card, no magenta fringe.
+  ; IMPORTANT: advsplash BLOCKS the installer thread for the whole duration. Windows
+  ; marks a window "Not Responding" after ~5s of a blocked message pump, so the hold
+  ; MUST stay well under 5s or the installer appears frozen mid-install. 2.5s + short
+  ; fades (~3.5s total) is the safe max — matches IsoBuster. The LONGER brand moment
+  ; lives in the in-app load splash, which is non-blocking.
+  advsplash::show 2500 400 600 -1 "$PLUGINSDIR\heirvo-splash"
   ; advsplash pushes a result code onto the stack — discard it.
   Pop $0
 !macroend
