@@ -30,6 +30,7 @@ use crate::ai::pipeline::{EnhancementOp, Preset};
 use crate::ai::tiling::{process_image, RgbImage};
 use crate::error::{AppError, AppResult};
 use crate::media::ffmpeg as ff;
+use crate::util::proc::NoConsole;
 use std::path::{Path, PathBuf};
 use std::process::Stdio;
 use std::sync::Arc;
@@ -104,6 +105,7 @@ pub async fn enhance_video(
     // 1. Extract frames as PNG.
     let extract_pattern = frames_in.join("%06d.png");
     let extract = Command::new(&ffmpeg_bin)
+        .no_console()
         .args(["-y", "-hide_banner", "-loglevel", "error"])
         .arg("-i")
         .arg(input)
@@ -181,6 +183,7 @@ pub async fn enhance_video(
     let encode_pattern = frames_out.join("%06d.png");
     let fps_str = format!("{}/{}", probe.fps_num, probe.fps_den);
     let encode = Command::new(&ffmpeg_bin)
+        .no_console()
         .args(["-y", "-hide_banner", "-loglevel", "error"])
         .args(["-framerate", &fps_str])
         .arg("-i")
@@ -294,6 +297,7 @@ pub async fn enhance_video_piped(
 
     // 1. Spawn the extractor: input → raw RGB on stdout.
     let mut extractor = Command::new(&ffmpeg_bin)
+        .no_console()
         .args(["-y", "-hide_banner", "-loglevel", "error"])
         .arg("-i")
         .arg(input)
@@ -312,6 +316,7 @@ pub async fn enhance_video_piped(
     let fps_str = format!("{}/{}", probe.fps_num, probe.fps_den);
     let size_str = format!("{out_w}x{out_h}");
     let mut encoder = Command::new(&ffmpeg_bin)
+        .no_console()
         .args(["-y", "-hide_banner", "-loglevel", "error"])
         .args([
             "-f", "rawvideo",

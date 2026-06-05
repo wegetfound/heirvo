@@ -17,6 +17,7 @@ use crate::ai::pipeline::{EnhancementOp, Preset};
 use crate::ai::tiling::{process_image, RgbImage};
 use crate::error::{AppError, AppResult};
 use crate::media::ffmpeg as ff;
+use crate::util::proc::NoConsole;
 use serde::Serialize;
 use std::path::Path;
 use std::sync::Arc;
@@ -119,6 +120,7 @@ async fn extract_frame(
     // -ss before -i is "fast seek" — accurate enough for previews and orders
     // of magnitude faster than -ss after -i on long videos.
     let result = Command::new(ffmpeg_bin)
+        .no_console()
         .args([
             "-y",
             "-hide_banner",

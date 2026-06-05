@@ -15,6 +15,7 @@
 //! emits key=value pairs flushed every 500ms.
 
 use crate::error::{AppError, AppResult};
+use crate::util::proc::NoConsole;
 use std::path::{Path, PathBuf};
 use std::process::Stdio;
 use std::sync::Arc;
@@ -140,6 +141,7 @@ pub async fn run_with_progress(
 ) -> AppResult<()> {
     tracing::info!("ffmpeg {}", args.join(" "));
     let mut cmd = Command::new(bin);
+    cmd.no_console();
     cmd.args(args)
         .args(["-progress", "pipe:1", "-nostats"])
         .stdin(Stdio::null())
@@ -176,6 +178,7 @@ pub async fn run_with_progress(
                         #[cfg(windows)]
                         {
                             let _ = std::process::Command::new("taskkill")
+                                .no_console()
                                 .args(["/F", "/PID", &pid.to_string()])
                                 .output();
                         }
@@ -261,6 +264,7 @@ async fn log_stderr<R: tokio::io::AsyncRead + Unpin>(stderr: R) {
 /// Probe a media file for duration, codec, and stream info via ffprobe.
 pub async fn probe(bin: &Path, input: &Path) -> AppResult<ProbeResult> {
     let output = Command::new(bin)
+        .no_console()
         .args([
             "-v", "error",
             "-print_format", "json",

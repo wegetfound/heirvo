@@ -8,6 +8,7 @@
 
 use crate::error::{AppError, AppResult};
 use crate::media::ffmpeg;
+use crate::util::proc::NoConsole;
 use std::path::Path;
 use std::time::Duration;
 use tauri::AppHandle;
@@ -48,6 +49,7 @@ pub async fn prepare_audio(
     // A damaged input file can keep FFmpeg looping forever in its demuxer; the
     // host-side timeout is the only thing that guarantees the worker survives.
     let mut child = Command::new(&bin)
+        .no_console()
         .args([
             "-y",
             "-i",
@@ -140,6 +142,7 @@ pub async fn extract_chunk(
     let dur_str = format!("{:.3}", dur_sec);
 
     let mut child = tokio::process::Command::new(&bin)
+        .no_console()
         .args([
             "-y",
             "-ss", &start_str,

@@ -5,6 +5,7 @@ use crate::library::queries;
 use crate::library::seed;
 use crate::library::types::{Disc, SearchHit};
 use crate::state::AppState;
+use crate::util::proc::NoConsole;
 use chrono::{Datelike, Utc};
 use sqlx::Row;
 use std::path::{Path, PathBuf};
@@ -269,6 +270,7 @@ async fn generate_video_thumbnail(
         let dst = dst.clone();
         async move {
             let status = Command::new(&ffmpeg)
+                .no_console()
                 .args([
                     "-hide_banner",
                     "-loglevel", "error",
@@ -319,6 +321,7 @@ async fn generate_audio_waveform(
     use tokio::process::Command;
 
     let status = Command::new(&ffmpeg)
+        .no_console()
         .args([
             "-hide_banner",
             "-loglevel", "error",

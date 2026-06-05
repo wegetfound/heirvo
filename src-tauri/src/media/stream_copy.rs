@@ -8,6 +8,7 @@
 
 use crate::error::{AppError, AppResult};
 use crate::media::ffmpeg;
+use crate::util::proc::NoConsole;
 use serde::Serialize;
 use std::path::{Path, PathBuf};
 use tauri::AppHandle;
@@ -86,6 +87,7 @@ pub async fn stream_copy_vobs(
     tracing::info!("stream_copy ffmpeg {}", args.join(" "));
 
     let output = Command::new(&bin)
+        .no_console()
         .args(&args)
         .output()
         .await

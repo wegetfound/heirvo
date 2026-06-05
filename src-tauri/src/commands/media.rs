@@ -5,6 +5,7 @@ use crate::media::ffmpeg::{self, FfmpegProgress, ProbeResult};
 use crate::media::transcode::TranscodeJob;
 use crate::session::manager;
 use crate::state::AppState;
+use crate::util::proc::NoConsole;
 use chrono::Utc;
 use serde::Serialize;
 use std::path::PathBuf;
@@ -97,6 +98,7 @@ pub async fn burn_image_to_disc(
     let image_str = image.to_string_lossy().to_string();
     tracing::info!("burn_image_to_disc: launching isoburn for {} -> {}", image_str, letter);
     std::process::Command::new(&isoburn)
+        .no_console()
         .arg(&letter)
         .arg(&image_str)
         .spawn()
@@ -231,6 +233,7 @@ pub async fn ffmpeg_status(app: AppHandle) -> AppResult<FfmpegStatus> {
         Some(path) => {
             // Capture `ffmpeg -version` first line.
             let output = tokio::process::Command::new(&path)
+                .no_console()
                 .arg("-version")
                 .output()
                 .await
@@ -275,6 +278,7 @@ pub async fn imagemagick_status(app: AppHandle) -> AppResult<ImagemagickStatus> 
         Some(path) => {
             // Capture `magick -version` first line.
             let output = tokio::process::Command::new(&path)
+                .no_console()
                 .arg("-version")
                 .output()
                 .await
