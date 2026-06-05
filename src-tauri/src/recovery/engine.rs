@@ -497,6 +497,13 @@ impl RecoveryEngine {
         // is cleared in a handful of 5-second triage attempts.
         const FAIL_STREAK_TO_SKIP: u32 = 2;
         const MAX_SKIP_BLOCKS: usize = 2048;
+        // Drive-stress protection: after this many consecutive *read* failures the
+        // drive is grinding a dead region, and consumer drives respond by resetting
+        // their firmware — which drops the drive off the Windows bus entirely
+        // ("No drive"). Every Nth failed block we pause briefly and re-open the
+        // drive handle, giving it mechanical/thermal recovery time instead of
+        // hammering it into a reset.
+        const FAIL_STREAK_COOLDOWN: u32 = 24;
         let mut consec_fail_blocks: u32 = 0;
 
         // Scoped heartbeat: emits progress every 2 seconds from a parallel
@@ -598,6 +605,18 @@ impl RecoveryEngine {
             if matches!(strategy, PassStrategy::Triage) {
                 if block_failed_entirely {
                     consec_fail_blocks = consec_fail_blocks.saturating_add(1);
+                    // Drive-stress cool-down: on a sustained failure run, give the
+                    // drive a breather and re-open the handle so it can recover
+                    // rather than reset itself off the bus.
+                    if consec_fail_blocks % FAIL_STREAK_COOLDOWN == 0 {
+                        tracing::info!(
+                            "Drive-stress cool-down after {consec_fail_blocks} consecutive failed blocks (LBA {start}): pausing 2s + re-opening drive"
+                        );
+                        std::thread::sleep(Duration::from_secs(2));
+                        if let Err(e) = self.reader.reset() {
+                            tracing::warn!("drive reset during cool-down failed: {e}");
+                        }
+                    }
                     if consec_fail_blocks >= FAIL_STREAK_TO_SKIP {
                         let over = consec_fail_blocks - FAIL_STREAK_TO_SKIP;
                         // 2^over blocks, capped. Use checked shift to avoid overflow.

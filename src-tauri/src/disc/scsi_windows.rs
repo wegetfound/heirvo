@@ -1243,6 +1243,14 @@ impl SectorReader for ScsiSectorReader {
     fn capacity(&self) -> u64 {
         self.capacity_lba
     }
+
+    /// Re-open the drive handle. Used by the engine as a drive-stress recovery
+    /// step: on a long unbroken failure run, re-establishing the handle (and
+    /// reapplying recovery-mode settings) gives a wobbling drive a chance to
+    /// recover before its firmware resets it off the bus.
+    fn reset(&self) -> io::Result<()> {
+        self.drive.reopen()
+    }
 }
 
 /// Issue READ CAPACITY(10) and return total LBAs.
