@@ -55,6 +55,10 @@ export function OutputPanel({
   const { status: license, refresh: refreshLicense } = useLicense();
   const navigate = useNavigate();
   const canSave = license.can_save;
+  // Archive tier and up. The tamper-evident receipt manifest is an Archive
+  // feature; can_import_media is the same Archive+ set today (the backend gates
+  // it on its own can_export_manifest, so this is purely a UX hint).
+  const canArchive = license.can_import_media;
 
   // Paywall modal — shown when free user clicks a save action
   const [paywallOpen, setPaywallOpen] = useState(false);
@@ -803,34 +807,47 @@ export function OutputPanel({
 
                 <div className="border-t border-ink-200/60 pt-2">
                   <p className="mb-1.5 text-[11px] text-ink-500">
-                    The SHA-256 receipt manifest is a chain-of-custody record — one line
-                    per recovered sector. Useful for archival / legal verification.
+                    The tamper-evident recovery manifest is a SHA-256 chain-of-custody
+                    record — one line per recovered sector, plus a self-verifying
+                    manifest digest. Useful for archival / legal verification.
+                    <span className="ml-1 text-amber-600">Archive feature.</span>
                   </p>
-                  <button
-                    className="btn btn-ghost"
-                    disabled={busy !== null}
-                    onClick={() =>
-                      wrap("receipt", async () => {
-                        const target = await saveDialog({
-                          defaultPath: `receipt-${sessionId.slice(0, 8)}.txt`,
-                          filters: [
-                            { name: "Receipt manifest", extensions: ["txt"] },
-                            { name: "All files", extensions: ["*"] },
-                          ],
-                        });
-                        if (typeof target === "string") {
-                          setReceipt(await ipc.exportReceiptManifest(sessionId, target));
-                        }
-                      })
-                    }
-                  >
-                    {busy === "receipt" ? (
-                      <Loader2 className="h-3 w-3 animate-spin" />
-                    ) : (
+                  {canArchive ? (
+                    <button
+                      className="btn btn-ghost"
+                      disabled={busy !== null}
+                      onClick={() =>
+                        wrap("receipt", async () => {
+                          const target = await saveDialog({
+                            defaultPath: `receipt-${sessionId.slice(0, 8)}.txt`,
+                            filters: [
+                              { name: "Receipt manifest", extensions: ["txt"] },
+                              { name: "All files", extensions: ["*"] },
+                            ],
+                          });
+                          if (typeof target === "string") {
+                            setReceipt(await ipc.exportReceiptManifest(sessionId, target));
+                          }
+                        })
+                      }
+                    >
+                      {busy === "receipt" ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : (
+                        <ShieldCheck className="h-3 w-3" />
+                      )}
+                      Save SHA-256 receipt manifest
+                    </button>
+                  ) : (
+                    <button
+                      className="btn btn-ghost opacity-50"
+                      disabled
+                      title="Available on the Archive plan"
+                    >
                       <ShieldCheck className="h-3 w-3" />
-                    )}
-                    Save SHA-256 receipt manifest
-                  </button>
+                      Save SHA-256 receipt manifest — Archive
+                    </button>
+                  )}
                   {receipt && (
                     <div className="mt-1 text-[10px] text-ink-500">
                       {receipt.sector_count.toLocaleString()} sectors verified

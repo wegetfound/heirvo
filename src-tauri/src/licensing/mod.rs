@@ -112,6 +112,15 @@ impl Plan {
         matches!(self, Plan::Archive | Plan::Family | Plan::Pro)
     }
 
+    /// Tiers that may export the tamper-evident recovery manifest (the
+    /// SHA-256 chain-of-custody / fixity record). This is a professional /
+    /// archival feature — Archive tier and up. Kept as its own method (rather
+    /// than reusing `can_import_media`) so the capability is explicit and can
+    /// move to a future Pro/Forensic tier without ambiguity.
+    pub fn can_export_manifest(self) -> bool {
+        matches!(self, Plan::Archive | Plan::Family | Plan::Pro)
+    }
+
     /// Human-readable name for UI and logs.
     pub fn display_name(self) -> &'static str {
         match self {

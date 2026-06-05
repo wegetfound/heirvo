@@ -381,6 +381,17 @@ pub async fn export_receipt_manifest(
     let id = Uuid::parse_str(&session_id)
         .map_err(|_| AppError::SessionNotFound(session_id.clone()))?;
 
+    // Archive-tier feature. The tamper-evident manifest is a professional /
+    // legal / archival capability, not part of the basic Save flow — gate it in
+    // the BACKEND so it can't be reached by a script even if the UI is bypassed.
+    if !crate::licensing::current(&state.data_dir).plan.can_export_manifest() {
+        return Err(AppError::Internal(
+            "The tamper-evident recovery manifest is an Archive feature. \
+             Upgrade to Archive to export a SHA-256 chain-of-custody record."
+                .into(),
+        ));
+    }
+
     let manifest = manager::export_receipt_manifest(&state.db, id).await?;
     let sector_count = manager::count_receipts(&state.db, id).await?;
 

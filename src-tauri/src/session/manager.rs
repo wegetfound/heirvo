@@ -289,17 +289,57 @@ pub async fn export_receipt_manifest(db: &Db, session_id: Uuid) -> AppResult<Str
     .fetch_all(&db.pool)
     .await?;
 
-    let mut out = String::with_capacity(rows.len() * 80);
-    out.push_str("# Heirvo sector receipt manifest\n");
-    out.push_str(&format!("# session_id: {session_id}\n"));
-    out.push_str(&format!("# sectors: {}\n", rows.len()));
-    out.push_str("# format: LBA(hex)  SHA-256\n\n");
-
-    for row in rows {
+    // Body: one verified sector per line, sorted by LBA. This is the part the
+    // "manifest digest" below is computed over, so the document is self-verifying.
+    let mut body = String::with_capacity(rows.len() * 80);
+    for row in rows.iter() {
         let lba: i64 = row.try_get("lba")?;
         let hex: String = row.try_get("sha256_hex")?;
-        out.push_str(&format!("{:#012x}  {hex}\n", lba as u64));
+        body.push_str(&format!("{:#012x}  {hex}\n", lba as u64));
     }
+
+    // Manifest digest: SHA-256 over the exact body bytes. Anyone can re-hash the
+    // sector lines and compare to this value to prove the manifest itself hasn't
+    // been altered — that's what makes the whole document tamper-evident, not
+    // just the individual sectors.
+    let mut hasher = Sha256::new();
+    hasher.update(body.as_bytes());
+    let manifest_digest = format!("{:x}", hasher.finalize());
+
+    // Best-effort session metadata for the forensic header. A missing session
+    // still yields a valid manifest (the digest + sector lines are the core).
+    let session = get(db, session_id).await.ok();
+    let now = Utc::now().to_rfc3339();
+    let (label, fingerprint, total) = match &session {
+        Some(s) => (
+            s.disc_label.as_str(),
+            s.disc_fingerprint.as_str(),
+            s.total_sectors,
+        ),
+        None => ("(unknown)", "(unknown)", 0),
+    };
+
+    let mut out = String::with_capacity(body.len() + 1024);
+    out.push_str("# ============================================================\n");
+    out.push_str("# Heirvo Recovery Manifest \u{2014} tamper-evident fixity record\n");
+    out.push_str("# ============================================================\n");
+    out.push_str(&format!("# tool:             Heirvo {}\n", env!("CARGO_PKG_VERSION")));
+    out.push_str(&format!("# generated (UTC):  {now}\n"));
+    out.push_str(&format!("# session id:       {session_id}\n"));
+    out.push_str(&format!("# disc label:       {label}\n"));
+    out.push_str(&format!("# disc fingerprint: {fingerprint}\n"));
+    out.push_str(&format!("# disc sectors:     {total}\n"));
+    out.push_str(&format!("# sectors hashed:   {}\n", rows.len()));
+    out.push_str("# hash algorithm:   SHA-256\n");
+    out.push_str("# line format:      LBA(hex)  SHA-256(2048-byte sector contents)\n");
+    out.push_str(&format!("# manifest digest:  {manifest_digest}\n"));
+    out.push_str("#\n");
+    out.push_str("# To verify: take SHA-256 of every sector line below (from the\n");
+    out.push_str("# first line after this header block to end-of-file). The result\n");
+    out.push_str("# must equal 'manifest digest' above. Each line is the SHA-256 of\n");
+    out.push_str("# one sector exactly as Heirvo recovered it from the disc.\n");
+    out.push_str("# ============================================================\n\n");
+    out.push_str(&body);
     Ok(out)
 }
 
