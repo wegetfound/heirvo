@@ -309,6 +309,7 @@ export function Dashboard() {
 
       {/* ══ HERO CARD ══════════════════════════════════════════════ */}
       <div
+        ref={doneBannerRef}
         style={{
           ...S.surface,
           borderRadius: 20,
@@ -525,7 +526,11 @@ export function Dashboard() {
       </div>
 
       {/* ══ DONE BANNER ════════════════════════════════════════════ */}
-      {recoveryDone && <DoneBanner ref={doneBannerRef} stats={stats} realMinutes={realRuntimeMin} />}
+      {/* On a clean 100% recovery the new header ("Disc fully recovered — N read"
+          + "Disc healthy" badge) already says this, so the banner would be a
+          redundant second box. Keep it ONLY for partial recoveries, where it
+          carries real guidance (how much was lost, try another drive). */}
+      {recoveryDone && pct < 100 && <DoneBanner stats={stats} realMinutes={realRuntimeMin} />}
 
       {/* ══ OVERNIGHT OFFER ════════════════════════════════════════ */}
       {recoveryDone && holesAtCompletion !== null && holesAtCompletion > 0 && (

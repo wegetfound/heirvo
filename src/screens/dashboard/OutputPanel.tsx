@@ -214,13 +214,6 @@ export function OutputPanel({
 
   return (
     <div className="output-panel-root px-4 py-4">
-      <div className="mb-4 border-b border-ink-200/70 pb-3">
-        <span className="micro-label">Output</span>
-        <p className="mt-0.5 text-[11px] leading-relaxed text-ink-500">
-          Save it your way — keep the disc exactly as-is, or convert for easy playback.
-        </p>
-      </div>
-
       {/* Save destination — visible + editable */}
       {session && (
         <div className="mb-5 rounded-xl border border-ink-200/70 bg-white/60 p-3">
@@ -294,9 +287,12 @@ export function OutputPanel({
       )}
 
       <div className="grid grid-cols-1 gap-4">
-        {/* Disc health — auto-fetched on mount, shown as a calm inline summary */}
+        {/* Disc health — auto-fetched on mount, shown as a calm inline summary.
+            order-last drops it BELOW the save actions: on the completion screen
+            the headline already carries the health badge, so the primary Save
+            action should lead and the detailed health card sits underneath. */}
         {!healthHidden && (
-          <div className="card">
+          <div className="card order-last">
             <div className="micro-label mb-3">Disc health</div>
             {health ? (
               <>
