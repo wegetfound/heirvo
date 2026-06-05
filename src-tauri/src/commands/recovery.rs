@@ -68,13 +68,42 @@ pub async fn start_recovery(
     let (ckpt_tx, mut ckpt_rx) = mpsc::unbounded_channel();
     let (rcpt_tx, mut rcpt_rx) = mpsc::unbounded_channel();
     tracing::info!("start_recovery: mode={:?}", mode);
-    let engine = Arc::new(
-        RecoveryEngine::new(id, reader, pass_plan(mode))
-            .with_mode(mode)
-            .with_progress_channel(tx)
-            .with_checkpoint_channel(ckpt_tx)
-            .with_receipt_channel(rcpt_tx),
-    );
+
+    // Capture geometry before `reader` is moved into the engine, then open the
+    // disc-image sink. We write the image AS we read so the disc is read exactly
+    // once and every output derives from the local image. Best-effort: if the
+    // image can't be opened (e.g. no room on the destination), recovery still
+    // runs and outputs fall back to re-reading the disc.
+    let total_sectors = reader.capacity();
+    let sector_size = reader.sector_size();
+    let image_sink = {
+        let path = crate::recovery::image_sink::disc_image_path(
+            &session.output_dir,
+            &session.disc_label,
+        );
+        match crate::recovery::image_sink::ImageSink::create(&path, total_sectors, sector_size) {
+            Ok(s) => {
+                tracing::info!("start_recovery: writing disc image to {}", path.display());
+                Some(s)
+            }
+            Err(e) => {
+                tracing::warn!(
+                    "start_recovery: could not open disc image ({e}); outputs will re-read the disc"
+                );
+                None
+            }
+        }
+    };
+
+    let mut builder = RecoveryEngine::new(id, reader, pass_plan(mode))
+        .with_mode(mode)
+        .with_progress_channel(tx)
+        .with_checkpoint_channel(ckpt_tx)
+        .with_receipt_channel(rcpt_tx);
+    if let Some(sink) = image_sink {
+        builder = builder.with_image_sink(sink);
+    }
+    let engine = Arc::new(builder);
 
     // Restore prior sector map if present (resume).
     match manager::load_sector_map(&state.db, id).await? {

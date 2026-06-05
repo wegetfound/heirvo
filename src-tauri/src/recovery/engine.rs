@@ -114,6 +114,10 @@ pub struct RecoveryEngine {
     /// channel sends and keeps the hot read loop allocation-free.
     receipt_batch: Mutex<Vec<(u64, String)>>,
     receipt_tx: Option<mpsc::UnboundedSender<ReceiptBatch>>,
+    /// When present, every good sector's bytes are written to a local disc image
+    /// as they're read, so the disc is read exactly once and all outputs derive
+    /// from the image. `None` in tests / if the image couldn't be opened.
+    image_sink: Option<crate::recovery::image_sink::ImageSink>,
 }
 
 const RECEIPT_BATCH_SIZE: usize = 256;
@@ -144,11 +148,19 @@ impl RecoveryEngine {
             checkpoint_tx: None,
             receipt_batch: Mutex::new(Vec::new()),
             receipt_tx: None,
+            image_sink: None,
         }
     }
 
     pub fn with_receipt_channel(mut self, tx: mpsc::UnboundedSender<ReceiptBatch>) -> Self {
         self.receipt_tx = Some(tx);
+        self
+    }
+
+    /// Attach a disc-image sink. Every good sector read is also written to the
+    /// image at its offset, so downstream outputs never re-read the disc.
+    pub fn with_image_sink(mut self, sink: crate::recovery::image_sink::ImageSink) -> Self {
+        self.image_sink = Some(sink);
         self
     }
 
@@ -554,6 +566,9 @@ impl RecoveryEngine {
                         self.record_read_outcome(true);
                         if let Some(data) = &r.data {
                             self.record_receipt(r.lba, data);
+                            if let Some(sink) = &self.image_sink {
+                                sink.write_sector(r.lba, data);
+                            }
                         }
                     } else {
                         map.set(r.lba, SectorState::Failed);
@@ -671,6 +686,9 @@ impl RecoveryEngine {
             if ok {
                 if let Some(data) = &result.data {
                     self.record_receipt(lba, data);
+                    if let Some(sink) = &self.image_sink {
+                        sink.write_sector(lba, data);
+                    }
                 }
             }
         }

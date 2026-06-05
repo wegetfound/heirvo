@@ -2,6 +2,7 @@
 
 pub mod engine;
 pub mod health;
+pub mod image_sink;
 pub mod map;
 pub mod passes;
 pub mod rmap;
