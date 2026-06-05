@@ -23,8 +23,6 @@ function minsRemaining(stats: RecoveryStats | null): number | null {
 function minsDamaged(stats: RecoveryStats | null) {
   return stats ? sectorsToMinutes(stats.failed + stats.skipped) : 0;
 }
-// Honest, content-agnostic metrics: % of the disc recovered and the GB saved.
-// These don't depend on the variable-bitrate guess that made "minutes" unreliable.
 function pctRecovered(stats: RecoveryStats | null): number {
   return stats && stats.total > 0 ? Math.round((stats.good / stats.total) * 100) : 0;
 }
@@ -58,6 +56,11 @@ export function Dashboard() {
   const [resuming, setResuming] = useState(false);
   const [resumeError, setResumeError] = useState<string | null>(null);
   const [recoveryDone, setRecoveryDone] = useState(false);
+  // Mirrors OutputPanel: a reopened terminal session (completed/cancelled/failed)
+  // fires no live `complete` event this mount, but saving must still be unlocked.
+  // Kept separate from recoveryDone so the headline never mislabels a cancelled or
+  // partial disc as "fully recovered".
+  const [sessionFinished, setSessionFinished] = useState(false);
   const [showDrivePicker, setShowDrivePicker] = useState(false);
   const [drives, setDrives] = useState<DriveInfo[]>([]);
   const [driveSwitchMsg, setDriveSwitchMsg] = useState<string | null>(null);
@@ -68,14 +71,8 @@ export function Dashboard() {
       return saved === "overnight" ? "overnight" : "quick";
     } catch { return "quick"; }
   });
-  // Tracks the active recovery mode so the progress UI knows which phase we're in.
-  // Stores holes count captured at Quick-pass completion for the overnight offer.
   const [holesAtCompletion, setHolesAtCompletion] = useState<number | null>(null);
-  // True while overnight is running (so progress copy changes).
   const [isOvernightRunning, setIsOvernightRunning] = useState(false);
-  // Accurate runtime (minutes) read from the DVD IFO once recovery completes.
-  // The sector-count estimate assumes a fixed bitrate and is often ~2× off; the
-  // IFO carries the exact playback time. Null until fetched / for non-DVDs.
   const [realRuntimeMin, setRealRuntimeMin] = useState<number | null>(null);
 
   const scopeRef = useRef<HTMLDivElement>(null);
@@ -92,9 +89,6 @@ export function Dashboard() {
     });
     const onComplete = events.onComplete((sid) => {
       if (sid !== id) return;
-      // Capture the holes count from the last known stats so the overnight
-      // offer card can show the right numbers. We read `stats` via a ref
-      // because this closure can't capture the latest useState value reliably.
       setStats((latestStats) => {
         if (latestStats) {
           const holes = latestStats.failed + latestStats.unknown;
@@ -125,6 +119,21 @@ export function Dashboard() {
     const t = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(t);
   }, []);
+
+  /* ── reopened terminal session → unlock saving without a live event ── */
+  useEffect(() => {
+    if (!id) return;
+    let cancelled = false;
+    ipc.listSessions()
+      .then((all) => {
+        const s = all.find((x) => x.id === id);
+        if (!cancelled && s && (s.status === "completed" || s.status === "cancelled" || s.status === "failed")) {
+          setSessionFinished(true);
+        }
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [id]);
 
   /* ── audio milestones ───────────────────────────────────────── */
   const lastMilestoneTierRef = useRef<number>(-1);
@@ -158,7 +167,7 @@ export function Dashboard() {
     }
   }, [recoveryDone, stats]);
 
-  /* ── accurate runtime from the DVD IFO (replaces sector estimate) ── */
+  /* ── accurate runtime from the DVD IFO ─────────────────────── */
   useEffect(() => {
     if (!recoveryDone || !id) return;
     let cancelled = false;
@@ -169,12 +178,8 @@ export function Dashboard() {
           setRealRuntimeMin(Math.max(1, Math.round(secs / 60)));
         }
       })
-      .catch(() => {
-        /* non-DVD or unreadable IFO — keep the sector estimate */
-      });
-    return () => {
-      cancelled = true;
-    };
+      .catch(() => { /* non-DVD or unreadable IFO */ });
+    return () => { cancelled = true; };
   }, [recoveryDone, id]);
 
   /* ── derived values ─────────────────────────────────────────── */
@@ -182,8 +187,10 @@ export function Dashboard() {
   const isActive = !idle && !recoveryDone;
   const total = stats?.total ?? 0;
   const pct = total > 0 ? Math.round((stats!.good / total) * 100) : 0;
-  const CIRC = 2 * Math.PI * 85; // r=85
-  const dashOffset = CIRC * (1 - pct / 100);
+  // Wheel geometry: r=68, viewBox 0 0 148 148 (same as mockup)
+  const WHEEL_R = 68;
+  const WHEEL_CIRC = 2 * Math.PI * WHEEL_R;
+  const wheelOffset = WHEEL_CIRC * (1 - pct / 100);
 
   const resume = async () => {
     if (!id) return;
@@ -223,16 +230,9 @@ export function Dashboard() {
   if (!id) return null;
 
   /* ── headline / subline ─────────────────────────────────────── */
-  // Primary metric is % + GB (always accurate). Minutes is shown only as a
-  // secondary "about N min of video" note, and only when we have the exact
-  // IFO runtime — never as a bitrate-guess headline.
   const savedGb = gbRecovered(stats);
   const videoNote = realRuntimeMin != null ? ` · about ${realRuntimeMin} min of video` : "";
   const remaining = minsRemaining(stats);
-  // During a damaged stretch the good-sector rate craters, so the raw ETA can
-  // balloon into absurd, scary numbers (e.g. "787 min") that are wrong the moment
-  // the head clears the bad area. Soften very long ETAs into a calm, honest phrase
-  // instead of a misleading precise countdown.
   const etaIsLong = remaining != null && remaining > 90;
   const remainingSentence =
     remaining == null
@@ -247,8 +247,6 @@ export function Dashboard() {
       ? "Working through damage"
       : `~${remaining} min left`;
 
-  // Distinguish between "never started" (no stats yet), "resting mid-read" (stats + pct>0),
-  // and "just inserted, warming up" (stats but pct still 0).
   const neverStarted = idle && !stats;
   const warmingUp    = idle && !!stats && pct === 0;
   const midRest      = idle && !!stats && pct > 0;
@@ -282,6 +280,224 @@ export function Dashboard() {
   const damaged = minsDamaged(stats);
   const noDamage = damaged === 0;
 
+  /* ── saveReady (mirrors OutputPanel's own check) ────────────── */
+  // Dashboard still needs this for the lock strip below OutputPanel.
+  const saveReady = recoveryDone || sessionFinished;
+
+  /* ── Wheel rail JSX — passed to OutputPanel as `header` ────────
+     This is the narrow left column of the top-frame grid. It must
+     NEVER be dimmed — it holds Pause/Cancel during extraction. */
+  const wheelRail = (
+    <div
+      ref={doneBannerRef}
+      style={{
+        ...S.surface,
+        borderRadius: 18,
+        padding: "24px 20px",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 12,
+        position: "relative",
+        overflow: "hidden",
+      }}
+    >
+      {/* Ambient glow */}
+      <div style={{
+        position: "absolute", top: -90, left: "50%", transform: "translateX(-50%)",
+        width: 260, height: 260, pointerEvents: "none",
+        background: "radial-gradient(circle, var(--db-amber-glow) 0%, transparent 66%)",
+      }} />
+
+      {/* ── Progress wheel (98px, matching mockup) ── */}
+      <div style={{
+        position: "relative",
+        width: 98, height: 98,
+        animation: isActive ? "db-breathe 3.6s ease-in-out infinite" : "none",
+        flexShrink: 0,
+      }}>
+        <svg
+          width="98" height="98"
+          viewBox="0 0 148 148"
+          style={{ transform: "rotate(-90deg)", filter: "drop-shadow(0 0 9px var(--db-amber-glow))" }}
+          aria-hidden
+        >
+          <circle cx="74" cy="74" r={WHEEL_R} fill="none" stroke="var(--db-amber-light)" strokeWidth="7" />
+          <circle
+            cx="74" cy="74" r={WHEEL_R}
+            fill="none"
+            stroke={isActive || recoveryDone ? "var(--db-amber)" : "var(--db-text-faint)"}
+            strokeWidth="7"
+            strokeLinecap="round"
+            strokeDasharray={WHEEL_CIRC}
+            strokeDashoffset={wheelOffset}
+            style={{ transition: "stroke-dashoffset 1.2s ease, stroke 0.4s ease" }}
+          />
+        </svg>
+        {/* Overlaid percentage */}
+        <div style={{
+          position: "absolute", inset: 0,
+          display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+        }}>
+          <span style={{
+            ...S.serif, ...S.amber,
+            fontSize: 24, fontWeight: 400,
+            lineHeight: 1, letterSpacing: "-0.03em",
+            color: isActive || recoveryDone ? "var(--db-amber)" : "var(--db-text-faint)",
+          }}>{pct}%</span>
+          <span style={{
+            fontSize: 8.5, fontWeight: 600, letterSpacing: "0.16em",
+            textTransform: "uppercase", marginTop: 4, ...S.textFaint,
+          }}>read</span>
+        </div>
+      </div>
+
+      {/* ── Headline + subline ── */}
+      <div style={{ textAlign: "center" }}>
+        <h1 style={{
+          ...S.serif, ...S.text,
+          fontSize: 18, fontWeight: 400, lineHeight: 1.25,
+          letterSpacing: "-0.01em", margin: 0,
+        }}>
+          {headline}
+        </h1>
+        <p style={{ fontSize: 12.5, fontWeight: 400, ...S.textMuted, marginTop: 5, lineHeight: 1.5 }}>
+          {subline}
+        </p>
+      </div>
+
+      {/* ── Status badges (complete state) ── */}
+      {recoveryDone && (
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", justifyContent: "center" }}>
+          <span style={{
+            display: "inline-flex", alignItems: "center", gap: 5,
+            padding: "3px 10px", borderRadius: 100, ...S.sans,
+            fontSize: 11, fontWeight: 600, letterSpacing: "0.02em", textTransform: "uppercase",
+            background: noDamage ? "var(--db-green-light)" : "var(--db-amber-light)",
+            border: noDamage ? "1px solid rgba(26,135,80,0.22)" : "1px solid var(--db-amber-glow)",
+            color: noDamage ? "var(--db-green)" : "var(--db-amber)",
+          }}>
+            <span style={{ width: 5, height: 5, borderRadius: "50%", background: "currentColor", flexShrink: 0 }} />
+            {noDamage ? "Disc healthy" : `${damaged} min damaged`}
+          </span>
+          <span style={{
+            display: "inline-flex", alignItems: "center", gap: 5,
+            padding: "3px 10px", borderRadius: 100, ...S.sans,
+            fontSize: 11, fontWeight: 600, letterSpacing: "0.02em", textTransform: "uppercase",
+            background: "var(--db-green-light)",
+            border: "1px solid rgba(26,135,80,0.22)",
+            color: "var(--db-green)",
+          }}>
+            <span style={{ width: 5, height: 5, borderRadius: "50%", background: "currentColor", flexShrink: 0 }} />
+            Recovery complete
+          </span>
+        </div>
+      )}
+
+      {/* ── Health chips (recovering state) ── */}
+      {!recoveryDone && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 6, width: "100%" }}>
+          <HealthChip
+            tone={noDamage ? "green" : "red"}
+            icon={noDamage ? "✓" : "!"}
+            title={noDamage ? "No damage found" : `${damaged} min damaged`}
+            sub={noDamage ? "Looking great" : "We'll keep trying"}
+          />
+          <HealthChip
+            tone="amber"
+            icon="◷"
+            title={remainingChip}
+            sub={isActive ? "Reading sector by sector" : idle ? (pct === 0 ? "Click Resume to start" : "Drive resting") : "—"}
+          />
+        </div>
+      )}
+
+      {/* ── Drive health warning ── */}
+      {stats?.drive_health === "suspect" && <DriveHealthBanner stats={stats} compact />}
+
+      {/* ── Action buttons ── */}
+      <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", justifyContent: "center", width: "100%" }}>
+        {!recoveryDone && idle && (
+          <>
+            <select
+              value={resumeMode}
+              onChange={(e) => setResumeMode(e.target.value as RecoveryMode)}
+              disabled={resuming}
+              style={{
+                borderRadius: 9, border: "1px solid var(--db-border)",
+                background: "var(--db-surface-2)", color: "var(--db-text)",
+                padding: "8px 10px", fontSize: 12, fontWeight: 500,
+                cursor: resuming ? "default" : "pointer",
+                fontFamily: "var(--db-sans)",
+                width: "100%",
+              }}
+            >
+              <option value="quick">Quick mode</option>
+              <option value="overnight">Overnight (deeper)</option>
+            </select>
+            <ActionBtn primary onClick={resume} disabled={resuming} fullWidth>
+              {resuming ? <Loader2 size={13} className="animate-spin" /> : <Play size={13} />}
+              {pct === 0 ? "Start" : "Resume"}
+            </ActionBtn>
+          </>
+        )}
+        {!recoveryDone && !idle && (
+          <ActionBtn onClick={() => ipc.pauseRecovery(id)} fullWidth>
+            <Pause size={13} /> Pause
+          </ActionBtn>
+        )}
+        {!recoveryDone && (
+          <ActionBtn danger onClick={() => ipc.cancelRecovery(id)} fullWidth>
+            <X size={12} /> Cancel
+          </ActionBtn>
+        )}
+      </div>
+
+      {/* Resume error */}
+      {resumeError && (() => {
+        const fe = friendlyError(resumeError);
+        return (
+          <div style={{
+            borderRadius: 10, padding: "10px 14px", width: "100%",
+            background: "rgba(197,48,48,0.06)", border: "1px solid rgba(197,48,48,0.25)",
+          }}>
+            <div style={{ fontSize: 12, fontWeight: 600, ...S.text }}>{fe.headline}</div>
+            {fe.hint && <div style={{ fontSize: 11, ...S.textMuted, marginTop: 3 }}>{fe.hint}</div>}
+          </div>
+        );
+      })()}
+
+      {/* Liveness indicator (top-right) */}
+      <div
+        role="status"
+        aria-live="polite"
+        style={{
+          position: "absolute", top: 14, right: 14,
+          display: "flex", alignItems: "center", gap: 6,
+          fontSize: 11, fontWeight: 600, letterSpacing: "0.02em",
+          ...S.sans,
+          color: isActive ? "var(--db-green)" : idle && !recoveryDone ? "var(--db-text-faint)" : "var(--db-green)",
+        }}
+      >
+        <span style={{ position: "relative", width: 8, height: 8, flexShrink: 0 }}>
+          <span style={{
+            position: "absolute", inset: 0, borderRadius: "50%",
+            background: isActive ? "var(--db-green)" : "var(--db-text-faint)",
+          }} />
+          {isActive && <>
+            <span style={{
+              position: "absolute", inset: -3, borderRadius: "50%",
+              border: "1.5px solid var(--db-green)", opacity: 0,
+              animation: "db-ripple 2s ease-out infinite",
+            }} />
+          </>}
+        </span>
+        {isActive ? "Working" : recoveryDone ? "Complete" : "Paused"}
+      </div>
+    </div>
+  );
+
   return (
     <div
       ref={scopeRef}
@@ -289,365 +505,141 @@ export function Dashboard() {
         flex: 1,
         height: "100%",
         display: "flex",
-        // On completion the screen collapses from the two-column working view
-        // into ONE centered column: wheel header on top, then the save actions
-        // below (Candidate 4 layout). During recovery it stays two-column so the
-        // live progress + controls sit beside the (locked) output.
-        flexDirection: recoveryDone ? "column" : "row",
-        alignItems: recoveryDone ? "center" : "stretch",
-        overflow: recoveryDone ? "auto" : "hidden",
+        flexDirection: "column",
+        overflow: "auto",
+        scrollbarWidth: "thin",
         ...S.base,
       }}
     >
-
-      {/* ── LEFT PANEL: progress + controls (always visible) ──── */}
+      {/* ── Scrollable content wrap ─────────────────────────────── */}
       <div style={{
-        width: recoveryDone ? "100%" : 380,
-        maxWidth: recoveryDone ? 720 : undefined,
-        flexShrink: 0,
-        overflowY: recoveryDone ? "visible" : "auto",
-        scrollbarWidth: "thin",
-        padding: recoveryDone ? "36px 24px 0" : "32px 20px 32px 40px",
+        width: "100%",
+        maxWidth: 860,
+        padding: "28px 32px 56px",
         display: "flex",
         flexDirection: "column",
-        gap: 16,
+        gap: 14,
       }}>
 
-      {/* ══ HERO CARD ══════════════════════════════════════════════ */}
-      <div
-        ref={doneBannerRef}
-        style={{
-          ...S.surface,
-          borderRadius: 20,
-          padding: recoveryDone ? "22px 28px" : "28px 24px",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          gap: recoveryDone ? 14 : 20,
-          position: "relative",
-          overflow: "hidden",
-        }}
-      >
-        {/* Ambient glow */}
-        <div style={{
-          position: "absolute", top: -80, right: -80,
-          width: 280, height: 280, pointerEvents: "none",
-          background: "radial-gradient(circle, var(--db-amber-glow) 0%, transparent 70%)",
-        }} />
-
-        {/* ── Liveness indicator ── */}
-        <div
-          role="status"
-          aria-live="polite"
-          style={{
-            position: "absolute", top: 20, right: 20,
-            display: "flex", alignItems: "center", gap: 8,
-            fontSize: 12, fontWeight: 600, letterSpacing: "0.02em",
-            ...S.sans,
-            color: isActive ? "var(--db-green)" : idle && !recoveryDone ? "var(--db-text-faint)" : "var(--db-green)",
-          }}
-        >
-          <span style={{ position: "relative", width: 10, height: 10, flexShrink: 0 }}>
-            <span style={{
-              position: "absolute", inset: 0, borderRadius: "50%",
-              background: isActive ? "var(--db-green)" : "var(--db-text-faint)",
-            }} />
-            {isActive && <>
-              <span style={{
-                position: "absolute", inset: -4, borderRadius: "50%",
-                border: "1.5px solid var(--db-green)", opacity: 0,
-                animation: "db-ripple 2s ease-out infinite",
-              }} />
-              <span style={{
-                position: "absolute", inset: -4, borderRadius: "50%",
-                border: "1.5px solid var(--db-green)", opacity: 0,
-                animation: "db-ripple 2s ease-out 0.7s infinite",
-              }} />
-            </>}
-          </span>
-          {isActive ? "Working" : recoveryDone ? "Complete" : "Paused"}
-        </div>
-
-        {/* ── Progress circle ── */}
-        <div
-          style={{
-            display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-            animation: isActive ? "db-breathe 3.5s ease-in-out infinite" : "none",
-            position: "relative",
-            width: recoveryDone ? 104 : 170, height: recoveryDone ? 104 : 170,
-            margin: "0 auto",
-          }}
-        >
-          <svg
-            width={recoveryDone ? "104" : "170"} height={recoveryDone ? "104" : "170"}
-            viewBox="0 0 200 200"
-            style={{ transform: "rotate(-90deg)", filter: `drop-shadow(0 4px 16px var(--db-amber-glow))` }}
-            aria-hidden
-          >
-            <circle cx="100" cy="100" r="85" fill="none" stroke="var(--db-amber-light)" strokeWidth="10" />
-            <circle
-              cx="100" cy="100" r="85"
-              fill="none"
-              stroke={isActive || recoveryDone ? "var(--db-amber)" : "var(--db-text-faint)"}
-              strokeWidth="10"
-              strokeLinecap="round"
-              strokeDasharray={CIRC}
-              strokeDashoffset={dashOffset}
-              style={{ transition: "stroke-dashoffset 1.2s ease, stroke 0.4s ease" }}
-            />
-          </svg>
-          {/* Overlaid text */}
-          <div style={{
-            position: "absolute", inset: 0,
-            display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-          }}>
-            <span style={{
-              ...S.serif, ...S.amber,
-              fontSize: recoveryDone ? 30 : (pct >= 10 ? 48 : 52), fontWeight: 700,
-              lineHeight: 1, letterSpacing: "-0.03em",
-              color: isActive || recoveryDone ? "var(--db-amber)" : "var(--db-text-faint)",
-            }}>{pct}%</span>
-            <span style={{
-              fontSize: recoveryDone ? 9 : 12, fontWeight: 600, letterSpacing: "0.08em",
-              textTransform: "uppercase", marginTop: recoveryDone ? 1 : 4, ...S.textFaint,
-            }}>read</span>
-          </div>
-        </div>
-
-        {/* ── Hero text ── */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 16, width: "100%", alignItems: "center" }}>
-          <div style={{ textAlign: "center" }}>
-            <h1 style={{
-              ...S.serif, ...S.text,
-              fontSize: 24, fontWeight: 600, lineHeight: 1.2,
-              letterSpacing: "-0.02em", margin: 0,
-            }}>
-              {headline}
-            </h1>
-            <p style={{ fontSize: 14, fontWeight: 500, ...S.textMuted, marginTop: 6, lineHeight: 1.5 }}>
-              {subline}
-            </p>
-          </div>
-
-          {/* ── Status badges (done) ── */}
-          {recoveryDone && (
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center" }}>
-              <span style={{
-                display: "inline-flex", alignItems: "center", gap: 7,
-                padding: "5px 12px", borderRadius: 9, ...S.sans,
-                fontSize: 12, fontWeight: 600,
-                background: noDamage ? "rgba(52,199,89,0.12)" : "rgba(255,149,0,0.12)",
-                border: noDamage ? "1px solid rgba(52,199,89,0.25)" : "1px solid rgba(255,149,0,0.28)",
-                color: noDamage ? "var(--db-green)" : "#C47700",
-              }}>
-                <span style={{ width: 5, height: 5, borderRadius: "50%", background: noDamage ? "var(--db-green)" : "#C47700" }} />
-                {noDamage ? "Disc healthy" : `${damaged} min damaged`}
-              </span>
-              <span style={{
-                display: "inline-flex", alignItems: "center", gap: 7,
-                padding: "5px 12px", borderRadius: 9, ...S.sans,
-                fontSize: 12, fontWeight: 600,
-                background: "rgba(52,199,89,0.12)", border: "1px solid rgba(52,199,89,0.25)",
-                color: "var(--db-green)",
-              }}>
-                <span style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--db-green)" }} />
-                Recovery complete
-              </span>
-            </div>
-          )}
-
-          {/* ── Health chips ── */}
-          {!recoveryDone && (
-            <div style={{ display: "flex", gap: 12 }}>
-              <HealthChip
-                tone={noDamage ? "green" : "red"}
-                icon={noDamage ? "✓" : "!"}
-                title={noDamage ? "No damage found" : `${damaged} min damaged`}
-                sub={noDamage ? "Looking great so far" : "We'll keep trying these"}
-              />
-              <HealthChip
-                tone="amber"
-                icon="◷"
-                title={remainingChip}
-                sub={isActive ? "Reading sector by sector" : idle ? (pct === 0 ? "Click Resume to start" : "Drive resting — click Resume") : "—"}
-              />
-            </div>
-          )}
-
-          {/* ── Drive health warning ── */}
-          {stats?.drive_health === "suspect" && <DriveHealthBanner stats={stats} compact />}
-
-          {/* ── Action buttons ── */}
-          <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-            {!recoveryDone && idle && (
-              <>
-                <select
-                  value={resumeMode}
-                  onChange={(e) => setResumeMode(e.target.value as RecoveryMode)}
-                  disabled={resuming}
-                  style={{
-                    borderRadius: 10, border: "1.5px solid var(--db-border)",
-                    background: "var(--db-surface-2)", color: "var(--db-text)",
-                    padding: "10px 14px", fontSize: 13, fontWeight: 500,
-                    cursor: resuming ? "default" : "pointer",
-                    fontFamily: "var(--db-sans)",
-                  }}
-                >
-                  <option value="quick">Quick mode</option>
-                  <option value="overnight">Overnight mode (slower, deeper)</option>
-                </select>
-                <ActionBtn primary onClick={resume} disabled={resuming}>
-                  {resuming ? <Loader2 size={15} className="animate-spin" /> : <Play size={15} />}
-                  {pct === 0 ? "Start" : "Resume"}
-                </ActionBtn>
-              </>
-            )}
-            {!recoveryDone && !idle && (
-              <ActionBtn onClick={() => ipc.pauseRecovery(id)}>
-                <Pause size={15} /> Pause
-              </ActionBtn>
-            )}
-            {!recoveryDone && (
-              <ActionBtn danger onClick={() => ipc.cancelRecovery(id)}>
-                <X size={14} /> Cancel
-              </ActionBtn>
-            )}
-            {/* Overnight offer is shown in the dedicated OvernightOfferCard below the done banner */}
-          </div>
-
-          {/* Resume error */}
-          {resumeError && (() => {
-            const fe = friendlyError(resumeError);
-            return (
-              <div style={{
-                borderRadius: 12, padding: "12px 16px",
-                background: "rgba(197,48,48,0.06)", border: "1px solid rgba(197,48,48,0.25)",
-              }}>
-                <div style={{ fontSize: 13, fontWeight: 600, ...S.text }}>{fe.headline}</div>
-                {fe.hint && <div style={{ fontSize: 12, ...S.textMuted, marginTop: 4 }}>{fe.hint}</div>}
-              </div>
-            );
-          })()}
-        </div>
-      </div>
-
-      {/* ══ DONE BANNER ════════════════════════════════════════════ */}
-      {/* On a clean 100% recovery the new header ("Disc fully recovered — N read"
-          + "Disc healthy" badge) already says this, so the banner would be a
-          redundant second box. Keep it ONLY for partial recoveries, where it
-          carries real guidance (how much was lost, try another drive). */}
-      {recoveryDone && pct < 100 && <DoneBanner stats={stats} realMinutes={realRuntimeMin} />}
-
-      {/* ══ OVERNIGHT OFFER ════════════════════════════════════════ */}
-      {recoveryDone && holesAtCompletion !== null && holesAtCompletion > 0 && (
-        <OvernightOfferCard
-          stats={stats}
-          holesAtCompletion={holesAtCompletion}
-          onStart={startOvernight}
-          starting={resuming}
-          error={resumeError}
-        />
-      )}
-
-      {/* ══ DRIVE SWITCH ═══════════════════════════════════════════ */}
-      {(idle || recoveryDone) && (
-        <div>
-          <button
-            onClick={async () => {
-              setDriveSwitchMsg(null);
-              if (!showDrivePicker) {
-                try { setDrives(await ipc.listDrives()); }
-                catch (e) { setDriveSwitchMsg(String(e)); }
-              }
-              setShowDrivePicker(!showDrivePicker);
-            }}
-            style={{
-              background: "none", border: "none", cursor: "pointer",
-              fontSize: 12, fontWeight: 500, ...S.textMuted, display: "flex", alignItems: "center", gap: 6,
-            }}
-          >
-            <RefreshCw size={12} />
-            {showDrivePicker ? "Hide" : "Try a different drive"}
-          </button>
-          {showDrivePicker && (
-            <div style={{ ...S.surface, borderRadius: 14, padding: "16px", marginTop: 10 }}>
-              <p style={{ fontSize: 12, ...S.textMuted, marginBottom: 12 }}>
-                Different drives have different read tolerances — a second drive often rescues what the first couldn't.
-              </p>
-              {drives.length === 0
-                ? <p style={{ fontSize: 12, ...S.textMuted }}>No other drives detected.</p>
-                : drives.map((d) => {
-                  const label = [d.vendor, d.model].map(s => s.trim()).filter(s => s && s.toLowerCase() !== "unknown").join(" ");
-                  return (
-                    <button key={d.path}
-                      onClick={async () => {
-                        try {
-                          await ipc.changeDrive(id, d.path);
-                          setDriveSwitchMsg(`Switched to ${label || d.letter}. Click Resume to retry.`);
-                          setShowDrivePicker(false);
-                        } catch (e) { setDriveSwitchMsg(String(e)); }
-                      }}
-                      style={{
-                        width: "100%", textAlign: "left", background: "none",
-                        border: "none", cursor: "pointer", padding: "8px 10px",
-                        borderRadius: 8, fontSize: 13, ...S.text,
-                        display: "flex", justifyContent: "space-between",
-                      }}
-                    >
-                      <span>{label || `Drive ${d.letter}`}</span>
-                      <span style={{ ...S.textFaint, fontSize: 12 }}>{d.has_media ? "disc inserted" : "empty"}</span>
-                    </button>
-                  );
-                })
-              }
-            </div>
-          )}
-          {driveSwitchMsg && (
-            <p style={{ fontSize: 12, color: "var(--db-green)", marginTop: 8 }}>{driveSwitchMsg}</p>
-          )}
-        </div>
-      )}
-
-      </div>{/* end LEFT PANEL */}
-
-      {/* ── RIGHT PANEL: output + sector map (scrollable) ───────── */}
-      <div style={{
-        flex: recoveryDone ? "none" : 1,
-        width: recoveryDone ? "100%" : undefined,
-        maxWidth: recoveryDone ? 720 : undefined,
-        overflowY: recoveryDone ? "visible" : "auto",
-        scrollbarWidth: "thin",
-        padding: recoveryDone ? "8px 24px 56px" : "32px 40px 32px 0",
-        display: "flex",
-        flexDirection: "column",
-        gap: 16,
-      }}>
-
-      {/* ══ OUTPUT PANEL ════════════════════════════════════════════ */}
-      <div style={{ ...S.surface, borderRadius: 20 }}>
+        {/* ══ OutputPanel — full-width; the top-frame grid lives INSIDE it.
+            The wheel rail is passed as `header` and rendered as the left
+            column. The right column (action stack) and the full-width bottom
+            block (alt-grid + results + advanced) dim internally when !saveReady.
+            The wheel rail is never dimmed — it holds Pause/Cancel. */}
         <OutputPanel
           sessionId={id}
           onMp4Saved={setSavedVideoPath}
           recoveryPct={pct}
           recoveryDone={recoveryDone}
+          header={wheelRail}
         />
-      </div>
 
-      {/* ══ ENHANCEMENT OFFER ══════════════════════════════════════ */}
-      {recoveryDone && (
-        <EnhancementOffer
-          savedVideoPath={savedVideoPath}
-          onAccepted={(p) => setSavedVideoPath(p)}
-        />
-      )}
+        {/* ══ DONE BANNER (partial recoveries only) ════════════════ */}
+        {recoveryDone && pct < 100 && <DoneBanner stats={stats} realMinutes={realRuntimeMin} />}
 
-      </div>{/* end RIGHT PANEL */}
+        {/* ══ OVERNIGHT OFFER ══════════════════════════════════════ */}
+        {recoveryDone && holesAtCompletion !== null && holesAtCompletion > 0 && (
+          <OvernightOfferCard
+            stats={stats}
+            holesAtCompletion={holesAtCompletion}
+            onStart={startOvernight}
+            starting={resuming}
+            error={resumeError}
+          />
+        )}
 
-      {/* Keyframe animations injected once */}
+        {/* ══ ENHANCEMENT OFFER ════════════════════════════════════ */}
+        {recoveryDone && (
+          <EnhancementOffer
+            savedVideoPath={savedVideoPath}
+            onAccepted={(p) => setSavedVideoPath(p)}
+          />
+        )}
+
+        {/* ══ DRIVE SWITCH ═════════════════════════════════════════ */}
+        {(idle || recoveryDone) && (
+          <div>
+            <button
+              onClick={async () => {
+                setDriveSwitchMsg(null);
+                if (!showDrivePicker) {
+                  try { setDrives(await ipc.listDrives()); }
+                  catch (e) { setDriveSwitchMsg(String(e)); }
+                }
+                setShowDrivePicker(!showDrivePicker);
+              }}
+              style={{
+                background: "none", border: "none", cursor: "pointer",
+                fontSize: 12, fontWeight: 500, ...S.textMuted, display: "flex", alignItems: "center", gap: 6,
+              }}
+            >
+              <RefreshCw size={12} />
+              {showDrivePicker ? "Hide" : "Try a different drive"}
+            </button>
+            {showDrivePicker && (
+              <div style={{ ...S.surface, borderRadius: 14, padding: "16px", marginTop: 10 }}>
+                <p style={{ fontSize: 12, ...S.textMuted, marginBottom: 12 }}>
+                  Different drives have different read tolerances — a second drive often rescues what the first couldn't.
+                </p>
+                {drives.length === 0
+                  ? <p style={{ fontSize: 12, ...S.textMuted }}>No other drives detected.</p>
+                  : drives.map((d) => {
+                    const label = [d.vendor, d.model].map(s => s.trim()).filter(s => s && s.toLowerCase() !== "unknown").join(" ");
+                    return (
+                      <button key={d.path}
+                        onClick={async () => {
+                          try {
+                            await ipc.changeDrive(id, d.path);
+                            setDriveSwitchMsg(`Switched to ${label || d.letter}. Click Resume to retry.`);
+                            setShowDrivePicker(false);
+                          } catch (e) { setDriveSwitchMsg(String(e)); }
+                        }}
+                        style={{
+                          width: "100%", textAlign: "left", background: "none",
+                          border: "none", cursor: "pointer", padding: "8px 10px",
+                          borderRadius: 8, fontSize: 13, ...S.text,
+                          display: "flex", justifyContent: "space-between",
+                        }}
+                      >
+                        <span>{label || `Drive ${d.letter}`}</span>
+                        <span style={{ ...S.textFaint, fontSize: 12 }}>{d.has_media ? "disc inserted" : "empty"}</span>
+                      </button>
+                    );
+                  })
+                }
+              </div>
+            )}
+            {driveSwitchMsg && (
+              <p style={{ fontSize: 12, color: "var(--db-green)", marginTop: 8 }}>{driveSwitchMsg}</p>
+            )}
+          </div>
+        )}
+
+        {/* ══ LOCK HINT STRIP (extracting only, always at the bottom) ════
+            Positioned AFTER all content so the top layout never shifts. */}
+        {!saveReady && (
+          <div style={{
+            display: "flex", alignItems: "flex-start", gap: 10,
+            background: "var(--db-amber-light)", border: "1px solid var(--db-amber-glow)",
+            borderRadius: 14, padding: "12px 18px", fontSize: 12.5, color: "var(--db-amber)",
+          }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 2 }}>
+              <rect x="3" y="11" width="18" height="11" rx="2"/>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+            <span>
+              Your save options unlock the moment the disc finishes — or press <strong>Cancel</strong> to stop and keep what's recovered so far.
+            </span>
+          </div>
+        )}
+
+      </div>{/* end content wrap */}
+
+      {/* Keyframe animations */}
       <style>{`
         @keyframes db-breathe {
           0%, 100% { transform: scale(1); }
-          50%       { transform: scale(1.018); }
+          50%       { transform: scale(1.02); }
         }
         @keyframes db-ripple {
           0%   { transform: scale(0.6); opacity: 0.8; }
@@ -670,32 +662,34 @@ function HealthChip({
   }[tone];
   return (
     <div style={{
-      flex: 1, display: "flex", alignItems: "center", gap: 10,
-      padding: "12px 16px", borderRadius: 12,
+      display: "flex", alignItems: "center", gap: 8,
+      padding: "8px 12px", borderRadius: 10,
       background: colors.bg, border: `1px solid ${colors.border}`,
     }}>
-      <span style={{ fontSize: 20, flexShrink: 0 }}>{icon}</span>
+      <span style={{ fontSize: 16, flexShrink: 0 }}>{icon}</span>
       <div>
-        <div style={{ fontSize: 13, fontWeight: 700, color: colors.text }}>{title}</div>
-        <div style={{ fontSize: 12, fontWeight: 500, color: colors.text, opacity: 0.7, marginTop: 1 }}>{sub}</div>
+        <div style={{ fontSize: 12, fontWeight: 700, color: colors.text }}>{title}</div>
+        <div style={{ fontSize: 11, fontWeight: 500, color: colors.text, opacity: 0.7, marginTop: 1 }}>{sub}</div>
       </div>
     </div>
   );
 }
 
 function ActionBtn({
-  children, onClick, disabled, primary, danger,
+  children, onClick, disabled, primary, danger, fullWidth,
 }: {
   children: React.ReactNode;
   onClick?: () => void;
   disabled?: boolean;
   primary?: boolean;
   danger?: boolean;
+  fullWidth?: boolean;
 }) {
   const base: React.CSSProperties = {
-    display: "inline-flex", alignItems: "center", gap: 7,
-    padding: "13px 24px", borderRadius: 12, minHeight: 48,
-    fontFamily: "var(--db-sans)", fontSize: 14, fontWeight: 600,
+    display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6,
+    padding: "9px 16px", borderRadius: 9, minHeight: 38,
+    width: fullWidth ? "100%" : undefined,
+    fontFamily: "var(--db-sans)", fontSize: 13, fontWeight: 600,
     cursor: disabled ? "default" : "pointer",
     opacity: disabled ? 0.5 : 1,
     border: "1.5px solid transparent",
@@ -726,27 +720,23 @@ function DriveHealthBanner({
     : "Almost no reads are succeeding. A different disc drive often helps.";
   return (
     <div style={{
-      borderRadius: 12, padding: compact ? "10px 14px" : "14px 18px",
+      borderRadius: 10, padding: compact ? "8px 12px" : "14px 18px", width: "100%",
       background: "rgba(197,48,48,0.06)", border: "1px solid rgba(197,48,48,0.25)",
     }} role="alert">
-      <div style={{ fontSize: 13, fontWeight: 600, color: "var(--db-red)", marginBottom: 2 }}>
+      <div style={{ fontSize: 12, fontWeight: 600, color: "var(--db-red)", marginBottom: 2 }}>
         The drive may not be reading this disc
       </div>
-      <div style={{ fontSize: 12, ...S.textMuted, lineHeight: 1.5 }}>{detail}</div>
+      <div style={{ fontSize: 11, color: "var(--db-text-muted)", lineHeight: 1.5 }}>{detail}</div>
     </div>
   );
 }
 
 const DoneBanner = React.forwardRef<HTMLDivElement, { stats: RecoveryStats | null; realMinutes?: number | null } & React.HTMLAttributes<HTMLDivElement>>(
 ({ stats, realMinutes, ...props }, ref) => {
-  // Lead with % + GB (always accurate). Append the exact IFO runtime as a
-  // secondary note only when we have it (video discs).
   const pct = pctRecovered(stats);
   const gb = gbRecovered(stats);
   const videoNote = realMinutes != null ? ` · about ${realMinutes} min of video` : "";
 
-  // Theme-aware defaults (the old hardcoded white bg rendered as an invisible
-  // gray box in dark mode when stats hadn't arrived yet).
   let bg = "var(--db-surface-2)";
   let border = "var(--db-border)";
   let headline = "Recovery complete.";
@@ -779,8 +769,8 @@ const DoneBanner = React.forwardRef<HTMLDivElement, { stats: RecoveryStats | nul
       <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
         <Disc3 size={18} style={{ flexShrink: 0, marginTop: 2, color: "var(--db-amber)" }} />
         <div>
-          <div style={{ fontSize: 16, fontWeight: 600, ...S.text, ...S.serif }}>{headline}</div>
-          <div style={{ fontSize: 13, ...S.textMuted, marginTop: 4, lineHeight: 1.5 }}>{detail}</div>
+          <div style={{ fontSize: 16, fontWeight: 600, color: "var(--db-text)", fontFamily: "var(--db-serif)" }}>{headline}</div>
+          <div style={{ fontSize: 13, color: "var(--db-text-muted)", marginTop: 4, lineHeight: 1.5 }}>{detail}</div>
         </div>
       </div>
     </div>
@@ -788,13 +778,6 @@ const DoneBanner = React.forwardRef<HTMLDivElement, { stats: RecoveryStats | nul
 });
 DoneBanner.displayName = "DoneBanner";
 
-/**
- * OvernightOfferCard — shown after a Quick pass completes with holes remaining.
- * Gives the user a calm, honest offer to run Overnight mode while they sleep.
- *
- * Minutes are derived via sectorsToMinutes (2048 bytes/sector, ~0.0034 sec/sector,
- * ~5 Mbps MPEG-2 average). This is the same constant used everywhere in the UI.
- */
 function OvernightOfferCard({
   stats,
   holesAtCompletion,
@@ -823,15 +806,14 @@ function OvernightOfferCard({
         gap: 18,
       }}
     >
-      {/* Header */}
       <div>
         <div style={{
           fontSize: 20, fontWeight: 600, letterSpacing: "-0.018em",
-          lineHeight: 1.25, ...S.serif, ...S.text,
+          lineHeight: 1.25, fontFamily: "var(--db-serif)", color: "var(--db-text)",
         }}>
           We rescued most of it.
         </div>
-        <p style={{ fontSize: 15, fontWeight: 500, ...S.textMuted, marginTop: 8, lineHeight: 1.55 }}>
+        <p style={{ fontSize: 15, fontWeight: 500, color: "var(--db-text-muted)", marginTop: 8, lineHeight: 1.55 }}>
           {recoveredMin} minute{recoveredMin !== 1 ? "s" : ""} are safe.{" "}
           {holesAtCompletion.toLocaleString()} spot{holesAtCompletion === 1 ? "" : "s"}{" "}
           ({holeMin} min) {holesAtCompletion === 1 ? "is" : "are"} damaged and need more time.
@@ -841,16 +823,14 @@ function OvernightOfferCard({
         </p>
       </div>
 
-      {/* Honest disclaimer */}
       <p style={{
-        fontSize: 12, ...S.textFaint, lineHeight: 1.55,
+        fontSize: 12, color: "var(--db-text-faint)", lineHeight: 1.55,
         borderTop: "1px solid rgba(99,102,241,0.14)", paddingTop: 12,
       }}>
         Some damage is physical and can't be recovered by any software. Overnight mode
         simply tries harder on the sectors that Quick pass gave up on — it won't always win.
       </p>
 
-      {/* Action */}
       <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
         <ActionBtn primary onClick={onStart} disabled={starting}>
           {starting
@@ -858,7 +838,7 @@ function OvernightOfferCard({
             : <RefreshCw size={15} />}
           {starting ? "Starting…" : "Try Overnight ▸"}
         </ActionBtn>
-        <span style={{ fontSize: 12, ...S.textFaint }}>
+        <span style={{ fontSize: 12, color: "var(--db-text-faint)" }}>
           You can pause or stop at any time — nothing already recovered will be lost.
         </span>
       </div>
@@ -869,10 +849,10 @@ function OvernightOfferCard({
           <div style={{
             borderRadius: 10, padding: "10px 14px",
             background: "rgba(197,48,48,0.06)", border: "1px solid rgba(197,48,48,0.25)",
-            fontSize: 13, fontWeight: 600, ...S.text,
+            fontSize: 13, fontWeight: 600, color: "var(--db-text)",
           }}>
             {fe.headline}
-            {fe.hint && <div style={{ fontSize: 12, ...S.textMuted, marginTop: 4, fontWeight: 400 }}>{fe.hint}</div>}
+            {fe.hint && <div style={{ fontSize: 12, color: "var(--db-text-muted)", marginTop: 4, fontWeight: 400 }}>{fe.hint}</div>}
           </div>
         );
       })()}
