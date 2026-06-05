@@ -289,19 +289,25 @@ export function Dashboard() {
         flex: 1,
         height: "100%",
         display: "flex",
-        flexDirection: "row",
-        overflow: "hidden",
+        // On completion the screen collapses from the two-column working view
+        // into ONE centered column: wheel header on top, then the save actions
+        // below (Candidate 4 layout). During recovery it stays two-column so the
+        // live progress + controls sit beside the (locked) output.
+        flexDirection: recoveryDone ? "column" : "row",
+        alignItems: recoveryDone ? "center" : "stretch",
+        overflow: recoveryDone ? "auto" : "hidden",
         ...S.base,
       }}
     >
 
       {/* ── LEFT PANEL: progress + controls (always visible) ──── */}
       <div style={{
-        width: 380,
+        width: recoveryDone ? "100%" : 380,
+        maxWidth: recoveryDone ? 720 : undefined,
         flexShrink: 0,
-        overflowY: "auto",
+        overflowY: recoveryDone ? "visible" : "auto",
         scrollbarWidth: "thin",
-        padding: "32px 20px 32px 40px",
+        padding: recoveryDone ? "36px 24px 0" : "32px 20px 32px 40px",
         display: "flex",
         flexDirection: "column",
         gap: 16,
@@ -606,10 +612,12 @@ export function Dashboard() {
 
       {/* ── RIGHT PANEL: output + sector map (scrollable) ───────── */}
       <div style={{
-        flex: 1,
-        overflowY: "auto",
+        flex: recoveryDone ? "none" : 1,
+        width: recoveryDone ? "100%" : undefined,
+        maxWidth: recoveryDone ? 720 : undefined,
+        overflowY: recoveryDone ? "visible" : "auto",
         scrollbarWidth: "thin",
-        padding: "32px 40px 32px 0",
+        padding: recoveryDone ? "8px 24px 56px" : "32px 40px 32px 0",
         display: "flex",
         flexDirection: "column",
         gap: 16,
