@@ -277,7 +277,11 @@ pub async fn export_rmap(
     let text = crate::recovery::rmap::encode(&map, &header);
 
     let target = match output_path {
-        Some(p) => PathBuf::from(p),
+        Some(p) => {
+            // Frontend-supplied path: validate as a write path before touching
+            // the filesystem (blocks UNC, system dirs, wrong extensions).
+            crate::util::path_safety::validate_write_path(&p, &["rmap", "map"])?
+        }
         None => {
             let safe: String = session
                 .disc_label

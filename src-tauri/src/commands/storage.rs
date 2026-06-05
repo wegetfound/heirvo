@@ -54,6 +54,23 @@ pub async fn open_folder(app: tauri::AppHandle, path: String) -> AppResult<()> {
 /// interpreter, eliminating command-injection via attacker-controlled paths.
 #[tauri::command]
 pub async fn open_file(app: tauri::AppHandle, path: String) -> AppResult<()> {
+    // Validate the renderer-supplied path before handing it to ShellExecuteW.
+    // Allow media and document formats; explicitly block executables and scripts.
+    crate::util::path_safety::validate_read_path(
+        &path,
+        &[
+            // video
+            "mp4", "mov", "avi", "mkv", "mts", "m2ts", "ts", "wmv", "webm",
+            "vob", "dat", "mpg", "mpeg", "m2v", "m4v", "iso", "img", "bin",
+            // audio
+            "wav", "mp3", "flac", "m4a", "aac", "ogg", "opus",
+            // photo / document
+            "jpg", "jpeg", "png", "heic", "tiff", "tif", "webp", "gif", "bmp",
+            "pdf", "txt", "rmap", "map", "sha256", "manifest",
+        ],
+        // No size cap for open_file — we only pass the path to the OS handler.
+        u64::MAX,
+    )?;
     app.opener()
         .open_path(&path, None::<&str>)
         .map_err(|e| AppError::Internal(format!("opener open_path: {e}")))?;

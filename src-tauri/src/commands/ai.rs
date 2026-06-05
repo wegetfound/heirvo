@@ -81,10 +81,20 @@ pub async fn enhance_preview(
     timestamp_secs: f32,
     preset: crate::ai::pipeline::Preset,
 ) -> AppResult<crate::ai::preview::PreviewResult> {
+    // Validate the renderer-supplied input path before passing it to the AI
+    // pipeline (which internally spawns ffmpeg for frame extraction).
+    let safe_input = crate::util::path_safety::validate_read_path(
+        &input,
+        &[
+            "mp4", "mov", "avi", "mkv", "mts", "m2ts", "ts", "wmv", "webm",
+            "vob", "dat", "mpg", "mpeg", "m2v", "m4v",
+        ],
+        50 * 1024 * 1024 * 1024,
+    )?;
     let backend = crate::ai::pipeline::default_backend();
     crate::ai::preview::generate(
         &app,
-        std::path::Path::new(&input),
+        &safe_input,
         timestamp_secs,
         preset,
         backend,

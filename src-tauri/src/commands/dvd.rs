@@ -317,6 +317,15 @@ pub struct SigScanResult {
 /// Returns one hit per magic-byte occurrence — the UI groups them by type.
 #[tauri::command]
 pub async fn scan_iso_signatures(iso_path: String) -> AppResult<SigScanResult> {
+    // Validate the renderer-supplied path before opening it.
+    // 50 GB cap covers Blu-ray images; iso/img/bin are the only disc image formats.
+    let safe_path = crate::util::path_safety::validate_read_path(
+        &iso_path,
+        &["iso", "img", "bin"],
+        50 * 1024 * 1024 * 1024,
+    )?;
+    let iso_path = safe_path.to_string_lossy().to_string();
+
     tokio::task::spawn_blocking(move || -> AppResult<SigScanResult> {
         use crate::disc::iso_file::IsoFileSectorReader;
         use crate::disc::sector::SectorReader;
@@ -324,7 +333,7 @@ pub async fn scan_iso_signatures(iso_path: String) -> AppResult<SigScanResult> {
 
         let path = Path::new(&iso_path);
         if !path.exists() {
-            return Err(AppError::Internal(format!("ISO not found: {iso_path}")));
+            return Err(AppError::Internal("Disc image not found".into()));
         }
         let reader = IsoFileSectorReader::open(path)
             .map_err(|e| AppError::Internal(format!("open {iso_path}: {e}")))?;
@@ -354,6 +363,14 @@ pub async fn scan_iso_signatures(iso_path: String) -> AppResult<SigScanResult> {
 /// images differently from full UDF volumes.
 #[tauri::command]
 pub async fn list_files_in_iso(iso_path: String) -> AppResult<IsoBrowseResult> {
+    // Validate before opening: must exist, iso/img/bin only, no UNC.
+    let safe_path = crate::util::path_safety::validate_read_path(
+        &iso_path,
+        &["iso", "img", "bin"],
+        50 * 1024 * 1024 * 1024,
+    )?;
+    let iso_path = safe_path.to_string_lossy().to_string();
+
     tokio::task::spawn_blocking(move || -> AppResult<IsoBrowseResult> {
         use crate::disc::iso_file::IsoFileSectorReader;
         use crate::disc::sector::SectorReader;
@@ -361,7 +378,7 @@ pub async fn list_files_in_iso(iso_path: String) -> AppResult<IsoBrowseResult> {
 
         let path = Path::new(&iso_path);
         if !path.exists() {
-            return Err(AppError::Internal(format!("ISO not found: {iso_path}")));
+            return Err(AppError::Internal("Disc image not found".into()));
         }
         let reader = IsoFileSectorReader::open(path)
             .map_err(|e| AppError::Internal(format!("open {iso_path}: {e}")))?;

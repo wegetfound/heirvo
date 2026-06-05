@@ -256,8 +256,19 @@ pub async fn ffmpeg_status(app: AppHandle) -> AppResult<FfmpegStatus> {
 
 #[tauri::command]
 pub async fn ffprobe_file(app: AppHandle, path: String) -> AppResult<ProbeResult> {
+    // Validate before passing the renderer-supplied path to a child process.
+    let safe = crate::util::path_safety::validate_read_path(
+        &path,
+        &[
+            "mp4", "mov", "avi", "mkv", "mts", "m2ts", "ts", "wmv", "webm",
+            "vob", "dat", "mpg", "mpeg", "m2v", "m4v",
+            "wav", "mp3", "flac", "m4a", "aac", "ogg", "opus",
+            "jpg", "jpeg", "png", "heic", "tiff", "tif", "webp",
+        ],
+        50 * 1024 * 1024 * 1024, // 50 GB — largest legit DVD rip
+    )?;
     let bin = ffmpeg::locate_ffprobe(&app)?;
-    ffmpeg::probe(&bin, std::path::Path::new(&path)).await
+    ffmpeg::probe(&bin, &safe).await
 }
 
 #[tauri::command]
@@ -452,6 +463,24 @@ pub async fn normalize_for_playback(
     use crate::media::transcode;
     use std::path::PathBuf;
 
+    // Validate input (must exist, media extension) and output (write path,
+    // mp4/mov allowed) before spawning the ffmpeg task.
+    let safe_input = crate::util::path_safety::validate_read_path(
+        &input_path,
+        &[
+            "mp4", "mov", "avi", "mkv", "mts", "m2ts", "ts", "wmv", "webm",
+            "vob", "dat", "mpg", "mpeg", "m2v", "m4v",
+            "wav", "mp3", "flac", "m4a", "aac", "ogg", "opus",
+        ],
+        50 * 1024 * 1024 * 1024,
+    )?;
+    let safe_output = crate::util::path_safety::validate_write_path(
+        &output_path,
+        &["mp4", "mov", "mkv"],
+    )?;
+    let input_path = safe_input.to_string_lossy().to_string();
+    let output_path = safe_output.to_string_lossy().to_string();
+
     let job_id = Uuid::new_v4().to_string();
     let job_id_clone = job_id.clone();
     let app_for_task = app.clone();
@@ -507,7 +536,24 @@ pub async fn normalize_for_playback(
 /// with payload `{ jobId, frame, fps, bitrate_kbps, out_time_us, speed }`.
 /// Completion fires `transcode:complete` or `transcode:error`.
 #[tauri::command]
-pub async fn transcode(app: AppHandle, job: TranscodeJob) -> AppResult<TranscodeStarted> {
+pub async fn transcode(app: AppHandle, mut job: TranscodeJob) -> AppResult<TranscodeStarted> {
+    // Validate input and output paths before any filesystem or process work.
+    let safe_input = crate::util::path_safety::validate_read_path(
+        &job.input.to_string_lossy(),
+        &[
+            "mp4", "mov", "avi", "mkv", "mts", "m2ts", "ts", "wmv", "webm",
+            "vob", "dat", "mpg", "mpeg", "m2v", "m4v",
+            "wav", "mp3", "flac", "m4a", "aac", "ogg", "opus",
+        ],
+        50 * 1024 * 1024 * 1024,
+    )?;
+    let safe_output = crate::util::path_safety::validate_write_path(
+        &job.output.to_string_lossy(),
+        &["mp4", "mov", "mkv", "avi", "webm"],
+    )?;
+    job.input = safe_input;
+    job.output = safe_output;
+
     let job_id = Uuid::new_v4().to_string();
     let job_id_clone = job_id.clone();
     let app_for_task = app.clone();

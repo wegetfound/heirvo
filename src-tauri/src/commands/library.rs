@@ -412,13 +412,9 @@ pub async fn list_importable_media_in_dir(dir: String) -> AppResult<Vec<String>>
         }
     }
 
-    let dir_path = PathBuf::from(&dir);
-    let meta = tokio::fs::metadata(&dir_path).await.map_err(|e| {
-        AppError::Internal(format!("Cannot read directory {}: {}", dir_path.display(), e))
-    })?;
-    if !meta.is_dir() {
-        return Err(AppError::Internal(format!("Not a directory: {}", dir_path.display())));
-    }
+    // Validate the renderer-supplied directory path: rejects UNC, system dirs,
+    // relative paths, and non-existent targets before walking.
+    let dir_path = crate::util::path_safety::validate_dir_path(&dir)?;
 
     let mut out = Vec::with_capacity(64);
     // CPU walk on a blocking task so we don't stall the async runtime.

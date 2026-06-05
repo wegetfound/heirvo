@@ -103,8 +103,57 @@ pub async fn change_drive(
     if state.engines.read().contains_key(&id) {
         return Err(AppError::RecoveryInProgress(session_id));
     }
+    // Validate the drive path. Accepted forms (Windows):
+    //   \\.\X:      (device path, standard optical/HDD)
+    //   \\.\PhysicalDriveN
+    //   X:\         or   X:   (drive-root form, also used for optical drives)
+    // Anything else (including arbitrary UNC paths like \\attacker\share) is rejected.
+    validate_drive_path(&new_drive_path)?;
     manager::update_drive_path(&state.db, id, &new_drive_path).await?;
     manager::get(&state.db, id).await
+}
+
+/// Accept only well-formed Windows drive/device paths. Rejects anything
+/// that looks like a UNC share (\\server\anything other than .\...) or an
+/// arbitrary filesystem path.
+fn validate_drive_path(path: &str) -> AppResult<()> {
+    // \\.\X: or \\.\PhysicalDriveN  (device-path prefix is allowed)
+    if path.starts_with("\\\\.\\") {
+        let tail = &path[4..]; // after "\\.\\"
+        // Must be either a drive letter (e.g. "C:" or "C:\") or "PhysicalDriveN"
+        let ok = is_drive_letter_tail(tail)
+            || tail.to_ascii_uppercase().starts_with("PHYSICALDRIVE");
+        if ok {
+            return Ok(());
+        }
+        return Err(AppError::Internal(
+            "Invalid drive path: only drive-letter and PhysicalDrive device paths are permitted".into(),
+        ));
+    }
+    // X: or X:\
+    if is_drive_letter_tail(path) {
+        return Ok(());
+    }
+    Err(AppError::Internal(
+        "Invalid drive path: must be a drive letter (e.g. E:) or device path (e.g. \\\\.\\E:)".into(),
+    ))
+}
+
+/// Returns true for strings of the form "X:" or "X:\" where X is a letter.
+fn is_drive_letter_tail(s: &str) -> bool {
+    let bytes = s.as_bytes();
+    if bytes.len() < 2 {
+        return false;
+    }
+    let letter = bytes[0];
+    if !letter.is_ascii_alphabetic() {
+        return false;
+    }
+    if bytes[1] != b':' {
+        return false;
+    }
+    // Accept exactly "X:" or "X:\" (optional trailing backslash).
+    matches!(bytes.len(), 2 | 3) && (bytes.len() == 2 || bytes[2] == b'\\')
 }
 
 /// Change the output directory of an existing session. Useful when the
@@ -118,6 +167,12 @@ pub async fn change_output_dir(
 ) -> AppResult<Session> {
     let id = Uuid::parse_str(&session_id)
         .map_err(|_| AppError::SessionNotFound(session_id.clone()))?;
+    // Validate the renderer-supplied directory path. Use validate_output_dir
+    // (NOT validate_dir_path) because the destination folder is created lazily on
+    // first write — e.g. a fresh "DVD Rescue\<label>" folder on a just-plugged USB
+    // drive does not exist yet. It still rejects UNC, relative paths, '..', and
+    // Windows system dirs while allowing Documents, Desktop, or any external root.
+    crate::util::path_safety::validate_output_dir(&new_output_dir)?;
     manager::update_output_dir(&state.db, id, &new_output_dir).await?;
     manager::get(&state.db, id).await
 }
