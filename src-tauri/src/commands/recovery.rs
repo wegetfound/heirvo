@@ -391,3 +391,73 @@ pub async fn export_receipt_manifest(
 
     Ok(ReceiptManifestResult { manifest, sector_count })
 }
+
+#[derive(Debug, serde::Serialize)]
+pub struct SpaceCheck {
+    /// Bytes the recovered disc image will need (~ the full disc size).
+    pub needed_bytes: u64,
+    /// Free bytes on the volume that holds the session's output directory.
+    pub free_bytes: u64,
+    /// True if there's comfortably enough room (free >= needed + 5% margin).
+    pub fits: bool,
+}
+
+/// Check whether the session's destination drive has room for the disc image
+/// that the rescue will write. Used to warn the user (and suggest a USB drive)
+/// before a long recovery fills the disk.
+#[tauri::command]
+pub async fn recovery_space_check(
+    state: State<'_, AppState>,
+    session_id: String,
+) -> AppResult<SpaceCheck> {
+    let id = Uuid::parse_str(&session_id)
+        .map_err(|_| AppError::SessionNotFound(session_id.clone()))?;
+    let session = manager::get(&state.db, id).await?;
+
+    // The image is one byte per recovered sector; full disc = total_sectors * 2048.
+    let needed_bytes = session.total_sectors.saturating_mul(2048);
+
+    let free_bytes = free_bytes_for_path(&session.output_dir);
+
+    // 5% headroom so we don't greenlight a destination that's right at the edge.
+    let needed_with_margin = needed_bytes.saturating_add(needed_bytes / 20);
+    let fits = free_bytes >= needed_with_margin;
+
+    Ok(SpaceCheck { needed_bytes, free_bytes, fits })
+}
+
+/// Free bytes available on the volume that contains `path`. Returns 0 on any
+/// failure (callers treat 0/!fits as "warn, but don't block").
+#[cfg(windows)]
+fn free_bytes_for_path(path: &str) -> u64 {
+    use std::os::windows::ffi::OsStrExt;
+    // GetDiskFreeSpaceExW accepts a directory path; it resolves to that volume.
+    let wide: Vec<u16> = std::ffi::OsStr::new(path)
+        .encode_wide()
+        .chain(std::iter::once(0))
+        .collect();
+    let mut free_bytes: u64 = 0;
+    #[link(name = "kernel32")]
+    extern "system" {
+        fn GetDiskFreeSpaceExW(
+            lpDirectoryName: *const u16,
+            lpFreeBytesAvailableToCaller: *mut u64,
+            lpTotalNumberOfBytes: *mut u64,
+            lpTotalNumberOfFreeBytes: *mut u64,
+        ) -> i32;
+    }
+    let ok = unsafe {
+        GetDiskFreeSpaceExW(
+            wide.as_ptr(),
+            &mut free_bytes,
+            std::ptr::null_mut(),
+            std::ptr::null_mut(),
+        )
+    };
+    if ok != 0 { free_bytes } else { 0 }
+}
+
+#[cfg(not(windows))]
+fn free_bytes_for_path(_path: &str) -> u64 {
+    0
+}

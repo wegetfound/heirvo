@@ -48,6 +48,9 @@ export function OutputPanel({
   const [error, setError] = useState<string | null>(null);
   const [enrolledDiscId, setEnrolledDiscId] = useState<string | null>(null);
   const [burnLaunched, setBurnLaunched] = useState(false);
+  // Destination free-space check — warns (doesn't block) when the drive may not
+  // have room for the full disc image, nudging toward a USB/external drive.
+  const [spaceWarn, setSpaceWarn] = useState<{ needed: number; free: number } | null>(null);
 
   const { status: license, refresh: refreshLicense } = useLicense();
   const navigate = useNavigate();
@@ -78,6 +81,19 @@ export function OutputPanel({
       .then((all) => setSession(all.find((s) => s.id === sessionId) ?? null))
       .catch(() => {});
   }, [sessionId]);
+
+  // Destination space check — surface a gentle warning if the disc image may not
+  // fit on the chosen drive. Re-runs when the output directory changes.
+  useEffect(() => {
+    let cancelled = false;
+    ipc.recoverySpaceCheck(sessionId)
+      .then((r) => {
+        if (cancelled) return;
+        setSpaceWarn(r && !r.fits ? { needed: r.needed_bytes, free: r.free_bytes } : null);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [sessionId, session?.output_dir]);
 
   // Audio CD probe — runs on mount. If READ TOC succeeds with tracks, the
   // panel switches to audio-CD-only mode (WAV extraction).
@@ -201,9 +217,21 @@ export function OutputPanel({
               {showDrivePicker ? "Hide" : "Change / save to USB"}
             </button>
           </div>
-          <p className="mt-2 text-[11px] leading-snug text-ink-500">
-            Low on space? Big videos and disc images can be large — you can save them straight to a USB stick or external drive.
-          </p>
+          {spaceWarn ? (
+            <div className="mt-2 flex items-start gap-2 rounded-xl border border-amber-200/60 bg-amber-50/60 px-3 py-2 text-[11px] leading-snug text-amber-800">
+              <span className="mt-0.5 flex-shrink-0 text-sm leading-none">⚠️</span>
+              <span>
+                <strong>This drive may be low on space.</strong>{" "}
+                Saving everything from this disc can need about {bytesToHuman(spaceWarn.needed)},
+                but only {bytesToHuman(spaceWarn.free)} is free here. Use{" "}
+                <strong>Change / save to USB</strong> above to pick a drive with more room.
+              </span>
+            </div>
+          ) : (
+            <p className="mt-2 text-[11px] leading-snug text-ink-500">
+              Low on space? Big videos and disc images can be large — you can save them straight to a USB stick or external drive.
+            </p>
+          )}
           {showDrivePicker && (
             <div className="mt-3 grid grid-cols-1 gap-2">
               {storageDrives.length === 0 ? (
