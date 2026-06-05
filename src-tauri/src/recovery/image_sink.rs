@@ -38,6 +38,7 @@ pub fn disc_image_path(output_dir: &str, disc_label: &str) -> PathBuf {
 pub struct ImageSink {
     file: std::fs::File,
     sector_size: u64,
+    total_sectors: u64,
 }
 
 impl ImageSink {
@@ -57,7 +58,11 @@ impl ImageSink {
         if file.metadata()?.len() < want {
             file.set_len(want)?;
         }
-        Ok(Self { file, sector_size: sector_size as u64 })
+        Ok(Self {
+            file,
+            sector_size: sector_size as u64,
+            total_sectors,
+        })
     }
 
     /// Write one sector's bytes at `lba * sector_size`. Positioned and
@@ -65,7 +70,25 @@ impl ImageSink {
     /// recovery — the sector is still Good in the map and can be re-derived from
     /// the disc if absolutely needed.
     pub fn write_sector(&self, lba: u64, data: &[u8]) {
-        let mut offset = lba.saturating_mul(self.sector_size);
+        // Guard against LBA out of bounds (bogus drive capacity).
+        if lba >= self.total_sectors {
+            tracing::warn!(
+                "write_sector: LBA {lba} >= total_sectors {}, skipping",
+                self.total_sectors
+            );
+            return;
+        }
+        // Guard against offset overflow.
+        let mut offset = match lba.checked_mul(self.sector_size) {
+            Some(off) => off,
+            None => {
+                tracing::warn!(
+                    "write_sector: offset overflow for LBA {lba} * sector_size {}",
+                    self.sector_size
+                );
+                return;
+            }
+        };
         let mut buf = data;
         while !buf.is_empty() {
             match self.write_at(buf, offset) {

@@ -464,13 +464,26 @@ fn scsi_passthrough_raw(
     direction: u8,
     timeout_secs: u32,
 ) -> io::Result<(u8, [u8; 32])> {
+    // Guard: reject CDB longer than 16 bytes (the cdb array size).
+    if cdb.len() > 16 {
+        return Err(io::Error::other(format!("CDB too long: {}", cdb.len())));
+    }
+
+    // Guard: checked conversion for cdb_length (max 255).
+    let cdb_length = u8::try_from(cdb.len())
+        .map_err(|_| io::Error::other("CDB length overflow"))?;
+
+    // Guard: checked conversion for data_transfer_length (max u32::MAX).
+    let data_transfer_length = u32::try_from(data_buf.len())
+        .map_err(|_| io::Error::other("transfer length overflow"))?;
+
     let mut req = ScsiPassThroughDirectWithBuffer {
         sptd: ScsiPassThroughDirect {
             length: std::mem::size_of::<ScsiPassThroughDirect>() as u16,
-            cdb_length: cdb.len() as u8,
+            cdb_length,
             sense_info_length: 32,
             data_in: direction,
-            data_transfer_length: data_buf.len() as u32,
+            data_transfer_length,
             timeout_value: timeout_secs,
             data_buffer: data_buf.as_mut_ptr() as *mut _,
             sense_info_offset: (std::mem::size_of::<ScsiPassThroughDirect>() + 4) as u32,
