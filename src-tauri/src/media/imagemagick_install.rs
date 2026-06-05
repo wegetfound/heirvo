@@ -4,9 +4,9 @@
 //! extracts ALL files (magick.exe + DLLs + XML configs) into
 //! `<app_data>/imagemagick/` so `imagemagick::locate()` can find them.
 //!
-//! Source: `https://api.github.com/repos/ImageMagick/ImageMagick/releases/latest`
-//! Asset name must contain `portable-Q16-x64.7z` (NOT HDRI, NOT Q8, NOT x86).
-//! Example: `ImageMagick-7.1.2-23-portable-Q16-x64.7z`
+//! Source: a PINNED GitHub release asset (see `IM_DOWNLOAD_URL`), NOT "latest".
+//! Asset is the `portable-Q16-x64.7z` build (NOT HDRI, NOT Q8, NOT x86) and its
+//! SHA-256 is verified before extraction — a hash mismatch is a hard failure.
 
 use crate::error::{AppError, AppResult};
 use crate::media::ffmpeg_install::{InstallProgress, InstallStage};
@@ -17,17 +17,27 @@ use std::path::Path;
 use std::sync::Arc;
 use tauri::{AppHandle, Emitter, Manager};
 
-/// GitHub Releases API — resolve the latest portable-Q16-x64.7z asset.
-const IM_GH_API_LATEST: &str =
-    "https://api.github.com/repos/ImageMagick/ImageMagick/releases/latest";
-
-/// SHA-256 of the ImageMagick portable-Q16-x64.7z artifact.
+/// Pinned ImageMagick release.
 ///
-/// TODO(release): pin the real published hash before shipping.
-/// GitHub Releases publishes a `.sha256` sidecar for each asset; compute it
-/// via `sha256sum ImageMagick-*-portable-Q16-x64.7z` after a trusted download.
-/// Set to `Some("abcdef…64-hex-chars…")` — the check is enforced at that point.
-const IM_EXPECTED_SHA256: Option<&str> = None;
+/// SECURITY: we deliberately do NOT track "latest". Auto-resolving the newest
+/// GitHub release means the exact bytes we execute can change without review —
+/// a textbook supply-chain anti-pattern (a compromised or hijacked future
+/// release would be fetched and run automatically). Instead we pin ONE reviewed
+/// version and verify its SHA-256 before extraction. Bumping is a deliberate,
+/// reviewed action:
+///   1. pick the new `portable-Q16-x64` (non-HDRI) asset,
+///   2. download it over TLS and `sha256sum` it (or read GitHub's asset
+///      `digest` field),
+///   3. update `IM_PINNED_VERSION`, `IM_DOWNLOAD_URL`, and `IM_EXPECTED_SHA256`
+///      together in the same commit.
+///
+/// Pinned hash verified 2026-06-05 against THREE independent sources: the
+/// GitHub API asset `digest`, a local download + `Get-FileHash`, and the
+/// matching 22 252 145-byte asset size.
+const IM_PINNED_VERSION: &str = "7.1.2-25";
+const IM_DOWNLOAD_URL: &str = "https://github.com/ImageMagick/ImageMagick/releases/download/7.1.2-25/ImageMagick-7.1.2-25-portable-Q16-x64.7z";
+const IM_EXPECTED_SHA256: &str =
+    "8f24750b419232ce0655f17cc39e6d80912a126d39b77d4a8ee512a054aaebb5";
 
 pub async fn install(app: AppHandle) -> AppResult<String> {
     let data_dir = app
@@ -48,7 +58,7 @@ pub async fn install(app: AppHandle) -> AppResult<String> {
         stage: InstallStage::Starting,
         bytes_done: 0,
         bytes_total: 0,
-        message: "Connecting to GitHub…".into(),
+        message: format!("Downloading ImageMagick {IM_PINNED_VERSION}…"),
     });
 
     let client = reqwest::Client::builder()
@@ -57,49 +67,10 @@ pub async fn install(app: AppHandle) -> AppResult<String> {
         .build()
         .map_err(|e| AppError::Internal(format!("reqwest builder: {e}")))?;
 
-    // Resolve the download URL via GitHub Releases API.
-    let api_resp = client
-        .get(IM_GH_API_LATEST)
-        .header("Accept", "application/vnd.github+json")
-        .send()
-        .await
-        .and_then(|r| r.error_for_status())
-        .map_err(|e| AppError::Media(format!("download: GitHub API: {e}")))?;
-
-    let json: serde_json::Value = api_resp
-        .json()
-        .await
-        .map_err(|e| AppError::Media(format!("download: parse GitHub API json: {e}")))?;
-
-    // Find asset whose name contains "portable-Q16-x64.7z" but NOT "HDRI".
-    let asset_url = json["assets"]
-        .as_array()
-        .and_then(|assets| {
-            assets.iter().find_map(|a| {
-                let name = a["name"].as_str()?;
-                if name.contains("portable-Q16-x64.7z") && !name.contains("HDRI") {
-                    a["browser_download_url"].as_str().map(String::from)
-                } else {
-                    None
-                }
-            })
-        })
-        .ok_or_else(|| {
-            AppError::Media(
-                "download: no portable-Q16-x64.7z (non-HDRI) asset in latest GitHub release"
-                    .into(),
-            )
-        })?;
-
-    emit(InstallProgress {
-        stage: InstallStage::Starting,
-        bytes_done: 0,
-        bytes_total: 0,
-        message: "Resolved asset URL, starting download…".into(),
-    });
-
+    // Download the PINNED asset directly — no "latest" resolution, no GitHub API
+    // call. The bytes are gated by the compiled-in SHA-256 below.
     let resp = client
-        .get(&asset_url)
+        .get(IM_DOWNLOAD_URL)
         .send()
         .await
         .and_then(|r| r.error_for_status())
@@ -144,39 +115,37 @@ pub async fn install(app: AppHandle) -> AppResult<String> {
         .map_err(|e| AppError::Media(format!("sync partial: {e}")))?;
     drop(partial_file);
 
-    // --- SHA-256 integrity check (BEFORE extraction) ---
-    match IM_EXPECTED_SHA256 {
-        Some(expected) => {
-            emit(InstallProgress {
-                stage: InstallStage::Extracting,
+    // --- SHA-256 integrity check (BEFORE extraction) — MANDATORY ---
+    // The pinned hash is the supply-chain gate: we never extract or execute
+    // bytes we haven't verified. A mismatch fails closed (partial deleted).
+    emit(InstallProgress {
+        stage: InstallStage::Extracting,
+        bytes_done: downloaded,
+        bytes_total: total,
+        message: "Verifying SHA-256…".into(),
+    });
+    let actual = format!("{:x}", hasher.finalize());
+    if !actual.eq_ignore_ascii_case(IM_EXPECTED_SHA256) {
+        let _ = std::fs::remove_file(&partial_path);
+        // Don't surface the long hex in the user-facing message — keep it calm,
+        // log the detail for diagnostics.
+        tracing::error!(
+            "ImageMagick archive hash mismatch: expected {IM_EXPECTED_SHA256}, got {actual}"
+        );
+        let msg = "Downloaded ImageMagick failed its security check and was \
+                   discarded. Please try again — if it keeps happening, your \
+                   connection may be tampering with downloads."
+            .to_string();
+        let _ = app.emit(
+            "imagemagick:install_progress",
+            &InstallProgress {
+                stage: InstallStage::Failed,
                 bytes_done: downloaded,
                 bytes_total: total,
-                message: "Verifying SHA-256…".into(),
-            });
-            let actual = format!("{:x}", hasher.finalize());
-            if !actual.eq_ignore_ascii_case(expected) {
-                let _ = std::fs::remove_file(&partial_path);
-                let msg = format!(
-                    "ImageMagick archive hash mismatch: expected {expected}, got {actual}"
-                );
-                let _ = app.emit(
-                    "imagemagick:install_progress",
-                    &InstallProgress {
-                        stage: InstallStage::Failed,
-                        bytes_done: downloaded,
-                        bytes_total: total,
-                        message: msg.clone(),
-                    },
-                );
-                return Err(AppError::Media(msg));
-            }
-        }
-        None => {
-            tracing::warn!(
-                "ImageMagick download integrity check skipped — hash not pinned \
-                 (set IM_EXPECTED_SHA256 before release)"
-            );
-        }
+                message: msg.clone(),
+            },
+        );
+        return Err(AppError::Media(msg));
     }
 
     emit(InstallProgress {

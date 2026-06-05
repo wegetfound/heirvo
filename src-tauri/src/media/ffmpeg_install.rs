@@ -1,11 +1,12 @@
 //! FFmpeg auto-downloader.
 //!
-//! Fetches the Gyan D "essentials" build (LGPL, no GPL components, ~80MB zip)
-//! and extracts `ffmpeg.exe` + `ffprobe.exe` into `<app_data>/ffmpeg/`.
+//! Fetches the Gyan D "essentials" build (LGPL, no GPL components) and extracts
+//! `ffmpeg.exe` + `ffprobe.exe` into `<app_data>/ffmpeg/`.
 //!
-//! Source: GitHub Releases mirror of https://www.gyan.dev/ffmpeg/builds/ —
-//! same binary, served from GitHub CDN for better reliability.
-//! Falls back to the direct gyan.dev URL if the primary fails.
+//! Source: a PINNED, immutable GyanD GitHub release asset (see
+//! `FFMPEG_DOWNLOAD_URL`), NOT the rolling `ffmpeg-release-essentials.zip`. The
+//! archive's SHA-256 is verified before extraction — a mismatch is a hard
+//! failure. See `imagemagick_install.rs` for the rationale on pinning.
 
 use crate::error::{AppError, AppResult};
 use futures_util::StreamExt;
@@ -16,34 +17,27 @@ use std::path::Path;
 use std::sync::Arc;
 use tauri::{AppHandle, Emitter, Manager};
 
-/// SHA-256 of the Gyan D ffmpeg-release-essentials.zip artifact.
+/// Pinned FFmpeg release (GyanD "essentials", LGPL).
 ///
-/// TODO(release): pin the real published hash before shipping.
-/// Obtain it from https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip.sha256
-/// or by computing `sha256sum ffmpeg-release-essentials.zip` after a trusted download.
-/// Set to `Some("abcdef…64-hex-chars…")` — the check is enforced at that point.
-const FFMPEG_EXPECTED_SHA256: Option<&str> = None;
-
-/// Primary: direct gyan.dev URL (stable filename across versions).
+/// SECURITY: we pin an IMMUTABLE versioned asset and verify its SHA-256 rather
+/// than tracking the rolling `ffmpeg-release-essentials.zip`. The rolling file
+/// changes every few weeks, which is incompatible with a pinned hash and means
+/// the exact bytes we execute could change without review. Bumping is a
+/// deliberate, reviewed action:
+///   1. pick the new GyanD `*-essentials_build.zip` asset,
+///   2. download it over TLS and `sha256sum` it (or read GitHub's asset
+///      `digest`),
+///   3. update `FFMPEG_PINNED_VERSION`, `FFMPEG_DOWNLOAD_URL`, and
+///      `FFMPEG_EXPECTED_SHA256` together in the same commit.
+///
+/// Pinned hash verified 2026-06-05 against THREE independent sources: the GitHub
+/// API asset `digest`, a local download + `Get-FileHash`, and the matching
+/// 109 282 242-byte asset size.
+const FFMPEG_PINNED_VERSION: &str = "8.1.1";
 const FFMPEG_DOWNLOAD_URL: &str =
-    "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip";
-
-/// Extract the SHA-256 hex digest from a `.sha256` sidecar file body.
-///
-/// Sidecars come in a few shapes: a bare 64-hex digest, `sha256sum` format
-/// (`<hex>  <filename>`), or BSD `SHA256 (file) = <hex>`. We accept any line
-/// containing a standalone 64-char hex token.
-fn parse_sha256_sidecar(body: &str) -> Option<String> {
-    body.split(|c: char| !c.is_ascii_hexdigit())
-        .find(|tok| tok.len() == 64)
-        .map(|tok| tok.to_ascii_lowercase())
-}
-
-/// Fallback: GitHub Releases API — find the latest *essentials_build.zip asset.
-/// (Asset filename embeds the version, e.g. `ffmpeg-8.1.1-essentials_build.zip`,
-/// so we can't hardcode it; we resolve it dynamically.)
-const FFMPEG_GH_API_LATEST: &str =
-    "https://api.github.com/repos/GyanD/codexffmpeg/releases/latest";
+    "https://github.com/GyanD/codexffmpeg/releases/download/8.1.1/ffmpeg-8.1.1-essentials_build.zip";
+const FFMPEG_EXPECTED_SHA256: &str =
+    "6f58ce889f59c311410f7d2b18895b33c03456463486f3b1ebc93d97a0f54541";
 
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "snake_case")]
@@ -82,7 +76,7 @@ pub async fn install(app: AppHandle) -> AppResult<String> {
         stage: InstallStage::Starting,
         bytes_done: 0,
         bytes_total: 0,
-        message: "Connecting…".into(),
+        message: format!("Downloading FFmpeg {FFMPEG_PINNED_VERSION}…"),
     });
 
     let client = reqwest::Client::builder()
@@ -91,81 +85,21 @@ pub async fn install(app: AppHandle) -> AppResult<String> {
         .build()
         .map_err(|e| AppError::Internal(format!("reqwest builder: {e}")))?;
 
-    // Try primary URL (gyan.dev — stable filename). Fall back on BOTH transport
-    // errors AND HTTP error status (404, 503, etc.) by resolving the real GitHub
-    // asset URL via the API.
-    let try_primary = async {
-        client
-            .get(FFMPEG_DOWNLOAD_URL)
-            .send()
-            .await
-            .and_then(|r| r.error_for_status())
-    };
-
-    // The actual URL we end up downloading from — used to locate the matching
-    // `.sha256` sidecar for integrity verification.
-    let mut chosen_url = FFMPEG_DOWNLOAD_URL.to_string();
-    let resp = match try_primary.await {
-        Ok(r) => r,
-        Err(primary_err) => {
-            emit(InstallProgress {
-                stage: InstallStage::Starting,
-                bytes_done: 0,
-                bytes_total: 0,
-                message: "Primary mirror unavailable, trying GitHub…".into(),
-            });
-
-            // Resolve the real download URL from the GitHub Releases API.
-            let api_resp = client
-                .get(FFMPEG_GH_API_LATEST)
-                .header("Accept", "application/vnd.github+json")
-                .send()
-                .await
-                .and_then(|r| r.error_for_status())
-                .map_err(|e| {
-                    AppError::Media(format!("download: primary={primary_err} fallback_api={e}"))
-                })?;
-
-            let json: serde_json::Value = api_resp
-                .json()
-                .await
-                .map_err(|e| AppError::Media(format!("download: parse GitHub API json: {e}")))?;
-
-            let asset_url = json["assets"]
-                .as_array()
-                .and_then(|assets| {
-                    assets.iter().find_map(|a| {
-                        let name = a["name"].as_str()?;
-                        if name.ends_with("essentials_build.zip") {
-                            a["browser_download_url"].as_str().map(String::from)
-                        } else {
-                            None
-                        }
-                    })
-                })
-                .ok_or_else(|| {
-                    AppError::Media(
-                        "download: no essentials_build.zip asset in latest GitHub release"
-                            .into(),
-                    )
-                })?;
-
-            chosen_url = asset_url.clone();
-            client
-                .get(&asset_url)
-                .send()
-                .await
-                .and_then(|r| r.error_for_status())
-                .map_err(|e| AppError::Media(format!("download: github asset: {e}")))?
-        }
-    };
+    // Download the PINNED, immutable asset directly. No "latest" resolution, no
+    // GitHub API call — the bytes are gated by the compiled-in SHA-256 below.
+    let resp = client
+        .get(FFMPEG_DOWNLOAD_URL)
+        .send()
+        .await
+        .and_then(|r| r.error_for_status())
+        .map_err(|e| AppError::Media(format!("download: FFmpeg asset: {e}")))?;
 
     let total = resp.content_length().unwrap_or(0);
     let mut downloaded: u64 = 0;
     let mut hasher = Sha256::new();
 
-    // Stream to a `.partial` temp file — avoids holding ~80 MB in RAM.
-    let partial_path = target_dir.join("ffmpeg-release-essentials.zip.partial");
+    // Stream to a `.partial` temp file — avoids holding ~100 MB in RAM.
+    let partial_path = target_dir.join("ffmpeg-essentials.zip.partial");
     let mut partial_file = std::fs::File::create(&partial_path)
         .map_err(|e| AppError::Media(format!("create partial: {e}")))?;
 
@@ -199,77 +133,35 @@ pub async fn install(app: AppHandle) -> AppResult<String> {
         .map_err(|e| AppError::Media(format!("sync partial: {e}")))?;
     drop(partial_file);
 
-    // --- SHA-256 integrity check (BEFORE extraction) ---
-    match FFMPEG_EXPECTED_SHA256 {
-        Some(expected) => {
-            emit(InstallProgress {
-                stage: InstallStage::Extracting,
+    // --- SHA-256 integrity check (BEFORE extraction) — MANDATORY ---
+    // The pinned hash is the supply-chain gate: we never extract or execute
+    // bytes we haven't verified. A mismatch fails closed (partial deleted).
+    emit(InstallProgress {
+        stage: InstallStage::Extracting,
+        bytes_done: downloaded,
+        bytes_total: total,
+        message: "Verifying SHA-256…".into(),
+    });
+    let actual = format!("{:x}", hasher.finalize());
+    if !actual.eq_ignore_ascii_case(FFMPEG_EXPECTED_SHA256) {
+        let _ = std::fs::remove_file(&partial_path);
+        tracing::error!(
+            "FFmpeg archive hash mismatch: expected {FFMPEG_EXPECTED_SHA256}, got {actual}"
+        );
+        let msg = "Downloaded FFmpeg failed its security check and was \
+                   discarded. Please try again — if it keeps happening, your \
+                   connection may be tampering with downloads."
+            .to_string();
+        let _ = app.emit(
+            "ffmpeg:install_progress",
+            &InstallProgress {
+                stage: InstallStage::Failed,
                 bytes_done: downloaded,
                 bytes_total: total,
-                message: "Verifying SHA-256…".into(),
-            });
-            let actual = format!("{:x}", hasher.finalize());
-            if !actual.eq_ignore_ascii_case(expected) {
-                let _ = std::fs::remove_file(&partial_path);
-                let msg = format!(
-                    "FFmpeg archive hash mismatch: expected {expected}, got {actual}"
-                );
-                let _ = app.emit(
-                    "ffmpeg:install_progress",
-                    &InstallProgress {
-                        stage: InstallStage::Failed,
-                        bytes_done: downloaded,
-                        bytes_total: total,
-                        message: msg.clone(),
-                    },
-                );
-                return Err(AppError::Media(msg));
-            }
-        }
-        None => {
-            // No pinned constant — fall back to the publisher's `.sha256` sidecar
-            // (gyan.dev and the GitHub mirror both publish `<file>.sha256`). This
-            // self-updates with the rolling build, so it protects against CDN/
-            // transit corruption without a release-time hash bump. Fail CLOSED on a
-            // genuine mismatch; fail OPEN (warn only) if the sidecar is unavailable
-            // so a sidecar outage can't brick installs.
-            let sidecar_url = format!("{chosen_url}.sha256");
-            match client.get(&sidecar_url).send().await {
-                Ok(r) => match r.error_for_status() {
-                    Ok(r) => match r.text().await {
-                        Ok(body) => match parse_sha256_sidecar(&body) {
-                            Some(expected) => {
-                                let actual = format!("{:x}", hasher.finalize());
-                                if !actual.eq_ignore_ascii_case(&expected) {
-                                    let _ = std::fs::remove_file(&partial_path);
-                                    let msg = format!(
-                                        "FFmpeg archive hash mismatch vs sidecar: \
-                                         expected {expected}, got {actual}"
-                                    );
-                                    let _ = app.emit(
-                                        "ffmpeg:install_progress",
-                                        &InstallProgress {
-                                            stage: InstallStage::Failed,
-                                            bytes_done: downloaded,
-                                            bytes_total: total,
-                                            message: msg.clone(),
-                                        },
-                                    );
-                                    return Err(AppError::Media(msg));
-                                }
-                                tracing::info!("FFmpeg archive verified against .sha256 sidecar");
-                            }
-                            None => tracing::warn!(
-                                "FFmpeg .sha256 sidecar present but unparseable — integrity check skipped"
-                            ),
-                        },
-                        Err(e) => tracing::warn!("FFmpeg .sha256 sidecar read failed ({e}) — integrity check skipped"),
-                    },
-                    Err(e) => tracing::warn!("FFmpeg .sha256 sidecar unavailable ({e}) — integrity check skipped"),
-                },
-                Err(e) => tracing::warn!("FFmpeg .sha256 sidecar fetch failed ({e}) — integrity check skipped"),
-            }
-        }
+                message: msg.clone(),
+            },
+        );
+        return Err(AppError::Media(msg));
     }
 
     emit(InstallProgress {
@@ -351,35 +243,4 @@ fn extract_ffmpeg_binaries(zip_bytes: &[u8], target_dir: &Path) -> std::io::Resu
         )));
     }
     Ok(())
-}
-
-#[cfg(test)]
-mod tests {
-    use super::parse_sha256_sidecar;
-
-    const HEX: &str = "abc123def456abc123def456abc123def456abc123def456abc123def456abcd";
-
-    #[test]
-    fn bare_digest() {
-        assert_eq!(parse_sha256_sidecar(HEX).as_deref(), Some(HEX));
-    }
-
-    #[test]
-    fn sha256sum_format() {
-        let body = format!("{HEX}  ffmpeg-release-essentials.zip\n");
-        assert_eq!(parse_sha256_sidecar(&body).as_deref(), Some(HEX));
-    }
-
-    #[test]
-    fn bsd_format_and_uppercase() {
-        let body = format!("SHA256 (ffmpeg.zip) = {}\n", HEX.to_uppercase());
-        assert_eq!(parse_sha256_sidecar(&body).as_deref(), Some(HEX));
-    }
-
-    #[test]
-    fn rejects_short_or_absent() {
-        assert_eq!(parse_sha256_sidecar("not a hash here"), None);
-        assert_eq!(parse_sha256_sidecar("abc123"), None);
-        assert_eq!(parse_sha256_sidecar(""), None);
-    }
 }
