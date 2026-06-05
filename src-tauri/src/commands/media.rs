@@ -345,12 +345,26 @@ pub async fn save_as_mp4(
     }
     let session = manager::get(&state.db, id).await?;
 
-    // Make sure VOBs have been extracted to disk.
+    // Make sure the *title* VOBs have been extracted to disk.
+    //
+    // We deliberately check for real title VOBs — not merely "the VIDEO_TS
+    // folder is non-empty". An earlier or interrupted extraction (e.g. from a
+    // prior build, or a cancelled save) can leave a VIDEO_TS folder holding only
+    // IFO/BUP stubs and no .VOB. The old guard treated that non-empty folder as
+    // "already extracted", skipped re-extraction, and then failed downstream with
+    // "no playable VOBs found" even though the recovered image has the video.
+    // Using the SAME predicate as the playable-VOB collector below means: if no
+    // file that would actually be fed to the muxer is present, we re-extract.
     let vob_dir = PathBuf::from(&session.output_dir).join("VIDEO_TS");
-    let need_extract = !vob_dir.exists()
-        || std::fs::read_dir(&vob_dir)
-            .map(|d| d.filter_map(|e| e.ok()).count() == 0)
-            .unwrap_or(true);
+    let has_title_vob = std::fs::read_dir(&vob_dir)
+        .map(|d| {
+            d.filter_map(|e| e.ok()).any(|e| {
+                let n = e.file_name().to_string_lossy().to_ascii_uppercase();
+                n.ends_with(".VOB") && n != "VIDEO_TS.VOB" && !n.ends_with("_0.VOB")
+            })
+        })
+        .unwrap_or(false);
+    let need_extract = !has_title_vob;
 
     if need_extract {
         tracing::info!("save_as_mp4: VOBs not present, extracting");
