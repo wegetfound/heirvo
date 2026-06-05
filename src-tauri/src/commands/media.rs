@@ -22,6 +22,32 @@ pub struct IsoResult {
     pub good_read_failed_sectors: u64,
 }
 
+/// Open the best sector reader for EXTRACTION (VOB/MP4/file copy): the local
+/// disc image if the rescue already wrote one (disc not touched), otherwise the
+/// live drive. Returned boxed so callers can pass `reader.as_ref()` to anything
+/// taking `&dyn SectorReader`.
+#[cfg(windows)]
+pub(crate) fn open_extraction_reader(
+    output_dir: &str,
+    disc_label: &str,
+    drive_path: &str,
+) -> AppResult<Box<dyn crate::disc::sector::SectorReader>> {
+    let image = crate::recovery::image_sink::disc_image_path(output_dir, disc_label);
+    if image.exists() {
+        tracing::info!(
+            "extraction: reading from local disc image {} (disc not touched)",
+            image.display()
+        );
+        let r = crate::disc::iso_file::IsoFileSectorReader::open(&image)
+            .map_err(|e| AppError::Media(format!("open disc image: {e}")))?;
+        Ok(Box::new(r))
+    } else {
+        let r = crate::disc::scsi_windows::ScsiSectorReader::open(drive_path)
+            .map_err(|e| AppError::Drive(format!("open drive: {e}")))?;
+        Ok(Box::new(r))
+    }
+}
+
 #[tauri::command]
 pub async fn create_iso(
     state: State<'_, AppState>,
@@ -232,24 +258,26 @@ pub async fn save_as_mp4(
     if need_extract {
         tracing::info!("save_as_mp4: VOBs not present, extracting");
         let drive_path = session.drive_path.clone();
+        let output_dir = session.output_dir.clone();
+        let disc_label = session.disc_label.clone();
         let map = manager::load_sector_map(&state.db, id).await?;
         let vob_dir_clone = vob_dir.clone();
         tokio::task::spawn_blocking(move || -> AppResult<()> {
             #[cfg(windows)]
             {
-                use crate::disc::scsi_windows::ScsiSectorReader;
-                let reader = ScsiSectorReader::open(&drive_path)
-                    .map_err(|e| AppError::Drive(format!("open: {e}")))?;
-                let all = crate::dvd::iso9660::list_video_ts(&reader)
+                // Prefer the local disc image (written during the rescue) so we
+                // never re-read the disc.
+                let reader = open_extraction_reader(&output_dir, &disc_label, &drive_path)?;
+                let all = crate::dvd::iso9660::list_video_ts(reader.as_ref())
                     .map_err(|e| AppError::DvdStructure(format!("list_video_ts: {e}")))?
                     .ok_or_else(|| AppError::DvdStructure("no VIDEO_TS folder".into()))?;
-                crate::media::vob::extract_files(&reader, map.as_ref(), &all, &vob_dir_clone)
+                crate::media::vob::extract_files(reader.as_ref(), map.as_ref(), &all, &vob_dir_clone)
                     .map_err(|e| AppError::Media(format!("extract_files: {e}")))?;
                 Ok(())
             }
             #[cfg(not(windows))]
             {
-                let _ = (drive_path, vob_dir_clone, map);
+                let _ = (drive_path, output_dir, disc_label, vob_dir_clone, map);
                 Err(AppError::NotImplemented("save_as_mp4 (non-Windows)"))
             }
         })

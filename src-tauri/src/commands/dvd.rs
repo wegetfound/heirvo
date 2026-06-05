@@ -167,15 +167,20 @@ pub async fn extract_vobs(
     let map = manager::load_sector_map(&state.db, id).await?;
 
     let drive_path = session.drive_path.clone();
+    let session_output_dir = session.output_dir.clone();
+    let disc_label = session.disc_label.clone();
     let output_dir = std::path::PathBuf::from(&session.output_dir).join("VIDEO_TS");
 
     let extracted = tokio::task::spawn_blocking(move || -> AppResult<_> {
         #[cfg(windows)]
         {
-            use crate::disc::scsi_windows::ScsiSectorReader;
-            let reader = ScsiSectorReader::open(&drive_path)
-                .map_err(|e| AppError::Drive(format!("open: {e}")))?;
-            let all = crate::dvd::iso9660::list_video_ts(&reader)
+            // Prefer the local disc image written during the rescue (no disc re-read).
+            let reader = crate::commands::media::open_extraction_reader(
+                &session_output_dir,
+                &disc_label,
+                &drive_path,
+            )?;
+            let all = crate::dvd::iso9660::list_video_ts(reader.as_ref())
                 .map_err(|e| AppError::DvdStructure(format!("list_video_ts: {e}")))?
                 .ok_or_else(|| AppError::DvdStructure("no VIDEO_TS folder".into()))?;
             let selected: Vec<_> = if file_names.is_empty() {
@@ -183,12 +188,12 @@ pub async fn extract_vobs(
             } else {
                 all.into_iter().filter(|e| file_names.iter().any(|n| n.eq_ignore_ascii_case(&e.name))).collect()
             };
-            crate::media::vob::extract_files(&reader, map.as_ref(), &selected, &output_dir)
+            crate::media::vob::extract_files(reader.as_ref(), map.as_ref(), &selected, &output_dir)
                 .map_err(|e| AppError::Media(format!("extract_files: {e}")))
         }
         #[cfg(not(windows))]
         {
-            let _ = (drive_path, output_dir, file_names, map);
+            let _ = (drive_path, session_output_dir, disc_label, output_dir, file_names, map);
             Err(AppError::NotImplemented("extract_vobs (non-Windows)"))
         }
     })
@@ -213,22 +218,27 @@ pub async fn extract_all_files(
     let map = manager::load_sector_map(&state.db, id).await?;
 
     let drive_path = session.drive_path.clone();
+    let session_output_dir = session.output_dir.clone();
+    let disc_label = session.disc_label.clone();
     let output_dir = std::path::PathBuf::from(&session.output_dir).join("Recovered Files");
 
     let extracted = tokio::task::spawn_blocking(move || -> AppResult<_> {
         #[cfg(windows)]
         {
-            use crate::disc::scsi_windows::ScsiSectorReader;
-            let reader = ScsiSectorReader::open(&drive_path)
-                .map_err(|e| AppError::Drive(format!("open: {e}")))?;
-            let all = crate::dvd::iso9660::walk_all_files(&reader)
+            // Prefer the local disc image written during the rescue (no disc re-read).
+            let reader = crate::commands::media::open_extraction_reader(
+                &session_output_dir,
+                &disc_label,
+                &drive_path,
+            )?;
+            let all = crate::dvd::iso9660::walk_all_files(reader.as_ref())
                 .map_err(|e| AppError::DvdStructure(format!("walk_all_files: {e}")))?;
-            crate::media::vob::extract_files(&reader, map.as_ref(), &all, &output_dir)
+            crate::media::vob::extract_files(reader.as_ref(), map.as_ref(), &all, &output_dir)
                 .map_err(|e| AppError::Media(format!("extract_files: {e}")))
         }
         #[cfg(not(windows))]
         {
-            let _ = (drive_path, output_dir, map);
+            let _ = (drive_path, session_output_dir, disc_label, output_dir, map);
             Err(AppError::NotImplemented("extract_all_files (non-Windows)"))
         }
     })
