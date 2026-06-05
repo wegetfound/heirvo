@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { ipc } from "@/lib/ipc";
 import type { HealthReport, IsoResult, ExtractedFile, StorageDrive, Session, AudioToc, ExtractedAudioFile } from "@/lib/types";
-import { FileVideo, Files, Loader2, FileArchive, LifeBuoy, Save, Upload, Usb, HardDrive, Pencil, Music, FolderOpen, ArrowRight, ShieldCheck } from "lucide-react";
+import { FileVideo, Files, Loader2, FileArchive, LifeBuoy, Save, Upload, Usb, HardDrive, Pencil, Music, FolderOpen, ArrowRight, ShieldCheck, Search } from "lucide-react";
 import { open as openDialog, save as saveDialog } from "@tauri-apps/plugin-dialog";
 import { bytesToHuman } from "@/lib/human";
 import { useLicense } from "@/lib/useLicense";
@@ -49,6 +49,7 @@ export function OutputPanel({
   const [enrolledDiscId, setEnrolledDiscId] = useState<string | null>(null);
 
   const { status: license, refresh: refreshLicense } = useLicense();
+  const navigate = useNavigate();
   const canSave = license.can_save;
 
   // Paywall modal — shown when free user clicks a save action
@@ -145,6 +146,32 @@ export function OutputPanel({
     }
   };
 
+  // Convert to a webview-playable MP4, save it, and enroll into the Library
+  // (which also starts transcription so every spoken word becomes searchable).
+  // Returns the new Library disc id, or null if enrollment failed.
+  const convertAndEnroll = async (): Promise<string | null> => {
+    const r = await ipc.saveAsMp4(sessionId);
+    setMp4(r);
+    onMp4Saved?.(r.output_path);
+    refreshLicense().catch(() => {});
+    try {
+      const label = session?.user_label || session?.disc_label || null;
+      const base = r.output_path.split(/[\\/]/).pop() ?? r.output_path;
+      const stem = base.replace(/\.[^.]+$/, "");
+      const derived = stem.replace(/[_\-]+/g, " ").trim()
+        .replace(/\b\w/g, (c) => c.toUpperCase()) || "Recovered disc";
+      const title = label ?? derived;
+      const enrolled = await ipc.library.importMedia(r.output_path, title);
+      if (!enrolled.isDuplicate) {
+        await ipc.transcription.enqueue(enrolled.id, r.output_path).catch(() => {});
+      }
+      setEnrolledDiscId(enrolled.id);
+      return enrolled.id;
+    } catch {
+      return null;
+    }
+  };
+
   return (
     <div className="output-panel-root px-4 py-4">
       <div className="mb-4 border-b border-ink-200/70 pb-3">
@@ -170,14 +197,17 @@ export function OutputPanel({
               className="inline-flex items-center gap-1.5 rounded-full border border-ink-200 bg-white/90 px-3 py-1 text-[11px] font-medium text-ink-600 hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700 transition-colors"
             >
               <Pencil className="h-3 w-3" />
-              {showDrivePicker ? "Hide" : "Change drive"}
+              {showDrivePicker ? "Hide" : "Change / save to USB"}
             </button>
           </div>
+          <p className="mt-2 text-[11px] leading-snug text-ink-500">
+            Low on space? Big videos and disc images can be large — you can save them straight to a USB stick or external drive.
+          </p>
           {showDrivePicker && (
             <div className="mt-3 grid grid-cols-1 gap-2">
               {storageDrives.length === 0 ? (
                 <p className="text-[12px] text-ink-500">No drives detected.</p>
-              ) : storageDrives.map((d) => {
+              ) : [...storageDrives].sort((a, b) => Number(b.kind === "removable") - Number(a.kind === "removable")).map((d) => {
                 const isUsb = d.kind === "removable";
                 return (
                   <button
@@ -392,27 +422,7 @@ export function OutputPanel({
                 <button
                   className="btn btn-primary w-full justify-center"
                   disabled={busy !== null}
-                  onClick={() => guardedSave(async () => {
-                    const r = await ipc.saveAsMp4(sessionId);
-                    setMp4(r);
-                    onMp4Saved?.(r.output_path);
-                    refreshLicense().catch(() => {});
-                    try {
-                      const label = session?.user_label || session?.disc_label || null;
-                      const base = r.output_path.split(/[\\/]/).pop() ?? r.output_path;
-                      const stem = base.replace(/\.[^.]+$/, "");
-                      const derived = stem.replace(/[_\-]+/g, " ").trim()
-                        .replace(/\b\w/g, (c) => c.toUpperCase()) || "Recovered disc";
-                      const title = label ?? derived;
-                      const enrolled = await ipc.library.importMedia(r.output_path, title);
-                      if (!enrolled.isDuplicate) {
-                        await ipc.transcription.enqueue(enrolled.id, r.output_path).catch(() => {});
-                      }
-                      setEnrolledDiscId(enrolled.id);
-                    } catch {
-                      // Non-fatal — user can add from History screen.
-                    }
-                  })}
+                  onClick={() => guardedSave(async () => { await convertAndEnroll(); })}
                 >
                   {busy === "mp4" && <Loader2 className="h-4 w-4 animate-spin" />}
                   <FileVideo className="h-4 w-4" />
@@ -421,6 +431,27 @@ export function OutputPanel({
                 <p className="mt-1.5 text-[11px] leading-snug text-ink-500">
                   Plays on any phone, computer, or TV. Takes a few minutes to convert.
                 </p>
+                <button
+                  type="button"
+                  className="mt-2.5 inline-flex items-center gap-1.5 text-[13px] font-medium text-brand-600 transition hover:text-brand-700 disabled:opacity-50"
+                  disabled={busy !== null}
+                  onClick={() => {
+                    if (enrolledDiscId) {
+                      navigate(`/disc/${enrolledDiscId}`);
+                      return;
+                    }
+                    guardedSave(async () => {
+                      const discId = await convertAndEnroll();
+                      if (discId) navigate(`/disc/${discId}`);
+                    });
+                  }}
+                  title="Play it here and search every spoken word"
+                >
+                  {busy === "mp4"
+                    ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    : <Search className="h-3.5 w-3.5" />}
+                  Watch &amp; search in Heirvo
+                </button>
               </div>
             )}
 
