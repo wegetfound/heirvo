@@ -58,14 +58,17 @@ export function OutputPanel({
 
   // Paywall modal — shown when free user clicks a save action
   const [paywallOpen, setPaywallOpen] = useState(false);
-  // Stores the save action to run after Pro unlock
-  const pendingSaveRef = useRef<(() => Promise<void>) | null>(null);
+  // Stores the save action (and its busy label) to run after Pro unlock
+  const pendingSaveRef = useRef<{ label: string; action: () => Promise<void> } | null>(null);
 
-  const guardedSave = (action: () => Promise<void>) => {
+  // Gate for any EXPORT that leaves Heirvo (MP4, ISO, original files, burn, WAV).
+  // Free tier gets 1 lifetime export of any kind; after that this shows the
+  // paywall. In-app preview (Watch & search) does NOT go through here — it's free.
+  const guardedSave = (label: string, action: () => Promise<void>) => {
     if (canSave) {
-      wrap("mp4", action);
+      wrap(label, action);
     } else {
-      pendingSaveRef.current = action;
+      pendingSaveRef.current = { label, action };
       setPaywallOpen(true);
     }
   };
@@ -393,7 +396,7 @@ export function OutputPanel({
                 className="btn btn-primary"
                 disabled={lock}
                 onClick={() =>
-                  wrap("audio", async () => setAudioTracks(await ipc.extractAudioTracks(sessionId)))
+                  guardedSave("audio", async () => setAudioTracks(await ipc.extractAudioTracks(sessionId)))
                 }
               >
                 {busy === "audio" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Music className="h-4 w-4" />}
@@ -471,7 +474,7 @@ export function OutputPanel({
                 <button
                   className="btn btn-primary w-full justify-center"
                   disabled={lock}
-                  onClick={() => guardedSave(async () => { await convertAndEnroll(); })}
+                  onClick={() => guardedSave("mp4", async () => { await convertAndEnroll(); })}
                 >
                   {busy === "mp4" && <Loader2 className="h-4 w-4 animate-spin" />}
                   <FileVideo className="h-4 w-4" />
@@ -529,7 +532,7 @@ export function OutputPanel({
                 <button
                   className="btn btn-primary w-full justify-center"
                   disabled={lock}
-                  onClick={() => wrap("all-files", async () => {
+                  onClick={() => guardedSave("all-files", async () => {
                     const result = await ipc.extractAllFiles(sessionId);
                     setExtracted(result);
                     ipc.library.rescanDiscForSession(sessionId).catch(() => {});
@@ -558,7 +561,7 @@ export function OutputPanel({
                       desc="One backup file you can keep safe or use to make new discs. (.ISO)"
                       loading={busy === "iso"}
                       disabled={lock}
-                      onClick={() => wrap("iso", async () => {
+                      onClick={() => guardedSave("iso", async () => {
                         const result = await ipc.createIso(sessionId);
                         setIso(result);
                         ipc.library.rescanDiscForSession(sessionId).catch(() => {});
@@ -572,7 +575,7 @@ export function OutputPanel({
                       desc="Every file exactly as it was on the disc, in a folder. No conversion."
                       loading={busy === "all-files"}
                       disabled={lock}
-                      onClick={() => wrap("all-files", async () => {
+                      onClick={() => guardedSave("all-files", async () => {
                         const result = await ipc.extractAllFiles(sessionId);
                         setExtracted(result);
                         ipc.library.rescanDiscForSession(sessionId).catch(() => {});
@@ -586,7 +589,7 @@ export function OutputPanel({
                       desc="Burn an exact copy to a blank CD or DVD — great for a fresh backup of a failing disc."
                       loading={busy === "burn"}
                       disabled={lock}
-                      onClick={() => wrap("burn", async () => {
+                      onClick={() => guardedSave("burn", async () => {
                         await ipc.burnImageToDisc(sessionId);
                         setBurnLaunched(true);
                       })}
@@ -872,9 +875,9 @@ export function OutputPanel({
         onUnlocked={() => {
           setPaywallOpen(false);
           refreshLicense().catch(() => {});
-          const action = pendingSaveRef.current;
+          const pending = pendingSaveRef.current;
           pendingSaveRef.current = null;
-          if (action) wrap("mp4", action);
+          if (pending) wrap(pending.label, pending.action);
         }}
       />
     </div>
