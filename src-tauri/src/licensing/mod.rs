@@ -364,24 +364,94 @@ fn tier_for_product_id(product_id: u64) -> Option<Plan> {
 }
 
 // ─── Export counter (free tier: 1 lifetime MP4 export) ───────────────────────
+//
+// SECURITY: the counter is stored in an HMAC-signed envelope (`exports.json`),
+// the SAME signing scheme as `license.json`.  This stops the obvious power-user
+// reset — opening a plaintext file and changing `1` back to `0`.  Editing the
+// number now requires the compiled-in `HMAC_KEY`, i.e. reverse-engineering the
+// binary, not Notepad.
+//
+// Fail-closed semantics:
+//   - File ABSENT            → genuine fresh install → count 0 (free export available).
+//   - File present + valid   → trust the signed count.
+//   - File present + TAMPERED → treat as already-used (count 1) so corrupting
+//                               the signature is never a winning move.
+//
+// NOTE (honest limit): a full wipe of the app-data directory still resets the
+// counter — that is inherent to any client-side limit without a server anchor
+// for anonymous free users.  HMAC closes the easy edit; a determined user who
+// deletes their whole profile gets one more free export.  The paid features
+// remain gated by the server-validated license, which this does not weaken.
 
-fn exports_path(app_data_dir: &PathBuf) -> PathBuf {
+/// Tiny signed payload for the export counter.  Serialized into a
+/// `LicenseEnvelope.data` field and HMAC-signed exactly like `StoredLicense`.
+#[derive(Debug, Serialize, Deserialize)]
+struct ExportCounter {
+    count: u32,
+}
+
+fn exports_json_path(app_data_dir: &PathBuf) -> PathBuf {
+    app_data_dir.join("exports.json")
+}
+
+/// Pre-signing plaintext counter (`exports.count`).  Read once for migration,
+/// then deleted so it can never be used to reset the count.
+fn legacy_exports_path(app_data_dir: &PathBuf) -> PathBuf {
     app_data_dir.join("exports.count")
 }
 
-pub fn get_exports_used(app_data_dir: &PathBuf) -> u32 {
-    std::fs::read_to_string(exports_path(app_data_dir))
-        .ok()
-        .and_then(|s| s.trim().parse().ok())
-        .unwrap_or(0)
+/// Write the export count as a signed envelope and remove the legacy plaintext
+/// file.  Best-effort: any I/O failure is swallowed (the gate fails safe — a
+/// missing file reads back as 0 only on a genuine fresh profile).
+fn write_exports_count(app_data_dir: &PathBuf, count: u32) {
+    let _ = std::fs::create_dir_all(app_data_dir);
+    if let Ok(data) = serde_json::to_string(&ExportCounter { count }) {
+        let sig = hmac_sign(&data);
+        if let Ok(json) = serde_json::to_string_pretty(&LicenseEnvelope { data, sig }) {
+            let _ = std::fs::write(exports_json_path(app_data_dir), json);
+        }
+    }
+    // Retire the editable plaintext counter so it can't be used to reset.
+    let _ = std::fs::remove_file(legacy_exports_path(app_data_dir));
 }
 
-/// Called after every successful MP4 export. Increments the on-disk counter
+pub fn get_exports_used(app_data_dir: &PathBuf) -> u32 {
+    // ── Signed counter is authoritative. ──────────────────────────────────────
+    if let Ok(raw) = std::fs::read_to_string(exports_json_path(app_data_dir)) {
+        match serde_json::from_str::<LicenseEnvelope>(&raw) {
+            Ok(env) if hmac_verify(&env.data, &env.sig) => {
+                if let Ok(c) = serde_json::from_str::<ExportCounter>(&env.data) {
+                    return c.count;
+                }
+                tracing::warn!("exports.json verified but unparseable — failing closed");
+                return 1;
+            }
+            _ => {
+                tracing::warn!(
+                    "exports.json present but HMAC invalid — failing closed (free export treated as used)"
+                );
+                return 1;
+            }
+        }
+    }
+
+    // ── No signed file: one-time migration from the legacy plaintext counter. ──
+    let legacy = std::fs::read_to_string(legacy_exports_path(app_data_dir))
+        .ok()
+        .and_then(|s| s.trim().parse::<u32>().ok())
+        .unwrap_or(0);
+    if legacy > 0 {
+        // Persist as signed so the old file can no longer be edited to reset.
+        write_exports_count(app_data_dir, legacy);
+    }
+    legacy
+}
+
+/// Called after every successful export. Increments the signed on-disk counter
 /// and invalidates the in-memory cache so the next status read is fresh.
 pub fn record_export(app_data_dir: &PathBuf) {
-    let count = get_exports_used(app_data_dir) + 1;
-    let _ = std::fs::create_dir_all(app_data_dir);
-    let _ = std::fs::write(exports_path(app_data_dir), count.to_string());
+    let count = get_exports_used(app_data_dir).saturating_add(1);
+    write_exports_count(app_data_dir, count);
     *CACHE.lock().unwrap() = None;
 }
 
@@ -1261,6 +1331,97 @@ mod tests {
         let status = current(&dir);
         assert_eq!(status.plan, Plan::Free, "expired cache must downgrade to Free");
         assert!(status.needs_reconnect, "expired cache must set needs_reconnect");
+
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    // ── Signed export counter ────────────────────────────────────────────────
+
+    #[test]
+    fn fresh_profile_has_zero_exports() {
+        let _g = lock();
+        let dir = tmp_dir();
+        assert_eq!(get_exports_used(&dir), 0, "fresh profile = 0 exports");
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[test]
+    fn record_export_persists_signed_count() {
+        let _g = lock();
+        let dir = tmp_dir();
+        *CACHE.lock().unwrap() = None;
+
+        record_export(&dir);
+        assert_eq!(get_exports_used(&dir), 1, "first export → 1");
+        assert!(exports_json_path(&dir).exists(), "signed exports.json must exist");
+        assert!(
+            !legacy_exports_path(&dir).exists(),
+            "plaintext exports.count must not be created"
+        );
+
+        record_export(&dir);
+        assert_eq!(get_exports_used(&dir), 2, "second export → 2");
+
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[test]
+    fn tampered_export_counter_fails_closed() {
+        let _g = lock();
+        let dir = tmp_dir();
+        *CACHE.lock().unwrap() = None;
+
+        // Legitimately reach count 1.
+        record_export(&dir);
+        assert_eq!(get_exports_used(&dir), 1);
+
+        // Power-user move: rewrite the signed count back to 0 (keeping the old sig).
+        let path = exports_json_path(&dir);
+        let raw = std::fs::read_to_string(&path).unwrap();
+        let mut envelope: serde_json::Value = serde_json::from_str(&raw).unwrap();
+        envelope["data"] = serde_json::Value::String(r#"{"count":0}"#.to_string());
+        std::fs::write(&path, serde_json::to_string_pretty(&envelope).unwrap()).unwrap();
+
+        // Must NOT grant a fresh free export — fail closed.
+        assert_eq!(
+            get_exports_used(&dir),
+            1,
+            "tampered counter must fail closed (treated as used)"
+        );
+
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[test]
+    fn legacy_plaintext_counter_is_migrated_and_retired() {
+        let _g = lock();
+        let dir = tmp_dir();
+        *CACHE.lock().unwrap() = None;
+
+        // Simulate a tester upgraded from the plaintext-counter build.
+        std::fs::create_dir_all(&dir).ok();
+        std::fs::write(legacy_exports_path(&dir), "1").unwrap();
+
+        // Reading migrates it: count preserved, signed file written, plaintext gone.
+        assert_eq!(get_exports_used(&dir), 1, "legacy count must be preserved");
+        assert!(exports_json_path(&dir).exists(), "signed file must be written on migration");
+        assert!(
+            !legacy_exports_path(&dir).exists(),
+            "legacy plaintext file must be retired so it can't reset the count"
+        );
+
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[test]
+    fn export_gate_blocks_second_free_export() {
+        let _g = lock();
+        let dir = tmp_dir();
+        *CACHE.lock().unwrap() = None;
+
+        assert!(export_allowed(&dir), "first free export is allowed");
+        record_export(&dir);
+        assert!(!export_allowed(&dir), "second free export is blocked");
 
         std::fs::remove_dir_all(&dir).ok();
     }
