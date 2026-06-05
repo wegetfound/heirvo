@@ -248,6 +248,26 @@ pub fn run() {
                     .app_data_dir()
                     .unwrap_or_else(|_| std::path::PathBuf::from("."));
                 autoplay_guard::restore_on_exit(&data_dir);
+
+                // Best-effort: tell any in-flight recovery to stop so it isn't
+                // issuing fresh reads while we tear down. We deliberately do NOT
+                // join the worker threads — a SCSI read can be stuck for minutes
+                // in an un-abortable kernel call, and joining would hang the exit.
+                if let Some(state) = app_handle.try_state::<state::AppState>() {
+                    for engine in state.engines.read().values() {
+                        engine.cancel();
+                    }
+                }
+
+                // HARD EXIT. Letting main() return can leave heirvo.exe lingering
+                // in Task Manager (and locking its own .exe so the next install
+                // fails with "Error opening file for writing") whenever a recovery
+                // thread is stuck in a hung DeviceIoControl or the async runtime is
+                // still holding a blocking task. Terminating the process here
+                // abandons those threads immediately. The recovery sector map is
+                // checkpointed continuously, so a partial rescue stays resumable —
+                // nothing is corrupted by exiting now.
+                std::process::exit(0);
             }
         });
 }
