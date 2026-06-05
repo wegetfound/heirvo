@@ -489,18 +489,37 @@ export function OutputPanel({
                       navigate(`/disc/${enrolledDiscId}`);
                       return;
                     }
-                    guardedSave(async () => {
-                      const discId = await convertAndEnroll();
-                      if (discId) navigate(`/disc/${discId}`);
+                    // FREE in-app preview — the funnel hook. The recovered disc is
+                    // already enrolled in the library by recovery's auto-promote, so
+                    // we just resolve its id and open the player (which prepares it
+                    // for playback). This path never calls save_as_mp4, so it does
+                    // NOT consume the free export and NEVER shows the paywall.
+                    // Watching is always free; only exporting the file to disk is paid.
+                    wrap("watch", async () => {
+                      const discId = await ipc.library.rescanDiscForSession(sessionId);
+                      if (discId) {
+                        setEnrolledDiscId(discId);
+                        navigate(`/disc/${discId}`);
+                      } else {
+                        setError(
+                          "Couldn't open the preview just yet — give it a moment and try again, or use a Save option below.",
+                        );
+                      }
                     });
                   }}
-                  title="Play it here and search every spoken word"
+                  title="Watch it here free and search every spoken word — no purchase needed"
                 >
-                  {busy === "mp4"
+                  {busy === "watch"
                     ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
                     : <Search className="h-3.5 w-3.5" />}
                   Watch &amp; search in Heirvo
+                  <span className="rounded-full bg-emerald-50 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-emerald-700">
+                    Free
+                  </span>
                 </button>
+                <p className="mt-1 text-[11px] leading-snug text-ink-500">
+                  Play it right here and search every spoken word — free, no purchase needed. Saving a copy to your device is the paid step.
+                </p>
               </div>
             )}
 
