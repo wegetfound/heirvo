@@ -35,38 +35,75 @@ pub async fn create_iso(
         .await?
         .ok_or_else(|| AppError::SessionNotFound(session_id.clone()))?;
 
+    // The recovery pass writes the disc image as it reads (read-once). If that
+    // image is present, we produce the ISO INSTANTLY from it instead of
+    // re-reading the (often dying) disc.
+    let image_path = crate::recovery::image_sink::disc_image_path(
+        &session.output_dir,
+        &session.disc_label,
+    );
     let target = match output_path {
         Some(p) => PathBuf::from(p),
-        None => {
-            let safe_label = session
-                .disc_label
-                .chars()
-                .map(|c| if c.is_alphanumeric() || c == '_' || c == '-' { c } else { '_' })
-                .collect::<String>();
-            let name = if safe_label.is_empty() { "recovered".into() } else { safe_label };
-            PathBuf::from(&session.output_dir).join(format!("{name}.iso"))
-        }
+        None => image_path.clone(),
     };
 
-    let drive_path = session.drive_path.clone();
-    let target_for_task = target.clone();
-    let stats = tokio::task::spawn_blocking(move || -> AppResult<crate::media::iso::AssembleStats> {
-        #[cfg(windows)]
-        {
-            use crate::disc::scsi_windows::ScsiSectorReader;
-            let reader = ScsiSectorReader::open(&drive_path)
-                .map_err(|e| AppError::Drive(format!("open: {e}")))?;
-            crate::media::iso::assemble_iso(&reader, &map, &target_for_task, None, None)
-                .map_err(|e| AppError::Media(format!("assemble_iso: {e}")))
+    let image_exists = tokio::fs::metadata(&image_path).await.is_ok();
+
+    let stats = if image_exists {
+        // ── Fast path: the image already exists on disk. ───────────────────
+        // Stats come from the sector map (no re-read). good_read_failed is 0
+        // because we never re-read — the bytes were captured during the rescue.
+        let good = map.count(crate::recovery::SectorState::Good);
+        let total = map.total();
+        let zero_filled = total.saturating_sub(good);
+
+        // If the caller wants the ISO somewhere else (e.g. a USB drive), copy
+        // the local image there — a fast local file copy, still no disc access.
+        if target != image_path {
+            let src = image_path.clone();
+            let dst = target.clone();
+            tokio::task::spawn_blocking(move || std::fs::copy(&src, &dst))
+                .await
+                .map_err(|e| AppError::Internal(format!("join: {e}")))?
+                .map_err(|e| AppError::Media(format!("copy disc image: {e}")))?;
         }
-        #[cfg(not(windows))]
-        {
-            let _ = (drive_path, target_for_task, map);
-            Err(AppError::NotImplemented("create_iso (non-Windows)"))
+        let bytes_written = tokio::fs::metadata(&target)
+            .await
+            .map(|m| m.len())
+            .unwrap_or(0);
+        tracing::info!(
+            "create_iso: served from pre-written disc image ({} good sectors, no disc re-read)",
+            good
+        );
+        crate::media::iso::AssembleStats {
+            bytes_written,
+            good_sectors: good,
+            zero_filled_sectors: zero_filled,
+            good_read_failed_sectors: 0,
         }
-    })
-    .await
-    .map_err(|e| AppError::Internal(format!("join: {e}")))??;
+    } else {
+        // ── Fallback: no image (e.g. resumed from an .rmap on another PC) — ─
+        // assemble by re-reading the disc, as before.
+        let drive_path = session.drive_path.clone();
+        let target_for_task = target.clone();
+        tokio::task::spawn_blocking(move || -> AppResult<crate::media::iso::AssembleStats> {
+            #[cfg(windows)]
+            {
+                use crate::disc::scsi_windows::ScsiSectorReader;
+                let reader = ScsiSectorReader::open(&drive_path)
+                    .map_err(|e| AppError::Drive(format!("open: {e}")))?;
+                crate::media::iso::assemble_iso(&reader, &map, &target_for_task, None, None)
+                    .map_err(|e| AppError::Media(format!("assemble_iso: {e}")))
+            }
+            #[cfg(not(windows))]
+            {
+                let _ = (drive_path, target_for_task, map);
+                Err(AppError::NotImplemented("create_iso (non-Windows)"))
+            }
+        })
+        .await
+        .map_err(|e| AppError::Internal(format!("join: {e}")))??
+    };
 
     let now = Utc::now().timestamp();
     let path_str = target.to_string_lossy().to_string();

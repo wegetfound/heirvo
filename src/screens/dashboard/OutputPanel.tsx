@@ -486,6 +486,7 @@ export function OutputPanel({
                     <RawOption
                       icon={<FileArchive className="h-4 w-4" />}
                       title="Exact copy of the disc"
+                      badge="Instant"
                       desc="One backup file you can keep safe or use to make new discs. (.ISO)"
                       loading={busy === "iso"}
                       disabled={busy !== null}
@@ -800,6 +801,7 @@ function RawOption({
   icon,
   title,
   desc,
+  badge,
   loading,
   disabled,
   onClick,
@@ -807,6 +809,7 @@ function RawOption({
   icon: React.ReactNode;
   title: string;
   desc: string;
+  badge?: string;
   loading?: boolean;
   disabled?: boolean;
   onClick: () => void;
@@ -822,7 +825,14 @@ function RawOption({
         {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : icon}
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block text-[13px] font-medium text-ink-900">{title}</span>
+        <span className="flex items-center gap-2 text-[13px] font-medium text-ink-900">
+          {title}
+          {badge && (
+            <span className="rounded-full bg-emerald-50 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-emerald-700">
+              {badge}
+            </span>
+          )}
+        </span>
         <span className="mt-0.5 block text-[11px] leading-snug text-ink-500">{desc}</span>
       </span>
     </button>
