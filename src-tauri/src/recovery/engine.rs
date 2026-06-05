@@ -504,7 +504,19 @@ impl RecoveryEngine {
         // drive handle, giving it mechanical/thermal recovery time instead of
         // hammering it into a reset.
         const FAIL_STREAK_COOLDOWN: u32 = 24;
+        // Fast dead-zone escape. On a physically destroyed region a hosed USB drive
+        // can take many seconds per read (the SCSI watchdog has to abort each one),
+        // so crawling the gentle one-step-at-a-time exponential ramp above means
+        // minutes-per-sector — the app looks frozen. When several reads *in a row*
+        // are SLOW failures (drive hosed, not a quick bad-data error), leap a large
+        // growing stride to clear the region in a handful of probes. Skipped sectors
+        // stay Unknown and are revisited by the careful Overnight/retry passes —
+        // nothing is discarded.
+        const SLOW_FAIL_THRESHOLD: Duration = Duration::from_secs(4);
+        const SLOW_FAILS_TO_ESCAPE: u32 = 2;
+        const ESCAPE_BASE_BLOCKS: usize = 64; // ~4 MB first jump, doubling thereafter
         let mut consec_fail_blocks: u32 = 0;
+        let mut consec_slow_fails: u32 = 0;
 
         // Scoped heartbeat: emits progress every 2 seconds from a parallel
         // thread, INDEPENDENT of the block-read loop. This is what fixes the
@@ -549,6 +561,7 @@ impl RecoveryEngine {
             let (start, count) = blocks[i];
             self.current_lba.store(start, Ordering::SeqCst);
 
+            let read_started = Instant::now();
             let block_failed_entirely = if matches!(strategy, PassStrategy::ZeroFill) {
                 let mut map = self.map.lock();
                 for j in 0..count as u64 {
@@ -585,6 +598,8 @@ impl RecoveryEngine {
                 all_failed
             };
 
+            let read_elapsed = read_started.elapsed();
+
             // Skip-ahead heuristic for forward passes only. Exponential growth:
             // streak 2  → skip 1   block
             // streak 3  → skip 2
@@ -605,6 +620,15 @@ impl RecoveryEngine {
             if matches!(strategy, PassStrategy::Triage) {
                 if block_failed_entirely {
                     consec_fail_blocks = consec_fail_blocks.saturating_add(1);
+                    // A failed block that took several seconds means the drive is
+                    // hosed in this region (the SCSI watchdog had to abort the read),
+                    // not a quick bad-data error. Track these slow failures in a row
+                    // so we can escape destroyed zones fast instead of crawling.
+                    if read_elapsed >= SLOW_FAIL_THRESHOLD {
+                        consec_slow_fails = consec_slow_fails.saturating_add(1);
+                    } else {
+                        consec_slow_fails = 0;
+                    }
                     // Drive-stress cool-down: on a sustained failure run, give the
                     // drive a breather and re-open the handle so it can recover
                     // rather than reset itself off the bus.
@@ -617,17 +641,33 @@ impl RecoveryEngine {
                             tracing::warn!("drive reset during cool-down failed: {e}");
                         }
                     }
-                    if consec_fail_blocks >= FAIL_STREAK_TO_SKIP {
+                    // Don't skip more than a quarter of what's left — keeps the
+                    // tail reachable on small/short scans.
+                    let remaining = blocks.len().saturating_sub(i + 1);
+                    let safe_max = (remaining / 4).max(1);
+                    if consec_slow_fails >= SLOW_FAILS_TO_ESCAPE {
+                        // Fast dead-zone escape: the drive has been unresponsive for
+                        // several blocks running (multi-second timeouts). Stop probing
+                        // block-by-block — leap a large, growing stride to clear the
+                        // destroyed region in a handful of probes instead of minutes
+                        // per sector. Deferred sectors stay Unknown for Overnight/retry.
+                        let pow = (consec_slow_fails - SLOW_FAILS_TO_ESCAPE).min(20);
+                        let escape = ESCAPE_BASE_BLOCKS
+                            .checked_shl(pow)
+                            .unwrap_or(MAX_SKIP_BLOCKS)
+                            .min(MAX_SKIP_BLOCKS);
+                        let extra = escape.min(safe_max);
+                        tracing::info!(
+                            "Triage: fast-escape — leaping {extra} blocks past hosed region after {consec_slow_fails} slow failures (LBA {start}, last read {read_elapsed:?})"
+                        );
+                        i += extra;
+                    } else if consec_fail_blocks >= FAIL_STREAK_TO_SKIP {
                         let over = consec_fail_blocks - FAIL_STREAK_TO_SKIP;
                         // 2^over blocks, capped. Use checked shift to avoid overflow.
                         let exp_extra: usize = 1usize
                             .checked_shl(over.min(20))
                             .unwrap_or(MAX_SKIP_BLOCKS)
                             .min(MAX_SKIP_BLOCKS);
-                        // Don't skip more than a quarter of what's left — keeps the
-                        // tail reachable on small/short scans.
-                        let remaining = blocks.len().saturating_sub(i + 1);
-                        let safe_max = (remaining / 4).max(1);
                         let extra = exp_extra.min(safe_max);
                         tracing::info!(
                             "Triage: skipping {extra} blocks ahead after {consec_fail_blocks} consecutive failures (LBA {start})"
@@ -636,6 +676,7 @@ impl RecoveryEngine {
                     }
                 } else {
                     consec_fail_blocks = 0;
+                    consec_slow_fails = 0;
                 }
             }
 
