@@ -115,8 +115,8 @@ export function Settings() {
             <TierCard
               badge="Family"
               title="Built for families."
-              subtitle="Archive for the whole household — future features included."
-              features={["Everything in Archive", "Multi-user sync (coming soon)", "Priority support"]}
+              subtitle="Archive for the whole household — on every computer you own."
+              features={["Everything in Archive", "Use on up to 5 of your devices", "Priority support"]}
               price={PRICING.family.label}
               cta="Get Family"
               url={CHECKOUT_FAMILY_URL}
