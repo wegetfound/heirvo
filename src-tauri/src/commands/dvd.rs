@@ -214,6 +214,11 @@ pub async fn extract_all_files(
 ) -> AppResult<Vec<crate::media::vob::ExtractedFile>> {
     let id = Uuid::parse_str(&session_id)
         .map_err(|_| AppError::SessionNotFound(session_id.clone()))?;
+    if !crate::licensing::export_allowed(&state.data_dir) {
+        return Err(AppError::Internal(
+            "Your free export has been used — upgrade Heirvo to save more.".into(),
+        ));
+    }
     let session = manager::get(&state.db, id).await?;
     let map = manager::load_sector_map(&state.db, id).await?;
 
@@ -245,6 +250,7 @@ pub async fn extract_all_files(
     .await
     .map_err(|e| AppError::Internal(format!("join: {e}")))??;
 
+    crate::licensing::record_export(&state.data_dir);
     Ok(extracted)
 }
 

@@ -62,6 +62,11 @@ pub async fn burn_image_to_disc(
 ) -> AppResult<()> {
     let id = Uuid::parse_str(&session_id)
         .map_err(|_| AppError::SessionNotFound(session_id.clone()))?;
+    if !crate::licensing::export_allowed(&state.data_dir) {
+        return Err(AppError::Internal(
+            "Your free export has been used — upgrade Heirvo to save more.".into(),
+        ));
+    }
     let session = manager::get(&state.db, id).await?;
 
     let image =
@@ -103,6 +108,7 @@ pub async fn burn_image_to_disc(
         .arg(&image_str)
         .spawn()
         .map_err(|e| AppError::Media(format!("couldn't start the disc burner: {e}")))?;
+    crate::licensing::record_export(&state.data_dir);
     Ok(())
 }
 
@@ -123,6 +129,11 @@ pub async fn create_iso(
 ) -> AppResult<IsoResult> {
     let id = Uuid::parse_str(&session_id)
         .map_err(|_| AppError::SessionNotFound(session_id.clone()))?;
+    if !crate::licensing::export_allowed(&state.data_dir) {
+        return Err(AppError::Internal(
+            "Your free export has been used — upgrade Heirvo to save more.".into(),
+        ));
+    }
     let session = manager::get(&state.db, id).await?;
     let map = manager::load_sector_map(&state.db, id)
         .await?
@@ -211,6 +222,7 @@ pub async fn create_iso(
     .execute(&state.db.pool)
     .await?;
 
+    crate::licensing::record_export(&state.data_dir);
     Ok(IsoResult {
         path: path_str,
         bytes_written: stats.bytes_written,
@@ -326,6 +338,11 @@ pub async fn save_as_mp4(
     use std::path::PathBuf;
     let id = Uuid::parse_str(&session_id)
         .map_err(|_| AppError::SessionNotFound(session_id.clone()))?;
+    if !crate::licensing::export_allowed(&state.data_dir) {
+        return Err(AppError::Internal(
+            "Your free export has been used — upgrade Heirvo to save more.".into(),
+        ));
+    }
     let session = manager::get(&state.db, id).await?;
 
     // Make sure VOBs have been extracted to disk.

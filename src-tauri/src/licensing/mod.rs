@@ -485,6 +485,23 @@ pub fn current(app_data_dir: &PathBuf) -> LicenseStatus {
     current_with_refresh_hint(app_data_dir).0
 }
 
+/// Backend authorization gate for any EXPORT that leaves Heirvo (MP4, ISO,
+/// original files, disc burn, audio WAV). The frontend already hides these
+/// behind the paywall, but that is UI-only — a script (or an instrumented
+/// renderer) could call the export commands directly. Every export command MUST
+/// call this first so the free-tier "1 lifetime export" limit is enforced in the
+/// backend, not just the UI.
+///
+/// Paid plans (within offline grace): unlimited. Free tier: allowed only while
+/// `exports_used == 0`. No network call — reads the local signed record.
+pub fn export_allowed(app_data_dir: &PathBuf) -> bool {
+    let exports_used = get_exports_used(app_data_dir);
+    match load_license(app_data_dir) {
+        Some(record) => status_from_record(&record, exports_used).0.can_save,
+        None => exports_used == 0,
+    }
+}
+
 /// Like `current`, but also returns `true` if a background refresh is advised.
 pub fn current_with_refresh_hint(app_data_dir: &PathBuf) -> (LicenseStatus, bool) {
     if let Some(c) = CACHE.lock().unwrap().clone() {

@@ -15,6 +15,9 @@ pub struct AppState {
     pub db: Db,
     /// Active recovery engines keyed by session id.
     pub engines: Arc<RwLock<HashMap<Uuid, Arc<RecoveryEngine>>>>,
+    /// App data directory (…/com.heirvo.app). Used by export commands to reach
+    /// the licensing gate without needing an AppHandle injected per command.
+    pub data_dir: std::path::PathBuf,
 }
 
 impl AppState {
@@ -106,6 +109,7 @@ impl AppState {
         let state = Self {
             db,
             engines: Arc::new(RwLock::new(HashMap::new())),
+            data_dir: data_dir.clone(),
         };
 
         app.manage(state);

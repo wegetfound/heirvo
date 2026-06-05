@@ -51,11 +51,16 @@ pub async fn extract_audio_tracks(
 ) -> AppResult<Vec<ExtractedAudioFile>> {
     let id = Uuid::parse_str(&session_id)
         .map_err(|_| AppError::SessionNotFound(session_id.clone()))?;
+    if !crate::licensing::export_allowed(&state.data_dir) {
+        return Err(AppError::Internal(
+            "Your free export has been used — upgrade Heirvo to save more.".into(),
+        ));
+    }
     let session = manager::get(&state.db, id).await?;
     let drive_path = session.drive_path.clone();
     let out_dir = PathBuf::from(output_dir.unwrap_or(session.output_dir.clone()));
 
-    tokio::task::spawn_blocking(move || -> AppResult<Vec<ExtractedAudioFile>> {
+    let results = tokio::task::spawn_blocking(move || -> AppResult<Vec<ExtractedAudioFile>> {
         #[cfg(windows)]
         {
             use crate::disc::audio_cd::{
@@ -121,5 +126,8 @@ pub async fn extract_audio_tracks(
         }
     })
     .await
-    .map_err(|e| AppError::Internal(format!("join: {e}")))?
+    .map_err(|e| AppError::Internal(format!("join: {e}")))??;
+
+    crate::licensing::record_export(&state.data_dir);
+    Ok(results)
 }
