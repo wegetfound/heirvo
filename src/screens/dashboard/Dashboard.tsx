@@ -229,6 +229,23 @@ export function Dashboard() {
   const savedGb = gbRecovered(stats);
   const videoNote = realRuntimeMin != null ? ` · about ${realRuntimeMin} min of video` : "";
   const remaining = minsRemaining(stats);
+  // During a damaged stretch the good-sector rate craters, so the raw ETA can
+  // balloon into absurd, scary numbers (e.g. "787 min") that are wrong the moment
+  // the head clears the bad area. Soften very long ETAs into a calm, honest phrase
+  // instead of a misleading precise countdown.
+  const etaIsLong = remaining != null && remaining > 90;
+  const remainingSentence =
+    remaining == null
+      ? ""
+      : etaIsLong
+      ? " Working through some damaged areas — this part is slow, but it keeps going."
+      : ` About ${remaining} min to go.`;
+  const remainingChip =
+    remaining == null
+      ? "Calculating…"
+      : etaIsLong
+      ? "Working through damage"
+      : `~${remaining} min left`;
 
   // Distinguish between "never started" (no stats yet), "resting mid-read" (stats + pct>0),
   // and "just inserted, warming up" (stats but pct still 0).
@@ -257,7 +274,7 @@ export function Dashboard() {
     : isOvernightRunning && stats
     ? `Recovering the last few spots — leave it running, stop anytime. ${stats.failed + stats.unknown > 0 ? `${(stats.failed + stats.unknown).toLocaleString()} spots still to go.` : "Almost there."}`
     : stats && savedGb
-    ? `Recovered ${savedGb} so far.${remaining != null ? ` About ${remaining} min to go.` : ""}`
+    ? `Recovered ${savedGb} so far.${remainingSentence}`
     : "Getting ready — listening for your disc…";
 
   const damaged = minsDamaged(stats);
@@ -415,7 +432,7 @@ export function Dashboard() {
               <HealthChip
                 tone="amber"
                 icon="◷"
-                title={remaining != null ? `~${remaining} min left` : "Calculating…"}
+                title={remainingChip}
                 sub={isActive ? "Reading sector by sector" : idle ? (pct === 0 ? "Click Resume to start" : "Drive resting — click Resume") : "—"}
               />
             </div>

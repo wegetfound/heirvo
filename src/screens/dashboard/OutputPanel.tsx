@@ -128,6 +128,22 @@ export function OutputPanel({
   const showFileSaves = !isAudioCd && (isUnknownDisc || t === "Cd" || t === "DvdRom" || t === "DvdAudio");
   const showIso = !isAudioCd; // ISO doesn't apply to CD-DA.
 
+  // ── Save gate ────────────────────────────────────────────────────────────
+  // Saving from a half-read disc produces a broken/partial file — e.g. an MP4
+  // built from VOBs that are only a few percent recovered, or an .ISO that's
+  // mostly zero-fill. Every save/extract/burn action stays DISABLED until the
+  // read pass has actually finished. "Finished" = the live `recovery:complete`
+  // event (which fires on Completed *and* Cancelled, so stopping early still
+  // unlocks saving), OR a persisted terminal session status (covers reopened
+  // sessions where no live event fires this mount).
+  const sessionFinished =
+    session?.status === "completed" ||
+    session?.status === "cancelled" ||
+    session?.status === "failed";
+  const saveReady = recoveryDone || sessionFinished;
+  // Convenience: actions are blocked while busy OR before the read is done.
+  const lock = busy !== null || !saveReady;
+
   const refreshDrives = async () => {
     try { setStorageDrives(await ipc.listStorageDrives()); }
     catch { /* ignore */ }
@@ -375,7 +391,7 @@ export function OutputPanel({
             <div className={cn("space-y-3", !canSave && "pointer-events-none opacity-50")}>
               <button
                 className="btn btn-primary"
-                disabled={busy !== null}
+                disabled={lock}
                 onClick={() =>
                   wrap("audio", async () => setAudioTracks(await ipc.extractAudioTracks(sessionId)))
                 }
@@ -425,15 +441,19 @@ export function OutputPanel({
             </div>
           )}
 
-          {/* Recovery-in-progress notice — shown when the user hasn't started
-              (or barely started) a recovery. Prevents confusing "save at 0%". */}
-          {!recoveryDone && recoveryPct < 5 && (
+          {/* Recovery-in-progress notice. Saving from a half-read disc yields a
+              broken/partial file, so save actions stay disabled until the read
+              pass finishes. This explains why — and how to stop early. */}
+          {!saveReady && (
             <div className="mb-3 flex items-start gap-2 rounded-xl border border-amber-200/60 bg-amber-50/60 px-3 py-2.5 text-[12px] text-amber-800">
               <span className="mt-0.5 flex-shrink-0 text-base leading-none">⏳</span>
               <span>
-                <strong>Recovery hasn't started yet.</strong>{" "}
-                Click <strong>Start</strong> in the left panel to begin reading your disc.
-                Save options will work once recovery is underway.
+                <strong>Hang on — your disc isn't fully read yet.</strong>{" "}
+                Saving now would give you only a partial file, so these options unlock
+                automatically the moment the read finishes.
+                {recoveryPct > 0 ? ` (About ${recoveryPct}% read so far.)` : ""}{" "}
+                Want to stop early? Click <strong>Cancel</strong> in the left panel —
+                you'll still be able to save everything recovered so far.
               </span>
             </div>
           )}
@@ -450,7 +470,7 @@ export function OutputPanel({
               <div>
                 <button
                   className="btn btn-primary w-full justify-center"
-                  disabled={busy !== null}
+                  disabled={lock}
                   onClick={() => guardedSave(async () => { await convertAndEnroll(); })}
                 >
                   {busy === "mp4" && <Loader2 className="h-4 w-4 animate-spin" />}
@@ -463,7 +483,7 @@ export function OutputPanel({
                 <button
                   type="button"
                   className="mt-2.5 inline-flex items-center gap-1.5 text-[13px] font-medium text-brand-600 transition hover:text-brand-700 disabled:opacity-50"
-                  disabled={busy !== null}
+                  disabled={lock}
                   onClick={() => {
                     if (enrolledDiscId) {
                       navigate(`/disc/${enrolledDiscId}`);
@@ -489,7 +509,7 @@ export function OutputPanel({
               <div>
                 <button
                   className="btn btn-primary w-full justify-center"
-                  disabled={busy !== null}
+                  disabled={lock}
                   onClick={() => wrap("all-files", async () => {
                     const result = await ipc.extractAllFiles(sessionId);
                     setExtracted(result);
@@ -518,7 +538,7 @@ export function OutputPanel({
                       badge="Instant"
                       desc="One backup file you can keep safe or use to make new discs. (.ISO)"
                       loading={busy === "iso"}
-                      disabled={busy !== null}
+                      disabled={lock}
                       onClick={() => wrap("iso", async () => {
                         const result = await ipc.createIso(sessionId);
                         setIso(result);
@@ -532,7 +552,7 @@ export function OutputPanel({
                       title="Original files"
                       desc="Every file exactly as it was on the disc, in a folder. No conversion."
                       loading={busy === "all-files"}
-                      disabled={busy !== null}
+                      disabled={lock}
                       onClick={() => wrap("all-files", async () => {
                         const result = await ipc.extractAllFiles(sessionId);
                         setExtracted(result);
@@ -546,7 +566,7 @@ export function OutputPanel({
                       title="Make a new disc"
                       desc="Burn an exact copy to a blank CD or DVD — great for a fresh backup of a failing disc."
                       loading={busy === "burn"}
-                      disabled={busy !== null}
+                      disabled={lock}
                       onClick={() => wrap("burn", async () => {
                         await ipc.burnImageToDisc(sessionId);
                         setBurnLaunched(true);
