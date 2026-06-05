@@ -10,7 +10,8 @@
 //!   3. `<exe_dir>/resources/imagemagick/magick.exe`    (portable / dev)
 //!   4. `<exe_dir>/imagemagick/magick.exe`
 //!   5. `<app_data>/imagemagick/magick.exe`             (future: downloaded on first use)
-//!   6. `magick[.exe]` on system PATH                   (developer / user install)
+//!   6. `magick[.exe]` on TRUSTED system PATH dirs      (developer / user install;
+//!      empty/relative/temp entries are rejected — see locate() step 3)
 
 use std::path::{Path, PathBuf};
 use tauri::AppHandle;
@@ -72,12 +73,37 @@ pub fn locate(app: &AppHandle) -> Option<PathBuf> {
         }
     }
 
-    // 3. System PATH — acceptable last resort for developer machines and users
-    //    who have installed ImageMagick system-wide.
+    // 3. System PATH — but only TRUSTED directories (mirrors ffmpeg::locate).
+    //
+    // SECURITY: executing the first `magick.exe` found on %PATH% is an
+    // arbitrary-code-execution risk — an attacker can drop a malicious binary in
+    // Temp/Downloads/CWD, and an unverified system copy would also sidestep the
+    // pinned-hash gate in imagemagick_install.rs. We skip empty entries (the
+    // implicit current directory), relative paths, and anything under the temp
+    // tree. A magick.exe a user deliberately installed system-wide (e.g. in
+    // Program Files) remains their own trust decision and still resolves here.
     if let Ok(path_var) = std::env::var("PATH") {
         let sep = if cfg!(windows) { ';' } else { ':' };
+        let temp = std::env::temp_dir();
         for entry in path_var.split(sep) {
-            let p = Path::new(entry).join(MAGICK_BIN);
+            if entry.is_empty() {
+                continue; // empty PATH entry resolves to the current directory
+            }
+            let dir = Path::new(entry);
+            if dir.is_relative() {
+                continue; // relative PATH entries are attacker-controllable
+            }
+            // Skip the temp tree (and its canonical form) — a classic plant site.
+            if dir.starts_with(&temp)
+                || dir
+                    .canonicalize()
+                    .ok()
+                    .zip(temp.canonicalize().ok())
+                    .is_some_and(|(d, t)| d.starts_with(t))
+            {
+                continue;
+            }
+            let p = dir.join(MAGICK_BIN);
             if p.exists() {
                 tracing::debug!("imagemagick: found on PATH at {}", p.display());
                 return Some(p);
