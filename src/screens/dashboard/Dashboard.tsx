@@ -319,11 +319,11 @@ export function Dashboard() {
         style={{
           ...S.surface,
           borderRadius: 20,
-          padding: "28px 24px",
+          padding: recoveryDone ? "22px 28px" : "28px 24px",
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
-          gap: 20,
+          gap: recoveryDone ? 14 : 20,
           position: "relative",
           overflow: "hidden",
         }}
@@ -374,12 +374,12 @@ export function Dashboard() {
             display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
             animation: isActive ? "db-breathe 3.5s ease-in-out infinite" : "none",
             position: "relative",
-            width: 170, height: 170,
+            width: recoveryDone ? 104 : 170, height: recoveryDone ? 104 : 170,
             margin: "0 auto",
           }}
         >
           <svg
-            width="170" height="170"
+            width={recoveryDone ? "104" : "170"} height={recoveryDone ? "104" : "170"}
             viewBox="0 0 200 200"
             style={{ transform: "rotate(-90deg)", filter: `drop-shadow(0 4px 16px var(--db-amber-glow))` }}
             aria-hidden
@@ -403,13 +403,13 @@ export function Dashboard() {
           }}>
             <span style={{
               ...S.serif, ...S.amber,
-              fontSize: pct >= 10 ? 48 : 52, fontWeight: 700,
+              fontSize: recoveryDone ? 30 : (pct >= 10 ? 48 : 52), fontWeight: 700,
               lineHeight: 1, letterSpacing: "-0.03em",
               color: isActive || recoveryDone ? "var(--db-amber)" : "var(--db-text-faint)",
             }}>{pct}%</span>
             <span style={{
-              fontSize: 12, fontWeight: 600, letterSpacing: "0.08em",
-              textTransform: "uppercase", marginTop: 4, ...S.textFaint,
+              fontSize: recoveryDone ? 9 : 12, fontWeight: 600, letterSpacing: "0.08em",
+              textTransform: "uppercase", marginTop: recoveryDone ? 1 : 4, ...S.textFaint,
             }}>read</span>
           </div>
         </div>
