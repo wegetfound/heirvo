@@ -254,7 +254,7 @@ export function Dashboard() {
   const midRest      = idle && !!stats && pct > 0;
 
   const headline = recoveryDone
-    ? "All done!"
+    ? (savedGb ? `Disc fully recovered — ${savedGb} read` : "Disc fully recovered")
     : neverStarted
     ? "Ready when you are."
     : warmingUp
@@ -266,7 +266,9 @@ export function Dashboard() {
     : "We're saving your video.";
 
   const subline = recoveryDone
-    ? (savedGb ? `We saved ${savedGb} from your disc${videoNote}.` : "Your disc is saved.")
+    ? (savedGb
+        ? `Every readable byte is safe${videoNote}. Now choose how you'd like to keep it.`
+        : "Every readable byte is safe. Now choose how you'd like to keep it.")
     : neverStarted
     ? "Insert your disc and click Start — we'll begin reading right away."
     : warmingUp
@@ -401,7 +403,7 @@ export function Dashboard() {
             <span style={{
               fontSize: 12, fontWeight: 600, letterSpacing: "0.08em",
               textTransform: "uppercase", marginTop: 4, ...S.textFaint,
-            }}>saved</span>
+            }}>read</span>
           </div>
         </div>
 
@@ -419,6 +421,33 @@ export function Dashboard() {
               {subline}
             </p>
           </div>
+
+          {/* ── Status badges (done) ── */}
+          {recoveryDone && (
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center" }}>
+              <span style={{
+                display: "inline-flex", alignItems: "center", gap: 7,
+                padding: "5px 12px", borderRadius: 9, ...S.sans,
+                fontSize: 12, fontWeight: 600,
+                background: noDamage ? "rgba(52,199,89,0.12)" : "rgba(255,149,0,0.12)",
+                border: noDamage ? "1px solid rgba(52,199,89,0.25)" : "1px solid rgba(255,149,0,0.28)",
+                color: noDamage ? "var(--db-green)" : "#C47700",
+              }}>
+                <span style={{ width: 5, height: 5, borderRadius: "50%", background: noDamage ? "var(--db-green)" : "#C47700" }} />
+                {noDamage ? "Disc healthy" : `${damaged} min damaged`}
+              </span>
+              <span style={{
+                display: "inline-flex", alignItems: "center", gap: 7,
+                padding: "5px 12px", borderRadius: 9, ...S.sans,
+                fontSize: 12, fontWeight: 600,
+                background: "rgba(52,199,89,0.12)", border: "1px solid rgba(52,199,89,0.25)",
+                color: "var(--db-green)",
+              }}>
+                <span style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--db-green)" }} />
+                Recovery complete
+              </span>
+            </div>
+          )}
 
           {/* ── Health chips ── */}
           {!recoveryDone && (
