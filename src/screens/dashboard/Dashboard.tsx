@@ -12,6 +12,7 @@ import { useRecoveryMachine } from "./useRecoveryMachine";
 import { ProgressWheel } from "./ProgressWheel";
 import { RecoveryLayout } from "./RecoveryLayout";
 import { LeftSlot } from "./LeftSlot";
+import { StalledBanner } from "./StalledBanner";
 import { useLicense } from "@/lib/useLicense";
 import { ProPaywallModal } from "./ProPaywallModal";
 import { open as openDialog, save as saveDialog } from "@tauri-apps/plugin-dialog";
@@ -60,6 +61,7 @@ export function Dashboard() {
     resuming,
     reconnecting,
     drives,
+    stalledElapsedSecs,
   } = useRecoveryMachine(id);
 
   const doneBannerRef = useRef<HTMLDivElement>(null);
@@ -78,6 +80,7 @@ export function Dashboard() {
   const stats = "stats" in state ? state.stats : null;
   const recoveryDone = state.phase === "complete";
   const saveReady = recoveryDone;
+  const stalled = state.phase === "stalled";
 
   // Derived display values
   const pct = stats && stats.total > 0 ? Math.round((stats.good / stats.total) * 100) : 0;
@@ -209,10 +212,29 @@ export function Dashboard() {
               idle={idle}
               recoveryDone={recoveryDone}
               sessionId={sessionId}
+              stalled={stalled}
+              stalledElapsedSecs={stalledElapsedSecs}
             />
           }
           bottomBlock={bottomBlock}
         />
+
+        {/* STALLED BANNER — recovery appears stuck, show recovery options */}
+        {stalled && (
+          <StalledBanner
+            stalledElapsedSecs={stalledElapsedSecs}
+            resumeMode={resumeMode}
+            onReconnect={actions.reconnect}
+            onPatientMode={async () => {
+              setResumeMode("overnight");
+              await actions.resume("overnight").catch(() => {});
+            }}
+            onChangeDrive={() => setShowDrivePicker(true)}
+            onPause={actions.pause}
+            reconnecting={reconnecting}
+            resuming={resuming}
+          />
+        )}
 
         {/* DONE BANNER (partial recoveries only) */}
         {recoveryDone && pct < 100 && <DoneBanner stats={stats} realMinutes={realRuntimeMin} />}

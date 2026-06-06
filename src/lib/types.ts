@@ -257,6 +257,10 @@ export interface RecoveryStats {
   reads_err: number;
   /** Seconds since the last successful read; null if we never had one. */
   idle_secs: number | null;
+  /** True when the drive has produced no successful read for ≥60s past grace. */
+  stalled?: boolean;
+  /** How many distinct stall episodes have occurred this run. */
+  stall_count?: number;
 }
 
 export interface RecoveryProgress {

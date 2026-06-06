@@ -102,6 +102,8 @@ export interface ProgressWheelProps {
   idle: boolean;
   recoveryDone: boolean;
   sessionId: string | null;
+  stalled?: boolean;
+  stalledElapsedSecs?: number | null;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -131,6 +133,8 @@ export function ProgressWheel({
   idle,
   recoveryDone,
   sessionId,
+  stalled = false,
+  stalledElapsedSecs = null,
 }: ProgressWheelProps) {
   // Wheel geometry: r=68, viewBox 0 0 148 148
   const WHEEL_R = 68;
@@ -161,10 +165,13 @@ export function ProgressWheel({
   // Show an honest "Starting…" rather than "Paused" so a slow drive re-spin
   // doesn't read as a stalled/idle session.
   const isStarting = phase === "starting" || (resuming && !stats);
+  const isStalled = stalled || phase === "stalled";
   const liveColor = isActive
     ? "var(--db-green)"
     : isStarting
     ? "var(--db-amber)"
+    : isStalled
+    ? "var(--db-red)"
     : idle && !recoveryDone
     ? "var(--db-text-faint)"
     : "var(--db-green)";
@@ -172,6 +179,8 @@ export function ProgressWheel({
     ? "Working"
     : isStarting
     ? "Starting…"
+    : isStalled
+    ? `Stalled (${Math.floor((stalledElapsedSecs ?? 0) / 60)}m)`
     : recoveryDone
     ? "Complete"
     : "Paused";
@@ -338,8 +347,8 @@ export function ProgressWheel({
             </ActionBtn>
           )}
 
-          {/* Reconnect & resume */}
-          {!recoveryDone && (stats?.drive_health === "suspect" || (idle && !recoveryDone && pct > 0)) && (
+          {/* Reconnect & resume — show for stalled, suspect health, or idle+progress */}
+          {!recoveryDone && (isStalled || stats?.drive_health === "suspect" || (idle && !recoveryDone && pct > 0)) && (
             <ActionBtn primary onClick={onReconnect} disabled={reconnecting || resuming} fullWidth>
               {reconnecting
                 ? <><Loader2 size={13} className="animate-spin" /> Reconnecting… ({reconnectElapsed}s)</>
@@ -347,7 +356,8 @@ export function ProgressWheel({
               }
             </ActionBtn>
           )}
-          {!recoveryDone && (idle || phase === "ready") && (
+          {/* Resume controls — hide when stalled */}
+          {!recoveryDone && (idle || phase === "ready") && !isStalled && (
             <>
               <select
                 value={resumeMode}
@@ -371,12 +381,14 @@ export function ProgressWheel({
               </ActionBtn>
             </>
           )}
-          {!recoveryDone && !idle && phase !== "ready" && sessionId && (
+          {/* Pause — hide when stalled or starting */}
+          {!recoveryDone && !idle && !isStalled && phase !== "ready" && sessionId && (
             <ActionBtn onClick={onPause} fullWidth>
               <Pause size={13} /> Pause
             </ActionBtn>
           )}
-          {!recoveryDone && (phase === "ready" || !idle) && (
+          {/* Cancel — show for ready phase and when not idle+active */}
+          {!recoveryDone && (phase === "ready" || !idle) && !isStalled && (
             <ActionBtn danger onClick={onCancel} fullWidth>
               <X size={12} /> Cancel
             </ActionBtn>

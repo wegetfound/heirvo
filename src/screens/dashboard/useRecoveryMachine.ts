@@ -46,6 +46,8 @@ export interface RecoveryMachineResult {
   resuming: boolean;
   reconnecting: boolean;
   drives: DriveInfo[];
+  stalledElapsedSecs: number | null;
+  stallCount: number;
 }
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
@@ -312,8 +314,14 @@ export function useRecoveryMachine(initialSessionId?: string): RecoveryMachineRe
     return () => { cancelled = true; };
   }, [recoveryDone, sessionId]);
 
-  // ── Idle detection ────────────────────────────────────────────────────────
-  const idle = now - lastProgressAt > 5000;
+  // ── Stall detection (replaces brittle 5s gate with engine's idle_secs tracking) ──
+  const engineStalled = stats?.stalled === true;
+  const stalledElapsedSecs = engineStalled && stats ? stats.idle_secs ?? null : null;
+  const stallCount = stats?.stall_count ?? 0;
+
+  // Idle = either stalled or heartbeat lost (for UI state only)
+  const heartbeatLost = (now - lastProgressAt > 15_000) && !!stats && !recoveryDone;
+  const idle = engineStalled || heartbeatLost;
   idleRef.current = idle;
 
   // ── Actions (session-side) — defined before drive-presence watcher ────────
@@ -545,6 +553,9 @@ export function useRecoveryMachine(initialSessionId?: string): RecoveryMachineRe
   }, []);
 
   // ── Derive phase ──────────────────────────────────────────────────────────
+  // Stall detection now feeds in via engineStalled (from stats.stalled).
+  // When the engine detects no progress for 60s past grace, we transition to
+  // "stalled" phase instead of "recovering", showing clear UI recovery options.
   const state: RecoveryPhase = (() => {
     // Once we have a session, we're in session-mode
     if (sessionId) {
@@ -554,13 +565,18 @@ export function useRecoveryMachine(initialSessionId?: string): RecoveryMachineRe
         const partial = stats ? stats.good < stats.total : false;
         return { phase: "complete", sessionId, session, stats, holes, partial };
       }
+      // Stalled: engine has no progress + we're not actively reconnecting
+      if (engineStalled && stats && !reconnecting) {
+        return { phase: "stalled", sessionId, session, stats, reconnectElapsed: stalledElapsedSecs ?? 0 };
+      }
+      // Reconnecting: actively waiting for drive to come back
       if (reconnecting) {
         return { phase: "stalled", sessionId, session, stats, reconnectElapsed };
       }
       if (resuming && !stats) {
         return { phase: "starting", sessionId, session };
       }
-      if (idle && !isOvernightRunning) {
+      if (idle && !isOvernightRunning && !engineStalled) {
         return { phase: "paused", sessionId, session, stats };
       }
       // Has stats + active or overnight
@@ -606,5 +622,7 @@ export function useRecoveryMachine(initialSessionId?: string): RecoveryMachineRe
     resuming,
     reconnecting,
     drives,
+    stalledElapsedSecs,
+    stallCount,
   };
 }

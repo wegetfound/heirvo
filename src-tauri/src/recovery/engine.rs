@@ -66,6 +66,12 @@ pub struct RecoveryStats {
     /// Seconds since the last successful read; `None` if we never had one.
     #[serde(default)]
     pub idle_secs: Option<u64>,
+    /// True when the drive has produced no successful read for ≥60s past grace.
+    #[serde(default)]
+    pub stalled: bool,
+    /// How many distinct stall episodes have occurred this run.
+    #[serde(default)]
+    pub stall_count: u64,
 }
 
 fn default_health() -> DriveHealthHint {
@@ -111,6 +117,10 @@ pub struct RecoveryEngine {
     reads_err: AtomicU64,
     /// Wall-clock millis-since-epoch of the last successful read; 0 if none.
     last_success_ms: AtomicU64,
+    /// Number of distinct stall episodes (idle crossed threshold then recovered).
+    stall_episodes: AtomicU64,
+    /// True while currently inside a stall episode (used to count once per episode).
+    in_stall: AtomicBool,
     progress_tx: Option<mpsc::UnboundedSender<RecoveryProgress>>,
     checkpoint_tx: Option<mpsc::UnboundedSender<()>>,
     /// Receipts are batched here (up to RECEIPT_BATCH_SIZE) then flushed to the
@@ -125,6 +135,11 @@ pub struct RecoveryEngine {
 }
 
 const RECEIPT_BATCH_SIZE: usize = 256;
+/// No successful read for this long ⇒ stalled. 60s per spec.
+const STALL_THRESHOLD_SECS: u64 = 60;
+/// Don't arm stall detection until the engine has run this long — covers drive
+/// spin-up so a slow first read never trips the alarm. Spec: 30s.
+const STALL_GRACE_SECS: u64 = 30;
 
 impl RecoveryEngine {
     pub fn new(
@@ -148,6 +163,8 @@ impl RecoveryEngine {
             reads_ok: AtomicU64::new(0),
             reads_err: AtomicU64::new(0),
             last_success_ms: AtomicU64::new(0),
+            stall_episodes: AtomicU64::new(0),
+            in_stall: AtomicBool::new(false),
             progress_tx: None,
             checkpoint_tx: None,
             receipt_batch: Mutex::new(Vec::new()),
@@ -177,6 +194,8 @@ impl RecoveryEngine {
                 .map(|d| d.as_millis() as u64)
                 .unwrap_or(0);
             self.last_success_ms.store(now_ms, Ordering::Relaxed);
+            // A single good read clears the stall. Episode already counted on entry.
+            self.in_stall.store(false, Ordering::Relaxed);
         } else {
             self.reads_err.fetch_add(1, Ordering::Relaxed);
         }
@@ -853,6 +872,22 @@ impl RecoveryEngine {
             Some((now_ms.saturating_sub(last_ok_ms)) / 1000)
         };
 
+        // Stall detection. Armed only after the grace period so drive spin-up
+        // never trips it; paused engines don't accrue idle because the heartbeat
+        // keeps last_success fresh only via reads, but we also gate on running
+        // state so a Paused engine reports stalled=false.
+        let running = matches!(*self.state.lock(), EngineState::Running)
+            && !self.pause_flag.load(Ordering::SeqCst);
+        let stalled = running
+            && elapsed >= STALL_GRACE_SECS
+            && idle_secs.map(|s| s >= STALL_THRESHOLD_SECS).unwrap_or(false);
+
+        // Count each episode once, on the rising edge.
+        if stalled && !self.in_stall.swap(true, Ordering::Relaxed) {
+            self.stall_episodes.fetch_add(1, Ordering::Relaxed);
+        }
+        let stall_count = self.stall_episodes.load(Ordering::Relaxed);
+
         // Drive-health heuristic. We classify based on:
         //   - sample size (need ≥ 100 attempts to call it)
         //   - success ratio
@@ -900,6 +935,8 @@ impl RecoveryEngine {
             reads_ok,
             reads_err,
             idle_secs,
+            stalled,
+            stall_count,
         }
     }
 }
