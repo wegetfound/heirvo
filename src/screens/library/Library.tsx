@@ -6,6 +6,7 @@ import type { Disc } from "./data/types";
 import { HeroFeatured } from "./components/HeroFeatured";
 import { DiscRail } from "./components/DiscRail";
 import { DiscCard } from "./components/DiscCard";
+import { DiscMetadataFilter } from "./components/DiscMetadataFilter";
 import { ipc } from "../../lib/ipc";
 import type { Session, ImportPreview, Album } from "../../lib/types";
 import { ImportPaywallModal } from "../dashboard/ImportPaywallModal";
@@ -51,6 +52,7 @@ export default function Library() {
         const page = await ipc.library.listPage(0, PAGE_SIZE);
         if (!cancelled) {
           setDiscs(page.discs);
+          setMetadataFilteredDiscs(page.discs); // Initialize metadata filter with all discs
           setNextCursor(page.nextCursor);
         }
       } catch {
@@ -98,6 +100,9 @@ export default function Library() {
   type FilterKind = "all" | "albums" | "imported" | "video" | "audio" | "photo" | "disc";
   const [filter, setFilter] = useState<FilterKind>("all");
   const [albums, setAlbums] = useState<Album[]>([]);
+
+  // Metadata filtering state (title, people, topics search)
+  const [metadataFilteredDiscs, setMetadataFilteredDiscs] = useState<Disc[]>([]);
 
   // ── Multi-select / bulk-delete state (lifted so it persists across filter tab switches) ──
   const [selectMode, setSelectMode] = useState(false);
@@ -220,16 +225,19 @@ export default function Library() {
     disc: discs.filter((d) => bucketOf(d) === "disc").length,
   };
 
-  const featured = discs[0] ?? null;
+  // Use filtered discs if metadata filter is active, otherwise use all discs
+  const displayDiscs = metadataFilteredDiscs.length > 0 ? metadataFilteredDiscs : discs;
 
-  const recentlyRecovered = discs.slice(0, 8);
+  const featured = displayDiscs[0] ?? null;
+
+  const recentlyRecovered = displayDiscs.slice(0, 8);
 
   // "On this day" — discs whose date matches today's month+day.
   const todayM = new Date().getMonth();
   const todayD = new Date().getDate();
   const MONTHS_LC = ["january","february","march","april","may","june",
     "july","august","september","october","november","december"];
-  const onThisDay = discs.filter((d) => {
+  const onThisDay = displayDiscs.filter((d) => {
     const m = d.date?.match(/^(\w+)\s+(\d+)/);
     if (!m) return false;
     const mi = MONTHS_LC.findIndex((n) => n.startsWith(m[1].toLowerCase().slice(0, 3)));
@@ -237,7 +245,7 @@ export default function Library() {
   });
 
   // "Birthdays" — discs with birthday-related topics.
-  const birthdays = discs.filter((d) =>
+  const birthdays = displayDiscs.filter((d) =>
     d.topics?.some((t) => {
       const l = t.label.toLowerCase();
       return l.includes("birthday") || l.includes("cake") || l.includes("candle");
@@ -245,7 +253,7 @@ export default function Library() {
   );
 
   // "Trips" — discs with travel-related topics.
-  const trips = discs.filter((d) =>
+  const trips = displayDiscs.filter((d) =>
     d.topics?.some((t) => {
       const l = t.label.toLowerCase();
       return l.includes("trip") || l.includes("vacation") || l.includes("travel") ||
@@ -610,6 +618,14 @@ export default function Library() {
             className="lib-search-input"
           />
         </form>
+
+        {/* Metadata filter (title, people, topics) - only shown on "all" tab */}
+        {filter === "all" && (
+          <DiscMetadataFilter
+            discs={discs}
+            onFilterChange={setMetadataFilteredDiscs}
+          />
+        )}
 
         {activeSession && (
           <Link

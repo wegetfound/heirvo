@@ -10,6 +10,7 @@ import { convertFileSrc } from "@tauri-apps/api/core";
 import { tsToSec } from "./data/mockDiscs";
 import { gradientCss } from "./components/GradientArt";
 import { TranscriptLine } from "./components/TranscriptLine";
+import { TranscriptWaitingCard } from "./components/TranscriptWaitingCard";
 import { PhotoGalleryView } from "./components/PhotoGallery";
 import type { Disc, TranscriptLine as TLine } from "./data/types";
 import { ipc } from "../../lib/ipc";
@@ -725,73 +726,89 @@ export default function Watch() {
               </div>
             ) : (
             <>
-            <div
-              style={{
-                marginBottom: 24,
-                display: "flex",
-                alignItems: "baseline",
-                justifyContent: "space-between",
-                gap: 16,
-                flexWrap: "wrap",
-              }}
-            >
-              <h2
+            {/* Check if transcription is complete (phrasesIndexed > 0) */}
+            {disc && disc.phrasesIndexed && disc.phrasesIndexed > 0 ? (
+              // Transcript panel (when transcription is done)
+              <>
+              <div
                 style={{
-                  fontFamily: "var(--lib-serif)",
-                  fontWeight: 400,
-                  fontSize: 22,
-                  margin: 0,
-                  letterSpacing: "-0.015em",
-                  color: "var(--lib-ink)",
+                  marginBottom: 24,
+                  display: "flex",
+                  alignItems: "baseline",
+                  justifyContent: "space-between",
+                  gap: 16,
+                  flexWrap: "wrap",
+                  opacity: 1,
+                  transition: "opacity 300ms ease",
                 }}
               >
-                Transcript
-              </h2>
-              <div style={{ position: "relative" }}>
-                <SearchIcon
-                  size={13}
+                <h2
                   style={{
-                    position: "absolute",
-                    left: 10,
-                    top: "50%",
-                    transform: "translateY(-50%)",
-                    color: "var(--lib-muted)",
-                  }}
-                />
-                <input
-                  value={filterQ}
-                  onChange={(e) => setFilterQ(e.target.value)}
-                  placeholder="Find in transcript"
-                  style={{
-                    background: "var(--lib-surface)",
-                    border: "1px solid var(--lib-line)",
-                    borderRadius: 10,
-                    padding: "7px 12px 7px 32px",
-                    fontFamily: "var(--lib-sans)",
-                    fontSize: 13,
+                    fontFamily: "var(--lib-serif)",
+                    fontWeight: 400,
+                    fontSize: 22,
+                    margin: 0,
+                    letterSpacing: "-0.015em",
                     color: "var(--lib-ink)",
-                    outline: "none",
-                    width: 200,
                   }}
+                >
+                  Transcript
+                </h2>
+                <div style={{ position: "relative" }}>
+                  <SearchIcon
+                    size={13}
+                    style={{
+                      position: "absolute",
+                      left: 10,
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      color: "var(--lib-muted)",
+                    }}
+                  />
+                  <input
+                    value={filterQ}
+                    onChange={(e) => setFilterQ(e.target.value)}
+                    placeholder="Find in transcript"
+                    style={{
+                      background: "var(--lib-surface)",
+                      border: "1px solid var(--lib-line)",
+                      borderRadius: 10,
+                      padding: "7px 12px 7px 32px",
+                      fontFamily: "var(--lib-sans)",
+                      fontSize: 13,
+                      color: "var(--lib-ink)",
+                      outline: "none",
+                      width: 200,
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div>
+                {visibleLines.map((line) => (
+                  <TranscriptLine
+                    key={`${line.timeSec}-${line.text.slice(0, 12)}`}
+                    line={line}
+                    active={line.timeSec === activeTimeSec}
+                    onSeek={handleSeek}
+                  />
+                ))}
+                {visibleLines.length === 0 && (
+                  <div style={{ padding: 16, color: "var(--lib-muted)", fontSize: 14 }}>
+                    No transcript lines match &ldquo;{filterQ}&rdquo;.
+                  </div>
+                )}
+              </div>
+              </>
+            ) : (
+              // Waiting card (when transcription is in progress)
+              <div style={{ opacity: 1, transition: "opacity 300ms ease" }}>
+                <TranscriptWaitingCard
+                  disc={disc}
+                  isTranscribing={disc?.status === "recovering"}
                 />
               </div>
-            </div>
-
-            <div>
-              {visibleLines.map((line) => (
-                <TranscriptLine
-                  key={`${line.timeSec}-${line.text.slice(0, 12)}`}
-                  line={line}
-                  active={line.timeSec === activeTimeSec}
-                  onSeek={handleSeek}
-                />
-              ))}
-              {visibleLines.length === 0 && (
-                <div style={{ padding: 16, color: "var(--lib-muted)", fontSize: 14 }}>
-                  No transcript lines match &ldquo;{filterQ}&rdquo;.
-                </div>
-              )}
-            </div>
+            )}
             </>
             )}
           </div>
