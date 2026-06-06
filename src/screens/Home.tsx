@@ -142,7 +142,7 @@ export default function Home() {
             onMouseEnter/Leave handled by GSAP for smooth spring-like motion.
         ─────────────────────────────────────────────────────────────────────── */}
         <Link
-          to="/wizard"
+          to="/recover"
           data-stagger="tile"
           className="group mb-3 flex items-center gap-5 rounded-2xl px-6 py-5 transition-all duration-200 hover:-translate-y-[3px]"
           style={{

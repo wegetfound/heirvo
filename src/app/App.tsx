@@ -1,4 +1,4 @@
-import { Routes, Route, Link, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { Routes, Route, Link, Outlet, useLocation, useNavigate, Navigate } from "react-router-dom";
 import { TitleBar } from "./TitleBar";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { gsap } from "gsap";
@@ -13,7 +13,6 @@ import {
   ChevronRight as ChevronRightIcon,
 } from "lucide-react";
 import Home from "@/screens/Home";
-import { Wizard } from "@/screens/wizard/Wizard";
 import { Dashboard } from "@/screens/dashboard/Dashboard";
 import { SessionHistory } from "@/screens/history/SessionHistory";
 import { Transcode } from "@/screens/transcode/Transcode";
@@ -85,14 +84,14 @@ function AutoPlayManager() {
     ipc.getPendingDisc()
       .then((path) => {
         if (!cancelled && path != null) {
-          nav("/wizard", { replace: true });
+          nav("/recover", { replace: true });
         }
       })
       .catch(() => { /* non-fatal */ });
 
     // Hot event — disc inserted while already running
     const unlistenPromise = events.onAutoplayOpenDisc(() => {
-      if (!cancelled) nav("/wizard");
+      if (!cancelled) nav("/recover");
     }).catch(() => undefined as unknown as () => void);
 
     return () => {
@@ -304,13 +303,16 @@ export default function App() {
         <Sidebar />
         <main className="flex-1 flex flex-col overflow-hidden">
           <Routes>
-          {/* Dashboard owns its full height — two-column, no outer scroll. */}
+          {/* Recovery screen — optional :id param; owns its full height. */}
+          <Route path="/recover/:id?" element={<Dashboard />} />
+          {/* Legacy session/:id redirect */}
           <Route path="/session/:id" element={<Dashboard />} />
           {/* All other screens are wrapped in a scrollable container. */}
           <Route element={<ScrollLayout />}>
             <Route path="/" element={<Home />} />
             <Route path="/preflight" element={<Preflight />} />
-            <Route path="/wizard" element={<Wizard />} />
+            {/* /wizard redirects to /recover for old links / bookmarks */}
+            <Route path="/wizard" element={<Navigate to="/recover" replace />} />
             <Route path="/history" element={<SessionHistory />} />
             <Route path="/transcode" element={<Transcode />} />
             <Route path="/settings" element={<Settings />} />

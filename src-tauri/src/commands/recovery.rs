@@ -157,6 +157,7 @@ pub async fn start_recovery(
     let engine_for_task = engine.clone();
     let db = state.db.clone();
     let app_for_save = app.clone();
+    let engines_for_task = state.engines.clone();
     tokio::task::spawn_blocking(move || {
         tracing::info!("recovery task: entering engine.run()");
         let final_state = engine_for_task.run();
@@ -164,6 +165,14 @@ pub async fn start_recovery(
         // Persist final sector map.
         let map = engine_for_task.snapshot_map();
         let id = engine_for_task.session_id;
+        // Deregister the engine the moment the run loop exits. The engine owns
+        // the Arc<dyn SectorReader> = the OPEN DRIVE HANDLE; leaving it in the
+        // map after completion keeps the optical drive locked (it never spins
+        // down / releases) and makes a later start_recovery for this same id
+        // fail with RecoveryInProgress. Removing it here drops the last strong
+        // ref to the reader once `engine_for_task` goes out of scope, freeing
+        // the drive for the next recovery.
+        engines_for_task.write().remove(&id);
         let final_status = match final_state {
             crate::recovery::engine::EngineState::Completed => SessionStatus::Completed,
             crate::recovery::engine::EngineState::Cancelled => SessionStatus::Cancelled,

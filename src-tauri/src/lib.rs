@@ -118,6 +118,25 @@ pub fn run() {
                     tracing::error!("Failed to initialize app state: {e:?}");
                     return Err::<(), _>(e);
                 }
+                // Reconcile zombie sessions left in `recovering` by a previous run.
+                // The recovery engines live only in memory, so a crash / hard close
+                // mid-recovery leaves the DB row stuck at `recovering` with nothing
+                // actually reading the disc. Flip those orphans to `paused` so the
+                // recovery screen can cleanly resume them (re-spinning the drive)
+                // instead of resuming a dead session and appearing to hang at 0%.
+                // Best-effort: a failure here must not block startup.
+                {
+                    let state = tauri::Manager::state::<state::AppState>(&handle);
+                    match crate::session::manager::reconcile_orphaned_recovering(&state.db).await {
+                        Ok(0) => {}
+                        Ok(n) => tracing::info!(
+                            "startup: reconciled {n} orphaned 'recovering' session(s) -> 'paused'"
+                        ),
+                        Err(e) => tracing::warn!(
+                            "startup: failed to reconcile orphaned recovering sessions (non-fatal): {e:?}"
+                        ),
+                    }
+                }
                 Ok(())
             })?;
 

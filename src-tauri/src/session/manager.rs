@@ -185,6 +185,36 @@ pub async fn update_status(db: &Db, id: Uuid, status: SessionStatus) -> AppResul
     Ok(())
 }
 
+/// Reconcile "zombie" sessions left in `recovering` from a previous run.
+///
+/// The active recovery engines live only in memory (`AppState.engines`); they
+/// do NOT survive a process exit. If Heirvo is killed / crashes / is closed
+/// mid-recovery, the DB row stays at `status = 'recovering'` even though no
+/// engine is running. On the next launch this stale row is a problem:
+///
+///   * The unified recovery screen's Start logic resumes the first non-completed
+///     session for the disc's fingerprint. A zombie `recovering` row gets picked
+///     and the UI shows a "working" state while nothing is actually reading.
+///   * The Home "active rescue" banner and any `status == "recovering"` check
+///     light up for a session that isn't running.
+///
+/// Flipping every orphaned `recovering` row to `paused` at startup makes the
+/// state honest: the disc shows as resumable, Start cleanly re-spins the drive,
+/// and no UI lies about an in-flight recovery. Best-effort — a failure here is
+/// logged but must not block app startup.
+pub async fn reconcile_orphaned_recovering(db: &Db) -> AppResult<u64> {
+    let now = Utc::now().timestamp();
+    let result = sqlx::query(
+        "UPDATE recovery_sessions SET status = ?, updated_at = ? WHERE status = ?",
+    )
+    .bind(SessionStatus::Paused.as_str())
+    .bind(now)
+    .bind(SessionStatus::Recovering.as_str())
+    .execute(&db.pool)
+    .await?;
+    Ok(result.rows_affected())
+}
+
 pub async fn update_drive_path(db: &Db, id: Uuid, drive_path: &str) -> AppResult<()> {
     let now = Utc::now().timestamp();
     sqlx::query("UPDATE recovery_sessions SET drive_path = ?, updated_at = ? WHERE id = ?")
