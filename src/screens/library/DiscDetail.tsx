@@ -537,31 +537,40 @@ export default function DiscDetail() {
                     )}
                     {(activeJob.status === "extracting" ||
                       activeJob.status === "transcribing") && (
-                      <>
-                        <span style={{ fontWeight: 600 }}>
-                          {activeJob.status === "extracting"
-                            ? "Extracting audio…"
-                            : `Transcribing… ${Math.round(activeJob.progress * 100)}%`}
-                        </span>
-                        <div
-                          style={{
-                            flex: 1,
-                            height: 4,
-                            borderRadius: 2,
-                            background: "var(--lib-paper-2)",
-                            overflow: "hidden",
-                          }}
-                        >
+                      <div style={{ display: "flex", flexDirection: "column", gap: 8, width: "100%" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                          <span style={{ fontWeight: 600, whiteSpace: "nowrap" }}>
+                            {activeJob.status === "extracting"
+                              ? "Extracting audio…"
+                              : `Transcribing… ${Math.round(activeJob.progress * 100)}%`}
+                          </span>
                           <div
                             style={{
-                              width: `${Math.round(activeJob.progress * 100)}%`,
-                              height: "100%",
-                              background: "var(--lib-amber)",
-                              transition: "width 0.3s ease",
+                              flex: 1,
+                              height: 4,
+                              borderRadius: 2,
+                              background: "var(--lib-paper-2)",
+                              overflow: "hidden",
                             }}
-                          />
+                          >
+                            <div
+                              style={{
+                                width: `${Math.round(activeJob.progress * 100)}%`,
+                                height: "100%",
+                                background: "var(--lib-amber)",
+                                transition: "width 0.3s ease",
+                              }}
+                            />
+                          </div>
                         </div>
-                      </>
+                        <span style={{ color: "var(--lib-muted)", lineHeight: 1.5 }}>
+                          Reading every spoken word so you can search this video later —
+                          names, places, anything that's said. <strong style={{ color: "var(--lib-ink-2)" }}>Your video is ready to
+                          watch right now</strong> from the button above; voice search switches on the
+                          moment this finishes. It runs in the background, so feel free to keep
+                          using Heirvo — we'll keep going even if you look at other discs.
+                        </span>
+                      </div>
                     )}
                     {activeJob.status === "error" && (
                       <>
