@@ -74,9 +74,25 @@ export function Dashboard() {
   const [holesAtCompletion, setHolesAtCompletion] = useState<number | null>(null);
   const [isOvernightRunning, setIsOvernightRunning] = useState(false);
   const [realRuntimeMin, setRealRuntimeMin] = useState<number | null>(null);
+  const [reconnecting, setReconnecting] = useState(false);
+  const [reconnectElapsed, setReconnectElapsed] = useState(0);
 
   const scopeRef = useRef<HTMLDivElement>(null);
   const doneBannerRef = useRef<HTMLDivElement>(null);
+
+  // Refs used by the drive-presence watcher to read latest state without
+  // recreating the interval on every render (avoids tight loops).
+  const recoveryDoneRef = useRef(false);
+  const idleRef = useRef(false);
+  const statsRef = useRef<RecoveryStats | null>(null);
+  const reconnectingRef = useRef(false);
+  const drivePresentRef = useRef<boolean>(true);
+
+  // Keep refs in sync each render so the drive-watcher interval closure
+  // always reads the latest values (no stale-closure risk).
+  recoveryDoneRef.current = recoveryDone;
+  statsRef.current = stats;
+  reconnectingRef.current = reconnecting;
 
   /* ── events ─────────────────────────────────────────────────── */
   useEffect(() => {
@@ -182,8 +198,50 @@ export function Dashboard() {
     return () => { cancelled = true; };
   }, [recoveryDone, id]);
 
+  /* ── drive-presence watcher (auto-resume on absent→present) ── */
+  useEffect(() => {
+    if (!id) return;
+    let cancelled = false;
+    const intervalId = setInterval(async () => {
+      if (cancelled) return;
+      let drives: DriveInfo[] = [];
+      try { drives = await ipc.listDrives(); } catch { return; }
+      if (cancelled) return;
+      const present = drives.length > 0;
+      const wasAbsent = !drivePresentRef.current;
+      // Detect absent → present transition
+      if (wasAbsent && present) {
+        // Auto-resume only when stalled (not done, not already reconnecting)
+        const stalled =
+          !recoveryDoneRef.current &&
+          !reconnectingRef.current &&
+          (statsRef.current?.drive_health === "suspect" ||
+            (idleRef.current && (statsRef.current?.total ?? 0) > 0));
+        if (stalled) {
+          // fire-and-forget; reconnectResume manages its own state
+          void reconnectResume();
+        }
+      }
+      drivePresentRef.current = present;
+    }, 3000);
+    return () => {
+      cancelled = true;
+      clearInterval(intervalId);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]); // stable: reconnectResume is defined above; refs hold live values
+
+  /* ── clear stale errors/reconnecting state when recovery completes ── */
+  useEffect(() => {
+    if (recoveryDone) {
+      setResumeError(null);
+      setReconnecting(false);
+    }
+  }, [recoveryDone]);
+
   /* ── derived values ─────────────────────────────────────────── */
   const idle = now - lastProgressAt > 5000;
+  idleRef.current = idle; // keep ref in sync for the drive-watcher closure
   const isActive = !idle && !recoveryDone;
   const total = stats?.total ?? 0;
   const pct = total > 0 ? Math.round((stats!.good / total) * 100) : 0;
@@ -210,31 +268,40 @@ export function Dashboard() {
 
   const reconnectResume = async () => {
     if (!id) return;
+    const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+    setReconnecting(true);
+    setReconnectElapsed(0);
     setResuming(true);
     setResumeError(null);
     try {
-      await ipc.cancelRecovery(id);
-      // Backend needs a moment to deregister the old engine before accepting a new start.
-      // Retry up to 8 times, 600ms apart.
+      try { await ipc.cancelRecovery(id); } catch { /* may already be stopped */ }
+      // Wait up to 60 seconds for the drive to re-enumerate after a USB drop.
       let started = false;
-      for (let attempt = 0; attempt < 8; attempt++) {
-        await new Promise<void>((r) => setTimeout(r, 600));
+      const startTs = Date.now();
+      while (Date.now() - startTs < 60_000) {
+        await sleep(1500);
+        setReconnectElapsed(Math.round((Date.now() - startTs) / 1000));
         try {
           await ipc.startRecovery(id, resumeMode);
           started = true;
           break;
         } catch {
-          // RecoveryInProgress or similar — keep retrying
+          // Drive not back yet — keep waiting
         }
       }
       if (!started) {
-        throw new Error("Drive did not respond after reconnect. Try unplugging and re-inserting the drive.");
+        setResumeError(
+          "The drive didn't come back within 60 seconds. Unplug it, wait a few seconds, plug it back in, then press Reconnect again."
+        );
+        return;
       }
       setLastProgressAt(Date.now());
       setRecoveryDone(false);
+      setResumeError(null);
     } catch (e) {
       setResumeError(String(e));
     } finally {
+      setReconnecting(false);
       setResuming(false);
     }
   };
@@ -455,16 +522,18 @@ export function Dashboard() {
         </div>
       )}
 
-      {/* ── Drive health warning ── */}
-      {stats?.drive_health === "suspect" && <DriveHealthBanner stats={stats} compact />}
+      {/* ── Drive health warning — hidden once recovery is complete ── */}
+      {!recoveryDone && stats?.drive_health === "suspect" && <DriveHealthBanner stats={stats} compact />}
 
       {/* ── Action buttons ── */}
       <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", justifyContent: "center", width: "100%" }}>
         {/* Reconnect & resume — shown when drive is stalling (suspect) or idle mid-recovery */}
         {!recoveryDone && (stats?.drive_health === "suspect" || (idle && !recoveryDone && pct > 0)) && (
-          <ActionBtn primary onClick={reconnectResume} disabled={resuming} fullWidth>
-            {resuming ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} />}
-            Reconnect &amp; resume
+          <ActionBtn primary onClick={reconnectResume} disabled={reconnecting || resuming} fullWidth>
+            {reconnecting
+              ? <><Loader2 size={13} className="animate-spin" /> Reconnecting… ({reconnectElapsed}s)</>
+              : <><RefreshCw size={13} /> Reconnect &amp; resume</>
+            }
           </ActionBtn>
         )}
         {!recoveryDone && idle && (
@@ -485,7 +554,7 @@ export function Dashboard() {
               <option value="quick">Quick mode</option>
               <option value="overnight">Overnight (deeper)</option>
             </select>
-            <ActionBtn primary onClick={resume} disabled={resuming} fullWidth>
+            <ActionBtn primary onClick={resume} disabled={resuming || reconnecting} fullWidth>
               {resuming ? <Loader2 size={13} className="animate-spin" /> : <Play size={13} />}
               {pct === 0 ? "Start" : "Resume"}
             </ActionBtn>
@@ -503,8 +572,8 @@ export function Dashboard() {
         )}
       </div>
 
-      {/* Resume error */}
-      {resumeError && (() => {
+      {/* Resume error — hidden once recovery is complete */}
+      {!recoveryDone && resumeError && (() => {
         const fe = friendlyError(resumeError);
         return (
           <div style={{
