@@ -82,7 +82,13 @@ function IncompleteRescueCard() {
 }
 
 /* ── Humane "we couldn't preview, but it's safe" card (recovered but not webview-renderable) ── */
-function CantPreviewCard({ path }: { path?: string }) {
+function CantPreviewCard({
+  path,
+  onRetry,
+}: {
+  path?: string;
+  onRetry?: () => void;
+}) {
   async function handleReveal() {
     if (!path) return;
     try {
@@ -98,19 +104,30 @@ function CantPreviewCard({ path }: { path?: string }) {
       <div style={{ width: 64, height: 64, borderRadius: "50%", background: "var(--lib-surface)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 18px", boxShadow: "0 8px 28px rgba(40,20,10,0.18)" }}>
         <Heart size={26} style={{ color: "var(--lib-amber)" }} />
       </div>
-      <div style={{ fontFamily: "var(--lib-serif)", fontSize: 24, color: "var(--lib-ink)", marginBottom: 8 }}>This memory is safe</div>
+      <div style={{ fontFamily: "var(--lib-serif)", fontSize: 24, color: "var(--lib-ink)", marginBottom: 8 }}>
+        {onRetry ? "We're having trouble playing this video" : "This memory is safe"}
+      </div>
       <p style={{ fontFamily: "var(--lib-sans)", fontSize: 14, lineHeight: 1.55, color: "var(--lib-ink-2)", margin: "0 0 18px" }}>
-        We rescued it and saved it to your computer. We can&rsquo;t show a preview here, but your file is ready and waiting for you.
+        {onRetry
+          ? "The video file may not have finished preparing. Try again below — if it keeps happening, save as MP4 first from the recovery screen."
+          : "We rescued it and saved it to your computer. We can’t show a preview here, but your file is ready and waiting for you."}
       </p>
-      {path ? (
-        <button type="button" className="lib-btn lib-btn-primary" style={{ margin: "0 auto" }} onClick={() => { void handleReveal(); }}>
-          <FolderOpen size={15} /> Open files
-        </button>
-      ) : (
-        <p style={{ fontFamily: "var(--lib-sans)", fontSize: 13, color: "var(--lib-muted)", margin: 0, fontStyle: "italic" }}>
-          Saved to your computer
-        </p>
-      )}
+      <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
+        {onRetry && (
+          <button type="button" className="lib-btn lib-btn-primary" style={{ margin: "0 auto" }} onClick={onRetry}>
+            Try again
+          </button>
+        )}
+        {path ? (
+          <button type="button" className="lib-btn lib-btn-ghost" style={{ margin: "0 auto" }} onClick={() => { void handleReveal(); }}>
+            <FolderOpen size={15} /> Open files
+          </button>
+        ) : (
+          <p style={{ fontFamily: "var(--lib-sans)", fontSize: 13, color: "var(--lib-muted)", margin: 0, fontStyle: "italic" }}>
+            Saved to your computer
+          </p>
+        )}
+      </div>
     </div>
   );
 }
@@ -195,6 +212,12 @@ export default function Watch() {
   // If a video file fails to decode in the webview, we swap to a human message
   // instead of a silent black frame.
   const [mediaError, setMediaError] = useState(false);
+  // "Try again" — clears the error flag so the <video> element re-mounts and
+  // attempts to load the file again. Useful when the h264 file wasn't fully
+  // written when the player first opened it.
+  const handleVideoRetry = () => {
+    setMediaError(false);
+  };
 
   // A freshly-recovered DVD sets videoPath to the raw ISO/VOB and status
   // "recovering" BEFORE the background normalizer produces a webview-playable
@@ -453,7 +476,10 @@ export default function Watch() {
                   />
                 ) : hasMedia && mediaError ? (
                   /* Recovered, but the webview can't preview this file — stay kind, never show a codec error */
-                  <CantPreviewCard path={disc.deliverablePath ?? disc.videoPath} />
+                  <CantPreviewCard
+                    path={disc.deliverablePath ?? disc.videoPath}
+                    onRetry={isPlayable && !isPhoto ? handleVideoRetry : undefined}
+                  />
                 ) : (
                   <>
                     <div

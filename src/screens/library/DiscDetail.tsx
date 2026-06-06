@@ -533,6 +533,25 @@ export default function DiscDetail() {
                         <span style={{ color: "var(--lib-muted)" }}>
                           Will start automatically
                         </span>
+                        <button
+                          type="button"
+                          onClick={() => nav(`/watch/${discId}`)}
+                          style={{
+                            marginLeft: "auto",
+                            border: "1px solid var(--lib-line)",
+                            background: "var(--lib-surface)",
+                            borderRadius: 6,
+                            padding: "3px 10px",
+                            fontSize: 12,
+                            cursor: "pointer",
+                            color: "var(--lib-amber)",
+                            fontFamily: "var(--lib-sans)",
+                            fontWeight: 600,
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          Watch now
+                        </button>
                       </>
                     )}
                     {(activeJob.status === "extracting" ||
@@ -565,11 +584,29 @@ export default function DiscDetail() {
                         </div>
                         <span style={{ color: "var(--lib-muted)", lineHeight: 1.5 }}>
                           Reading every spoken word so you can search this video later —
-                          names, places, anything that's said. <strong style={{ color: "var(--lib-ink-2)" }}>Your video is ready to
-                          watch right now</strong> from the button above; voice search switches on the
+                          names, places, anything that's said. Voice search switches on the
                           moment this finishes. It runs in the background, so feel free to keep
                           using Heirvo — we'll keep going even if you look at other discs.
                         </span>
+                        <button
+                          type="button"
+                          onClick={() => nav(`/watch/${discId}`)}
+                          style={{
+                            alignSelf: "flex-start",
+                            border: "none",
+                            background: "var(--lib-amber)",
+                            borderRadius: 6,
+                            padding: "5px 14px",
+                            fontSize: 12,
+                            cursor: "pointer",
+                            color: "#fff",
+                            fontFamily: "var(--lib-sans)",
+                            fontWeight: 600,
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          Watch now — skip waiting
+                        </button>
                       </div>
                     )}
                     {activeJob.status === "error" && (

@@ -137,21 +137,70 @@ export function Dashboard() {
   }, []);
 
   /* ── reopened terminal session → unlock saving without a live event ── */
+  // Runs immediately on mount, then every 3 s until the session is done.
+  // This catches the race where recovery:complete fires before the async
+  // listen() Promise resolves, or when the app is re-opened after the
+  // session already finished.
   useEffect(() => {
     if (!id) return;
     let cancelled = false;
-    ipc.listSessions()
-      .then((all) => {
-        const s = all.find((x) => x.id === id);
-        if (!cancelled && s && (s.status === "completed" || s.status === "cancelled" || s.status === "failed")) {
-          setSessionFinished(true);
-        }
-      })
-      .catch(() => {});
-    return () => { cancelled = true; };
+    let intervalId: ReturnType<typeof setInterval> | null = null;
+
+    const checkSession = () => {
+      ipc.listSessions()
+        .then((all) => {
+          if (cancelled) return;
+          const s = all.find((x) => x.id === id);
+          if (s && (s.status === "completed" || s.status === "cancelled" || s.status === "failed")) {
+            setSessionFinished(true);
+            // completed specifically → also drive headline/pills/buttons
+            if (s.status === "completed") {
+              setRecoveryDone(true);
+            }
+            // No need to keep polling once terminal status is confirmed.
+            if (intervalId !== null) {
+              clearInterval(intervalId);
+              intervalId = null;
+            }
+          }
+        })
+        .catch(() => {});
+    };
+
+    // Immediate check on mount
+    checkSession();
+
+    // Then poll every 3 s as a safety net for missed events
+    intervalId = setInterval(checkSession, 3000);
+
+    return () => {
+      cancelled = true;
+      if (intervalId !== null) clearInterval(intervalId);
+    };
   }, [id]);
 
   /* ── audio milestones ───────────────────────────────────────── */
+  /* ── pct-based safety net: if progress shows 100% but complete event was missed ── */
+  // Derive pct locally from stats here (same formula as the derived section below)
+  // so we don't reference the not-yet-declared `pct` const.
+  const statsPctForSafetyNet = stats && stats.total > 0
+    ? Math.round((stats.good / stats.total) * 100)
+    : 0;
+  useEffect(() => {
+    if (statsPctForSafetyNet < 100 || recoveryDone || sessionFinished || !id) return;
+    // Re-query once — if the engine has already marked it completed, unlock saves.
+    ipc.listSessions()
+      .then((all) => {
+        const s = all.find((x) => x.id === id);
+        if (s && s.status === "completed") {
+          setSessionFinished(true);
+          setRecoveryDone(true);
+        }
+      })
+      .catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [statsPctForSafetyNet]); // only re-run when pct changes; recoveryDone/sessionFinished are stable guards
+
   const lastMilestoneTierRef = useRef<number>(-1);
   const lastRingTiersRef = useRef({ recovered: false, damaged: false, scanned: false });
   const lastDriveHealthRef = useRef<string | undefined>(undefined);
