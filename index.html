@@ -3,6 +3,12 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Never let WebView2 serve a stale cached frontend. Vite already hashes
+         JS/CSS filenames; this stops the entry document itself from being cached,
+         which is what caused old UI to show after a rebuild. -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
     <title>Heirvo</title>
     <!-- Fonts are self-hosted (Fontsource), imported in src/main.tsx — no
          network call to Google Fonts. See that file for the rationale. -->

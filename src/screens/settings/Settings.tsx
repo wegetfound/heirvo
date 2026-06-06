@@ -202,9 +202,12 @@ export function Settings() {
       {/* Advanced & troubleshooting — collapsed by default */}
       <DiagnosticLogsPanel />
 
-      {/* Footer */}
-      <div className="mt-4 text-[12px] text-ink-400">
-        Heirvo v1.1.0
+      {/* Footer — version + build stamp (tells you exactly which build is running) */}
+      <div className="mt-4 flex items-center gap-2 text-[12px] text-ink-400">
+        <span>Heirvo v1.1.0</span>
+        <span className="font-mono text-[11px] text-ink-300">
+          · build {__BUILD_HASH__} · {__BUILD_TIME__.replace("T", " ").slice(0, 16)} UTC
+        </span>
       </div>
     </div>
   );
