@@ -125,6 +125,14 @@ pub async fn start_recovery(
     }
     let engine = Arc::new(builder);
 
+    // Wire the engine's cancellation flag into the reader so that the SCSI
+    // disconnect/reopen retry sleep (3 s per attempt) becomes interruptible.
+    // `set_cancel_flag` is a no-op on mock/ISO readers; only ScsiSectorReader
+    // and CdSectorReader actually check it.
+    // We access the reader through the engine (which holds Arc<dyn SectorReader>)
+    // rather than the local `reader` variable (already moved into the engine).
+    engine.reader().set_cancel_flag(engine.cancel_arc());
+
     // Restore prior sector map if present (resume).
     match manager::load_sector_map(&state.db, id).await {
         Ok(Some(map)) => {

@@ -208,6 +208,37 @@ export function Dashboard() {
     }
   };
 
+  const reconnectResume = async () => {
+    if (!id) return;
+    setResuming(true);
+    setResumeError(null);
+    try {
+      await ipc.cancelRecovery(id);
+      // Backend needs a moment to deregister the old engine before accepting a new start.
+      // Retry up to 8 times, 600ms apart.
+      let started = false;
+      for (let attempt = 0; attempt < 8; attempt++) {
+        await new Promise<void>((r) => setTimeout(r, 600));
+        try {
+          await ipc.startRecovery(id, resumeMode);
+          started = true;
+          break;
+        } catch {
+          // RecoveryInProgress or similar — keep retrying
+        }
+      }
+      if (!started) {
+        throw new Error("Drive did not respond after reconnect. Try unplugging and re-inserting the drive.");
+      }
+      setLastProgressAt(Date.now());
+      setRecoveryDone(false);
+    } catch (e) {
+      setResumeError(String(e));
+    } finally {
+      setResuming(false);
+    }
+  };
+
   const startOvernight = async () => {
     if (!id) return;
     setResuming(true);
@@ -279,42 +310,44 @@ export function Dashboard() {
   const saveReady = recoveryDone || sessionFinished;
 
   /* ── Wheel rail JSX — passed to OutputPanel as `header` ────────
-     This is the narrow left column of the top-frame grid. It must
-     NEVER be dimmed — it holds Pause/Cancel during extraction. */
+     Now the RIGHT column of the top-frame grid (equal width, full height).
+     NEVER dimmed — it holds Pause/Cancel during extraction. */
   const wheelRail = (
     <div
       ref={doneBannerRef}
       style={{
         ...S.surface,
         borderRadius: 18,
-        padding: "16px 20px",
+        padding: "20px 24px",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        gap: 10,
+        gap: 12,
         position: "relative",
         overflow: "hidden",
+        height: "100%",
+        boxSizing: "border-box",
       }}
     >
       {/* Ambient glow */}
       <div style={{
         position: "absolute", top: -90, left: "50%", transform: "translateX(-50%)",
-        width: 260, height: 260, pointerEvents: "none",
+        width: 320, height: 320, pointerEvents: "none",
         background: "radial-gradient(circle, var(--db-amber-glow) 0%, transparent 66%)",
       }} />
 
-      {/* ── Progress wheel (98px, matching mockup) ── */}
+      {/* ── Progress wheel (124px — proportional to the wider box) ── */}
       <div style={{
         position: "relative",
-        width: 98, height: 98,
+        width: 124, height: 124,
         animation: isActive ? "db-breathe 3.6s ease-in-out infinite" : "none",
         flexShrink: 0,
       }}>
         <svg
-          width="98" height="98"
+          width="124" height="124"
           viewBox="0 0 148 148"
-          style={{ transform: "rotate(-90deg)", filter: "drop-shadow(0 0 9px var(--db-amber-glow))" }}
+          style={{ transform: "rotate(-90deg)", filter: "drop-shadow(0 0 11px var(--db-amber-glow))" }}
           aria-hidden
         >
           <circle cx="74" cy="74" r={WHEEL_R} fill="none" stroke="var(--db-amber-light)" strokeWidth="7" />
@@ -336,12 +369,12 @@ export function Dashboard() {
         }}>
           <span style={{
             ...S.serif, ...S.amber,
-            fontSize: 24, fontWeight: 400,
+            fontSize: 28, fontWeight: 400,
             lineHeight: 1, letterSpacing: "-0.03em",
             color: isActive || recoveryDone ? "var(--db-amber)" : "var(--db-text-faint)",
           }}>{pct}%</span>
           <span style={{
-            fontSize: 8.5, fontWeight: 600, letterSpacing: "0.16em",
+            fontSize: 9, fontWeight: 600, letterSpacing: "0.16em",
             textTransform: "uppercase", marginTop: 4, ...S.textFaint,
           }}>read</span>
         </div>
@@ -427,6 +460,13 @@ export function Dashboard() {
 
       {/* ── Action buttons ── */}
       <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", justifyContent: "center", width: "100%" }}>
+        {/* Reconnect & resume — shown when drive is stalling (suspect) or idle mid-recovery */}
+        {!recoveryDone && (stats?.drive_health === "suspect" || (idle && !recoveryDone && pct > 0)) && (
+          <ActionBtn primary onClick={reconnectResume} disabled={resuming} fullWidth>
+            {resuming ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} />}
+            Reconnect &amp; resume
+          </ActionBtn>
+        )}
         {!recoveryDone && idle && (
           <>
             <select
@@ -523,11 +563,12 @@ export function Dashboard() {
       {/* ── Scrollable content wrap ─────────────────────────────── */}
       <div style={{
         width: "100%",
-        maxWidth: 860,
+        maxWidth: 1060,
+        margin: "0 auto",
         padding: "20px 32px 24px",
         display: "flex",
         flexDirection: "column",
-        gap: 14,
+        gap: 16,
       }}>
 
         {/* ══ OutputPanel — full-width; the top-frame grid lives INSIDE it.

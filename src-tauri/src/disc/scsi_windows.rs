@@ -18,8 +18,15 @@ use crate::disc::sector::{
 };
 use std::io;
 use std::os::windows::io::AsRawHandle;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Instant;
+
+/// Maximum consecutive reopen attempts before giving up and returning a read
+/// error. At 3 s per pause this caps the disconnect/stall window at ~60 s,
+/// after which the engine's normal failure handling (skip-ahead / mark Unknown)
+/// proceeds instead of hanging indefinitely.
+const MAX_REOPEN_ATTEMPTS: u32 = 20;
 
 /// Page-aligned heap buffer for SCSI DMA transfers.
 ///
@@ -633,33 +640,96 @@ fn scsi_passthrough(
     }
 }
 
-/// Issue an IOCTL with auto-recover on device-disconnect. If the first try
-/// returns an error indicating the drive vanished, we wait a beat, re-open
-/// the handle, and try once more. Returns the result of the second attempt
-/// (or the first if it succeeded or had a non-disconnect error).
+/// Issue an IOCTL with auto-recover on device-disconnect.
+///
+/// If the first attempt returns a disconnect error the loop:
+///   1. Checks for cancellation — exits immediately if the engine has been cancelled.
+///   2. Sleeps 3 s in 200 ms slices (interruptible by cancellation).
+///   3. Attempts to reopen the drive handle.
+///   4. On successful reopen, issues the IOCTL again through the watchdog.
+///
+/// The loop is bounded by `MAX_REOPEN_ATTEMPTS` (≈ 60 s total). After the cap
+/// is reached the last disconnect error is returned so the engine's normal
+/// failure handling (skip-ahead / mark Unknown) proceeds instead of hanging.
+///
+/// `cancel_flag` — shared `Arc<AtomicBool>` from the `RecoveryEngine`; may be
+/// `None` for callers that don't participate in cancellation (e.g. internal
+/// recovery-mode setup calls).
 fn scsi_passthrough_resilient(
     drive: &DriveHandle,
     cdb: &[u8],
     data_buf: &mut [u8],
     direction: u8,
     timeout_secs: u32,
+    cancel_flag: Option<&Arc<AtomicBool>>,
 ) -> io::Result<(u8, [u8; 32])> {
-    match scsi_passthrough(drive, cdb, data_buf, direction, timeout_secs) {
-        Ok(v) => Ok(v),
-        Err(e) if is_drive_disconnect_error(&e) => {
-            tracing::warn!(
-                "drive disconnect detected ({e}); pausing 3s and re-opening handle"
+    let first = scsi_passthrough(drive, cdb, data_buf, direction, timeout_secs);
+    let first_err = match first {
+        Ok(v) => return Ok(v),
+        Err(e) if !is_drive_disconnect_error(&e) => return Err(e),
+        Err(e) => e,
+    };
+
+    // Drive disconnect detected. Enter bounded reconnect loop.
+    for attempt in 1..=MAX_REOPEN_ATTEMPTS {
+        // --- Goal B: honour cancellation ---
+        if cancel_flag.map_or(false, |f| f.load(Ordering::SeqCst)) {
+            tracing::info!(
+                "drive reconnect loop: cancellation requested on attempt {attempt}; aborting"
             );
-            std::thread::sleep(std::time::Duration::from_secs(3));
-            if let Err(re) = drive.reopen() {
-                tracing::error!("drive reopen failed: {re}");
-                return Err(e);
-            }
-            tracing::info!("drive re-opened, retrying IOCTL");
-            scsi_passthrough(drive, cdb, data_buf, direction, timeout_secs)
+            return Err(io::Error::new(
+                io::ErrorKind::Interrupted,
+                "recovery cancelled during drive reconnect",
+            ));
         }
-        Err(e) => Err(e),
+
+        tracing::warn!(
+            "drive disconnect detected ({first_err}); reconnect attempt {attempt}/{MAX_REOPEN_ATTEMPTS} — pausing 3s"
+        );
+
+        // Sleep 3 s in 200 ms slices so Cancel is responsive within ~200 ms.
+        // --- Goal B: interruptible sleep ---
+        let mut slept = std::time::Duration::ZERO;
+        let slice = std::time::Duration::from_millis(200);
+        let total_pause = std::time::Duration::from_secs(3);
+        while slept < total_pause {
+            std::thread::sleep(slice);
+            slept += slice;
+            if cancel_flag.map_or(false, |f| f.load(Ordering::SeqCst)) {
+                tracing::info!("drive reconnect sleep: cancellation requested; aborting");
+                return Err(io::Error::new(
+                    io::ErrorKind::Interrupted,
+                    "recovery cancelled during drive reconnect pause",
+                ));
+            }
+        }
+
+        match drive.reopen() {
+            Err(re) => {
+                tracing::error!("drive reopen failed (attempt {attempt}/{MAX_REOPEN_ATTEMPTS}): {re}");
+                if attempt == MAX_REOPEN_ATTEMPTS {
+                    // --- Goal A: cap reached — give up ---
+                    tracing::warn!(
+                        "drive reconnect: hit MAX_REOPEN_ATTEMPTS ({MAX_REOPEN_ATTEMPTS}); returning error so engine can skip/mark this block"
+                    );
+                    return Err(first_err);
+                }
+                // Continue loop to try again.
+            }
+            Ok(()) => {
+                // --- Goal C: post-reopen read goes through the watchdog ---
+                // `scsi_passthrough` (watchdog version) is called here, NOT the
+                // raw blocking IOCTL, so a stuck read will be aborted by
+                // CancelIoEx after the same ~7 s watchdog timeout.
+                tracing::info!("drive re-opened on attempt {attempt}, retrying IOCTL");
+                return scsi_passthrough(drive, cdb, data_buf, direction, timeout_secs);
+            }
+        }
     }
+
+    // Unreachable (the loop always returns inside the last iteration), but the
+    // compiler doesn't know that — return the original error as a fallback.
+    Err(first_err)
 }
 
 /// Map a SCSI sense buffer to our internal `SectorError`.
@@ -1121,6 +1191,12 @@ fn fast_sector_fallback(
 pub struct ScsiSectorReader {
     drive: DriveHandle,
     capacity_lba: u64,
+    /// Shared cancellation flag from the `RecoveryEngine`. Wrapped in a
+    /// `parking_lot::Mutex` for interior mutability so `set_cancel_flag`
+    /// (which takes `&self`) can swap in the engine's Arc after construction.
+    /// Checked inside the disconnect/reopen retry loop so Cancel is responsive
+    /// within ~200 ms even when the drive is off the bus.
+    cancel_flag: parking_lot::Mutex<Arc<AtomicBool>>,
 }
 
 impl ScsiSectorReader {
@@ -1131,11 +1207,19 @@ impl ScsiSectorReader {
         // speed and let firmware retry defaults bake in for the session.
         apply_recovery_mode_settings(&drive);
         let capacity_lba = read_capacity(&drive)?;
-        Ok(Self { drive, capacity_lba })
+        Ok(Self {
+            drive,
+            capacity_lba,
+            cancel_flag: parking_lot::Mutex::new(Arc::new(AtomicBool::new(false))),
+        })
     }
 }
 
 impl SectorReader for ScsiSectorReader {
+    fn set_cancel_flag(&self, flag: Arc<AtomicBool>) {
+        *self.cancel_flag.lock() = flag;
+    }
+
     fn read_sector(&self, lba: u64, opts: ReadOptions) -> SectorReadResult {
         if lba >= self.capacity_lba {
             return SectorReadResult::err(lba, SectorError::IllegalRequest, 0, 0);
@@ -1147,10 +1231,13 @@ impl SectorReader for ScsiSectorReader {
         let mut last_err = SectorError::Other;
         let mut attempts: u8 = 0;
         let started = Instant::now();
+        // Snapshot the cancel Arc once per read_sector call (not per retry
+        // attempt) — avoids repeated mutex acquisitions in the hot path.
+        let cancel = Arc::clone(&*self.cancel_flag.lock());
 
         for attempt in 0..=opts.retries {
             attempts = attempt + 1;
-            match scsi_passthrough_resilient(&self.drive, &cdb, &mut buf, SCSI_IOCTL_DATA_IN, timeout_secs) {
+            match scsi_passthrough_resilient(&self.drive, &cdb, &mut buf, SCSI_IOCTL_DATA_IN, timeout_secs, Some(&cancel)) {
                 Ok((status, sense)) => {
                     if status == 0 {
                         let elapsed = started.elapsed().as_millis() as u32;
@@ -1581,6 +1668,9 @@ fn set_dcr_mode(drive: &DriveHandle) {
 pub struct CdSectorReader {
     drive: DriveHandle,
     capacity_lba: u64,
+    /// Shared cancellation flag from the `RecoveryEngine` — same wiring as
+    /// `ScsiSectorReader.cancel_flag`. See that struct for the rationale.
+    cancel_flag: parking_lot::Mutex<Arc<AtomicBool>>,
 }
 
 /// Maximum C2 user-data errors before we give up on the DCR fallback.
@@ -1596,7 +1686,11 @@ impl CdSectorReader {
         tracing::info!(
             "CdSectorReader: opened {path}, capacity={capacity_lba} sectors, using READ CD (0xBE)"
         );
-        Ok(Self { drive, capacity_lba })
+        Ok(Self {
+            drive,
+            capacity_lba,
+            cancel_flag: parking_lot::Mutex::new(Arc::new(AtomicBool::new(false))),
+        })
     }
 
     /// Phase 1: fast path — READ CD user-data-only. Identical performance to
@@ -1687,6 +1781,10 @@ impl CdSectorReader {
 }
 
 impl SectorReader for CdSectorReader {
+    fn set_cancel_flag(&self, flag: Arc<AtomicBool>) {
+        *self.cancel_flag.lock() = flag;
+    }
+
     fn read_sector(&self, lba: u64, opts: ReadOptions) -> SectorReadResult {
         if lba >= self.capacity_lba {
             return SectorReadResult::err(lba, SectorError::IllegalRequest, 0, 0);

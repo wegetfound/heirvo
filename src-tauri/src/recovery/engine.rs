@@ -97,7 +97,11 @@ pub struct RecoveryEngine {
     mode: RecoveryMode,
     state: Mutex<EngineState>,
     pause_flag: AtomicBool,
-    cancel_flag: AtomicBool,
+    /// Shared cancel signal. Stored as `Arc` so it can be handed to the
+    /// `SectorReader` backend (e.g. `ScsiSectorReader`) which then checks it
+    /// inside disconnect/reopen retry sleeps, making Cancel responsive even
+    /// when the SCSI layer is blocked in a 3-second reconnect pause.
+    cancel_flag: Arc<AtomicBool>,
     current_pass: AtomicU64,
     current_lba: AtomicU64,
     started_at: Mutex<Option<Instant>>,
@@ -137,7 +141,7 @@ impl RecoveryEngine {
             mode: RecoveryMode::Quick,
             state: Mutex::new(EngineState::Idle),
             pause_flag: AtomicBool::new(false),
-            cancel_flag: AtomicBool::new(false),
+            cancel_flag: Arc::new(AtomicBool::new(false)),
             current_pass: AtomicU64::new(0),
             current_lba: AtomicU64::new(0),
             started_at: Mutex::new(None),
@@ -252,6 +256,19 @@ impl RecoveryEngine {
 
     pub fn cancel(&self) {
         self.cancel_flag.store(true, Ordering::SeqCst);
+    }
+
+    /// Return a clone of the shared cancellation Arc so the `SectorReader`
+    /// backend can check it inside blocking reconnect loops.
+    pub fn cancel_arc(&self) -> Arc<AtomicBool> {
+        Arc::clone(&self.cancel_flag)
+    }
+
+    /// Return a clone of the reader Arc so callers can call `set_cancel_flag`
+    /// after engine construction (the reader is moved into the engine, so it
+    /// can't be accessed via the original variable).
+    pub fn reader(&self) -> Arc<dyn SectorReader> {
+        Arc::clone(&self.reader)
     }
 
     pub fn is_running(&self) -> bool {

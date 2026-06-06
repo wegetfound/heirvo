@@ -98,4 +98,11 @@ pub trait SectorReader: Send + Sync {
     fn reset(&self) -> std::io::Result<()> {
         Ok(())
     }
+
+    /// Wire the engine's cancellation flag into the reader so that blocking
+    /// reconnect sleeps inside the SCSI layer can be interrupted promptly when
+    /// the user cancels recovery. The default is a no-op — backends that
+    /// perform long sleeps (e.g. the 3 s disconnect pause in `scsi_windows`)
+    /// should override this and check the flag in their reconnect loops.
+    fn set_cancel_flag(&self, _flag: std::sync::Arc<std::sync::atomic::AtomicBool>) {}
 }

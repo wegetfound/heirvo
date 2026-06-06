@@ -34,7 +34,7 @@ export function OutputPanel({
   /** Notifies the parent (Dashboard) that a video file is now on disk so it
    *  can offer the optional one-click "make it sharper" follow-up. */
   onMp4Saved?: (outputPath: string) => void;
-  /** The wheel rail JSX from Dashboard — rendered as the left column of the
+  /** The wheel rail JSX from Dashboard — rendered as the RIGHT column of the
    *  top-frame grid. Never dimmed, even during extraction (holds Pause/Cancel). */
   header?: React.ReactNode;
 }) {
@@ -693,7 +693,7 @@ export function OutputPanel({
         <div style={{
           display: "grid",
           gridTemplateColumns: "repeat(3, 1fr)",
-          gap: 14,
+          gap: 16,
         }}>
           {/* Exact copy of the disc (.ISO) */}
           {showIso && (
@@ -1153,22 +1153,22 @@ export function OutputPanel({
   return (
     <div className="output-panel-root" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
 
-      {/* ══ TOP FRAME: wheel rail (header, left) + action stack (right) ══
-          The header is NEVER dimmed — it holds Pause/Cancel during extraction.
-          The action stack dims when !saveReady. */}
+      {/* ══ TOP FRAME: action stack (left) + wheel rail / header (right) ══
+          Equal-width columns. The action stack dims when !saveReady.
+          The header (wheel box) is NEVER dimmed — it holds Pause/Cancel. */}
       <div style={{
         display: "grid",
-        gridTemplateColumns: "minmax(206px, 0.52fr) 2.48fr",
-        gap: 14,
-        alignItems: "flex-start",
+        gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)",
+        gap: 16,
+        alignItems: "stretch",
       }}>
-        {/* Left column: wheel rail passed in from Dashboard */}
-        {header}
-
-        {/* Right column: primary save card + free Watch card — dims during extraction */}
+        {/* Left column: primary save card + free Watch card — dims during extraction */}
         <div style={dimStyle}>
           {actionStack}
         </div>
+
+        {/* Right column: wheel rail passed in from Dashboard — never dimmed */}
+        {header}
       </div>
 
       {/* ══ FULL-WIDTH BOTTOM: alt-grid + results + advanced ══════════
