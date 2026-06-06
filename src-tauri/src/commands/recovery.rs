@@ -21,8 +21,14 @@ pub async fn start_recovery(
     let id = Uuid::parse_str(&session_id)
         .map_err(|_| AppError::SessionNotFound(session_id.clone()))?;
 
-    if state.engines.read().contains_key(&id) {
-        return Err(AppError::RecoveryInProgress(session_id));
+    // If engine already exists (e.g., resuming from pause), resume it.
+    // Otherwise create a new one.
+    let engine_opt = state.engines.read().get(&id).cloned();
+    if let Some(engine) = engine_opt {
+        tracing::info!("start_recovery: resuming paused engine for session {}", id);
+        engine.resume();
+        manager::update_status(&state.db, id, SessionStatus::Recovering).await?;
+        return Ok(());
     }
 
     let session = manager::get(&state.db, id).await?;
