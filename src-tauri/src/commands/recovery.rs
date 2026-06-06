@@ -28,6 +28,12 @@ pub async fn start_recovery(
     let session = manager::get(&state.db, id).await?;
     tracing::info!("start_recovery: opening drive {}", session.drive_path);
 
+    // Change 2: flip status to Recovering NOW, before the slow drive-open
+    // window.  This prevents the "Clear empty attempts" prune (which only
+    // selects status = 'created') from deleting the session row while we are
+    // still opening the drive.
+    manager::update_status(&state.db, id, SessionStatus::Recovering).await?;
+
     #[cfg(windows)]
     let reader: Arc<dyn crate::disc::sector::SectorReader> = {
         use crate::disc::scsi_windows::{CdSectorReader, ScsiSectorReader};
@@ -43,14 +49,26 @@ pub async fn start_recovery(
 
         let (reader, capacity) = if use_cd_reader {
             tracing::info!("start_recovery: CD profile detected, using CdSectorReader (READ CD 0xBE)");
-            let r = CdSectorReader::open(&session.drive_path)
-                .map_err(|e| AppError::Drive(format!("open CD {}: {e}", session.drive_path)))?;
+            let r = match CdSectorReader::open(&session.drive_path) {
+                Ok(r) => r,
+                Err(e) => {
+                    // Change 3: revert status before returning — no engine registered yet.
+                    let _ = manager::update_status(&state.db, id, SessionStatus::Paused).await;
+                    return Err(AppError::Drive(format!("open CD {}: {e}", session.drive_path)));
+                }
+            };
             let cap = r.capacity();
             (Arc::new(r) as Arc<dyn SectorReader>, cap)
         } else {
             tracing::info!("start_recovery: DVD/BD/unknown profile, using ScsiSectorReader (READ_10)");
-            let r = ScsiSectorReader::open(&session.drive_path)
-                .map_err(|e| AppError::Drive(format!("open {}: {e}", session.drive_path)))?;
+            let r = match ScsiSectorReader::open(&session.drive_path) {
+                Ok(r) => r,
+                Err(e) => {
+                    // Change 3: revert status before returning — no engine registered yet.
+                    let _ = manager::update_status(&state.db, id, SessionStatus::Paused).await;
+                    return Err(AppError::Drive(format!("open {}: {e}", session.drive_path)));
+                }
+            };
             let cap = r.capacity();
             (Arc::new(r) as Arc<dyn SectorReader>, cap)
         };
@@ -61,6 +79,8 @@ pub async fn start_recovery(
     #[cfg(not(windows))]
     let reader: Arc<dyn crate::disc::sector::SectorReader> = {
         let _ = session;
+        // Change 3: revert status — no engine registered yet.
+        let _ = manager::update_status(&state.db, id, SessionStatus::Paused).await;
         return Err(AppError::NotImplemented("non-Windows recovery"));
     };
 
@@ -106,13 +126,18 @@ pub async fn start_recovery(
     let engine = Arc::new(builder);
 
     // Restore prior sector map if present (resume).
-    match manager::load_sector_map(&state.db, id).await? {
-        Some(map) => {
+    match manager::load_sector_map(&state.db, id).await {
+        Ok(Some(map)) => {
             tracing::info!("start_recovery: restored sector map ({} sectors)", map.total());
             engine.restore_map(map);
         }
-        None => {
+        Ok(None) => {
             tracing::info!("start_recovery: no prior sector map, starting fresh");
+        }
+        Err(e) => {
+            // Change 3: revert status before returning — no engine registered yet.
+            let _ = manager::update_status(&state.db, id, SessionStatus::Paused).await;
+            return Err(e);
         }
     }
 

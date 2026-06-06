@@ -73,6 +73,14 @@ pub async fn delete_session(
 ) -> AppResult<()> {
     let id = Uuid::parse_str(&session_id)
         .map_err(|_| AppError::SessionNotFound(session_id.clone()))?;
+    // Refuse to delete a session whose recovery engine is currently running.
+    // This prevents the "prune empty attempts" path in SessionHistory from
+    // deleting a session that was created but whose status hasn't flipped to
+    // "recovering" yet (the drive-open phase of start_recovery takes time, and
+    // the frontend snapshot used to compute prunableSessions may be stale).
+    if state.engines.read().contains_key(&id) {
+        return Err(AppError::RecoveryInProgress(session_id));
+    }
     manager::delete(&state.db, id).await
 }
 

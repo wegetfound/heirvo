@@ -74,12 +74,31 @@ function groupSessions(sessions: Session[]): DiscGroup[] {
  * - status === "created" (never actually started)
  * - NOT the only/primary session for their disc group
  * - NOT a completed or in-progress session
+ *
+ * Note: the backend's delete_session command is the authoritative guard —
+ * it refuses to delete any session whose recovery engine is currently
+ * running, even if this snapshot is stale and shows the session as "created".
+ * This frontend filter is a best-effort UI-layer complement only.
  */
 function prunableSessions(sessions: Session[]): Session[] {
   const groups = groupSessions(sessions);
   const primaryIds = new Set(groups.map((g) => g.primary.id));
+  // Also collect disc keys of any currently-active (recovering / scanning)
+  // sessions. A "created" sibling of an active session must not be shown as
+  // prunable — it may be a session that was JUST created and whose status
+  // hasn't been persisted yet (the drive-open phase of start_recovery takes
+  // measurable time, leaving a window where the new session appears "created"
+  // to a concurrent History refresh even though recovery is already running).
+  const activeDiscKeys = new Set(
+    sessions
+      .filter((s) => s.status === "recovering" || s.status === "scanning")
+      .map(discKey),
+  );
   return sessions.filter(
-    (s) => s.status === "created" && !primaryIds.has(s.id),
+    (s) =>
+      s.status === "created" &&
+      !primaryIds.has(s.id) &&
+      !activeDiscKeys.has(discKey(s)),
   );
 }
 

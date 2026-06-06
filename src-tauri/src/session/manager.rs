@@ -173,12 +173,15 @@ pub async fn delete(db: &Db, id: Uuid) -> AppResult<()> {
 
 pub async fn update_status(db: &Db, id: Uuid, status: SessionStatus) -> AppResult<()> {
     let now = Utc::now().timestamp();
-    sqlx::query("UPDATE recovery_sessions SET status = ?, updated_at = ? WHERE id = ?")
+    let result = sqlx::query("UPDATE recovery_sessions SET status = ?, updated_at = ? WHERE id = ?")
         .bind(status.as_str())
         .bind(now)
         .bind(id.to_string())
         .execute(&db.pool)
         .await?;
+    if result.rows_affected() == 0 {
+        return Err(AppError::SessionNotFound(id.to_string()));
+    }
     Ok(())
 }
 

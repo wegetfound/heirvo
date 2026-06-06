@@ -234,12 +234,6 @@ export function Dashboard() {
   const videoNote = realRuntimeMin != null ? ` · about ${realRuntimeMin} min of video` : "";
   const remaining = minsRemaining(stats);
   const etaIsLong = remaining != null && remaining > 90;
-  const remainingSentence =
-    remaining == null
-      ? ""
-      : etaIsLong
-      ? " Working through some damaged areas — this part is slow, but it keeps going."
-      : ` About ${remaining} min to go.`;
   const remainingChip =
     remaining == null
       ? "Calculating…"
@@ -272,9 +266,9 @@ export function Dashboard() {
     : warmingUp
     ? "Drive detected. Click Resume to begin reading your disc."
     : isOvernightRunning && stats
-    ? `Recovering the last few spots — leave it running, stop anytime. ${stats.failed + stats.unknown > 0 ? `${(stats.failed + stats.unknown).toLocaleString()} spots still to go.` : "Almost there."}`
+    ? `Recovering the last few spots — leave it running, stop anytime.`
     : stats && savedGb
-    ? `Recovered ${savedGb} so far.${remainingSentence}`
+    ? `Recovered ${savedGb} so far.`
     : "Getting ready — listening for your disc…";
 
   const damaged = minsDamaged(stats);
@@ -293,12 +287,12 @@ export function Dashboard() {
       style={{
         ...S.surface,
         borderRadius: 18,
-        padding: "24px 20px",
+        padding: "16px 20px",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        gap: 12,
+        gap: 10,
         position: "relative",
         overflow: "hidden",
       }}
@@ -395,21 +389,36 @@ export function Dashboard() {
         </div>
       )}
 
-      {/* ── Health chips (recovering state) ── */}
+      {/* ── Status pill chips (recovering state) — compact single-line badges matching mockup ── */}
       {!recoveryDone && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 6, width: "100%" }}>
-          <HealthChip
-            tone={noDamage ? "green" : "red"}
-            icon={noDamage ? "✓" : "!"}
-            title={noDamage ? "No damage found" : `${damaged} min damaged`}
-            sub={noDamage ? "Looking great" : "We'll keep trying"}
-          />
-          <HealthChip
-            tone="amber"
-            icon="◷"
-            title={remainingChip}
-            sub={isActive ? "Reading sector by sector" : idle ? (pct === 0 ? "Click Resume to start" : "Drive resting") : "—"}
-          />
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", justifyContent: "center" }}>
+          {/* Health pill */}
+          <span style={{
+            display: "inline-flex", alignItems: "center", gap: 5,
+            padding: "3px 10px", borderRadius: 100, ...S.sans,
+            fontSize: 11, fontWeight: 600, letterSpacing: "0.02em", textTransform: "uppercase",
+            background: noDamage ? "var(--db-green-light)" : "rgba(197,48,48,0.08)",
+            border: noDamage ? "1px solid rgba(26,135,80,0.22)" : "1px solid rgba(197,48,48,0.22)",
+            color: noDamage ? "var(--db-green)" : "var(--db-red)",
+          }}>
+            <span style={{ width: 5, height: 5, borderRadius: "50%", background: "currentColor", flexShrink: 0 }} />
+            {noDamage ? "Disc healthy" : `${damaged} min damaged`}
+          </span>
+          {/* Time / state pill */}
+          <span style={{
+            display: "inline-flex", alignItems: "center", gap: 5,
+            padding: "3px 10px", borderRadius: 100, ...S.sans,
+            fontSize: 11, fontWeight: 600, letterSpacing: "0.02em", textTransform: "uppercase",
+            background: "var(--db-amber-light)",
+            border: "1px solid var(--db-amber-glow)",
+            color: "var(--db-amber)",
+          }}>
+            <span style={{
+              width: 5, height: 5, borderRadius: "50%", background: "currentColor", flexShrink: 0,
+              ...(isActive ? { animation: "db-pulse 1.4s ease-in-out infinite" } : {}),
+            }} />
+            {remainingChip}
+          </span>
         </div>
       )}
 
@@ -515,7 +524,7 @@ export function Dashboard() {
       <div style={{
         width: "100%",
         maxWidth: 860,
-        padding: "28px 32px 56px",
+        padding: "20px 32px 24px",
         display: "flex",
         flexDirection: "column",
         gap: 14,
@@ -645,35 +654,16 @@ export function Dashboard() {
           0%   { transform: scale(0.6); opacity: 0.8; }
           100% { transform: scale(2.2); opacity: 0; }
         }
+        @keyframes db-pulse {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50%       { opacity: 0.4; transform: scale(0.82); }
+        }
       `}</style>
     </div>
   );
 }
 
 /* ── Sub-components ────────────────────────────────────────────── */
-
-function HealthChip({
-  tone, icon, title, sub,
-}: { tone: "green" | "amber" | "red"; icon: string; title: string; sub: string }) {
-  const colors = {
-    green: { bg: "var(--db-green-light)", border: "rgba(26,135,80,0.20)", text: "var(--db-green)" },
-    amber: { bg: "var(--db-amber-light)", border: "var(--db-amber-glow)",  text: "var(--db-amber)" },
-    red:   { bg: "rgba(197,48,48,0.08)", border: "rgba(197,48,48,0.20)",  text: "var(--db-red)" },
-  }[tone];
-  return (
-    <div style={{
-      display: "flex", alignItems: "center", gap: 8,
-      padding: "8px 12px", borderRadius: 10,
-      background: colors.bg, border: `1px solid ${colors.border}`,
-    }}>
-      <span style={{ fontSize: 16, flexShrink: 0 }}>{icon}</span>
-      <div>
-        <div style={{ fontSize: 12, fontWeight: 700, color: colors.text }}>{title}</div>
-        <div style={{ fontSize: 11, fontWeight: 500, color: colors.text, opacity: 0.7, marginTop: 1 }}>{sub}</div>
-      </div>
-    </div>
-  );
-}
 
 function ActionBtn({
   children, onClick, disabled, primary, danger, fullWidth,

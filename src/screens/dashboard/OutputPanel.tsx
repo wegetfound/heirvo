@@ -1160,7 +1160,7 @@ export function OutputPanel({
         display: "grid",
         gridTemplateColumns: "minmax(206px, 0.52fr) 2.48fr",
         gap: 14,
-        alignItems: "stretch",
+        alignItems: "flex-start",
       }}>
         {/* Left column: wheel rail passed in from Dashboard */}
         {header}
