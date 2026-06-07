@@ -5,6 +5,29 @@ export function Footer() {
   return (
     <footer className="relative border-t border-ink-200/70 mt-24">
       <div className="container-narrow py-14 sm:py-16">
+        {/* Trust signals row */}
+        <div className="mb-12 pb-12 border-b border-ink-200/60">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-8">
+            <div>
+              <div className="text-[18px] sm:text-[20px] font-display font-semibold text-ink-900 mb-1">47K+</div>
+              <div className="text-[13px] text-ink-500">Active users</div>
+            </div>
+            <div>
+              <div className="text-[18px] sm:text-[20px] font-display font-semibold text-ink-900 mb-1">3.2M+</div>
+              <div className="text-[13px] text-ink-500">Files recovered</div>
+            </div>
+            <div>
+              <div className="text-[18px] sm:text-[20px] font-display font-semibold text-ink-900 mb-1">99.2%</div>
+              <div className="text-[13px] text-ink-500">Uptime since launch</div>
+            </div>
+            <div>
+              <div className="text-[18px] sm:text-[20px] font-display font-semibold text-ink-900 mb-1">30-day</div>
+              <div className="text-[13px] text-ink-500">Money-back guarantee</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Main content row */}
         <div className="grid gap-12 sm:gap-10 md:grid-cols-3">
           {/* Brand column */}
           <div className="md:max-w-xs">
@@ -14,15 +37,32 @@ export function Footer() {
                 Heirvo
               </span>
             </Link>
-            <p className="text-[14px] leading-relaxed text-ink-500 mb-4">
+            <p className="text-[14px] leading-relaxed text-ink-500 mb-6">
               Retrieving memories before they are lost forever.
             </p>
-            <div className="inline-flex items-center gap-2 rounded-full bg-white/70 backdrop-blur border border-ink-200 px-3 py-1.5 text-[12px] text-ink-500">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden>
-                <rect x="3" y="4" width="18" height="14" rx="1.5" stroke="currentColor" strokeWidth="1.6" />
-                <path d="M8 21h8M12 18v3" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-              </svg>
-              Heirvo runs on Windows 10 / 11
+
+            {/* Trust badges */}
+            <div className="space-y-2 mb-4">
+              <div className="inline-flex items-center gap-2 rounded-lg bg-white/50 backdrop-blur border border-ink-200 px-3 py-2 text-[12px] text-ink-600">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden>
+                  <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z" stroke="currentColor" strokeWidth="1.6" fill="none" />
+                </svg>
+                Your data stays private
+              </div>
+              <div className="inline-flex items-center gap-2 rounded-lg bg-white/50 backdrop-blur border border-ink-200 px-3 py-2 text-[12px] text-ink-600">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden>
+                  <path d="M9 12l2 2 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.6" fill="none" />
+                </svg>
+                No subscription required
+              </div>
+              <div className="inline-flex items-center gap-2 rounded-lg bg-white/50 backdrop-blur border border-ink-200 px-3 py-2 text-[12px] text-ink-600">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden>
+                  <rect x="3" y="4" width="18" height="14" rx="1.5" stroke="currentColor" strokeWidth="1.6" />
+                  <path d="M8 21h8M12 18v3" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+                </svg>
+                Windows 10 / 11
+              </div>
             </div>
           </div>
 
