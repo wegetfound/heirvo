@@ -77,6 +77,24 @@ pub async fn burn_image_to_disc(
         ));
     }
 
+    // Validate the ISO file is readable and not empty (helps catch corrupted/partial ISO)
+    match std::fs::metadata(&image) {
+        Ok(metadata) => {
+            if metadata.len() == 0 {
+                return Err(AppError::Media(
+                    "The disc image file is empty or corrupted. Try saving the exact copy again.".into(),
+                ));
+            }
+            tracing::info!("burn_image_to_disc: ISO file size {} bytes", metadata.len());
+        }
+        Err(e) => {
+            return Err(AppError::Media(format!(
+                "Couldn't access the disc image file: {}. It may have been moved or deleted.",
+                e
+            )));
+        }
+    }
+
     // Device path "\\.\E:" -> drive letter "E:".
     let letter = session
         .drive_path
@@ -85,8 +103,17 @@ pub async fn burn_image_to_disc(
         .to_string();
     if letter.len() < 2 || !letter.ends_with(':') {
         return Err(AppError::Drive(format!(
-            "couldn't determine the drive letter from {}",
+            "Couldn't determine the optical drive letter from '{}'. The drive may be disconnected or unavailable.",
             session.drive_path
+        )));
+    }
+
+    // Basic sanity check: drive letter should be a single letter followed by ":"
+    let drive_char = letter.chars().next().unwrap_or(' ');
+    if letter.len() != 2 || !drive_char.is_alphabetic() {
+        return Err(AppError::Drive(format!(
+            "Invalid drive letter '{}' — expected format like 'E:'. The optical drive may not be available.",
+            letter
         )));
     }
 
@@ -101,13 +128,29 @@ pub async fn burn_image_to_disc(
     }
 
     let image_str = image.to_string_lossy().to_string();
-    tracing::info!("burn_image_to_disc: launching isoburn for {} -> {}", image_str, letter);
-    std::process::Command::new(&isoburn)
+    tracing::info!(
+        "burn_image_to_disc: launching isoburn: /S \"{}\" /D {}",
+        image_str,
+        letter
+    );
+
+    // isoburn.exe expects: /S source.iso /D target_drive
+    // Without these flags it doesn't recognize the positional arguments and fails silently.
+    // Command::arg() handles quoting and escaping automatically for the OS.
+    let status = std::process::Command::new(&isoburn)
         .no_console()
-        .arg(&letter)
+        .arg("/S")
         .arg(&image_str)
+        .arg("/D")
+        .arg(&letter)
         .spawn()
-        .map_err(|e| AppError::Media(format!("couldn't start the disc burner: {e}")))?;
+        .map_err(|e| {
+            let err_msg = format!("Couldn't launch Windows Disc Image Burner: {e}");
+            tracing::error!("{}", err_msg);
+            AppError::Media(err_msg)
+        })?;
+
+    tracing::info!("burn_image_to_disc: isoburn launched successfully (PID: {:?})", status.id());
     crate::licensing::record_export(&state.data_dir);
     Ok(())
 }

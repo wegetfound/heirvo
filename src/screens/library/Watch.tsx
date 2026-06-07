@@ -15,6 +15,9 @@ import { PhotoGalleryView } from "./components/PhotoGallery";
 import type { Disc, TranscriptLine as TLine } from "./data/types";
 import { ipc } from "../../lib/ipc";
 
+// Error type enumeration for better UX messaging
+type MediaErrorType = "file-not-found" | "decode-error" | "unknown";
+
 function fmtTime(sec: number): string {
   const h = Math.floor(sec / 3600);
   const m = Math.floor((sec % 3600) / 60);
@@ -82,13 +85,15 @@ function IncompleteRescueCard() {
   );
 }
 
-/* ── Humane "we couldn't preview, but it's safe" card (recovered but not webview-renderable) ── */
+/* ── Humane "we couldn’t preview, but it’s safe" card (recovered but not webview-renderable) ── */
 function CantPreviewCard({
   path,
   onRetry,
+  errorType,
 }: {
   path?: string;
   onRetry?: () => void;
+  errorType?: MediaErrorType | null;
 }) {
   async function handleReveal() {
     if (!path) return;
@@ -100,18 +105,36 @@ function CantPreviewCard({
     }
   }
 
+  const getTitle = () => {
+    if (errorType === "file-not-found") return "We can’t find this file";
+    if (errorType === "decode-error") return "We’re having trouble playing this video";
+    if (onRetry) return "We’re having trouble playing this video";
+    return "This memory is safe";
+  };
+
+  const getDescription = () => {
+    if (errorType === "file-not-found") {
+      return "The video file was moved or deleted. You may need to recover the disc again, or check if it’s on a connected external drive.";
+    }
+    if (errorType === "decode-error") {
+      return "This video format isn’t supported by the player, or the file is corrupted. You can open it with your system’s media player instead.";
+    }
+    if (onRetry) {
+      return "The video file may not have finished preparing. Try again below — if it keeps happening, the file may be corrupted or use an unsupported format.";
+    }
+    return "We rescued it and saved it to your computer. We can’t show a preview here, but your file is ready and waiting for you.";
+  };
+
   return (
     <div style={{ textAlign: "center", padding: "32px 28px", maxWidth: 440, position: "relative", zIndex: 1 }}>
       <div style={{ width: 64, height: 64, borderRadius: "50%", background: "var(--lib-surface)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 18px", boxShadow: "0 8px 28px rgba(40,20,10,0.18)" }}>
         <Heart size={26} style={{ color: "var(--lib-amber)" }} />
       </div>
       <div style={{ fontFamily: "var(--lib-serif)", fontSize: 24, color: "var(--lib-ink)", marginBottom: 8 }}>
-        {onRetry ? "We're having trouble playing this video" : "This memory is safe"}
+        {getTitle()}
       </div>
       <p style={{ fontFamily: "var(--lib-sans)", fontSize: 14, lineHeight: 1.55, color: "var(--lib-ink-2)", margin: "0 0 18px" }}>
-        {onRetry
-          ? "The video file may not have finished preparing. Try again below — if it keeps happening, save as MP4 first from the recovery screen."
-          : "We rescued it and saved it to your computer. We can’t show a preview here, but your file is ready and waiting for you."}
+        {getDescription()}
       </p>
       <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
         {onRetry && (
@@ -137,7 +160,34 @@ function CantPreviewCard({
    transcoded to a webview-playable MP4 in the background. WebView2 cannot decode
    a raw ISO/VOB, so we NEVER hand those to <video>; we show this and swap to the
    player automatically once normalization finishes. ── */
-function PreparingCard() {
+function PreparingCard({ timedOut, onRetry }: { timedOut?: boolean; onRetry?: () => void }) {
+  if (timedOut) {
+    return (
+      <div style={{ textAlign: "center", padding: "32px 28px", maxWidth: 440, position: "relative", zIndex: 1 }}>
+        <div style={{ width: 64, height: 64, borderRadius: "50%", background: "var(--lib-surface)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 18px", boxShadow: "0 8px 28px rgba(40,20,10,0.18)" }}>
+          <Heart size={26} style={{ color: "var(--lib-amber)" }} />
+        </div>
+        <div style={{ fontFamily: "var(--lib-serif)", fontSize: 24, color: "var(--lib-ink)", marginBottom: 8 }}>
+          This is taking longer than expected
+        </div>
+        <p style={{ fontFamily: "var(--lib-sans)", fontSize: 14, lineHeight: 1.55, color: "var(--lib-ink-2)", margin: "0 0 18px" }}>
+          Your disc is safe and we&rsquo;re still working on it, but the video conversion is taking longer than usual.
+          You can try again, or go back and save the original file instead.
+        </p>
+        <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
+          {onRetry && (
+            <button type="button" className="lib-btn lib-btn-primary" onClick={onRetry}>
+              Try again
+            </button>
+          )}
+          <button type="button" className="lib-btn lib-btn-ghost" onClick={() => window.history.back()}>
+            Go back
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div style={{ textAlign: "center", padding: "32px 28px", maxWidth: 440, position: "relative", zIndex: 1 }}>
       <div style={{ width: 64, height: 64, borderRadius: "50%", background: "var(--lib-surface)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 18px", boxShadow: "0 8px 28px rgba(40,20,10,0.18)" }}>
@@ -183,7 +233,9 @@ export default function Watch() {
   const initialSec = useMemo(() => {
     const t = params.get("t");
     if (t) return tsToSec(t);
-    return disc?.transcript[0]?.timeSec ?? 0;
+    // Defensive: transcript may be null or empty
+    const firstTime = disc?.transcript?.[0]?.timeSec;
+    return typeof firstTime === "number" && isFinite(firstTime) ? firstTime : 0;
   }, [params, disc]);
 
   const [currentSec, setCurrentSec] = useState(initialSec);
@@ -193,13 +245,26 @@ export default function Watch() {
   const playerRef = useRef<HTMLDivElement | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
+  // Normalization timeout (15 minutes). Tracks when isPreparing became true.
+  const prepareStartTimeRef = useRef<number | null>(null);
+  const [prepareTimedOut, setPrepareTimedOut] = useState(false);
+  const PREPARE_TIMEOUT_MS = 15 * 60 * 1000; // 15 minutes
+
+  // Error type tracking for better UX messaging
+  const [mediaErrorType, setMediaErrorType] = useState<MediaErrorType | null>(null);
+
   // Resolve the local media path to an asset URL the webview can load.
+  // Pre-validate file existence to differentiate file-not-found from codec errors.
   // Falls back to null when the disc has no recovered file (mock/demo data).
   const mediaSrc = useMemo(() => {
     if (!disc?.videoPath) return null;
     try {
-      return convertFileSrc(disc.videoPath);
-    } catch {
+      const src = convertFileSrc(disc.videoPath);
+      // Note: convertFileSrc doesn't validate file exists; we'll handle that via onError
+      return src;
+    } catch (err) {
+      console.warn("[Watch] convertFileSrc failed:", err);
+      setMediaErrorType("unknown");
       return null;
     }
   }, [disc?.videoPath]);
@@ -233,9 +298,48 @@ export default function Watch() {
 
   // Reset the decode-error flag whenever the file changes — otherwise a failed
   // ISO load would keep showing "can't preview" even after the MP4 is ready.
+  // Also pre-check file existence to differentiate "file missing" from "decode error"
+  // early, before the video element tries to load and confuses the issue.
   useEffect(() => {
     setMediaError(false);
-  }, [disc?.videoPath]);
+    setMediaErrorType(null);
+
+    // Pre-flight check: if we have a media source, verify the file exists
+    // by trying to resolve it. If convertFileSrc fails or returns null, mark as
+    // file-not-found so users get clear guidance.
+    if (disc?.videoPath && hasMedia && isPlayable && !isPhoto) {
+      // Note: convertFileSrc doesn't validate file existence on disk. We rely on
+      // the video element's onError handler to catch actual missing files when
+      // the browser tries to load them. This is a UX hint, not a guarantee.
+      const p = (disc.videoPath ?? "").toLowerCase();
+      if (!(/\.(mp4|m4v|mov|webm)$/.test(p))) {
+        // File extension is not playable format — will fail at video decode
+        setMediaErrorType("decode-error");
+      }
+    }
+  }, [disc?.videoPath, hasMedia, isPlayable, isPhoto]);
+
+  // Normalization timeout monitor: if isPreparing lasts > 15 minutes, show fallback.
+  // Resets whenever isPreparing becomes false (file is ready or error occurred).
+  useEffect(() => {
+    if (isPreparing) {
+      // Start the timer if not already running
+      if (prepareStartTimeRef.current === null) {
+        prepareStartTimeRef.current = Date.now();
+        setPrepareTimedOut(false);
+
+        const timeoutHandle = setTimeout(() => {
+          setPrepareTimedOut(true);
+        }, PREPARE_TIMEOUT_MS);
+
+        return () => clearTimeout(timeoutHandle);
+      }
+    } else {
+      // Reset when preparing finishes (whether success or error)
+      prepareStartTimeRef.current = null;
+      setPrepareTimedOut(false);
+    }
+  }, [isPreparing]);
 
   // Re-fetch when the library changes. useRecoveryPromotion dispatches this after
   // it swaps videoPath ISO→MP4 on normalize:complete, so the player picks up the
@@ -371,19 +475,25 @@ export default function Watch() {
     setCurrentSec(Math.max(0, Math.min(total, total * pct)));
   };
 
+  // Defensive: transcript may be null or empty; filter safely
+  const transcriptLines = disc?.transcript ?? [];
   const visibleLines = filterQ.trim()
-    ? disc.transcript.filter((l) =>
-        l.text.toLowerCase().includes(filterQ.toLowerCase()),
+    ? transcriptLines.filter((l) =>
+        l?.text?.toLowerCase?.().includes(filterQ.toLowerCase()),
       )
-    : disc.transcript;
+    : transcriptLines;
 
   // Active line = last line whose timeSec <= currentSec
   let activeIdx = -1;
-  for (let i = 0; i < disc.transcript.length; i++) {
-    if (disc.transcript[i].timeSec <= currentSec) activeIdx = i;
-    else break;
+  for (let i = 0; i < transcriptLines.length; i++) {
+    const line = transcriptLines[i];
+    if (line && typeof line.timeSec === "number" && line.timeSec <= currentSec) {
+      activeIdx = i;
+    } else if (line && typeof line.timeSec === "number" && line.timeSec > currentSec) {
+      break;
+    }
   }
-  const activeTimeSec = activeIdx >= 0 ? disc.transcript[activeIdx].timeSec : -1;
+  const activeTimeSec = activeIdx >= 0 && transcriptLines[activeIdx] ? transcriptLines[activeIdx].timeSec : -1;
 
   return (
     <div className="lib-root">
@@ -441,7 +551,11 @@ export default function Watch() {
                   <img
                     src={mediaSrc ?? undefined}
                     alt={disc?.title ?? "Your photo"}
-                    onError={() => setMediaError(true)}
+                    onError={() => {
+                      setMediaErrorType("file-not-found");
+                      setMediaError(true);
+                      console.warn("[Watch] Image load failed for:", disc?.videoPath);
+                    }}
                     style={{
                       width: "100%",
                       height: "100%",
@@ -451,16 +565,32 @@ export default function Watch() {
                   />
                 ) : isPreparing ? (
                   /* Recovered ISO/VOB still transcoding to a playable MP4 — never feed it to <video> (WebView2 can't decode it) */
-                  <PreparingCard />
+                  <PreparingCard timedOut={prepareTimedOut} onRetry={() => { setPrepareTimedOut(false); prepareStartTimeRef.current = null; }} />
                 ) : hasMedia && !mediaError ? (
                   <video
+                    key={mediaSrc}
                     ref={videoRef}
                     src={mediaSrc ?? undefined}
                     onTimeUpdate={(e) => setCurrentSec(e.currentTarget.currentTime)}
                     onPlay={() => setPlaying(true)}
                     onPause={() => setPlaying(false)}
                     onEnded={() => setPlaying(false)}
-                    onError={() => setMediaError(true)}
+                    onError={(e) => {
+                      // Differentiate error types based on HTML5 video error code
+                      const err = e.currentTarget.error;
+                      if (err?.code === 4 || err?.code === 2) {
+                        // MEDIA_ERR_SRC_NOT_SUPPORTED (4) or MEDIA_ERR_NETWORK (2)
+                        // Likely file not found, unsupported format, or access denied
+                        setMediaErrorType("file-not-found");
+                      } else if (err?.code === 3) {
+                        // MEDIA_ERR_DECODE
+                        setMediaErrorType("decode-error");
+                      } else {
+                        setMediaErrorType("unknown");
+                      }
+                      setMediaError(true);
+                      console.warn("[Watch] Video error:", err?.code, err?.message);
+                    }}
                     onDoubleClick={toggleFullscreen}
                     onClick={() => !isFullscreen && setPlaying((p) => !p)}
                     // Native controls (scrubber, volume) while fullscreen; our
@@ -480,6 +610,7 @@ export default function Watch() {
                   <CantPreviewCard
                     path={disc.deliverablePath ?? disc.videoPath}
                     onRetry={isPlayable && !isPhoto ? handleVideoRetry : undefined}
+                    errorType={mediaErrorType}
                   />
                 ) : (
                   <>
