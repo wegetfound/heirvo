@@ -1328,11 +1328,11 @@ export default function LandingMerge() {
 
             <div id="lm-photo-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "10px" }}>
               {[
-                { span: 2, label: "DSC_0001.jpg — Parents' wedding, 1987", tone: "rgba(200,150,80,0.15)" },
-                { span: 1, label: "Photo 2",  tone: "rgba(160,100,60,0.18)" },
-                { span: 1, label: "Photo 3",  tone: "rgba(180,130,70,0.16)" },
-                { span: 1, label: "Photo 4",  tone: "rgba(140,80,50,0.20)" },
-                { span: 1, label: "Photo 5",  tone: "rgba(210,160,90,0.13)" },
+                { span: 2, src: "/recovered/wedding-1987.webp",     label: "DSC_0001.jpg — Parents' wedding, 1987" },
+                { span: 1, src: "/recovered/birthday-1994.webp",    label: "BIRTHDAY.jpg — Birthday, 1994" },
+                { span: 1, src: "/recovered/first-steps-2003.webp", label: "MOV_0042 — First steps, 2003" },
+                { span: 1, src: "/recovered/christmas-1991.webp",   label: "XMAS_91.jpg — Christmas, 1991" },
+                { span: 1, src: "/recovered/beach-1991.webp",       label: "VACATION.jpg — Summer, 1991" },
               ].map((item, i) => (
                 <div
                   key={i}
@@ -1345,9 +1345,16 @@ export default function LandingMerge() {
                     position: "relative", willChange: "clip-path",
                   }}
                 >
-                  <div style={{ position: "absolute", inset: 0, background: item.tone }} />
-                  <div aria-hidden style={{ position: "absolute", inset: 0, backgroundImage: C.grain, backgroundSize: "128px 128px", mixBlendMode: "overlay", opacity: 0.5 }} />
-                  <div style={{ position: "absolute", bottom: 8, left: 10, fontFamily: MONO, fontSize: "0.62rem", letterSpacing: "0.1em", color: "rgba(240,237,232,0.4)", textTransform: "uppercase" }}>
+                  <img
+                    src={item.src}
+                    alt={item.label.split(" — ")[1] ?? "Recovered family photo"}
+                    loading="lazy"
+                    decoding="async"
+                    style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
+                  />
+                  <div aria-hidden style={{ position: "absolute", inset: 0, backgroundImage: C.grain, backgroundSize: "128px 128px", mixBlendMode: "overlay", opacity: 0.45 }} />
+                  <div aria-hidden style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(11,18,32,0.72), transparent 42%)" }} />
+                  <div style={{ position: "absolute", bottom: 8, left: 10, fontFamily: MONO, fontSize: "0.62rem", letterSpacing: "0.1em", color: "rgba(240,237,232,0.7)", textTransform: "uppercase" }}>
                     {item.label}
                   </div>
                 </div>
