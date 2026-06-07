@@ -124,6 +124,14 @@ const POLAROIDS: PolaroidDef[] = [
   },
 ];
 
+const POLAROID_IMGS = [
+  "/memory-first-steps.webp",
+  "/memory-wedding.webp",
+  "/memory-christmas.webp",
+  "/memory-vacation.webp",
+  "/memory-birthday.webp",
+];
+
 // Polaroid card dimensions (SVG units)
 const PW = 72;   // width
 const PH = 86;   // height
@@ -666,21 +674,29 @@ export default function Concept2_Resurfacing({
                 rx={3} ry={3}
                 fill="#F5F0E8"
               />
-              {/* Image area (implied photo via gradient) */}
-              <rect
+              {/* Real photo */}
+              <clipPath id={`polarClip${p.id}`}>
+                <rect
+                  x={-PW / 2 + 5}  y={-PH / 2 + 5}
+                  width={PW - 10}   height={PH - PB - 6}
+                  rx={1.5} ry={1.5}
+                />
+              </clipPath>
+              <image
                 className="polar-img"
+                href={POLAROID_IMGS[i]}
                 x={-PW / 2 + 5}    y={-PH / 2 + 5}
                 width={PW - 10}    height={PH - PB - 6}
-                rx={1.5} ry={1.5}
-                fill={`url(#imgGrad${p.id})`}
+                preserveAspectRatio="xMidYMid slice"
+                clipPath={`url(#polarClip${p.id})`}
               />
-              {/* Warm overlay on image — sepia effect */}
+              {/* Warm sepia overlay */}
               <rect
                 x={-PW / 2 + 5}    y={-PH / 2 + 5}
                 width={PW - 10}    height={PH - PB - 6}
                 rx={1.5} ry={1.5}
                 fill={TOKEN.sepia}
-                opacity={0.22}
+                opacity={0.18}
                 style={{ mixBlendMode: "multiply" }}
               />
               {/* Label on white bottom strip */}

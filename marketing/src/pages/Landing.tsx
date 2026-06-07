@@ -25,7 +25,7 @@ import { SplitText } from "gsap/SplitText";
 import { CustomEase } from "gsap/CustomEase";
 import { Nav } from "../components/Nav";
 import { Footer } from "../components/Footer";
-import Concept1_TheLastRead from "../components/hero-concepts/Concept1_TheLastRead";
+import Concept2_Resurfacing from "../components/hero-concepts/Concept2_Resurfacing";
 
 gsap.registerPlugin(ScrollTrigger, SplitText, CustomEase);
 
@@ -827,7 +827,7 @@ export default function LandingMerge() {
             </p>
 
             <div style={{ width: "100%", maxWidth: 380 }}>
-              <Concept1_TheLastRead reducedMotion={false} />
+              <Concept2_Resurfacing reducedMotion={false} />
             </div>
 
             {/* Caption: ties the radar to the "see before you pay" promise */}
