@@ -743,9 +743,9 @@ export default function LandingMerge() {
                 fontFamily: GARAMOND, fontStyle: "italic", fontSize: "0.98rem",
                 lineHeight: 1.5, color: C.sepiaText, margin: 0, maxWidth: "440px",
               }}>
-                "In the early 2000s I produced a series of borosilicate lampworking videos.
-                The only copies I have left are scratched discs — so I built Heirvo to see
-                what was still on them. Now it shows you first, too."
+                "I built Heirvo for my own discs first. A series of lampworking videos I made
+                in the early 2000s was down to scratched copies — and it pulled back all nine.
+                Now it shows you what's there first, too."
               </blockquote>
               <figcaption style={{
                 marginTop: "0.5rem", fontFamily: MONO, fontSize: "0.64rem",
@@ -905,15 +905,15 @@ export default function LandingMerge() {
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem", maxWidth: "560px" }}>
               <p style={{ fontFamily: SORA, fontSize: "1rem", color: C.textMuted, lineHeight: 1.75, textWrap: "pretty" }}>
-                I'm Sasha. In the early 2000s I produced a series of borosilicate lampworking
-                videos — instructional footage of techniques, much of it recorded only once.
-                Today the only copies I have left are old, scratched discs.
+                I'm Sasha, and I built Heirvo for my own discs first. In the early 2000s I made
+                a series of lampworking videos — techniques I'd recorded only once. By now the
+                only copies I had left were old, scratched discs.
               </p>
               <p style={{ fontFamily: SORA, fontSize: "1rem", color: C.textMuted, lineHeight: 1.75, textWrap: "pretty" }}>
-                The discs were deteriorating — you could see it. I tried everything Windows
-                offered. Nothing worked. So I'm a developer, and I built a recovery tool for my
-                own discs. It worked — not perfectly, not every disc, but enough. Enough that I
-                got back footage I thought was gone forever.
+                You could see them failing, and nothing Windows offered could read them. So —
+                I'm a developer — I built a recovery tool and pointed it at my own collection.
+                It pulled back all nine of those videos. Not every disc will recover like that,
+                but mine did: footage I'd thought was gone for good.
               </p>
               <p style={{ fontFamily: SORA, fontSize: "1rem", color: C.text, lineHeight: 1.75, textWrap: "pretty" }}>
                 I packaged it up because I figured I'm probably not the only person with a box of
