@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Heirvo Hero Disc Animation Battle</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #0B1220;
+      color: #F0EDE8;
+      padding: 2rem;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 2rem;
+      font-size: 2rem;
+      background: linear-gradient(135deg, #0A84FF, #5AC8FA);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 2rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .tab-btn {
+      padding: 0.75rem 1.5rem;
+      border: 2px solid #0A84FF;
+      background: transparent;
+      color: #0A84FF;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1rem;
+      font-weight: 500;
+      transition: all 0.2s ease;
+    }
+
+    .tab-btn.active {
+      background: #0A84FF;
+      color: #0B1220;
+    }
+
+    .tab-btn:hover {
+      background: rgba(10, 132, 255, 0.1);
+    }
+
+    .animation-container {
+      display: none;
+      background: linear-gradient(180deg, #0E1628 0%, #0B1220 100%);
+      border: 1px solid rgba(10, 132, 255, 0.2);
+      border-radius: 16px;
+      padding: 3rem 2rem;
+      min-height: 600px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .animation-container.active {
+      display: flex;
+    }
+
+    .animation-title {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      color: #0A84FF;
+    }
+
+    .animation-subtitle {
+      font-size: 0.9rem;
+      color: #94A3B8;
+      margin-bottom: 2rem;
+      text-align: center;
+      max-width: 400px;
+    }
+
+    .svg-wrapper {
+      perspective: 1400px;
+      margin: 2rem 0;
+    }
+
+    svg {
+      max-width: 100%;
+      height: auto;
+    }
+
+    .animation-controls {
+      margin-top: 2rem;
+      text-align: center;
+      color: #5E7290;
+      font-size: 0.85rem;
+    }
+
+    .key-features {
+      margin-top: 3rem;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      width: 100%;
+      max-width: 800px;
+    }
+
+    .feature {
+      background: rgba(10, 132, 255, 0.08);
+      border-left: 3px solid #0A84FF;
+      padding: 1rem;
+      border-radius: 4px;
+    }
+
+    .feature-label {
+      font-weight: 600;
+      color: #5AC8FA;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.25rem;
+    }
+
+    .feature-text {
+      font-size: 0.9rem;
+      color: #94A3B8;
+    }
+
+    .comparison {
+      margin-top: 4rem;
+      padding: 2rem;
+      background: rgba(10, 132, 255, 0.06);
+      border-radius: 12px;
+      text-align: center;
+    }
+
+    .comparison h3 {
+      color: #0A84FF;
+      margin-bottom: 0.5rem;
+    }
+
+    .comparison p {
+      color: #94A3B8;
+      font-size: 0.9rem;
+      max-width: 500px;
+      margin: 0 auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔥 Heirvo Hero Disc Animation Battle</h1>
+
+    <div class="tabs">
+      <button class="tab-btn active" onclick="showAnimation('vortex')">1️⃣ Extraction Vortex</button>
+      <button class="tab-btn" onclick="showAnimation('breach')">2️⃣ Signal Breach</button>
+      <button class="tab-btn" onclick="showAnimation('beacon')">3️⃣ Beacon Memory</button>
+    </div>
+
+    <!-- EXTRACTION VORTEX -->
+    <div id="vortex" class="animation-container active">
+      <div class="animation-title">Extraction Vortex</div>
+      <div class="animation-subtitle">Kinetic particle accelerator — data ripped free from the disc via orbital rings</div>
+
+      <div class="svg-wrapper">
+        <svg id="vortex-svg" width="460" height="460" viewBox="0 0 460 460" style="max-width: 400px;">
+          <defs>
+            <radialGradient id="vortexBody" cx="0.4" cy="0.35" r="0.85">
+              <stop offset="0%" stopColor="#1A3A6B" />
+              <stop offset="40%" stopColor="#0E2548" />
+              <stop offset="85%" stopColor="#091A36" />
+              <stop offset="100%" stopColor="#050D1A" />
+            </radialGradient>
+            <radialGradient id="vortexHub" cx="0.5" cy="0.4" r="0.8">
+              <stop offset="0%" stopColor="#FFFFFF" />
+              <stop offset="60%" stopColor="#E6EEF8" />
+              <stop offset="100%" stopColor="#9AA6B8" />
+            </radialGradient>
+            <filter id="vortexGlow">
+              <feGaussianBlur stdDeviation="4" result="coloredBlur" />
+              <feMerge>
+                <feMergeNode in="coloredBlur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+          </defs>
+
+          <g id="vortexGroup">
+            <!-- Outer rim -->
+            <circle cx="230" cy="230" r="212" fill="none" stroke="rgba(10,132,255,0.3)" strokeWidth="2" />
+
+            <!-- Orbital rings -->
+            <g id="ring1" stroke="#0A84FF" strokeWidth="2" fill="none" opacity="0.6">
+              <circle cx="230" cy="230" r="70" strokeDasharray="30 8" />
+            </g>
+            <g id="ring2" stroke="#5AC8FA" strokeWidth="1.5" fill="none" opacity="0.5">
+              <circle cx="230" cy="230" r="100" strokeDasharray="35 10" />
+            </g>
+            <g id="ring3" stroke="#0A84FF" strokeWidth="2" fill="none" opacity="0.6">
+              <circle cx="230" cy="230" r="128" strokeDasharray="32 9" />
+            </g>
+            <g id="ring4" stroke="#5AC8FA" strokeWidth="1.5" fill="none" opacity="0.5">
+              <circle cx="230" cy="230" r="155" strokeDasharray="38 11" />
+            </g>
+            <g id="ring5" stroke="#8B5CF6" strokeWidth="1.2" fill="none" opacity="0.3">
+              <circle cx="230" cy="230" r="182" strokeDasharray="40 12" />
+            </g>
+
+            <!-- Disc body -->
+            <circle cx="230" cy="230" r="212" fill="url(#vortexBody)" />
+
+            <!-- Scanner arms -->
+            <line x1="230" y1="230" x2="230" y2="30" stroke="#0A84FF" strokeWidth="1.5" opacity="0.4" />
+            <line x1="230" y1="230" x2="430" y2="260" stroke="#0A84FF" strokeWidth="1.5" opacity="0.4" />
+            <line x1="230" y1="230" x2="80" y2="320" stroke="#0A84FF" strokeWidth="1.5" opacity="0.4" />
+
+            <!-- Photons (will be created dynamically) -->
+            <g id="photonLayer"></g>
+
+            <!-- Hub -->
+            <circle cx="230" cy="230" r="44" fill="url(#vortexHub)" />
+            <circle cx="230" cy="230" r="20" fill="#0A1830" />
+            <circle id="vortexCore" cx="230" cy="230" r="8" fill="#0A84FF" />
+          </g>
+        </svg>
+      </div>
+
+      <div class="key-features">
+        <div class="feature">
+          <div class="feature-label">Speed Variation</div>
+          <div class="feature-text">5 rings at 8s, 14s, 20s, 30s, 45s rotations</div>
+        </div>
+        <div class="feature">
+          <div class="feature-label">Energy Metaphor</div>
+          <div class="feature-text">Feels like data is being extracted forcefully</div>
+        </div>
+        <div class="feature">
+          <div class="feature-label">Premium Factor</div>
+          <div class="feature-text">Gyroscope parallax effect reads as engineered</div>
+        </div>
+        <div class="feature">
+          <div class="feature-label">Loop Variation</div>
+          <div class="feature-text">Three simultaneous loops never align same way</div>
+        </div>
+      </div>
+
+      <div class="comparison">
+        <h3>When to choose this:</h3>
+        <p>You want technical authority. "This is a precision instrument." Best for audiences who respect engineering and power.</p>
+      </div>
+    </div>
+
+    <!-- SIGNAL BREACH -->
+    <div id="breach" class="animation-container">
+      <div class="animation-title">Signal Breach</div>
+      <div class="animation-subtitle">Precision mining rig — data packets rising from the disc with live telemetry</div>
+
+      <div class="svg-wrapper">
+        <svg id="breach-svg" width="460" height="460" viewBox="0 0 460 460" style="max-width: 400px;">
+          <defs>
+            <radialGradient id="breachBody" cx="0.4" cy="0.35" r="0.9">
+              <stop offset="0%" stopColor="#2D5A8C" />
+              <stop offset="40%" stopColor="#1A3A6B" />
+              <stop offset="85%" stopColor="#0F2548" />
+              <stop offset="100%" stopColor="#050A16" />
+            </radialGradient>
+            <linearGradient id="scanTrail" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stopColor="#5AC8FA" stopOpacity="0" />
+              <stop offset="30%" stopColor="#FFFFFF" stopOpacity="0.8" />
+              <stop offset="70%" stopColor="#5AC8FA" stopOpacity="0.7" />
+              <stop offset="100%" stopColor="#0A84FF" stopOpacity="0" />
+            </linearGradient>
+            <filter id="breachGlow">
+              <feGaussianBlur stdDeviation="3" result="coloredBlur" />
+              <feMerge>
+                <feMergeNode in="coloredBlur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+          </defs>
+
+          <g id="breachGroup">
+            <!-- Disc body -->
+            <circle cx="230" cy="230" r="175" fill="url(#breachBody)" />
+
+            <!-- Data tracks -->
+            <circle cx="230" cy="230" r="60" fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth="1" />
+            <circle cx="230" cy="230" r="90" fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth="1" />
+            <circle cx="230" cy="230" r="120" fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth="1" />
+            <circle cx="230" cy="230" r="150" fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth="1" />
+
+            <!-- Damaged zones -->
+            <path d="M 230 230 L 320 200 A 175 175 0 0 1 380 280 Z" fill="#060C18" opacity="0.8" />
+            <path d="M 230 230 L 150 320 A 175 175 0 0 1 120 150 Z" fill="#060C18" opacity="0.8" />
+
+            <!-- Scan arc (animated) -->
+            <g id="scanArc">
+              <circle cx="230" cy="230" r="130" fill="none" stroke="url(#scanTrail)" strokeWidth="3" />
+            </g>
+
+            <!-- Hub -->
+            <circle cx="230" cy="230" r="38" fill="#1A2A4A" />
+            <circle cx="230" cy="230" r="15" fill="#080F20" />
+            <circle cx="230" cy="230" r="5" fill="#0A84FF" />
+
+            <!-- Packet layer -->
+            <g id="packetLayer"></g>
+
+            <!-- Rim -->
+            <circle cx="230" cy="230" r="183" fill="none" stroke="rgba(10,132,255,0.4)" strokeWidth="1.5" opacity="0.6" />
+
+            <!-- Telemetry readout -->
+            <rect x="10" y="8" width="110" height="32" rx="3" fill="rgba(10,132,255,0.06)" stroke="rgba(10,132,255,0.15)" strokeWidth="1" />
+            <text x="15" y="22" fontFamily="'Monaco', monospace" fontSize="7" fill="#0A84FF" opacity="0.6">03 — RECOVERY ACTIVE</text>
+            <text id="fileCounter" x="15" y="36" fontFamily="'Monaco', monospace" fontSize="10" fill="#0A84FF" fontWeight="bold">0847 FILES</text>
+          </g>
+        </svg>
+      </div>
+
+      <div class="key-features">
+        <div class="feature">
+          <div class="feature-label">Honesty</div>
+          <div class="feature-text">Damage zones stay visible — not miraculous, selective</div>
+        </div>
+        <div class="feature">
+          <div class="feature-label">Specificity</div>
+          <div class="feature-text">File-type icons (JPG, MP4, MOV) prove competence</div>
+        </div>
+        <div class="feature">
+          <div class="feature-label">Live Telemetry</div>
+          <div class="feature-text">File counter ticks up — feels like real operation</div>
+        </div>
+        <div class="feature">
+          <div class="feature-label">CTA Alignment</div>
+          <div class="feature-text">Packets rise toward viewer = toward download button</div>
+        </div>
+      </div>
+
+      <div class="comparison">
+        <h3>When to choose this:</h3>
+        <p>You want conversion. Specificity + honesty + urgency. Best for driving downloads and proving capability.</p>
+      </div>
+    </div>
+
+    <!-- BEACON MEMORY -->
+    <div id="beacon" class="animation-container">
+      <div class="animation-title">Beacon of Returning Memories</div>
+      <div class="animation-subtitle">Light awakening — warm amber → cool blue, impressionistic photo-ghosts blooming</div>
+
+      <div class="svg-wrapper">
+        <svg id="beacon-svg" width="460" height="460" viewBox="0 0 460 460" style="max-width: 400px;">
+          <defs>
+            <radialGradient id="beaconBody" cx="0.5" cy="0.5" r="0.9">
+              <stop offset="0%" stopColor="#080F1E" />
+              <stop offset="100%" stopColor="#050A14" />
+            </radialGradient>
+            <radialGradient id="hubWarm" cx="0.5" cy="0.35" r="0.8">
+              <stop offset="0%" stopColor="#FFFBF0" />
+              <stop offset="40%" stopColor="#FDE047" />
+              <stop offset="100%" stopColor="#FFFBF0" stopOpacity="0" />
+            </radialGradient>
+            <linearGradient id="beaconIrid" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stopColor="#A78BFA" />
+              <stop offset="50%" stopColor="#5AC8FA" />
+              <stop offset="100%" stopColor="#A78BFA" />
+            </linearGradient>
+            <filter id="beaconGlow">
+              <feGaussianBlur stdDeviation="6" result="coloredBlur" />
+              <feMerge>
+                <feMergeNode in="coloredBlur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+            <radialGradient id="photoGhost" cx="0.5" cy="0.5" r="0.5">
+              <stop offset="0%" stopColor="rgba(255,248,230,0.4)" />
+              <stop offset="100%" stopColor="rgba(255,248,230,0)" />
+            </radialGradient>
+          </defs>
+
+          <g id="beaconGroup">
+            <!-- Ambient halo -->
+            <circle cx="230" cy="230" r="280" fill="none" stroke="rgba(245,158,11,0.1)" strokeWidth="2" opacity="0.3" />
+
+            <!-- Disc body -->
+            <circle cx="230" cy="230" r="220" fill="url(#beaconBody)" filter="url(#beaconGlow)" />
+
+            <!-- Data rings (will illuminate) -->
+            <circle id="ring-inner" cx="230" cy="230" r="62" fill="none" stroke="rgba(245,158,11,0.2)" strokeWidth="2" opacity="0.3" />
+            <circle id="ring-mid1" cx="230" cy="230" r="90" fill="none" stroke="rgba(251,113,133,0.2)" strokeWidth="2" opacity="0.3" />
+            <circle id="ring-mid2" cx="230" cy="230" r="120" fill="none" stroke="rgba(10,132,255,0.2)" strokeWidth="2" opacity="0.3" />
+            <circle id="ring-outer" cx="230" cy="230" r="150" fill="none" stroke="rgba(90,200,250,0.2)" strokeWidth="2" opacity="0.3" />
+
+            <!-- Photo ghosts -->
+            <ellipse id="ghost1" cx="300" cy="140" rx="35" ry="30" fill="url(#photoGhost)" opacity="0" />
+            <ellipse id="ghost2" cx="340" cy="280" rx="40" ry="35" fill="url(#photoGhost)" opacity="0" />
+            <ellipse id="ghost3" cx="140" cy="320" rx="38" ry="32" fill="url(#photoGhost)" opacity="0" />
+            <ellipse id="ghost4" cx="120" cy="160" rx="36" ry="34" fill="url(#photoGhost)" opacity="0" />
+
+            <!-- Hub -->
+            <circle cx="230" cy="230" r="52" fill="url(#hubWarm)" opacity="0.2" />
+            <circle cx="230" cy="230" r="24" fill="#030810" />
+            <circle id="beaconCore" cx="230" cy="230" r="7" fill="#FFFBF0" opacity="0.5" />
+
+            <!-- Rim -->
+            <circle cx="230" cy="230" r="228" fill="none" stroke="url(#beaconIrid)" strokeWidth="3" opacity="0.4" />
+          </g>
+        </svg>
+      </div>
+
+      <div class="key-features">
+        <div class="feature">
+          <div class="feature-label">Emotional Arc</div>
+          <div class="feature-text">Amber (nostalgia) → Blue (technology) → Light (hope)</div>
+        </div>
+        <div class="feature">
+          <div class="feature-label">Memory Projection</div>
+          <div class="feature-text">Photo-ghosts are impressionistic — viewers see their own photos</div>
+        </div>
+        <div class="feature">
+          <div class="feature-label">Premium Restraint</div>
+          <div class="feature-text">Slow, subtle, never feels repetitive or frozen</div>
+        </div>
+        <div class="feature">
+          <div class="feature-label">Neurological Appeal</div>
+          <div class="feature-text">Warm colors trigger autobiographical memory recall</div>
+        </div>
+      </div>
+
+      <div class="comparison">
+        <h3>When to choose this:</h3>
+        <p>You want emotion. Premium positioning. Users should feel like they're recovering something precious, not just data.</p>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    function showAnimation(which) {
+      document.querySelectorAll('.animation-container').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+      document.getElementById(which).classList.add('active');
+      event.target.classList.add('active');
+
+      // Restart animations
+      if (which === 'vortex') startVortex();
+      if (which === 'breach') startBreach();
+      if (which === 'beacon') startBeacon();
+    }
+
+    function startVortex() {
+      gsap.killTweensOf('#vortexGroup *');
+      const tl = gsap.timeline({ repeat: -1 });
+
+      // Rotate rings at different speeds
+      tl.to('#ring1', { rotation: 360, duration: 8, ease: 'none' }, 0);
+      tl.to('#ring2', { rotation: -360, duration: 14, ease: 'none' }, 0);
+      tl.to('#ring3', { rotation: 360, duration: 20, ease: 'none' }, 0);
+      tl.to('#ring4', { rotation: -360, duration: 30, ease: 'none' }, 0);
+      tl.to('#ring5', { rotation: 360, duration: 45, ease: 'none' }, 0);
+
+      // Hub pulse
+      tl.to('#vortexCore', { attr: { r: 12 }, duration: 2, ease: 'sine.inOut', yoyo: true, repeat: -1 }, 0);
+    }
+
+    function startBreach() {
+      gsap.killTweensOf('#breachGroup *');
+      const tl = gsap.timeline({ repeat: -1 });
+
+      // Scan arc rotation
+      tl.to('#scanArc', { rotation: 360, duration: 3, ease: 'power2.inOut', transformOrigin: '230px 230px' }, 0);
+
+      // File counter
+      let counter = { val: 0 };
+      tl.to(counter, { val: 847, duration: 6, ease: 'linear', onUpdate: () => {
+        document.getElementById('fileCounter').textContent = String(Math.floor(counter.val)).padStart(4, '0') + ' FILES';
+      }}, 0);
+
+      // Spawn packets (simplified)
+      for (let i = 0; i < 5; i++) {
+        tl.to({y: 230}, { y: 50, duration: 2, ease: 'power2.in' }, i * 0.5);
+      }
+    }
+
+    function startBeacon() {
+      gsap.killTweensOf('#beaconGroup *');
+      const tl = gsap.timeline({ repeat: -1, repeatDelay: 0.5 });
+
+      // Ring glow progression (simplified)
+      tl.to('#ring-inner', { stroke: 'rgba(245,158,11,0.8)', opacity: 1, duration: 1.2, ease: 'power2.out' }, 0);
+      tl.to('#ring-mid1', { stroke: 'rgba(251,113,133,0.7)', opacity: 1, duration: 1.2, ease: 'power2.out' }, 0.1);
+      tl.to('#ring-mid2', { stroke: 'rgba(10,132,255,0.7)', opacity: 1, duration: 1.2, ease: 'power2.out' }, 0.2);
+      tl.to('#ring-outer', { stroke: 'rgba(90,200,250,0.7)', opacity: 1, duration: 1.2, ease: 'power2.out' }, 0.3);
+
+      // Photo ghosts bloom
+      tl.to('#ghost1', { opacity: 0.6, duration: 0.5 }, 1.2);
+      tl.to('#ghost1', { opacity: 0, duration: 0.5 }, 1.8);
+
+      tl.to('#ghost2', { opacity: 0.5, duration: 0.5 }, 1.5);
+      tl.to('#ghost2', { opacity: 0, duration: 0.5 }, 2.0);
+
+      tl.to('#ghost3', { opacity: 0.6, duration: 0.5 }, 1.7);
+      tl.to('#ghost3', { opacity: 0, duration: 0.5 }, 2.2);
+
+      tl.to('#ghost4', { opacity: 0.5, duration: 0.5 }, 1.9);
+      tl.to('#ghost4', { opacity: 0, duration: 0.5 }, 2.4);
+
+      // Hub pulse
+      tl.to('#beaconCore', { attr: { r: 10 }, opacity: 1, duration: 2.5, ease: 'sine.inOut', yoyo: true }, 0);
+
+      // Imperceptible rotation
+      tl.to('#beaconGroup', { rotation: 360, duration: 55, ease: 'none' }, 0);
+    }
+
+    // Start default animation
+    startVortex();
+  </script>
+</body>
+</html>

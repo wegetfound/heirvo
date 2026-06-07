@@ -582,7 +582,16 @@ export function useRecoveryMachine(initialSessionId?: string): RecoveryMachineRe
         try {
           // Probe the current disc in the first available drive
           const firstDrive = currentDrives[0];
-          const currentDisc = await ipc.checkDisc(firstDrive.path).catch(() => null);
+          const DISC_CHECK_TIMEOUT_MS = 15_000; // Match probe timeout behavior
+          let timer: ReturnType<typeof setTimeout> | undefined;
+          const timeout = new Promise<never>((_, reject) => {
+            timer = setTimeout(
+              () => reject(new Error("Disc verification timed out. Drive may be unresponsive.")),
+              DISC_CHECK_TIMEOUT_MS,
+            );
+          });
+          const currentDisc = await Promise.race([ipc.checkDisc(firstDrive.path), timeout]).catch(() => null);
+          if (timer) clearTimeout(timer);
 
           if (!currentDisc) {
             setResumeError("Disc no longer readable. Try cleaning it or using a different drive.");
@@ -603,7 +612,16 @@ export function useRecoveryMachine(initialSessionId?: string): RecoveryMachineRe
 
           // Same disc & drive OK → RESUME the existing session, don't restart
           setResumeError(null);
-          await resumeAction(resumeModeRef.current);
+          setResuming(true);
+          try {
+            await ipc.startRecovery(sessionId, resumeModeRef.current);
+            try { localStorage.setItem(`mode:${sessionId}`, resumeModeRef.current); } catch { /* ignore */ }
+            setLastProgressAt(Date.now());
+          } catch (e) {
+            setResumeError(String(e));
+          } finally {
+            setResuming(false);
+          }
           return;
         } catch (err) {
           setResumeError(`Could not verify disc: ${err instanceof Error ? err.message : 'Unknown error'}`);
@@ -628,7 +646,7 @@ export function useRecoveryMachine(initialSessionId?: string): RecoveryMachineRe
     } catch (err) {
       setResumeError(`Power recovery failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
     }
-  }, [sessionId, resumeAction]);
+  }, [sessionId]);
 
   // ── Derive phase ──────────────────────────────────────────────────────────
   // Stall detection now feeds in via engineStalled (from stats.stalled).

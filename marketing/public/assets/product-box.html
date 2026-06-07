@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Heirvo — Product Box</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #e8eaed;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    font-family: 'Sora', sans-serif;
+  }
+
+  /* ── SCENE ─────────────────────────────────────── */
+  .scene {
+    width: 900px;
+    height: 900px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    perspective: 1800px;
+  }
+
+  .box-wrap {
+    transform-style: preserve-3d;
+    transform: rotateY(-18deg) rotateX(4deg) translateZ(0);
+    filter: drop-shadow(40px 50px 60px rgba(0,0,0,0.35));
+  }
+
+  /* ── BOX FACES ─────────────────────────────────── */
+  .box {
+    position: relative;
+    width: 480px;
+    height: 640px;
+    transform-style: preserve-3d;
+  }
+
+  /* FRONT */
+  .front {
+    position: absolute;
+    inset: 0;
+    border-radius: 6px 0 0 6px;
+    overflow: hidden;
+    background: #ffffff;
+    transform: translateZ(0);
+  }
+
+  /* SIDE */
+  .side {
+    position: absolute;
+    top: 0;
+    right: -72px;
+    width: 72px;
+    height: 640px;
+    background: linear-gradient(180deg, #c8d0dc 0%, #a8b4c4 50%, #b8c4d4 100%);
+    border-radius: 0 6px 6px 0;
+    transform: rotateY(90deg) translateZ(72px);
+    transform-origin: left center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+  }
+
+  .side-text {
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    transform: rotate(180deg);
+    font-family: 'Sora', sans-serif;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    color: #445;
+    text-transform: uppercase;
+    padding: 8px 0;
+  }
+
+  /* TOP */
+  .top {
+    position: absolute;
+    top: -32px;
+    left: 0;
+    width: 480px;
+    height: 32px;
+    background: linear-gradient(90deg, #d0d8e4 0%, #b8c4d4 100%);
+    border-radius: 6px 6px 0 0;
+    transform: rotateX(90deg) translateZ(32px);
+    transform-origin: bottom center;
+  }
+
+  /* ── FRONT FACE DESIGN ─────────────────────────── */
+  .front-inner {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(145deg, #f8faff 0%, #eef3ff 40%, #dde8f8 100%);
+  }
+
+  /* Light burst background */
+  .light-burst {
+    position: absolute;
+    top: -10%;
+    right: -5%;
+    width: 110%;
+    height: 90%;
+    background: radial-gradient(ellipse at 70% 20%,
+      rgba(120,170,255,0.55) 0%,
+      rgba(100,150,240,0.25) 30%,
+      rgba(200,220,255,0.10) 60%,
+      transparent 80%
+    );
+    pointer-events: none;
+  }
+
+  /* Secondary warm fill */
+  .light-fill {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 30% 80%,
+      rgba(180,210,255,0.20) 0%,
+      transparent 60%
+    );
+    pointer-events: none;
+  }
+
+  /* Film strip */
+  .film-strip {
+    position: absolute;
+    top: 14%;
+    right: -8%;
+    width: 58%;
+    height: 68%;
+    transform: rotate(-22deg);
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .film-reel {
+    width: 100%;
+    height: 100%;
+    position: relative;
+  }
+
+  /* Film strip using SVG */
+  .film-svg {
+    width: 100%;
+    height: 100%;
+  }
+
+  /* Disc */
+  .disc-wrap {
+    position: absolute;
+    bottom: 22%;
+    left: -2%;
+    width: 68%;
+    height: auto;
+    pointer-events: none;
+  }
+
+  /* ── TEXT LAYER ────────────────────────────────── */
+  .text-layer {
+    position: absolute;
+    inset: 0;
+    padding: 28px 30px 24px;
+    display: flex;
+    flex-direction: column;
+    pointer-events: none;
+    z-index: 10;
+  }
+
+  .brand-block {
+    max-width: 62%;
+  }
+
+  .brand-name {
+    font-family: 'Sora', sans-serif;
+    font-size: 64px;
+    font-weight: 800;
+    color: #0f1e3c;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    text-shadow: 0 2px 6px rgba(255,255,255,0.85);
+  }
+
+  .brand-sub {
+    font-family: 'Sora', sans-serif;
+    font-size: 11px;
+    font-weight: 500;
+    color: #2a4880;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    margin-top: 5px;
+    text-shadow: 0 1px 2px rgba(255,255,255,0.8);
+  }
+
+  /* Features strip */
+  .features {
+    position: absolute;
+    bottom: 88px;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: center;
+    gap: 0;
+    background: rgba(255,255,255,0.72);
+    backdrop-filter: blur(8px);
+    border-top: 1px solid rgba(30,60,120,0.12);
+    border-bottom: 1px solid rgba(30,60,120,0.12);
+    padding: 10px 16px;
+  }
+
+  .feature-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    padding: 0 8px;
+    border-right: 1px solid rgba(30,60,120,0.15);
+  }
+
+  .feature-item:last-child { border-right: none; }
+
+  .feature-icon {
+    font-size: 16px;
+    line-height: 1;
+  }
+
+  .feature-label {
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #0f1e3c;
+  }
+
+  .feature-desc {
+    font-size: 7px;
+    color: #4a6090;
+    text-align: center;
+    line-height: 1.3;
+    font-weight: 400;
+  }
+
+  /* Tagline */
+  .tagline {
+    position: absolute;
+    bottom: 38px;
+    left: 0;
+    right: 0;
+    text-align: center;
+    padding: 0 24px;
+  }
+
+  .tagline-text {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 19px;
+    font-weight: 600;
+    font-style: italic;
+    color: #0f1e3c;
+    letter-spacing: 0.03em;
+    text-shadow: 0 1px 3px rgba(255,255,255,0.95);
+    line-height: 1.35;
+  }
+
+  /* Windows badge */
+  .win-badge {
+    position: absolute;
+    bottom: 26px;
+    left: 24px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .win-logo {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5px;
+    width: 16px;
+    height: 16px;
+  }
+
+  .win-logo span {
+    border-radius: 1px;
+  }
+
+  .win-logo span:nth-child(1) { background: #f35325; }
+  .win-logo span:nth-child(2) { background: #81bc06; }
+  .win-logo span:nth-child(3) { background: #05a6f0; }
+  .win-logo span:nth-child(4) { background: #ffba08; }
+
+  .win-text {
+    font-size: 7px;
+    font-weight: 600;
+    color: #2a3a5a;
+    letter-spacing: 0.05em;
+    line-height: 1.2;
+  }
+
+  /* Version badge */
+  .version-badge {
+    position: absolute;
+    top: 28px;
+    right: 24px;
+    background: rgba(15,30,60,0.08);
+    border: 1px solid rgba(15,30,60,0.15);
+    border-radius: 20px;
+    padding: 3px 10px;
+    font-size: 8px;
+    font-weight: 600;
+    color: #0f1e3c;
+    letter-spacing: 0.08em;
+    backdrop-filter: blur(4px);
+  }
+
+  /* Real disc image */
+  .disc-img {
+    width: 100%;
+    display: block;
+    filter: drop-shadow(0 12px 32px rgba(0,20,80,0.55));
+  }
+</style>
+</head>
+<body>
+
+<div class="scene">
+  <div class="box-wrap">
+    <div class="box">
+
+      <!-- TOP face -->
+      <div class="top"></div>
+
+      <!-- SIDE face -->
+      <div class="side">
+        <span class="side-text">Heirvo</span>
+        <span class="side-text" style="font-size:8px;opacity:0.7;">DVD · Disc · Photo CD Recovery</span>
+      </div>
+
+      <!-- FRONT face -->
+      <div class="front">
+        <div class="front-inner">
+
+          <!-- Background light -->
+          <div class="light-burst"></div>
+          <div class="light-fill"></div>
+
+          <!-- Film strip — real vintage photos -->
+          <div class="film-strip">
+            <svg class="film-svg" viewBox="0 0 220 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <!-- Warm vintage color-matrix: desaturate + boost red/amber, pull blue -->
+                <filter id="vint" color-interpolation-filters="sRGB"
+                        x="-2%" y="-2%" width="104%" height="104%">
+                  <feColorMatrix type="matrix" values="
+                    0.72 0.22 0.06 0 0.06
+                    0.08 0.78 0.08 0 0.02
+                    0.04 0.08 0.62 0 0
+                    0    0    0    1 0"/>
+                </filter>
+                <!-- Vignette: dark radial fade at frame edges (objectBoundingBox) -->
+                <radialGradient id="vign" cx="50%" cy="50%" r="68%">
+                  <stop offset="30%" stop-color="rgba(0,0,0,0)"/>
+                  <stop offset="100%" stop-color="rgba(0,0,0,0.62)"/>
+                </radialGradient>
+                <!-- Clip paths per frame (rounded 2px) -->
+                <clipPath id="f1"><rect x="62" y="12"  width="96" height="70" rx="2"/></clipPath>
+                <clipPath id="f2"><rect x="62" y="92"  width="96" height="70" rx="2"/></clipPath>
+                <clipPath id="f3"><rect x="62" y="172" width="96" height="70" rx="2"/></clipPath>
+                <clipPath id="f4"><rect x="62" y="252" width="96" height="70" rx="2"/></clipPath>
+              </defs>
+
+              <!-- Film strip body -->
+              <rect x="30" y="0" width="160" height="400" rx="8" fill="rgba(8,16,40,0.92)"/>
+
+              <!-- Sprocket holes LEFT -->
+              <rect x="36" y="18"  width="22" height="14" rx="3" fill="rgba(255,255,255,0.13)"/>
+              <rect x="36" y="50"  width="22" height="14" rx="3" fill="rgba(255,255,255,0.13)"/>
+              <rect x="36" y="82"  width="22" height="14" rx="3" fill="rgba(255,255,255,0.13)"/>
+              <rect x="36" y="114" width="22" height="14" rx="3" fill="rgba(255,255,255,0.13)"/>
+              <rect x="36" y="146" width="22" height="14" rx="3" fill="rgba(255,255,255,0.13)"/>
+              <rect x="36" y="178" width="22" height="14" rx="3" fill="rgba(255,255,255,0.13)"/>
+              <rect x="36" y="210" width="22" height="14" rx="3" fill="rgba(255,255,255,0.13)"/>
+              <rect x="36" y="242" width="22" height="14" rx="3" fill="rgba(255,255,255,0.13)"/>
+              <rect x="36" y="274" width="22" height="14" rx="3" fill="rgba(255,255,255,0.13)"/>
+              <rect x="36" y="306" width="22" height="14" rx="3" fill="rgba(255,255,255,0.13)"/>
+              <rect x="36" y="338" width="22" height="14" rx="3" fill="rgba(255,255,255,0.13)"/>
+              <rect x="36" y="370" width="22" height="14" rx="3" fill="rgba(255,255,255,0.13)"/>
+
+              <!-- Sprocket holes RIGHT -->
+              <rect x="162" y="18"  width="22" height="14" rx="3" fill="rgba(255,255,255,0.13)"/>
+              <rect x="162" y="50"  width="22" height="14" rx="3" fill="rgba(255,255,255,0.13)"/>
+              <rect x="162" y="82"  width="22" height="14" rx="3" fill="rgba(255,255,255,0.13)"/>
+              <rect x="162" y="114" width="22" height="14" rx="3" fill="rgba(255,255,255,0.13)"/>
+              <rect x="162" y="146" width="22" height="14" rx="3" fill="rgba(255,255,255,0.13)"/>
+              <rect x="162" y="178" width="22" height="14" rx="3" fill="rgba(255,255,255,0.13)"/>
+              <rect x="162" y="210" width="22" height="14" rx="3" fill="rgba(255,255,255,0.13)"/>
+              <rect x="162" y="242" width="22" height="14" rx="3" fill="rgba(255,255,255,0.13)"/>
+              <rect x="162" y="274" width="22" height="14" rx="3" fill="rgba(255,255,255,0.13)"/>
+              <rect x="162" y="306" width="22" height="14" rx="3" fill="rgba(255,255,255,0.13)"/>
+              <rect x="162" y="338" width="22" height="14" rx="3" fill="rgba(255,255,255,0.13)"/>
+              <rect x="162" y="370" width="22" height="14" rx="3" fill="rgba(255,255,255,0.13)"/>
+
+              <!-- Frame 1 — first birthday 🎂 -->
+              <image href="first-birthday.jpg" x="62" y="12" width="96" height="70"
+                     preserveAspectRatio="xMidYMid slice"
+                     clip-path="url(#f1)" filter="url(#vint)"/>
+              <rect x="62" y="12" width="96" height="70" rx="2" fill="url(#vign)"/>
+
+              <!-- Frame 2 — grandma & baby -->
+              <image href="grandma-baby.jpg" x="62" y="92" width="96" height="70"
+                     preserveAspectRatio="xMidYMid slice"
+                     clip-path="url(#f2)" filter="url(#vint)"/>
+              <rect x="62" y="92" width="96" height="70" rx="2" fill="url(#vign)"/>
+
+              <!-- Frame 3 — wedding day -->
+              <image href="wedding.jpg" x="62" y="172" width="96" height="70"
+                     preserveAspectRatio="xMidYMid slice"
+                     clip-path="url(#f3)" filter="url(#vint)"/>
+              <rect x="62" y="172" width="96" height="70" rx="2" fill="url(#vign)"/>
+
+              <!-- Frame 4 — father & child in backyard -->
+              <image href="father-backyard.jpg" x="62" y="252" width="96" height="70"
+                     preserveAspectRatio="xMidYMid slice"
+                     clip-path="url(#f4)" filter="url(#vint)"/>
+              <rect x="62" y="252" width="96" height="70" rx="2" fill="url(#vign)"/>
+            </svg>
+          </div>
+
+          <!-- Disc — real damaged-disc asset -->
+          <div class="disc-wrap">
+            <img src="repair-disc.png" alt="Cracked DVD disc" class="disc-img"/>
+          </div>
+
+          <!-- TEXT LAYER -->
+          <div class="text-layer">
+            <!-- Brand -->
+            <div class="brand-block">
+              <div class="brand-name">Heirvo</div>
+              <div class="brand-sub">DVD · Disc &amp; Photo CD Recovery</div>
+            </div>
+
+            <!-- Version -->
+            <div class="version-badge">v 1.1</div>
+
+            <!-- Features strip -->
+            <div class="features">
+              <div class="feature-item">
+                <span class="feature-icon">💿</span>
+                <span class="feature-label">Recover</span>
+                <span class="feature-desc">Damaged DVDs,<br>Photo CDs &amp; audio</span>
+              </div>
+              <div class="feature-item">
+                <span class="feature-icon">🗂</span>
+                <span class="feature-label">Archive</span>
+                <span class="feature-desc">Searchable family<br>memory vault</span>
+              </div>
+              <div class="feature-item">
+                <span class="feature-icon">🔒</span>
+                <span class="feature-label">Preserve</span>
+                <span class="feature-desc">100% local —<br>zero cloud</span>
+              </div>
+            </div>
+
+            <!-- Tagline -->
+            <div class="tagline">
+              <div class="tagline-text">Retrieving memories before they are lost forever</div>
+            </div>
+
+            <!-- Windows badge -->
+            <div class="win-badge">
+              <div class="win-logo">
+                <span></span><span></span><span></span><span></span>
+              </div>
+              <div class="win-text">Windows<br>10 / 11</div>
+            </div>
+          </div>
+
+        </div><!-- /front-inner -->
+      </div><!-- /front -->
+
+    </div><!-- /box -->
+  </div><!-- /box-wrap -->
+</div><!-- /scene -->
+
+</body>
+</html>

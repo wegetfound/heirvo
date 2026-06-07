@@ -95,9 +95,9 @@ function TranscriptRenderer({
         <div style={{ height: `${virtualScroll.offsetY}px` }} aria-hidden="true" />
       )}
       <div>
-        {linesToRender.map((line, idx) => (
+        {linesToRender.map((line) => (
           <TranscriptLine
-            key={`${virtualScroll.startIdx + idx}-${line.timeSec}-${line.text.slice(0, 12)}`}
+            key={`${line.timeSec}`}
             line={line}
             active={line.timeSec === activeTimeSec}
             onSeek={onSeek}
