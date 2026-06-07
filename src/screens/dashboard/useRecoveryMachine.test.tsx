@@ -1,5 +1,5 @@
 /// <reference types="vitest/globals" />
-import { renderHook, waitFor, act } from "@testing-library/react";
+import { renderHook, waitFor } from "@testing-library/react";
 import { useRecoveryMachine } from "./useRecoveryMachine";
 import { ipc, events } from "@/lib/ipc";
 
@@ -54,75 +54,148 @@ vi.mock("@tauri-apps/plugin-dialog", () => ({
   open: vi.fn(),
 }));
 
-describe("useRecoveryMachine — Power-Loss Recovery", () => {
+describe("useRecoveryMachine — Basic Initialization", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    // Setup default mock returns
-    vi.mocked(ipc.listDrives).mockResolvedValue([]);
+    vi.mocked(ipc.listDrives).mockResolvedValue([
+      {
+        path: "/dev/sr0",
+        letter: "E",
+        vendor: "Samsung",
+        model: "DVD Drive",
+        firmware: "1.0",
+        capabilities: {
+          reads_dvd: true,
+          reads_cd: true,
+          reads_bluray: false,
+          supports_speed_control: true,
+        },
+        has_media: true,
+      },
+    ]);
     vi.mocked(ipc.listSessions).mockResolvedValue([]);
-    vi.mocked(ipc.checkDisc).mockResolvedValue(null);
-    vi.mocked(events.onDrivesChanged).mockResolvedValue(vi.fn());
-    vi.mocked(events.onProgress).mockResolvedValue(vi.fn());
-    vi.mocked(events.onComplete).mockResolvedValue(vi.fn());
-    vi.mocked(events.onAutoplayOpenDisc).mockResolvedValue(vi.fn());
-  });
-
-  it("detects disc swap during power-loss recovery", async () => {
-    const { result } = renderHook(() => useRecoveryMachine());
-
-    // Simulate having an active session with a disc fingerprint
-    await act(async () => {
-      // This is a bit of a hack — we set the ref directly since we can't easily
-      // trigger the full session creation flow in the test
-      // In a real test, we'd go through the full recovery flow first
+    vi.mocked(ipc.checkDisc).mockResolvedValue({
+      disc_type: "DvdVideo",
+      label: "Test Disc",
+      total_sectors: 1000,
+      sector_size: 2048,
+      fingerprint: "disc-uuid-1",
+      has_video_ts: true,
+      has_audio_ts: false,
     });
-
-    // The hook would need to expose the recoverAnotherAction for testing.
-    // For now, this test demonstrates the structure needed.
-    expect(result.current.actions).toBeDefined();
+    vi.mocked(events.onDrivesChanged).mockResolvedValue(() => Promise.resolve());
+    vi.mocked(events.onProgress).mockResolvedValue(() => Promise.resolve());
+    vi.mocked(events.onComplete).mockResolvedValue(() => Promise.resolve());
+    vi.mocked(events.onAutoplayOpenDisc).mockResolvedValue(() => Promise.resolve());
   });
 
-  it("shows error when drive is disconnected during recovery", async () => {
+  it("initializes with empty state", () => {
     const { result } = renderHook(() => useRecoveryMachine());
+    expect(result.current.state).toBeDefined();
+    expect(result.current.actions).toBeDefined();
+    expect(result.current.drives).toStrictEqual([]);
+  });
 
-    // When recoverAnotherAction is called but drives are empty
-    vi.mocked(ipc.listDrives).mockResolvedValueOnce([]);
+  it("provides all required actions", () => {
+    const { result } = renderHook(() => useRecoveryMachine());
+    expect(result.current.actions.start).toBeInstanceOf(Function);
+    expect(result.current.actions.pause).toBeInstanceOf(Function);
+    expect(result.current.actions.resume).toBeInstanceOf(Function);
+    expect(result.current.actions.cancel).toBeInstanceOf(Function);
+    expect(result.current.actions.recoverAnother).toBeInstanceOf(Function);
+  });
 
-    // After calling recoverAnother, resumeError should be set
+  it("initializes with null resumeError", () => {
+    const { result } = renderHook(() => useRecoveryMachine());
     expect(result.current.resumeError).toBeNull();
   });
-
-  it("resumes same session when disc fingerprint matches", async () => {
-    const { result } = renderHook(() => useRecoveryMachine());
-
-    // Recovery machine should handle session resumption properly
-    expect(result.current.state.phase).toBeDefined();
-  });
 });
 
-describe("useRecoveryMachine — Disc Fingerprint Timeout", () => {
+describe("useRecoveryMachine — Drive Detection", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(ipc.listDrives).mockResolvedValue([]);
+    vi.mocked(ipc.listDrives).mockResolvedValue([
+      {
+        path: "/dev/sr0",
+        letter: "E",
+        vendor: "Samsung",
+        model: "DVD Drive",
+        firmware: "1.0",
+        capabilities: {
+          reads_dvd: true,
+          reads_cd: true,
+          reads_bluray: false,
+          supports_speed_control: true,
+        },
+        has_media: true,
+      },
+    ]);
     vi.mocked(ipc.listSessions).mockResolvedValue([]);
-    vi.mocked(events.onDrivesChanged).mockResolvedValue(vi.fn());
-    vi.mocked(events.onProgress).mockResolvedValue(vi.fn());
-    vi.mocked(events.onComplete).mockResolvedValue(vi.fn());
-    vi.mocked(events.onAutoplayOpenDisc).mockResolvedValue(vi.fn());
+    vi.mocked(ipc.checkDisc).mockResolvedValue({
+      disc_type: "DvdVideo",
+      label: "Test Disc",
+      total_sectors: 1000,
+      sector_size: 2048,
+      fingerprint: "disc-uuid-1",
+      has_video_ts: true,
+      has_audio_ts: false,
+    });
+    vi.mocked(events.onDrivesChanged).mockResolvedValue(() => Promise.resolve());
+    vi.mocked(events.onProgress).mockResolvedValue(() => Promise.resolve());
+    vi.mocked(events.onComplete).mockResolvedValue(() => Promise.resolve());
+    vi.mocked(events.onAutoplayOpenDisc).mockResolvedValue(() => Promise.resolve());
   });
 
-  it("times out disc check after 15 seconds", async () => {
-    // This test would verify that checkDisc calls with a 15s timeout
-    // and rejects properly if it hangs
+  it("registers drive change listener on mount", () => {
+    renderHook(() => useRecoveryMachine());
+    expect(events.onDrivesChanged).toHaveBeenCalled();
+  });
+
+  it("handles empty drive list", async () => {
+    vi.mocked(ipc.listDrives).mockResolvedValue([]);
     const { result } = renderHook(() => useRecoveryMachine());
-    expect(result.current).toBeDefined();
+
+    await waitFor(
+      () => {
+        expect(result.current.drives).toStrictEqual([]);
+      },
+      { timeout: 1000 }
+    );
   });
 });
 
-describe("useRecoveryMachine — Virtual Scroll", () => {
-  it("resets scroll position when transcript filter changes", async () => {
-    // This test verifies that the useEffect clears scroll when filterQ changes
-    // Tested via the Watch.tsx component integration test
-    expect(true).toBe(true); // Placeholder
+describe("useRecoveryMachine — Error Handling", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(ipc.listDrives).mockResolvedValue([
+      {
+        path: "/dev/sr0",
+        letter: "E",
+        vendor: "Samsung",
+        model: "DVD Drive",
+        firmware: "1.0",
+        capabilities: {
+          reads_dvd: true,
+          reads_cd: true,
+          reads_bluray: false,
+          supports_speed_control: true,
+        },
+        has_media: true,
+      },
+    ]);
+    vi.mocked(ipc.listSessions).mockResolvedValue([]);
+    vi.mocked(ipc.checkDisc).mockRejectedValue(new Error("Disc unreadable"));
+    vi.mocked(events.onDrivesChanged).mockResolvedValue(() => Promise.resolve());
+    vi.mocked(events.onProgress).mockResolvedValue(() => Promise.resolve());
+    vi.mocked(events.onComplete).mockResolvedValue(() => Promise.resolve());
+    vi.mocked(events.onAutoplayOpenDisc).mockResolvedValue(() => Promise.resolve());
+  });
+
+  it("handles IPC errors gracefully", async () => {
+    const { result } = renderHook(() => useRecoveryMachine());
+
+    // Hook should initialize despite errors
+    expect(result.current.state).toBeDefined();
+    expect(result.current.actions).toBeDefined();
   });
 });
