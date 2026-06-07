@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import {
   useNavigate,
   useParams,
@@ -18,11 +18,102 @@ import { ipc } from "../../lib/ipc";
 // Error type enumeration for better UX messaging
 type MediaErrorType = "file-not-found" | "decode-error" | "unknown";
 
+// Virtual scroller hook: efficient rendering for 10k+ items
+// Only renders visible window + buffer, vastly reducing DOM nodes
+function useVirtualScroll<T>(
+  items: T[],
+  containerRef: React.RefObject<HTMLDivElement>,
+  itemHeight: number = 40, // pixels per line
+  bufferSize: number = 5,  // lines above/below to keep in DOM
+) {
+  const [startIdx, setStartIdx] = useState(0);
+  const windowSize = 50; // render ~50 visible items at a time
+
+  const onScroll = useCallback(() => {
+    if (!containerRef.current) return;
+    const { scrollTop } = containerRef.current;
+    const newStartIdx = Math.max(0, Math.floor(scrollTop / itemHeight) - bufferSize);
+    setStartIdx(newStartIdx);
+  }, [containerRef, itemHeight, bufferSize]);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    container.addEventListener("scroll", onScroll);
+    return () => container.removeEventListener("scroll", onScroll);
+  }, [containerRef, onScroll]);
+
+  const endIdx = Math.min(items.length, startIdx + windowSize + bufferSize * 2);
+  const visibleItems = items.slice(startIdx, endIdx);
+  const offsetY = startIdx * itemHeight;
+  const totalHeight = items.length * itemHeight;
+  const bottomHeight = (items.length - endIdx) * itemHeight;
+
+  return { visibleItems, offsetY, totalHeight, bottomHeight, startIdx };
+}
+
 function fmtTime(sec: number): string {
   const h = Math.floor(sec / 3600);
   const m = Math.floor((sec % 3600) / 60);
   const s = Math.floor(sec % 60);
   return [h, m, s].map((n) => String(n).padStart(2, "0")).join(":");
+}
+
+/* ── TranscriptRenderer: Smart virtual scrolling for 10k+ items ──
+   For small lists (<500 items): render all (no overhead)
+   For large lists (500+): render only visible window (50 items + buffer)
+   This keeps DOM lean and UI responsive at scale. */
+function TranscriptRenderer({
+  lines,
+  activeTimeSec,
+  onSeek,
+  containerRef,
+  filterQ,
+}: {
+  lines: TLine[];
+  activeTimeSec: number;
+  onSeek: (line: TLine) => void;
+  containerRef: React.RefObject<HTMLDivElement>;
+  filterQ: string;
+}) {
+  const VIRTUALIZATION_THRESHOLD = 500; // Switch to virtual scrolling above this
+  const shouldVirtualize = lines.length > VIRTUALIZATION_THRESHOLD;
+
+  const virtualScroll = useVirtualScroll(lines, containerRef, 40, 5);
+  const linesToRender = shouldVirtualize ? virtualScroll.visibleItems : lines;
+  const containerStyle = shouldVirtualize
+    ? {
+        height: "500px", // Fixed height for scrolling
+        overflowY: "auto" as const,
+        position: "relative" as const,
+      }
+    : {};
+
+  return (
+    <div ref={containerRef} style={containerStyle}>
+      {shouldVirtualize && (
+        <div style={{ height: `${virtualScroll.offsetY}px` }} aria-hidden="true" />
+      )}
+      <div>
+        {linesToRender.map((line, idx) => (
+          <TranscriptLine
+            key={`${virtualScroll.startIdx + idx}-${line.timeSec}-${line.text.slice(0, 12)}`}
+            line={line}
+            active={line.timeSec === activeTimeSec}
+            onSeek={onSeek}
+          />
+        ))}
+        {lines.length === 0 && (
+          <div style={{ padding: 16, color: "var(--lib-muted)", fontSize: 14 }}>
+            No transcript lines match &ldquo;{filterQ}&rdquo;.
+          </div>
+        )}
+      </div>
+      {shouldVirtualize && (
+        <div style={{ height: `${virtualScroll.bottomHeight}px` }} aria-hidden="true" />
+      )}
+    </div>
+  );
 }
 
 /* ── Humane "we rescued your files" card (Tier 2: audio / documents) ──────────
@@ -243,6 +334,7 @@ export default function Watch() {
   const [filterQ, setFilterQ] = useState("");
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const playerRef = useRef<HTMLDivElement | null>(null);
+  const transcriptContainerRef = useRef<HTMLDivElement | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   // Normalization timeout (15 minutes). Tracks when isPreparing became true.
@@ -1000,21 +1092,13 @@ export default function Watch() {
                 </div>
               </div>
 
-              <div>
-                {visibleLines.map((line) => (
-                  <TranscriptLine
-                    key={`${line.timeSec}-${line.text.slice(0, 12)}`}
-                    line={line}
-                    active={line.timeSec === activeTimeSec}
-                    onSeek={handleSeek}
-                  />
-                ))}
-                {visibleLines.length === 0 && (
-                  <div style={{ padding: 16, color: "var(--lib-muted)", fontSize: 14 }}>
-                    No transcript lines match &ldquo;{filterQ}&rdquo;.
-                  </div>
-                )}
-              </div>
+              <TranscriptRenderer
+                lines={visibleLines}
+                activeTimeSec={activeTimeSec}
+                onSeek={handleSeek}
+                containerRef={transcriptContainerRef}
+                filterQ={filterQ}
+              />
               </>
             ) : (
               // Waiting card (when transcription is in progress)
