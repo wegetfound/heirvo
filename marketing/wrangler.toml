@@ -1,0 +1,9 @@
+name = "heirvo-marketing"
+type = "javascript"
+account_id = ""
+workers_dev = false
+
+env.production = { vars = { VITE_LS_CHECKOUT_URL = "https://heirvo.lemonsqueezy.com/checkout/buy/a98b575c-fe61-48ee-835f-984b590ec4e2", VITE_LS_ARCHIVE_URL = "https://heirvo.lemonsqueezy.com/checkout/buy/61a31119-78f7-4612-ade8-d9897eaf7015", VITE_LS_FAMILY_URL = "https://heirvo.lemonsqueezy.com/checkout/buy/b7b36e1f-e286-4508-b58b-2ec90ea4a75e", VITE_FORMSPREE_ID = "mnjwodnv" } }
+
+# Local dev environment
+env.local = { vars = { VITE_LS_CHECKOUT_URL = "https://heirvo.lemonsqueezy.com/checkout/buy/replace-me", VITE_LS_ARCHIVE_URL = "https://heirvo.lemonsqueezy.com/checkout/buy/replace-me", VITE_LS_FAMILY_URL = "https://heirvo.lemonsqueezy.com/checkout/buy/replace-me", VITE_FORMSPREE_ID = "mnjwodnv" } }
