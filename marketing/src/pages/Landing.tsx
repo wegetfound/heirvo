@@ -33,6 +33,9 @@ CustomEase.create("album", "M0,0 C0.16,0 0.84,1 1,1");
 CustomEase.create("cinematic", "M0,0 C0.76,0 0.24,1 1,1");
 
 const DOWNLOAD_URL: string = (import.meta.env.VITE_DOWNLOAD_URL as string) || "#";
+const RECOVER_URL: string = (import.meta.env.VITE_LS_CHECKOUT_URL as string) || "#";
+const ARCHIVE_URL: string = (import.meta.env.VITE_LS_ARCHIVE_URL as string) || "#";
+const FAMILY_URL: string  = (import.meta.env.VITE_LS_FAMILY_URL as string)  || "#";
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 const C = {
@@ -1684,7 +1687,7 @@ export default function LandingMerge() {
                   </li>
                 ))}
               </ul>
-              <a href={DOWNLOAD_URL} className="btn-ghost-lm" style={{ width: "100%", justifyContent: "center" }}>Start with free scan</a>
+              <a href={RECOVER_URL} className="btn-primary-lm" style={{ width: "100%", justifyContent: "center" }}>Buy Recover — $59</a>
             </div>
 
             {/* Archivist — identity-based naming, highest tier */}
@@ -1721,23 +1724,24 @@ export default function LandingMerge() {
                   </li>
                 ))}
               </ul>
-              <a href={DOWNLOAD_URL} className="btn-primary-lm" style={{ width: "100%", justifyContent: "center" }}>
-                Recover my family's photos
+              <a href={ARCHIVE_URL} className="btn-primary-lm" style={{ width: "100%", justifyContent: "center" }}>
+                Buy Archivist — $99
               </a>
             </div>
 
-            {/* Family — 3 seats */}
+            {/* Family — 5 seats */}
             <div className="price-card-lm stagger-lm">
               <p className="eyebrow-lm" style={{ marginBottom: "1rem", fontSize: "0.65rem" }}>Family</p>
               <div style={{ fontFamily: MONO, fontSize: "2.2rem", fontWeight: 400, color: C.text, marginBottom: "0.25rem", letterSpacing: "-0.02em" }}>$149</div>
-              <p style={{ fontSize: "0.8rem", color: C.textFaint, marginBottom: "1.5rem" }}>one-time · 3 seats · for the whole family</p>
+              <p style={{ fontSize: "0.8rem", color: C.textFaint, marginBottom: "1.5rem" }}>one-time · 5 seats · for the whole family</p>
               <ul style={{ listStyle: "none", padding: 0, margin: "0 0 2rem 0" }}>
                 {[
                   "Everything in Archivist",
-                  "3 separate licenses — 3 machines",
+                  "5 separate licenses — 5 machines",
                   "Share recoveries across the family",
                   "Each person activates independently",
-                  "Free updates on all 3 seats",
+                  "Same-day priority support",
+                  "Free updates on all 5 seats",
                 ].map((f) => (
                   <li key={f} style={{ fontSize: "0.875rem", color: C.textMuted, padding: "0.4rem 0", borderBottom: `1px solid ${C.border}`, display: "flex", gap: "0.6rem", alignItems: "flex-start" }}>
                     <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden style={{ flexShrink: 0, marginTop: "2px", color: C.sepia }}>
@@ -1747,7 +1751,7 @@ export default function LandingMerge() {
                   </li>
                 ))}
               </ul>
-              <a href={DOWNLOAD_URL} className="btn-ghost-lm" style={{ width: "100%", justifyContent: "center" }}>Start with free scan</a>
+              <a href={FAMILY_URL} className="btn-primary-lm" style={{ width: "100%", justifyContent: "center" }}>Buy Family — $149</a>
             </div>
           </div>
 
