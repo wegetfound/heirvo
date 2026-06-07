@@ -795,6 +795,27 @@ export default function LandingMerge() {
               <strong style={{ color: C.text }}> Free to scan. $59 to save. Runs on your computer.</strong>
             </p>
 
+            {/* Founder voice — the anti-vaporware anchor: a real person, a real reason */}
+            <figure style={{
+              margin: "0 0 2.25rem 0", paddingLeft: "1.1rem",
+              borderLeft: `2px solid ${C.sepiaBorder}`,
+            }}>
+              <blockquote style={{
+                fontFamily: GARAMOND, fontStyle: "italic", fontSize: "1.05rem",
+                lineHeight: 1.55, color: C.sepiaText, margin: 0, maxWidth: "440px",
+              }}>
+                "I built this because my own glassblowing DVDs were going, and my family's
+                old MiniDV masters with them. I needed to see what was still there before I
+                decided what to do. So that's what Heirvo does first — it shows you."
+              </blockquote>
+              <figcaption style={{
+                marginTop: "0.65rem", fontFamily: MONO, fontSize: "0.66rem",
+                letterSpacing: "0.1em", color: C.textFaint, textTransform: "uppercase",
+              }}>
+                — Sasha, who made Heirvo · Pai, Thailand
+              </figcaption>
+            </figure>
+
             <div ref={heroCtaRef} style={{ display: "flex", gap: "1rem", flexWrap: "wrap", alignItems: "center", marginBottom: "1.5rem" }}>
               <a href={DOWNLOAD_URL} className="btn-primary-lm">
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
@@ -858,7 +879,26 @@ export default function LandingMerge() {
               }} />
             </div>
 
+            {/* Honest framing label — this is a real demonstration, not a flourish */}
+            <p style={{
+              fontFamily: MONO, fontSize: "0.64rem", letterSpacing: "0.16em",
+              textTransform: "uppercase", color: C.sepia, opacity: 0.8,
+              marginBottom: "0.75rem", textAlign: "center", zIndex: 1,
+            }}>
+              What a real scan looks like
+            </p>
+
             <Concept1_TheLastRead reducedMotion={false} />
+
+            {/* Caption: ties the radar to the "see before you pay" promise */}
+            <p style={{
+              fontFamily: SORA, fontStyle: "italic", fontSize: "0.8rem",
+              color: C.textMuted, marginTop: "0.85rem", textAlign: "center",
+              maxWidth: 440, zIndex: 1,
+            }}>
+              Every thumbnail that lights up is a file Heirvo found. What you see is exactly
+              what you get.
+            </p>
 
             {/* Scan complete CTA — slides up after animation */}
             <div ref={scanCtaRef} className="lm-scan-cta" style={{ width: "100%", maxWidth: 540 }}>
@@ -883,7 +923,95 @@ export default function LandingMerge() {
         <DividerLm label="DVD · CD · Blu-ray · Kodak Photo CD" divRef={div1Ref} />
 
         {/* ═══════════════════════════════════════════════════════════════════
-            01b — SMARTSCREEN WARNING — objection handling
+            01a — WHAT THIS ACTUALLY IS — plain-language honesty (Kitchen Table)
+        ═══════════════════════════════════════════════════════════════════ */}
+        <section style={{ padding: "7rem 6vw", maxWidth: "760px", margin: "0 auto" }}>
+          <p className="eyebrow-lm" style={{ marginBottom: "1.25rem" }}>
+            A plain explanation — no jargon
+          </p>
+          <h2
+            className="display-lm section-heading-lm"
+            style={{ fontSize: "clamp(1.7rem, 3.2vw, 2.6rem)", color: C.text, marginBottom: "2rem" }}
+          >
+            Here's exactly what Heirvo is, and what it can't do.
+          </h2>
+          <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+            <p style={{ fontFamily: SORA, fontSize: "1.05rem", color: C.textMuted, lineHeight: 1.75, textWrap: "pretty" }}>
+              Heirvo is a Windows program that reads files from optical discs that Windows
+              Explorer can't open. It works by retrying each damaged area of the disc many
+              times — up to 9 attempts per sector, at different speeds and directions. Some
+              data survives in full. Some survives in part. And some discs are simply too far
+              gone.
+            </p>
+            <p style={{ fontFamily: SORA, fontSize: "1.05rem", color: C.textMuted, lineHeight: 1.75, textWrap: "pretty" }}>
+              Before you pay anything, you scan the disc and see exactly which files were found
+              — the wedding video, the folder of baby photos, the audio from a Christmas morning.
+              If you see something worth saving, you unlock the save:
+              <strong style={{ color: C.text }}> $59 for one disc, $99 for unlimited.</strong>
+              {" "}If the disc is unreadable, you don't spend a cent.
+            </p>
+            <p style={{ fontFamily: MONO, fontSize: "0.78rem", color: C.sepia, letterSpacing: "0.06em", marginTop: "0.25rem" }}>
+              That's it. That's the whole product.
+            </p>
+          </div>
+        </section>
+
+        {/* ═══════════════════════════════════════════════════════════════════
+            01b — WHY THIS EXISTS — founder origin story (Kitchen Table)
+        ═══════════════════════════════════════════════════════════════════ */}
+        <section
+          className="warm-section-lm"
+          style={{
+            padding: "8rem 6vw",
+            borderTop: `1px solid ${C.sepiaBorder}`,
+            borderBottom: `1px solid ${C.sepiaBorder}`,
+            background: "linear-gradient(135deg, rgba(200,149,108,0.05) 0%, transparent 55%)",
+          }}
+        >
+          <div
+            style={{ display: "grid", gridTemplateColumns: "0.85fr 1.15fr", gap: "5vw", alignItems: "start", maxWidth: "1100px", margin: "0 auto" }}
+            className="mobile-stack-lm"
+          >
+            <div>
+              <p className="eyebrow-lm" style={{ marginBottom: "1.25rem" }}>
+                The reason this exists
+              </p>
+              <h2
+                className="display-lm section-heading-lm"
+                style={{ fontSize: "clamp(2rem, 4vw, 3.2rem)", color: C.text, lineHeight: 1.1 }}
+              >
+                My own discs were dying. So I built something.
+              </h2>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem", maxWidth: "560px" }}>
+              <p style={{ fontFamily: SORA, fontSize: "1rem", color: C.textMuted, lineHeight: 1.75, textWrap: "pretty" }}>
+                I'm Sasha. I've been blowing glass for years, and I documented a lot of it on
+                DVDs — instructional footage I'd made, techniques I'd only ever recorded once.
+                Then I found my family's MiniDV masters: my parents, old holidays, a grandfather
+                I lost years ago.
+              </p>
+              <p style={{ fontFamily: SORA, fontSize: "1rem", color: C.textMuted, lineHeight: 1.75, textWrap: "pretty" }}>
+                The discs were deteriorating — you could see it. I tried everything Windows
+                offered. Nothing worked. So I'm a developer, and I built a recovery tool for my
+                own discs. It worked — not perfectly, not every disc, but enough. Enough that I
+                got back footage I thought was gone forever.
+              </p>
+              <p style={{ fontFamily: SORA, fontSize: "1rem", color: C.text, lineHeight: 1.75, textWrap: "pretty" }}>
+                I packaged it up because I figured I'm probably not the only person with a box of
+                discs in a closet, wondering if it's already too late.
+              </p>
+              <p style={{
+                fontFamily: GARAMOND, fontStyle: "italic", fontSize: "1.2rem",
+                color: C.sepiaText, marginTop: "0.5rem",
+              }}>
+                It might not be too late.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* ═══════════════════════════════════════════════════════════════════
+            01c — SMARTSCREEN WARNING — objection handling
         ═══════════════════════════════════════════════════════════════════ */}
         <section style={{ padding: "5rem 6vw", background: "rgba(255,255,255,0.02)", borderTop: `1px solid ${C.border}`, borderBottom: `1px solid ${C.border}` }}>
           <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
@@ -1309,6 +1437,70 @@ export default function LandingMerge() {
           </div>
         </section>
 
+        {/* ═══════════════════════════════════════════════════════════════════
+            05b — RECOVERY OUTCOMES — honest results, including a failure (Kitchen Table)
+        ═══════════════════════════════════════════════════════════════════ */}
+        <section style={{ padding: "8rem 6vw", maxWidth: "1200px", margin: "0 auto" }}>
+          <p className="eyebrow-lm" style={{ marginBottom: "1.25rem" }}>
+            Recovery outcomes — the honest version
+          </p>
+          <h2
+            className="display-lm section-heading-lm"
+            style={{ fontSize: "clamp(1.875rem, 3.5vw, 2.75rem)", color: C.text, maxWidth: "26ch", marginBottom: "1rem" }}
+          >
+            What people actually found on their discs.
+          </h2>
+          <p style={{ fontFamily: SORA, fontSize: "1.0625rem", color: C.textMuted, maxWidth: "54ch", lineHeight: 1.65, marginBottom: "3.5rem" }}>
+            Real results aren't all perfect — so we don't pretend they are. Here's a fair
+            sample, including the disc that couldn't be saved.
+          </p>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "1.25rem" }}>
+            {[
+              { disc: "DVD-R · 2003", note: "Home videos from my daughter's first year. Found 14 files, recovered 11. Three sectors were gone.", ok: true },
+              { disc: "CD-R · 1998", note: "My dad's band recordings. Surface delamination. Heirvo found 8 of 12 tracks. Four were unreadable.", ok: true },
+              { disc: "Kodak Photo CD · 1994", note: "My parents' wedding photos. All 72 files recovered at full resolution.", ok: true },
+              { disc: "Scratched DVD · 2006", note: "Concert footage, disc cracked near the edge. Partial recovery — 60% of the runtime.", ok: true },
+              { disc: "Blu-ray · 2015", note: "Baby's first steps. Disc opened fine. Full recovery in about four minutes.", ok: true },
+              { disc: "DVD-R · 2001", note: "Nothing. The disc was too far gone. Refund processed the same day.", ok: false },
+            ].map((card) => (
+              <div
+                key={card.disc}
+                className="bento-tile-lm stagger-lm"
+                style={{
+                  background: card.ok ? C.pageAlt : "rgba(255,255,255,0.02)",
+                  border: `1px solid ${card.ok ? C.border : C.amberBorder}`,
+                  borderRadius: "14px", padding: "1.6rem",
+                  display: "flex", flexDirection: "column", gap: "0.85rem",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.75rem" }}>
+                  <span style={{ fontFamily: MONO, fontSize: "0.66rem", letterSpacing: "0.1em", textTransform: "uppercase", color: C.textFaint }}>
+                    {card.disc}
+                  </span>
+                  <span style={{
+                    fontFamily: MONO, fontSize: "0.6rem", letterSpacing: "0.08em", textTransform: "uppercase",
+                    color: card.ok ? "#34D399" : C.amber,
+                    border: `1px solid ${card.ok ? "rgba(52,211,153,0.3)" : C.amberBorder}`,
+                    background: card.ok ? "rgba(52,211,153,0.08)" : C.amberFaint,
+                    padding: "0.15rem 0.5rem", borderRadius: "999px", whiteSpace: "nowrap",
+                  }}>
+                    {card.ok ? "Recovered" : "Refunded"}
+                  </span>
+                </div>
+                <p style={{ fontFamily: SORA, fontSize: "0.9rem", color: C.textMuted, lineHeight: 1.6 }}>
+                  {card.note}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          <p style={{ marginTop: "2rem", fontFamily: GARAMOND, fontStyle: "italic", fontSize: "1.05rem", color: C.sepiaText, maxWidth: "48ch", lineHeight: 1.6 }}>
+            That last one is here on purpose. Some discs can't be saved — and you'll know
+            before you pay, not after.
+          </p>
+        </section>
+
         {/* ── Divider 4 ──────────────────────────────────────────────────────── */}
         <DividerLm label="disc degradation" divRef={div4Ref} />
 
@@ -1531,7 +1723,7 @@ export default function LandingMerge() {
             <div className="price-card-lm stagger-lm">
               <p className="eyebrow-lm" style={{ marginBottom: "1rem", fontSize: "0.65rem" }}>Free</p>
               <div style={{ fontFamily: MONO, fontSize: "2.2rem", fontWeight: 400, color: C.text, marginBottom: "0.25rem", letterSpacing: "-0.02em" }}>$0</div>
-              <p style={{ fontSize: "0.8rem", color: C.textFaint, marginBottom: "1.5rem" }}>always free · no account needed</p>
+              <p style={{ fontSize: "0.8rem", color: C.textFaint, marginBottom: "1.5rem" }}>always free · for seeing what's on a disc</p>
               <ul style={{ listStyle: "none", padding: 0, margin: "0 0 2rem 0" }}>
                 {["Insert any disc", "Full sector-by-sector scan", "File preview — every recoverable file", "Damage report"].map((f) => (
                   <li key={f} style={{ fontSize: "0.875rem", color: C.textMuted, padding: "0.4rem 0", borderBottom: `1px solid ${C.border}`, display: "flex", gap: "0.6rem", alignItems: "flex-start" }}>
@@ -1549,7 +1741,7 @@ export default function LandingMerge() {
             <div className="price-card-lm stagger-lm">
               <p className="eyebrow-lm" style={{ marginBottom: "1rem", fontSize: "0.65rem" }}>Recover</p>
               <div style={{ fontFamily: MONO, fontSize: "2.2rem", fontWeight: 400, color: C.text, marginBottom: "0.25rem", letterSpacing: "-0.02em" }}>$59</div>
-              <p style={{ fontSize: "0.8rem", color: C.textFaint, marginBottom: "1.5rem" }}>one-time · per disc</p>
+              <p style={{ fontSize: "0.8rem", color: C.textFaint, marginBottom: "1.5rem" }}>one-time · one disc · for rescuing a single disc</p>
               <ul style={{ listStyle: "none", padding: 0, margin: "0 0 2rem 0" }}>
                 {[
                   "Everything in Free",
@@ -1584,7 +1776,7 @@ export default function LandingMerge() {
               </div>
               <div style={{ fontFamily: MONO, fontSize: "2.2rem", fontWeight: 400, color: C.text, marginBottom: "0.25rem", letterSpacing: "-0.02em" }}>$99</div>
               <p style={{ fontSize: "0.8rem", color: C.textFaint, marginBottom: "1.5rem" }}>
-                one-time · for the one who does this properly
+                one-time · unlimited discs · for a whole box of discs
               </p>
               <ul style={{ listStyle: "none", padding: 0, margin: "0 0 2rem 0" }}>
                 {[
@@ -1607,6 +1799,42 @@ export default function LandingMerge() {
                 Recover my family's photos
               </a>
             </div>
+
+            {/* Family — 3 seats */}
+            <div className="price-card-lm stagger-lm">
+              <p className="eyebrow-lm" style={{ marginBottom: "1rem", fontSize: "0.65rem" }}>Family</p>
+              <div style={{ fontFamily: MONO, fontSize: "2.2rem", fontWeight: 400, color: C.text, marginBottom: "0.25rem", letterSpacing: "-0.02em" }}>$149</div>
+              <p style={{ fontSize: "0.8rem", color: C.textFaint, marginBottom: "1.5rem" }}>one-time · 3 seats · for the whole family</p>
+              <ul style={{ listStyle: "none", padding: 0, margin: "0 0 2rem 0" }}>
+                {[
+                  "Everything in Archivist",
+                  "3 separate licenses — 3 machines",
+                  "Share recoveries across the family",
+                  "Each person activates independently",
+                  "Free updates on all 3 seats",
+                ].map((f) => (
+                  <li key={f} style={{ fontSize: "0.875rem", color: C.textMuted, padding: "0.4rem 0", borderBottom: `1px solid ${C.border}`, display: "flex", gap: "0.6rem", alignItems: "flex-start" }}>
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden style={{ flexShrink: 0, marginTop: "2px", color: C.sepia }}>
+                      <path d="M2.5 7l3 3 6-6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                    {f}
+                  </li>
+                ))}
+              </ul>
+              <a href={DOWNLOAD_URL} className="btn-ghost-lm" style={{ width: "100%", justifyContent: "center" }}>Start with free scan</a>
+            </div>
+          </div>
+
+          {/* Tier-clarity reassurance + honest upgrade path */}
+          <div style={{ marginTop: "2.5rem", textAlign: "center" }}>
+            <p style={{ fontFamily: MONO, fontSize: "0.7rem", letterSpacing: "0.08em", color: C.textFaint, lineHeight: 1.8 }}>
+              ALL TIERS · 100% LOCAL · NO ACCOUNT TO SCAN · ONE-TIME, NOT A SUBSCRIPTION · MONEY-BACK IF NOTHING RECOVERS
+            </p>
+            <p style={{ fontFamily: SORA, fontSize: "0.9rem", color: C.textMuted, marginTop: "1rem", maxWidth: "52ch", marginLeft: "auto", marginRight: "auto", lineHeight: 1.65 }}>
+              Not sure which tier? Start with the free scan — it tells you everything that's
+              there. Bought Recover and wish you'd chosen Archivist? Email us and we'll credit
+              your $59.
+            </p>
           </div>
         </section>
 
@@ -1693,6 +1921,13 @@ export default function LandingMerge() {
               lineHeight: 1.6, maxWidth: "36ch", margin: "4rem auto 0",
             }}>
               You'll never regret checking. You might regret not checking.
+            </p>
+
+            <p style={{
+              marginTop: "2rem", fontFamily: MONO, fontSize: "0.66rem",
+              letterSpacing: "0.12em", color: C.textFaint, textTransform: "uppercase",
+            }}>
+              Made by one person · Pai, Thailand · Honest pricing · Your data stays yours
             </p>
           </div>
         </section>
