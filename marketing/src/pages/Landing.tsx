@@ -743,8 +743,9 @@ export default function LandingMerge() {
                 fontFamily: GARAMOND, fontStyle: "italic", fontSize: "0.98rem",
                 lineHeight: 1.5, color: C.sepiaText, margin: 0, maxWidth: "440px",
               }}>
-                "I built this because my own glassblowing DVDs were dying — and my family's
-                MiniDV masters with them. So Heirvo shows you what's still there first."
+                "In the early 2000s I produced a series of borosilicate lampworking videos.
+                The only copies I have left are scratched discs — so I built Heirvo to see
+                what was still on them. Now it shows you first, too."
               </blockquote>
               <figcaption style={{
                 marginTop: "0.5rem", fontFamily: MONO, fontSize: "0.64rem",
@@ -904,10 +905,9 @@ export default function LandingMerge() {
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem", maxWidth: "560px" }}>
               <p style={{ fontFamily: SORA, fontSize: "1rem", color: C.textMuted, lineHeight: 1.75, textWrap: "pretty" }}>
-                I'm Sasha. I've been blowing glass for years, and I documented a lot of it on
-                DVDs — instructional footage I'd made, techniques I'd only ever recorded once.
-                Then I found my family's MiniDV masters: my parents, old holidays, a grandfather
-                I lost years ago.
+                I'm Sasha. In the early 2000s I produced a series of borosilicate lampworking
+                videos — instructional footage of techniques, much of it recorded only once.
+                Today the only copies I have left are old, scratched discs.
               </p>
               <p style={{ fontFamily: SORA, fontSize: "1rem", color: C.textMuted, lineHeight: 1.75, textWrap: "pretty" }}>
                 The discs were deteriorating — you could see it. I tried everything Windows
