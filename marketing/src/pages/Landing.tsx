@@ -25,6 +25,7 @@ import { SplitText } from "gsap/SplitText";
 import { CustomEase } from "gsap/CustomEase";
 import { Nav } from "../components/Nav";
 import { Footer } from "../components/Footer";
+import Concept1_TheLastRead from "../components/hero-concepts/Concept1_TheLastRead";
 
 gsap.registerPlugin(ScrollTrigger, SplitText, CustomEase);
 
@@ -80,19 +81,6 @@ function useFathersDayBanner(): { show: boolean; daysLeft: number } {
 }
 
 // ─── Terminal log lines for product demo (from B) ────────────────────────────
-const LOG_LINES = [
-  { t: 0.3,  text: "disc detected: DVD-R  4.7GB  UDF 2.0",    color: C.textMuted },
-  { t: 0.9,  text: "sector map: 2,295,104 sectors total",      color: C.textMuted },
-  { t: 1.6,  text: "pass 1/9 — sequential read  ████████░░  83%", color: C.textMuted },
-  { t: 2.4,  text: "sector 1,847,302 — read error (retrying)", color: C.amber },
-  { t: 3.0,  text: "sector 1,847,302 — retry 2/9 … ok ✓",     color: "#34D399" },
-  { t: 3.6,  text: "sector 2,104,887 — read error (retrying)", color: C.amber },
-  { t: 4.2,  text: "sector 2,104,887 — retry 5/9 … ok ✓",     color: "#34D399" },
-  { t: 5.0,  text: "pass 1 complete — 3,842 files indexed",    color: C.text },
-  { t: 5.6,  text: "extracting JPEG × 3,204  MOV × 638",       color: C.textMuted },
-  { t: 6.2,  text: "scan complete ─────────────────────────",  color: C.blue },
-];
-
 // ─── FAQ data ─────────────────────────────────────────────────────────────────
 const FAQS = [
   {
@@ -384,152 +372,6 @@ const PAGE_STYLES = `
   }
 `;
 
-// ─── ProductMockup component (from B, adapted) ───────────────────────────────
-function ProductMockup({ onScanComplete }: { onScanComplete: () => void }) {
-  const windowRef       = useRef<HTMLDivElement>(null);
-  const progressRef     = useRef<HTMLDivElement>(null);
-  const fileCountRef    = useRef<HTMLSpanElement>(null);
-  const sectorCountRef  = useRef<HTMLSpanElement>(null);
-  const logsRef         = useRef<HTMLDivElement>(null);
-  const scanCompleteRef = useRef(false);
-
-  useEffect(() => {
-    const ctx = gsap.context(() => {
-      if (!windowRef.current) return;
-
-      gsap.fromTo(windowRef.current,
-        { opacity: 0, y: 24 },
-        { opacity: 1, y: 0, duration: 0.9, ease: "power3.out", delay: 0.6 }
-      );
-
-      if (progressRef.current) {
-        gsap.fromTo(progressRef.current, { width: "0%" }, {
-          width: "100%", duration: 6.5, ease: "power1.inOut", delay: 0.9,
-          onComplete: () => {
-            if (!scanCompleteRef.current) {
-              scanCompleteRef.current = true;
-              onScanComplete();
-            }
-          },
-        });
-      }
-
-      if (fileCountRef.current) {
-        const obj = { value: 0 };
-        gsap.to(obj, {
-          value: 3842, duration: 5.8, ease: "power2.inOut", delay: 1.2,
-          onUpdate: () => {
-            if (fileCountRef.current)
-              fileCountRef.current.textContent = Math.round(obj.value).toLocaleString();
-          },
-        });
-      }
-
-      if (sectorCountRef.current) {
-        const obj2 = { value: 0 };
-        gsap.to(obj2, {
-          value: 2295104, duration: 6.2, ease: "power1.out", delay: 0.9,
-          onUpdate: () => {
-            if (sectorCountRef.current)
-              sectorCountRef.current.textContent = Math.round(obj2.value).toLocaleString();
-          },
-        });
-      }
-
-      LOG_LINES.forEach((line, i) => {
-        if (!logsRef.current) return;
-        const el = logsRef.current.querySelectorAll(".lm-log-line")[i] as HTMLElement;
-        if (!el) return;
-        gsap.fromTo(el,
-          { opacity: 0, x: -6 },
-          { opacity: 1, x: 0, duration: 0.35, ease: "power2.out", delay: line.t }
-        );
-      });
-    }, windowRef);
-    return () => ctx.revert();
-  }, [onScanComplete]);
-
-  return (
-    <div ref={windowRef} className="lm-window" style={{ opacity: 0, width: "100%", maxWidth: 540 }}>
-      <div className="lm-window-bar">
-        <span className="lm-dot" style={{ background: "#FF5F57" }} />
-        <span className="lm-dot" style={{ background: "#FFBD2E" }} />
-        <span className="lm-dot" style={{ background: "#28C840" }} />
-        <span style={{ marginLeft: 8, fontFamily: MONO, fontSize: "0.72rem", color: C.textFaint, letterSpacing: "0.04em" }}>
-          Heirvo — FAMILY_VACATION_2003.ISO
-        </span>
-        <span style={{
-          marginLeft: "auto", fontFamily: MONO, fontSize: "0.68rem", color: C.blue,
-          background: C.blueFaint, border: `1px solid ${C.blueBorder}`, padding: "2px 8px", borderRadius: 4,
-        }}>
-          SCANNING
-        </span>
-      </div>
-
-      <div style={{ padding: "20px 20px 16px" }}>
-        <div style={{ marginBottom: 16 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-            <span style={{ fontFamily: MONO, fontSize: "0.72rem", color: C.textMuted, letterSpacing: "0.08em" }}>
-              PASS 1 / 9 — SECTOR SCAN
-            </span>
-            <span style={{ fontFamily: MONO, fontSize: "0.72rem", color: C.blue }}>
-              <span ref={sectorCountRef} style={{ fontVariantNumeric: "tabular-nums" }}>0</span>
-              <span style={{ color: C.textFaint }}> / 2,295,104</span>
-            </span>
-          </div>
-          <div style={{ height: 5, background: "rgba(255,255,255,0.06)", borderRadius: 3, overflow: "hidden" }}>
-            <div
-              ref={progressRef}
-              style={{
-                height: "100%", width: "0%", borderRadius: 3,
-                background: `linear-gradient(90deg, ${C.blue}, ${C.blueHover})`,
-                boxShadow: `0 0 12px rgba(10,132,255,0.6)`,
-              }}
-            />
-          </div>
-        </div>
-
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 16 }}>
-          {[
-            { label: "FILES FOUND", value: <span ref={fileCountRef}>0</span>, color: C.text },
-            { label: "RETRIES",     value: "127", color: C.amber },
-            { label: "ERRORS LEFT", value: "0",   color: "#34D399" },
-          ].map(({ label, value, color }) => (
-            <div key={label} style={{
-              background: "rgba(255,255,255,0.03)", border: `1px solid ${C.border}`,
-              borderRadius: 6, padding: "10px 12px",
-            }}>
-              <div style={{ fontFamily: MONO, fontSize: "0.6rem", color: C.textFaint, letterSpacing: "0.1em", marginBottom: 4 }}>
-                {label}
-              </div>
-              <div style={{ fontFamily: MONO, fontSize: "1.2rem", color, fontVariantNumeric: "tabular-nums" }}>
-                {value}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div
-          ref={logsRef}
-          style={{
-            background: "#050d1a", border: `1px solid ${C.border}`, borderRadius: 6,
-            padding: "12px 14px", height: 190, overflow: "hidden",
-            fontFamily: MONO, fontSize: "0.72rem", lineHeight: 1.8,
-          }}
-        >
-          {LOG_LINES.map((line, i) => (
-            <div key={i} className="lm-log-line" style={{ color: line.color, opacity: 0 }}>
-              <span style={{ color: C.textFaint, userSelect: "none", marginRight: 8 }}>
-                {"0" + (i + 1).toString().padStart(2, "0")} ›
-              </span>
-              {line.text}
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
 
 // ─── FAQ item ─────────────────────────────────────────────────────────────────
 function FaqItem({ q, a, index }: { q: string; a: string; index: number }) {
@@ -627,15 +469,8 @@ export default function LandingMerge() {
   const div4Ref = useRef<HTMLDivElement>(null);
   const div5Ref = useRef<HTMLDivElement>(null);
 
-  const [scanDone, setScanDone] = useState(false);
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const { show: showBanner, daysLeft } = useFathersDayBanner();
-
-  useEffect(() => {
-    if (scanDone && scanCtaRef.current) {
-      scanCtaRef.current.classList.add("visible");
-    }
-  }, [scanDone]);
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -915,7 +750,7 @@ export default function LandingMerge() {
                 color: C.sepia, marginBottom: "1.5rem", opacity: 0,
               }}
             >
-              You're the one in this family who doesn't let things slip away.
+              Free to scan · Windows 10 / 11 · No cloud · No subscription
             </p>
 
             <div style={{ marginBottom: "1.75rem" }}>
@@ -929,7 +764,7 @@ export default function LandingMerge() {
             </div>
 
             <p className="eyebrow-lm" style={{ marginBottom: "1.25rem" }}>
-              01 — Disc recovery software · Windows
+              Recover Family Memories | Disc Recovery Software | Windows
             </p>
 
             <h1
@@ -943,8 +778,8 @@ export default function LandingMerge() {
                 perspective: "800px",
               }}
             >
-              The photos are still there.<br />
-              You just need to go get them.
+              Your family's irreplaceable memories are locked in aging discs.{" "}
+              <span style={{ color: C.sepia }}>Let's get them back before they're lost forever.</span>
             </h1>
 
             <p
@@ -957,6 +792,7 @@ export default function LandingMerge() {
             >
               Heirvo rescues photos, videos, and memories from scratched DVDs,
               damaged CDs, and Kodak Photo CDs — before the disc degrades beyond saving.
+              <strong style={{ color: C.text }}> Free to scan. $59 to save. Runs on your computer.</strong>
             </p>
 
             <div ref={heroCtaRef} style={{ display: "flex", gap: "1rem", flexWrap: "wrap", alignItems: "center", marginBottom: "1.5rem" }}>
@@ -998,7 +834,7 @@ export default function LandingMerge() {
           </div>
 
           {/* Right: animated product scan demo (from B) */}
-          <div className="hide-mobile-lm" style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", position: "relative" }}>
+          <div className="hide-mobile-lm" style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", position: "relative", width: "100%", height: "100%" }}>
             {/* Ambient disc spin */}
             <div aria-hidden style={{
               position: "absolute", top: "50%", left: "50%",
@@ -1022,7 +858,7 @@ export default function LandingMerge() {
               }} />
             </div>
 
-            <ProductMockup onScanComplete={() => setScanDone(true)} />
+            <Concept1_TheLastRead reducedMotion={false} />
 
             {/* Scan complete CTA — slides up after animation */}
             <div ref={scanCtaRef} className="lm-scan-cta" style={{ width: "100%", maxWidth: 540 }}>
@@ -1045,6 +881,142 @@ export default function LandingMerge() {
 
         {/* ── Divider 1 ──────────────────────────────────────────────────────── */}
         <DividerLm label="DVD · CD · Blu-ray · Kodak Photo CD" divRef={div1Ref} />
+
+        {/* ═══════════════════════════════════════════════════════════════════
+            01b — SMARTSCREEN WARNING — objection handling
+        ═══════════════════════════════════════════════════════════════════ */}
+        <section style={{ padding: "5rem 6vw", background: "rgba(255,255,255,0.02)", borderTop: `1px solid ${C.border}`, borderBottom: `1px solid ${C.border}` }}>
+          <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
+            <p className="eyebrow-lm" style={{ marginBottom: "1.25rem", textAlign: "center" }}>
+              Windows SmartScreen Warning
+            </p>
+            <h2
+              style={{
+                fontFamily: SORA, fontWeight: 700, fontSize: "clamp(1.4rem, 2.5vw, 2rem)",
+                letterSpacing: "-0.02em", color: C.text, textAlign: "center",
+                marginBottom: "0.75rem",
+              }}
+            >
+              "Windows protected your PC" — what that actually means
+            </h2>
+            <p style={{
+              fontFamily: SORA, fontSize: "0.95rem", color: C.textMuted,
+              textAlign: "center", maxWidth: "560px", margin: "0 auto 3rem",
+              lineHeight: 1.6,
+            }}>
+              When you download Heirvo, Windows may show a warning. Here's why it happens and what it means.
+            </p>
+
+            <div style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(3, 1fr)",
+              gap: "1.5rem",
+            }}
+            className="mobile-stack-lm"
+            >
+              {/* Column 1 — What Windows Shows */}
+              <div className="stagger-lm" style={{
+                background: C.pageAlt,
+                border: `1px solid rgba(245,158,11,0.25)`,
+                borderRadius: "12px",
+                padding: "1.75rem",
+              }}>
+                <div style={{
+                  display: "inline-flex", alignItems: "center", justifyContent: "center",
+                  width: 40, height: 40, borderRadius: "10px",
+                  background: "rgba(245,158,11,0.12)", marginBottom: "1.25rem",
+                }}>
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden>
+                    <path d="M10 3L17.5 16.5H2.5L10 3Z" stroke="#F59E0B" strokeWidth="1.5" strokeLinejoin="round" />
+                    <path d="M10 8v4" stroke="#F59E0B" strokeWidth="1.5" strokeLinecap="round" />
+                    <circle cx="10" cy="14" r="0.75" fill="#F59E0B" />
+                  </svg>
+                </div>
+                <h3 style={{
+                  fontFamily: SORA, fontWeight: 700, fontSize: "1rem",
+                  color: C.text, marginBottom: "0.75rem", letterSpacing: "-0.01em",
+                }}>
+                  What Windows Shows
+                </h3>
+                <p style={{ fontFamily: MONO, fontSize: "0.72rem", color: C.amber, background: "rgba(245,158,11,0.07)", border: `1px solid rgba(245,158,11,0.18)`, borderRadius: 6, padding: "10px 12px", marginBottom: "0.85rem", lineHeight: 1.6 }}>
+                  "Windows protected your PC. Microsoft Defender SmartScreen prevented an unrecognized app from starting."
+                </p>
+                <p style={{ fontFamily: SORA, fontSize: "0.875rem", color: C.textMuted, lineHeight: 1.65 }}>
+                  A blue or grey shield dialog with "More info" and "Run anyway" links.
+                </p>
+              </div>
+
+              {/* Column 2 — Why This Happens */}
+              <div className="stagger-lm" style={{
+                background: C.pageAlt,
+                border: `1px solid ${C.border}`,
+                borderRadius: "12px",
+                padding: "1.75rem",
+              }}>
+                <div style={{
+                  display: "inline-flex", alignItems: "center", justifyContent: "center",
+                  width: 40, height: 40, borderRadius: "10px",
+                  background: C.blueFaint, marginBottom: "1.25rem",
+                }}>
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden>
+                    <circle cx="10" cy="10" r="7.5" stroke={C.blue} strokeWidth="1.5" />
+                    <path d="M10 9v5" stroke={C.blue} strokeWidth="1.5" strokeLinecap="round" />
+                    <circle cx="10" cy="6.5" r="0.75" fill={C.blue} />
+                  </svg>
+                </div>
+                <h3 style={{
+                  fontFamily: SORA, fontWeight: 700, fontSize: "1rem",
+                  color: C.text, marginBottom: "0.75rem", letterSpacing: "-0.01em",
+                }}>
+                  Why This Happens
+                </h3>
+                <p style={{ fontFamily: SORA, fontSize: "0.875rem", color: C.textMuted, lineHeight: 1.65, marginBottom: "0.75rem" }}>
+                  SmartScreen flags apps that don't yet have a large "reputation score" — meaning not enough Windows users have downloaded and run it. This is purely a count, not a security judgment.
+                </p>
+                <p style={{ fontFamily: SORA, fontSize: "0.875rem", color: C.textMuted, lineHeight: 1.65 }}>
+                  Heirvo is a small, independent app. It hasn't yet been downloaded millions of times. That's the only reason the warning appears.
+                </p>
+              </div>
+
+              {/* Column 3 — What It Means */}
+              <div className="stagger-lm" style={{
+                background: C.pageAlt,
+                border: `1px solid rgba(52,211,153,0.20)`,
+                borderRadius: "12px",
+                padding: "1.75rem",
+              }}>
+                <div style={{
+                  display: "inline-flex", alignItems: "center", justifyContent: "center",
+                  width: 40, height: 40, borderRadius: "10px",
+                  background: "rgba(52,211,153,0.10)", marginBottom: "1.25rem",
+                }}>
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden>
+                    <path d="M4 10.5L8 14.5L16 6" stroke="#34D399" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </div>
+                <h3 style={{
+                  fontFamily: SORA, fontWeight: 700, fontSize: "1rem",
+                  color: C.text, marginBottom: "0.75rem", letterSpacing: "-0.01em",
+                }}>
+                  What It Means
+                </h3>
+                <p style={{ fontFamily: SORA, fontSize: "0.875rem", color: C.textMuted, lineHeight: 1.65, marginBottom: "0.75rem" }}>
+                  The warning does <em style={{ color: C.text }}>not</em> mean Heirvo contains a virus. Click "More info," then "Run anyway." Heirvo is open-source and code-signed — you can verify the executable yourself.
+                </p>
+                <p style={{ fontFamily: SORA, fontSize: "0.875rem", color: "#34D399", lineHeight: 1.65 }}>
+                  Your antivirus will also scan it on first launch. Heirvo will pass clean.
+                </p>
+              </div>
+            </div>
+
+            {/* Bottom reassurance */}
+            <div style={{ marginTop: "2rem", textAlign: "center" }}>
+              <p style={{ fontFamily: MONO, fontSize: "0.68rem", color: C.textFaint, letterSpacing: "0.1em" }}>
+                OPEN SOURCE · CODE SIGNED · RUNS 100% LOCALLY · NO CLOUD UPLOAD
+              </p>
+            </div>
+          </div>
+        </section>
 
         {/* ═══════════════════════════════════════════════════════════════════
             02 — MEMORY LINES (from C) — emotional hook

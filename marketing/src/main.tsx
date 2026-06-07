@@ -22,6 +22,7 @@ const Beta         = lazy(() => import("./pages/Beta"));
 const Labs         = lazy(() => import("./pages/Labs"));
 const LabsHandbook = lazy(() => import("./pages/LabsHandbook"));
 const LabsApply    = lazy(() => import("./pages/LabsApply"));
+const HeroLab      = lazy(() => import("./pages/HeroLab"));
 const NotFound     = lazy(() => import("./pages/NotFound"));
 import "./index.css";
 
@@ -76,6 +77,7 @@ function AppRoot() {
           <Route path="/operators" element={<Labs />} />
           <Route path="/labs/handbook" element={<LabsHandbook />} />
           <Route path="/labs/apply"    element={<LabsApply />} />
+          <Route path="/hero-lab"      element={<HeroLab />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Suspense>
