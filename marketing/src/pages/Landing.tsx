@@ -1158,7 +1158,7 @@ export default function LandingMerge() {
                 className="polaroid-lm"
                 style={{ position: "absolute", width: "180px", top: "20px", left: "10px", transform: "rotate(-4deg)", zIndex: 1 }}
               >
-                <div style={{ width: "100%", aspectRatio: "1", background: "linear-gradient(135deg, #8B7355 0%, #C4A882 40%, #7A9BAA 100%)" }} aria-label="Recovered photo from 1997" />
+                <img src="/memory-vacation.webp" alt="Recovered family vacation photo" style={{ width: "100%", aspectRatio: "1", objectFit: "cover", display: "block", filter: "sepia(0.2)" }} />
                 <span className="polaroid-caption-lm">1997 · Family vacation</span>
               </div>
               <div
@@ -1166,7 +1166,7 @@ export default function LandingMerge() {
                 className="polaroid-lm"
                 style={{ position: "absolute", width: "200px", top: "60px", left: "120px", transform: "rotate(1.5deg)", zIndex: 3 }}
               >
-                <div style={{ width: "100%", aspectRatio: "1", background: "linear-gradient(160deg, #D4B896 0%, #E8C9A0 35%, #C4956C 100%)" }} aria-label="Recovered photo from 2003 wedding" />
+                <img src="/memory-wedding.webp" alt="Recovered wedding photo" style={{ width: "100%", aspectRatio: "1", objectFit: "cover", display: "block", filter: "sepia(0.15)" }} />
                 <span className="polaroid-caption-lm">2003 · Wedding day</span>
               </div>
               <div
@@ -1174,7 +1174,7 @@ export default function LandingMerge() {
                 className="polaroid-lm"
                 style={{ position: "absolute", width: "165px", bottom: "10px", right: "10px", transform: "rotate(3.5deg)", zIndex: 2 }}
               >
-                <div style={{ width: "100%", aspectRatio: "1", background: "linear-gradient(120deg, #6B8B6B 0%, #9BAA7A 50%, #8B9B5A 100%)", filter: "sepia(0.4)" }} aria-label="Recovered Kodak Photo CD from 1993" />
+                <img src="/memory-christmas.webp" alt="Recovered Christmas photo" style={{ width: "100%", aspectRatio: "1", objectFit: "cover", display: "block", filter: "sepia(0.25)" }} />
                 <span className="polaroid-caption-lm">1993 · Kodak Photo CD</span>
               </div>
             </div>
