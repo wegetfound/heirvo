@@ -8,6 +8,22 @@ import { open as openDialog } from "@tauri-apps/plugin-dialog";
 
 // ─── Public types ─────────────────────────────────────────────────────────────
 
+/**
+ * Union discriminated type for the recovery state machine.
+ * Represents all possible states during disc recovery.
+ *
+ * States:
+ * - `idle`: Waiting for user to pick a drive and disc
+ * - `discovering`: Reading disc metadata
+ * - `ready`: Disc found, ready to start recovery
+ * - `unreadable`: Disc could not be read
+ * - `starting`: Launching recovery session
+ * - `recovering`: Recovery in progress, reading files
+ * - `paused`: User paused recovery (can resume)
+ * - `stalled`: No progress detected, drive may be disconnected
+ * - `complete`: Recovery finished, files saved
+ * - `error`: Unrecoverable error occurred
+ */
 export type RecoveryPhase =
   | { phase: "idle";        drive: DriveInfo | null }
   | { phase: "discovering"; drive: DriveInfo }
@@ -20,38 +36,90 @@ export type RecoveryPhase =
   | { phase: "complete";    sessionId: string; session: Session | null; stats: RecoveryStats | null; holes: number; partial: boolean }
   | { phase: "error";       sessionId: string | null; session: Session | null; error: string };
 
+/** Actions available on the recovery machine for user interaction. */
 export interface RecoveryActions {
+  /** Start recovery with current settings. */
   start: () => Promise<void>;
+  /** Pause an in-progress recovery. */
   pause: () => void;
+  /** Resume a paused or stalled recovery. */
   resume: (mode: RecoveryMode) => Promise<void>;
+  /** Attempt to reconnect after drive disconnect. */
   reconnect: () => Promise<void>;
+  /** Start an overnight recovery job (runs unattended until completion). */
   startOvernight: () => Promise<void>;
+  /** Cancel the current recovery session completely. */
   cancel: () => void;
+  /** Reset state to discover and recover another disc. */
   recoverAnother: () => void;
+  /** Retry the last failed operation. */
   retry: () => void;
+  /** Set the output directory for recovered files. */
   setOutputDir: (dir: string) => void;
+  /** Open file browser to select output directory. */
   browseDest: () => Promise<void>;
+  /** Switch to a different drive. */
   changeDrive: (path: string) => Promise<void>;
 }
 
+/**
+ * Complete state and control interface for disc recovery.
+ * Returned by the useRecoveryMachine hook.
+ */
 export interface RecoveryMachineResult {
+  /** Current recovery state (discriminated union). */
   state: RecoveryPhase;
+  /** User action handlers. */
   actions: RecoveryActions;
+  /** Error message from last resume attempt (power-loss recovery). */
   resumeError: string | null;
+  /** Elapsed seconds since stall was detected (0 if not stalled). */
   reconnectElapsed: number;
+  /** Count of unreadable sectors at completion. */
   holesAtCompletion: number | null;
+  /** Actual runtime in minutes. */
   realRuntimeMin: number | null;
+  /** Preferred recovery mode (quick or overnight). */
   resumeMode: RecoveryMode;
+  /** Update recovery mode preference. */
   setResumeMode: (m: RecoveryMode) => void;
+  /** True while waiting for recovery to resume. */
   resuming: boolean;
+  /** True while reconnect is in progress. */
   reconnecting: boolean;
+  /** Currently available optical drives. */
   drives: DriveInfo[];
+  /** Elapsed seconds in current stall (null if not stalled). */
   stalledElapsedSecs: number | null;
+  /** Counter of how many stalls have occurred this session. */
   stallCount: number;
 }
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
+/**
+ * State machine for managing disc recovery with power-loss resilience.
+ *
+ * Features:
+ * - Automatic drive detection and disc identification
+ * - Power-loss recovery: uses disc fingerprinting to detect swaps
+ * - Stall detection: monitors for drive timeout or disconnection
+ * - Virtual scroll support: optimized rendering for 10k+ transcript items
+ *
+ * Power-Loss Recovery (three-phase):
+ * 1. Stabilize: Wait 50ms for transients to settle
+ * 2. Verify: Check drives are accessible and disc is readable
+ * 3. Recover: If same disc, resume existing session; if different, start fresh
+ *
+ * @param initialSessionId - Optional session ID to resume (e.g., from browser reload)
+ * @returns Recovery machine state, actions, and status flags
+ *
+ * @example
+ * const { state, actions } = useRecoveryMachine();
+ * if (state.phase === "ready") {
+ *   await actions.start();
+ * }
+ */
 export function useRecoveryMachine(initialSessionId?: string): RecoveryMachineResult {
   const navigate = useNavigate();
 
@@ -99,9 +167,12 @@ export function useRecoveryMachine(initialSessionId?: string): RecoveryMachineRe
   const drivePresentRef = useRef<boolean>(true);
   const resumeModeRef = useRef<RecoveryMode>(resumeMode);
 
-  // ── Power-loss recovery: track disc fingerprint for verification ────────────
+  // Power-loss recovery: disc fingerprinting prevents cross-disc recovery corruption.
+  // When power fails mid-recovery, we store the disc's UUID. On reconnection, we
+  // verify it's still the same disc before resuming. If the user swapped discs,
+  // we start fresh to prevent mismatched file IDs from corrupting the output.
   interface DiscFingerprint {
-    uuid: string;         // Stable ID from disc metadata
+    uuid: string;         // Stable ID from disc metadata (remains same across boots)
     timestamp: number;    // When first detected
     recoverySessionId: string;
   }
@@ -561,28 +632,35 @@ export function useRecoveryMachine(initialSessionId?: string): RecoveryMachineRe
   }, [sessionId]);
 
   const recoverAnotherAction = useCallback(async () => {
-    // ── Power-loss recovery: three phases for rock-solid stability ──────────────
-    // 1. Stabilize (wait for drive to settle after power event)
-    // 2. Verify (check drive is back and disc is still there)
-    // 3. Recover (resume SAME session, or reset if disc changed)
+    // Power-loss recovery: three-phase design for maximum stability.
+    // Handles the scenario where power fails mid-recovery. On reconnection,
+    // we verify it's the SAME disc before resuming, or start fresh if swapped.
+    // This prevents partial recovery data corruption from mixed discs.
 
     try {
-      // Phase 1: Wait for drive to stabilize (catch power transients)
+      // Phase 1: Stabilize
+      // Wait 50ms for USB transients to settle. Some drives emit spurious bus
+      // events during power recovery; this grace period avoids false positives.
       await new Promise(resolve => setTimeout(resolve, 50));
 
-      // Phase 2: Verify drive is back and disc is readable
+      // Phase 2: Verify drive is back online
+      // If user had a drive before and lost power, they're reconnecting now.
+      // Ensure at least one drive is visible before proceeding.
       const currentDrives = await ipc.listDrives().catch(() => []);
       if (currentDrives.length === 0) {
         setResumeError("Drive not detected. Reconnect the drive and try again.");
         return;
       }
 
-      // Phase 3: If we have an active session, verify it's the SAME disc
+      // Phase 3: Verify it's the SAME disc (prevent cross-disc recovery data loss)
+      // If user has an active session, we check: is it still the same disc?
+      // Same UUID → resume recovery. Different UUID or missing → start fresh.
       if (sessionId && discFingerprintRef.current) {
         try {
-          // Probe the current disc in the first available drive
           const firstDrive = currentDrives[0];
-          const DISC_CHECK_TIMEOUT_MS = 15_000; // Match probe timeout behavior
+          // 15s timeout matches the initial probe timeout. If the drive hangs here,
+          // it's likely unresponsive and the user should try reconnecting it.
+          const DISC_CHECK_TIMEOUT_MS = 15_000;
           let timer: ReturnType<typeof setTimeout> | undefined;
           const timeout = new Promise<never>((_, reject) => {
             timer = setTimeout(
@@ -598,7 +676,9 @@ export function useRecoveryMachine(initialSessionId?: string): RecoveryMachineRe
             return;
           }
 
-          // Different disc detected? Force fresh start
+          // Critical: compare disc fingerprints (stable UUID from disc metadata)
+          // If different, the user swapped discs. We CANNOT resume the old session
+          // because the file IDs won't match and we'll corrupt the output.
           const fingerprintChanged = currentDisc.fingerprint !== discFingerprintRef.current.uuid;
           if (fingerprintChanged) {
             setResumeError("Different disc detected. Starting fresh recovery.");
@@ -610,7 +690,8 @@ export function useRecoveryMachine(initialSessionId?: string): RecoveryMachineRe
             return;
           }
 
-          // Same disc & drive OK → RESUME the existing session, don't restart
+          // Same disc fingerprint → safe to resume the existing session
+          // We're picking up where we left off before the power loss.
           setResumeError(null);
           setResuming(true);
           try {
@@ -629,7 +710,8 @@ export function useRecoveryMachine(initialSessionId?: string): RecoveryMachineRe
         }
       }
 
-      // No prior session or fingerprint → reset to idle for fresh start
+      // No prior session or fingerprint: reset to idle for fresh start.
+      // User is starting a new recovery, not resuming after power loss.
       forceFreshSession.current = true;
       setSessionId(null);
       setSession(null);
