@@ -68,18 +68,6 @@ const SORA     = '"Sora", ui-sans-serif, system-ui, sans-serif';
 const GARAMOND = '"Cormorant Garamond", "Georgia", serif';
 const MONO     = '"JetBrains Mono", "Fira Code", ui-monospace, monospace';
 
-// ─── Father's Day banner logic (from C) ──────────────────────────────────────
-const FATHERS_DAY_DATE = new Date("2026-06-21T00:00:00");
-const BANNER_SHOW_FROM = new Date("2026-05-26T00:00:00");
-
-function useFathersDayBanner(): { show: boolean; daysLeft: number } {
-  const now = new Date();
-  const show = now >= BANNER_SHOW_FROM && now < FATHERS_DAY_DATE;
-  const msLeft = FATHERS_DAY_DATE.getTime() - now.getTime();
-  const daysLeft = Math.max(1, Math.ceil(msLeft / (1000 * 60 * 60 * 24)));
-  return { show, daysLeft };
-}
-
 // ─── Terminal log lines for product demo (from B) ────────────────────────────
 // ─── FAQ data ─────────────────────────────────────────────────────────────────
 const FAQS = [
@@ -445,7 +433,6 @@ export default function LandingMerge() {
   const heroHeadRef     = useRef<HTMLHeadingElement>(null);
   const heroSubRef      = useRef<HTMLParagraphElement>(null);
   const heroCtaRef      = useRef<HTMLDivElement>(null);
-  const scanCtaRef      = useRef<HTMLDivElement>(null);
 
   // Emotional section refs
   const memorySecRef    = useRef<HTMLElement>(null);
@@ -468,9 +455,6 @@ export default function LandingMerge() {
   const div3Ref = useRef<HTMLDivElement>(null);
   const div4Ref = useRef<HTMLDivElement>(null);
   const div5Ref = useRef<HTMLDivElement>(null);
-
-  const [bannerDismissed, setBannerDismissed] = useState(false);
-  const { show: showBanner, daysLeft } = useFathersDayBanner();
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -681,44 +665,7 @@ export default function LandingMerge() {
         }}
       />
 
-      {/* ── Father's Day banner ──────────────────────────────────────────────── */}
-      {showBanner && !bannerDismissed && (
-        <div
-          role="banner"
-          style={{
-            position: "relative", zIndex: 50,
-            background: "linear-gradient(90deg, rgba(180,110,30,0.15) 0%, rgba(180,110,30,0.09) 100%)",
-            borderBottom: "1px solid rgba(245,158,11,0.22)",
-            padding: "10px 20px",
-            display: "flex", alignItems: "center", justifyContent: "center", gap: 12,
-          }}
-        >
-          <span style={{ fontSize: 13, color: C.text, fontFamily: SORA }}>
-            <span style={{ color: C.amber, fontWeight: 600 }}>Father's Day is June 21.</span>{" "}
-            {daysLeft} day{daysLeft !== 1 ? "s" : ""} to recover his old discs and give them back.
-          </span>
-          <Link to="/gift" style={{
-            fontSize: 12, fontWeight: 600, color: C.amber,
-            textDecoration: "underline", textUnderlineOffset: 2,
-            whiteSpace: "nowrap", fontFamily: SORA,
-          }}>
-            Give as a gift
-          </Link>
-          <button
-            onClick={() => setBannerDismissed(true)}
-            aria-label="Dismiss Father's Day banner"
-            style={{
-              position: "absolute", right: 14, top: "50%", transform: "translateY(-50%)",
-              background: "none", border: "none", color: C.textFaint,
-              cursor: "pointer", fontSize: 18, lineHeight: 1, padding: 4,
-            }}
-          >
-            ×
-          </button>
-        </div>
-      )}
-
-      <Nav />
+      <Nav theme="dark" />
 
       {/* Wrapper receives background color tweens */}
       <div ref={wrapperRef} style={{ background: C.page }}>
@@ -731,10 +678,12 @@ export default function LandingMerge() {
           style={{
             maxWidth: 1300,
             margin: "0 auto",
-            padding: "8rem 6vw 6rem",
+            minHeight: "calc(100vh - 64px)",
+            boxSizing: "border-box",
+            padding: "clamp(1.25rem, 3vh, 2.75rem) 6vw",
             display: "grid",
-            gridTemplateColumns: "1fr 1fr",
-            gap: "6vw",
+            gridTemplateColumns: "1.05fr 0.95fr",
+            gap: "clamp(2rem, 4vw, 4rem)",
             alignItems: "center",
           }}
           className="mobile-stack-lm"
@@ -747,23 +696,13 @@ export default function LandingMerge() {
               style={{
                 fontFamily: MONO, fontSize: "0.72rem", fontWeight: 400,
                 letterSpacing: "0.18em", textTransform: "uppercase",
-                color: C.sepia, marginBottom: "1.5rem", opacity: 0,
+                color: C.sepia, marginBottom: "0.9rem", opacity: 0,
               }}
             >
               Free to scan · Windows 10 / 11 · No cloud · No subscription
             </p>
 
-            <div style={{ marginBottom: "1.75rem" }}>
-              <span className="seasonal-badge-lm">
-                <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden>
-                  <circle cx="5" cy="5" r="4" stroke="currentColor" strokeWidth="1.2" />
-                  <circle cx="5" cy="5" r="1.5" fill="currentColor" />
-                </svg>
-                Perfect gift · Mother's Day · Father's Day · Christmas
-              </span>
-            </div>
-
-            <p className="eyebrow-lm" style={{ marginBottom: "1.25rem" }}>
+            <p className="eyebrow-lm" style={{ marginBottom: "1rem" }}>
               Recover Family Memories | Disc Recovery Software | Windows
             </p>
 
@@ -771,10 +710,10 @@ export default function LandingMerge() {
               ref={heroHeadRef}
               className="display-lm"
               style={{
-                fontSize: "clamp(2.8rem, 6.5vw, 5.5rem)",
+                fontSize: "clamp(1.85rem, 3.4vw, 3.15rem)",
                 color: C.text,
-                marginBottom: "1.75rem",
-                maxWidth: "680px",
+                marginBottom: "1.1rem",
+                maxWidth: "600px",
                 perspective: "800px",
               }}
             >
@@ -785,9 +724,9 @@ export default function LandingMerge() {
             <p
               ref={heroSubRef}
               style={{
-                fontFamily: SORA, fontSize: "clamp(1rem, 1.8vw, 1.15rem)",
-                color: C.textMuted, maxWidth: "480px", lineHeight: "1.65",
-                marginBottom: "2.5rem", textWrap: "pretty",
+                fontFamily: SORA, fontSize: "clamp(0.92rem, 1.3vw, 1.02rem)",
+                color: C.textMuted, maxWidth: "460px", lineHeight: "1.6",
+                marginBottom: "1.5rem", textWrap: "pretty",
               }}
             >
               Heirvo rescues photos, videos, and memories from scratched DVDs,
@@ -797,26 +736,25 @@ export default function LandingMerge() {
 
             {/* Founder voice — the anti-vaporware anchor: a real person, a real reason */}
             <figure style={{
-              margin: "0 0 2.25rem 0", paddingLeft: "1.1rem",
+              margin: "0 0 1.5rem 0", paddingLeft: "1rem",
               borderLeft: `2px solid ${C.sepiaBorder}`,
             }}>
               <blockquote style={{
-                fontFamily: GARAMOND, fontStyle: "italic", fontSize: "1.05rem",
-                lineHeight: 1.55, color: C.sepiaText, margin: 0, maxWidth: "440px",
+                fontFamily: GARAMOND, fontStyle: "italic", fontSize: "0.98rem",
+                lineHeight: 1.5, color: C.sepiaText, margin: 0, maxWidth: "440px",
               }}>
-                "I built this because my own glassblowing DVDs were going, and my family's
-                old MiniDV masters with them. I needed to see what was still there before I
-                decided what to do. So that's what Heirvo does first — it shows you."
+                "I built this because my own glassblowing DVDs were dying — and my family's
+                MiniDV masters with them. So Heirvo shows you what's still there first."
               </blockquote>
               <figcaption style={{
-                marginTop: "0.65rem", fontFamily: MONO, fontSize: "0.66rem",
+                marginTop: "0.5rem", fontFamily: MONO, fontSize: "0.64rem",
                 letterSpacing: "0.1em", color: C.textFaint, textTransform: "uppercase",
               }}>
                 — Sasha, who made Heirvo · Pai, Thailand
               </figcaption>
             </figure>
 
-            <div ref={heroCtaRef} style={{ display: "flex", gap: "1rem", flexWrap: "wrap", alignItems: "center", marginBottom: "1.5rem" }}>
+            <div ref={heroCtaRef} style={{ display: "flex", gap: "0.85rem", flexWrap: "wrap", alignItems: "center" }}>
               <a href={DOWNLOAD_URL} className="btn-primary-lm">
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
                   <path d="M8 2v8M5 8l3 3 3-3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
@@ -848,10 +786,6 @@ export default function LandingMerge() {
                 Buy for a parent
               </Link>
             </div>
-
-            <p style={{ fontFamily: MONO, fontSize: "0.68rem", color: C.textFaint, letterSpacing: "0.08em" }}>
-              Free to scan · $59 one-time to save · Windows 10 / 11
-            </p>
           </div>
 
           {/* Right: animated product scan demo (from B) */}
@@ -860,7 +794,7 @@ export default function LandingMerge() {
             <div aria-hidden style={{
               position: "absolute", top: "50%", left: "50%",
               transform: "translate(-50%, -50%)",
-              width: 520, height: 520,
+              width: 440, height: 440,
               pointerEvents: "none", zIndex: 0, opacity: 0.16,
             }}>
               {[1.0, 0.78, 0.58, 0.38, 0.20].map((scale, i) => (
@@ -888,34 +822,19 @@ export default function LandingMerge() {
               What a real scan looks like
             </p>
 
-            <Concept1_TheLastRead reducedMotion={false} />
+            <div style={{ width: "100%", maxWidth: 380 }}>
+              <Concept1_TheLastRead reducedMotion={false} />
+            </div>
 
             {/* Caption: ties the radar to the "see before you pay" promise */}
             <p style={{
-              fontFamily: SORA, fontStyle: "italic", fontSize: "0.8rem",
+              fontFamily: SORA, fontStyle: "italic", fontSize: "0.78rem",
               color: C.textMuted, marginTop: "0.85rem", textAlign: "center",
-              maxWidth: 440, zIndex: 1,
+              maxWidth: 380, zIndex: 1,
             }}>
               Every thumbnail that lights up is a file Heirvo found. What you see is exactly
               what you get.
             </p>
-
-            {/* Scan complete CTA — slides up after animation */}
-            <div ref={scanCtaRef} className="lm-scan-cta" style={{ width: "100%", maxWidth: 540 }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
-                <div>
-                  <div style={{ fontFamily: SORA, fontSize: "0.95rem", fontWeight: 600, color: C.text, marginBottom: 2 }}>
-                    3,842 files recovered
-                  </div>
-                  <div style={{ fontFamily: MONO, fontSize: "0.75rem", color: C.textMuted }}>
-                    scan complete — unlock to save your files
-                  </div>
-                </div>
-                <a href={DOWNLOAD_URL} className="btn-primary-lm" style={{ padding: "0.75rem 1.25rem", fontSize: "0.875rem" }}>
-                  Save files — $59
-                </a>
-              </div>
-            </div>
           </div>
         </section>
 

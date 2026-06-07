@@ -388,10 +388,10 @@ export default function Concept1_TheLastRead({
 
       /* BEAT 5 · PRESERVED — 4.40–5.40s
          Radar wedge fades (job done). Tagline appears. Breathing begins. */
-      tl.to(radarWedgeRef.current, { opacity: 0, duration: 0.6 }, 4.3);
-      tl.to(radarBeamRef.current, { opacity: 0.25, duration: 0.6 }, 4.3);
-      tl.add(() => { radarSweep.pause(); }, 4.9);
-      tl.to(radarRef.current, { opacity: 0.18, duration: 0.8 }, 4.5);
+      tl.to(radarWedgeRef.current, { opacity: 0.4, duration: 0.6 }, 4.3);
+      tl.to(radarBeamRef.current, { opacity: 0.7, duration: 0.6 }, 4.3);
+      // Keep the radar gently sweeping forever so the disc never looks frozen.
+      tl.to(radarRef.current, { opacity: 0.55, duration: 0.8 }, 4.5);
       tl.to(taglineRef.current, {
         opacity: 1,
         y: 0,
