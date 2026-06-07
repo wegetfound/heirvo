@@ -402,43 +402,65 @@ export default function Watch() {
   // Toggle fullscreen on the player container (video + scrubber stay together).
   // Falls back to the video element, then to the Tauri window, so it always
   // does *something* even if the webview blocks the element Fullscreen API.
+  // Provides feedback to user if all methods fail.
   const toggleFullscreen = async () => {
     const fsEl =
       document.fullscreenElement ||
       // @ts-expect-error vendor-prefixed fallback
       document.webkitFullscreenElement ||
       null;
-    try {
-      if (fsEl) {
-        if (document.exitFullscreen) await document.exitFullscreen();
-        // @ts-expect-error vendor-prefixed fallback
-        else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+
+    // Exiting fullscreen
+    if (fsEl) {
+      try {
+        if (document.exitFullscreen) {
+          await document.exitFullscreen();
+        } else {
+          const webkitExit = (document as any).webkitExitFullscreen;
+          if (webkitExit) {
+            webkitExit.call(document);
+          }
+        }
+        setIsFullscreen(false);
         return;
+      } catch (err) {
+        console.warn("[Watch] exitFullscreen failed:", err);
       }
-      const target = playerRef.current ?? videoRef.current;
+    }
+
+    // Entering fullscreen — try element API first
+    const target = playerRef.current ?? videoRef.current;
+    try {
       if (target?.requestFullscreen) {
         await target.requestFullscreen();
+        setIsFullscreen(true);
         return;
       }
       // @ts-expect-error vendor-prefixed fallback
       if (target?.webkitRequestFullscreen) {
         // @ts-expect-error vendor-prefixed fallback
         target.webkitRequestFullscreen();
+        setIsFullscreen(true);
         return;
       }
-      throw new Error("Fullscreen API unavailable");
-    } catch {
-      // Last resort: toggle the Tauri OS window to fullscreen so the user still
-      // gets a big-screen view even when the element API is unavailable.
-      try {
-        const { getCurrentWindow } = await import("@tauri-apps/api/window");
-        const w = getCurrentWindow();
-        const cur = await w.isFullscreen();
-        await w.setFullscreen(!cur);
-        setIsFullscreen(!cur);
-      } catch {
-        /* nothing else we can do — leave UI as-is */
-      }
+    } catch (err) {
+      console.warn("[Watch] Element fullscreen blocked by WebView2:", err);
+      // Fall through to Tauri window fallback
+    }
+
+    // Last resort: toggle the Tauri OS window to fullscreen
+    try {
+      const { getCurrentWindow } = await import("@tauri-apps/api/window");
+      const w = getCurrentWindow();
+      const cur = await w.isFullscreen();
+      const newState = !cur;
+      await w.setFullscreen(newState);
+      setIsFullscreen(newState);
+      console.info("[Watch] Tauri window fullscreen:", newState);
+    } catch (err) {
+      console.error("[Watch] Fullscreen unavailable on this platform:", err);
+      // Final fallback: show a toast-like message (optional, skipped for now)
+      // Users can still use browser fullscreen or press F11
     }
   };
 
@@ -477,10 +499,30 @@ export default function Watch() {
 
   // Defensive: transcript may be null or empty; filter safely
   const transcriptLines = disc?.transcript ?? [];
-  const visibleLines = filterQ.trim()
-    ? transcriptLines.filter((l) =>
-        l?.text?.toLowerCase?.().includes(filterQ.toLowerCase()),
-      )
+
+  // Unicode-aware search: normalize diacritics + case-insensitive
+  // Handles: "café" matches "cafe", Greek σ matches ς, etc.
+  const normalizeForSearch = (s: string): string => {
+    if (!s) return "";
+    try {
+      // NFD: decompose diacritics (é → e + ́)
+      // Then remove combining marks (the ́ part)
+      return s
+        .normalize("NFD")
+        .replace(/[̀-ͯ]/g, "") // Remove diacritical marks
+        .toLowerCase();
+    } catch {
+      // Fallback if normalize fails (shouldn't happen)
+      return s.toLowerCase();
+    }
+  };
+
+  const normalizedQuery = normalizeForSearch(filterQ.trim());
+  const visibleLines = normalizedQuery
+    ? transcriptLines.filter((l) => {
+        const lineText = l?.text ?? "";
+        return normalizeForSearch(lineText).includes(normalizedQuery);
+      })
     : transcriptLines;
 
   // Active line = last line whose timeSec <= currentSec
@@ -701,6 +743,37 @@ export default function Watch() {
                   )}
                 </button>
                 <div
+                  role="slider"
+                  tabIndex={hasMedia ? 0 : -1}
+                  aria-label="Video progress"
+                  aria-valuemin={0}
+                  aria-valuemax={Math.round(total)}
+                  aria-valuenow={Math.round(currentSec)}
+                  aria-valuetext={`${fmtTime(currentSec)} of ${disc.durationFormatted}`}
+                  onKeyDown={(e) => {
+                    if (!hasMedia) return;
+                    const step = 5; // 5-second step
+                    switch (e.key) {
+                      case "ArrowLeft":
+                        e.preventDefault();
+                        setCurrentSec(Math.max(0, currentSec - step));
+                        break;
+                      case "ArrowRight":
+                        e.preventDefault();
+                        setCurrentSec(Math.min(total, currentSec + step));
+                        break;
+                      case "Home":
+                        e.preventDefault();
+                        setCurrentSec(0);
+                        break;
+                      case "End":
+                        e.preventDefault();
+                        setCurrentSec(total);
+                        break;
+                      default:
+                        break;
+                    }
+                  }}
                   onClick={onScrubberClick}
                   style={{
                     flex: 1,
@@ -708,7 +781,17 @@ export default function Watch() {
                     borderRadius: 2,
                     background: "rgba(28,26,23,0.08)",
                     position: "relative",
-                    cursor: "pointer",
+                    cursor: hasMedia ? "pointer" : "not-allowed",
+                    outline: "none",
+                  }}
+                  onFocus={(e) => {
+                    if (hasMedia) {
+                      e.currentTarget.style.outlineOffset = "4px";
+                      e.currentTarget.style.outline = "2px solid var(--lib-amber)";
+                    }
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.outline = "none";
                   }}
                 >
                   <div
@@ -722,6 +805,7 @@ export default function Watch() {
                       borderRadius: 2,
                       transition: "width 0.3s ease",
                     }}
+                    aria-hidden="true"
                   />
                   <div
                     style={{
@@ -737,6 +821,7 @@ export default function Watch() {
                       transition: "left 0.3s ease",
                       boxShadow: "0 1px 3px rgba(0,0,0,0.15)",
                     }}
+                    aria-hidden="true"
                   />
                 </div>
                 <span
