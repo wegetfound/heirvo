@@ -240,7 +240,7 @@ export function useRecoveryMachine(initialSessionId?: string): RecoveryMachineRe
         const info = await Promise.race([ipc.checkDisc(probeDrivePath), timeout]);
         if (cancelled) return;
         if (info) { setDisc(info); }
-        else { setProbeError("No readable disc found in this drive."); }
+        else { setProbeError("No readable disc found in this drive. Try reinserting the disc or using a different drive."); }
       } catch (e) {
         if (!cancelled) setProbeError(String(e));
       } finally {
@@ -648,7 +648,7 @@ export function useRecoveryMachine(initialSessionId?: string): RecoveryMachineRe
       // Ensure at least one drive is visible before proceeding.
       const currentDrives = await ipc.listDrives().catch(() => []);
       if (currentDrives.length === 0) {
-        setResumeError("Drive not detected. Reconnect the drive and try again.");
+        setResumeError("Drive not detected. Unplug the drive, wait a few seconds, then plug it back in and try again.");
         return;
       }
 
@@ -681,7 +681,7 @@ export function useRecoveryMachine(initialSessionId?: string): RecoveryMachineRe
           // because the file IDs won't match and we'll corrupt the output.
           const fingerprintChanged = currentDisc.fingerprint !== discFingerprintRef.current.uuid;
           if (fingerprintChanged) {
-            setResumeError("Different disc detected. Starting fresh recovery.");
+            setResumeError("You inserted a different disc than before. We'll start a fresh scan for this one.");
             forceFreshSession.current = true;
             setSessionId(null);
             setSession(null);
@@ -705,7 +705,7 @@ export function useRecoveryMachine(initialSessionId?: string): RecoveryMachineRe
           }
           return;
         } catch (err) {
-          setResumeError(`Could not verify disc: ${err instanceof Error ? err.message : 'Unknown error'}`);
+          setResumeError("We couldn't read the disc right now. Try ejecting it, waiting a moment, then reinserting it.");
           return;
         }
       }

@@ -677,8 +677,8 @@ const DoneBanner = React.forwardRef<HTMLDivElement, { stats: RecoveryStats | nul
     } else {
       headline2 = pct > 0 ? `This disc is heavily damaged — we saved ${pct}% (${gb}).` : "We weren't able to read this disc.";
       detail = pct > 0
-        ? "Even professional services often can't do much better. You can try a different drive."
-        : "Try cleaning the disc, or use a different disc drive.";
+        ? "A different disc drive sometimes recovers more. Physical damage this severe is often beyond what any software can fix — a professional data recovery lab with specialized equipment may be able to help."
+        : "This happens with older or physically damaged media — it's not your fault. Try cleaning the disc gently (wipe from centre outward, not in circles), or try a different disc drive. If those don't work, a professional data recovery lab may be able to help.";
     }
   }
 

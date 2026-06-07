@@ -871,7 +871,7 @@ export function OutputPanel({
                   {bytesToHuman(f.size_bytes)}
                   {f.zero_filled_sectors > 0 && (
                     <span style={{ color: "var(--db-amber)", marginLeft: 6 }}>
-                      ({f.zero_filled_sectors} damaged)
+                      ({f.zero_filled_sectors} damaged{/\.(pdf|docx?|xlsx?|zip|rar)$/i.test(f.name) ? " — may not open" : ""})
                     </span>
                   )}
                   {f.good_read_failed_sectors > 0 && (
