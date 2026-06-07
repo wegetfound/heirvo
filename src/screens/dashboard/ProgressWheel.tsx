@@ -342,8 +342,14 @@ export function ProgressWheel({
         <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", justifyContent: "center", width: "100%" }}>
           {/* Recover another disc — prominent when done */}
           {recoveryDone && (
-            <ActionBtn primary onClick={onRecoverAnother} fullWidth>
-              <RefreshCw size={13} /> Recover another disc
+            <ActionBtn
+              primary
+              onClick={onRecoverAnother}
+              fullWidth
+              disabled={reconnecting || resuming}
+            >
+              <RefreshCw size={13} style={{ animation: (reconnecting || resuming) ? "spin 1s linear infinite" : "none" }} />
+              {reconnecting || resuming ? "Recovering..." : "Recover another disc"}
             </ActionBtn>
           )}
 

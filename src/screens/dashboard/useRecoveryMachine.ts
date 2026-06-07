@@ -99,6 +99,14 @@ export function useRecoveryMachine(initialSessionId?: string): RecoveryMachineRe
   const drivePresentRef = useRef<boolean>(true);
   const resumeModeRef = useRef<RecoveryMode>(resumeMode);
 
+  // ── Power-loss recovery: track disc fingerprint for verification ────────────
+  interface DiscFingerprint {
+    uuid: string;         // Stable ID from disc metadata
+    timestamp: number;    // When first detected
+    recoverySessionId: string;
+  }
+  const discFingerprintRef = useRef<DiscFingerprint | null>(null);
+
   recoveryDoneRef.current = recoveryDone;
   statsRef.current = stats;
   reconnectingRef.current = reconnecting;
@@ -456,6 +464,14 @@ export function useRecoveryMachine(initialSessionId?: string): RecoveryMachineRe
           navigate(`/session/${existingId}`, { replace: true });
           return;
         }
+
+        // ── Power-loss recovery: Capture disc fingerprint for resumed session ────
+        discFingerprintRef.current = {
+          uuid: disc.fingerprint || `fallback-${Date.now()}`,
+          timestamp: Date.now(),
+          recoverySessionId: existingId,
+        };
+
         // Surface a spinner while the drive re-opens. Without this the screen
         // derives the "starting" phase but shows no progress, so a slow drive
         // re-spin looks like a hang. `resuming` flips the phase to a clear
@@ -493,6 +509,16 @@ export function useRecoveryMachine(initialSessionId?: string): RecoveryMachineRe
         setProbeError("Could not create a recovery session. Check that the destination folder is writable and try again.");
         return;
       }
+
+      // ── Power-loss recovery: Capture disc fingerprint for verification ──────
+      // This lets us detect if the disc changes during power loss, so we can
+      // either resume the same session or start fresh if disc was swapped.
+      discFingerprintRef.current = {
+        uuid: disc.fingerprint || `fallback-${Date.now()}`,
+        timestamp: Date.now(),
+        recoverySessionId: newSession.id,
+      };
+
       // Show a spinner while the drive opens for the first read. The phase
       // derivation reads `resuming && !stats` as "starting", giving the user a
       // clear "Getting started…" state instead of an ambiguous idle wheel while
@@ -534,23 +560,75 @@ export function useRecoveryMachine(initialSessionId?: string): RecoveryMachineRe
     try { await ipc.changeDrive(sessionId, path); } catch { /* pass errors to callers */ }
   }, [sessionId]);
 
-  const recoverAnotherAction = useCallback(() => {
-    // Reset to idle to start a fresh recovery. Mark the next Start as "fresh"
-    // so re-scanning the SAME disc creates a new session instead of re-opening
-    // the just-completed one (which left the drive idle and looked stuck).
-    forceFreshSession.current = true;
-    setSessionId(null);
-    setSession(null);
-    setStats(null);
-    setRecoveryDone(false);
-    setSessionFinished(false);
-    setResumeError(null);
-    setHolesAtCompletion(null);
-    setIsOvernightRunning(false);
-    setPickedDrive(null);
-    setDisc(null);
-    setProbeError(null);
-  }, []);
+  const recoverAnotherAction = useCallback(async () => {
+    // ── Power-loss recovery: three phases for rock-solid stability ──────────────
+    // 1. Stabilize (wait for drive to settle after power event)
+    // 2. Verify (check drive is back and disc is still there)
+    // 3. Recover (resume SAME session, or reset if disc changed)
+
+    try {
+      // Phase 1: Wait for drive to stabilize (catch power transients)
+      await new Promise(resolve => setTimeout(resolve, 50));
+
+      // Phase 2: Verify drive is back and disc is readable
+      const currentDrives = await ipc.listDrives().catch(() => []);
+      if (currentDrives.length === 0) {
+        setResumeError("Drive not detected. Reconnect the drive and try again.");
+        return;
+      }
+
+      // Phase 3: If we have an active session, verify it's the SAME disc
+      if (sessionId && discFingerprintRef.current) {
+        try {
+          // Probe the current disc in the first available drive
+          const firstDrive = currentDrives[0];
+          const currentDisc = await ipc.checkDisc(firstDrive.path).catch(() => null);
+
+          if (!currentDisc) {
+            setResumeError("Disc no longer readable. Try cleaning it or using a different drive.");
+            return;
+          }
+
+          // Different disc detected? Force fresh start
+          const fingerprintChanged = currentDisc.fingerprint !== discFingerprintRef.current.uuid;
+          if (fingerprintChanged) {
+            setResumeError("Different disc detected. Starting fresh recovery.");
+            forceFreshSession.current = true;
+            setSessionId(null);
+            setSession(null);
+            setStats(null);
+            discFingerprintRef.current = null;
+            return;
+          }
+
+          // Same disc & drive OK → RESUME the existing session, don't restart
+          setResumeError(null);
+          await resumeAction(resumeModeRef.current);
+          return;
+        } catch (err) {
+          setResumeError(`Could not verify disc: ${err instanceof Error ? err.message : 'Unknown error'}`);
+          return;
+        }
+      }
+
+      // No prior session or fingerprint → reset to idle for fresh start
+      forceFreshSession.current = true;
+      setSessionId(null);
+      setSession(null);
+      setStats(null);
+      setRecoveryDone(false);
+      setSessionFinished(false);
+      setResumeError(null);
+      setHolesAtCompletion(null);
+      setIsOvernightRunning(false);
+      setPickedDrive(null);
+      setDisc(null);
+      setProbeError(null);
+      discFingerprintRef.current = null;
+    } catch (err) {
+      setResumeError(`Power recovery failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    }
+  }, [sessionId, resumeAction]);
 
   // ── Derive phase ──────────────────────────────────────────────────────────
   // Stall detection now feeds in via engineStalled (from stats.stalled).

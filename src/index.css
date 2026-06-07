@@ -691,3 +691,11 @@
 /* Selection + scrollbar polish. */
 [data-theme="dark"] ::selection { background: var(--db-amber); color: #160E02; }
 [data-theme="dark"] * { scrollbar-color: var(--db-border) transparent; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Recovery UI animations
+═══════════════════════════════════════════════════════════════════════════ */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
