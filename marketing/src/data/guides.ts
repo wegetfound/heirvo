@@ -7727,6 +7727,145 @@ const GUIDES: Guide[] = [
       secondaryHref: "/recover",
     },
   },
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // SHA-256 File Integrity Verification
+  // ─────────────────────────────────────────────────────────────────────────────
+  {
+    slug: "sha-256-file-integrity-verification-disc-recovery",
+    title: "How Heirvo Proves Your Recovered Files Are Authentic",
+    metaTitle: "SHA-256 File Integrity Verification for Disc Recovery — Heirvo",
+    metaDescription:
+      "Heirvo hashes every recovered sector with SHA-256 during the scan and exports a tamper-evident manifest. Learn how cryptographic verification proves your recovered files are exactly what was on the disc.",
+    datePublished: "2026-06-07",
+    dateModified: "2026-06-07",
+    readTime: "6 min read",
+    category: "Data Integrity",
+    intro:
+      "When you recover files from a damaged disc, how do you know the files are intact? Heirvo answers this by computing a SHA-256 hash of every single sector it reads — in real time, during the scan. After recovery, you can export a tamper-evident manifest: a cryptographic receipt proving every recovered byte is exactly what was on the disc. No other consumer disc recovery tool does this.",
+    related: [
+      "recover-files-scratched-dvd",
+      "best-dvd-recovery-software",
+      "searchable-family-video-archive-windows",
+      "recover-wedding-dvd",
+    ],
+    sections: [
+      {
+        id: "why-verification-matters",
+        heading: "Why file integrity matters after disc recovery",
+        paragraphs: [
+          "Disc recovery is not the same as a file copy. When a disc is damaged, the recovery software must make judgment calls — retrying sectors at different speeds, reading forward and backward, assembling partial reads. The result is usually excellent, but the question remains: how do you know the output file is bit-for-bit accurate?",
+          "For family photos and home videos, you can usually tell by looking. But for legal evidence, insurance claims, estate records, or professional archives, 'it looks right' isn't enough. You need cryptographic proof — a mathematical guarantee that the file hasn't been altered, corrupted, or tampered with since the moment it was read from the disc.",
+        ],
+      },
+      {
+        id: "what-sha-256-is",
+        heading: "What SHA-256 actually does",
+        paragraphs: [
+          "SHA-256 is a cryptographic hash function. It takes any amount of data — a single byte or an entire Blu-ray disc — and produces a fixed 64-character hexadecimal fingerprint. Change even one bit of the input, and the entire fingerprint changes completely. There is no known way to produce two different inputs with the same fingerprint.",
+          "This property makes SHA-256 the standard for file integrity verification in forensics, archival science, legal chain-of-custody records, and government document preservation. It's the same algorithm used by Bitcoin, Git, and most certificate authorities.",
+        ],
+      },
+      {
+        id: "how-heirvo-uses-it",
+        heading: "How Heirvo uses SHA-256 during recovery",
+        paragraphs: [
+          "Heirvo doesn't hash files after recovery — it hashes every 2,048-byte sector the moment it's successfully read from the disc. This is an important distinction. The hash captures the raw data as the drive's laser read it, before any file-system interpretation or reassembly.",
+        ],
+        numbered: true,
+        items: [
+          "The recovery engine reads a sector from the disc (retrying up to 9 times at different speeds if needed).",
+          "The moment a successful read returns, Heirvo computes the SHA-256 hash of that exact 2,048-byte block.",
+          "The hash is stored alongside the sector's Logical Block Address (LBA) in a local SQLite database — the sector_receipts table.",
+          "Hashes are batched and flushed to the database in groups for performance, but every successfully read sector is recorded.",
+          "After recovery, the Archive tier lets you export a tamper-evident manifest — a plain-text file containing every sector hash, plus a manifest digest (the SHA-256 of all the sector lines combined).",
+        ],
+      },
+      {
+        id: "the-manifest",
+        heading: "What the recovery manifest looks like",
+        paragraphs: [
+          "The exported manifest is a plain-text file that any person or tool can verify independently. It contains a forensic header with session metadata, followed by one line per recovered sector.",
+        ],
+        callout: {
+          label: "Example manifest header",
+          text: "# Heirvo Recovery Manifest — tamper-evident fixity record\n# tool: Heirvo 1.1.0\n# generated (UTC): 2026-06-07T14:32:00Z\n# session id: a1b2c3d4-...\n# disc label: WEDDING_2003\n# sectors hashed: 2,148,256\n# hash algorithm: SHA-256\n# manifest digest: 7f3a2b1c...\n\n0x00000000  a1b2c3d4e5f6...\n0x00000001  f6e5d4c3b2a1...",
+          color: "blue",
+        },
+      },
+      {
+        id: "how-to-verify",
+        heading: "How to verify a manifest",
+        paragraphs: [
+          "The manifest is self-verifying. The last line of the header contains a 'manifest digest' — the SHA-256 hash of every sector line in the document. To verify the manifest hasn't been altered:",
+        ],
+        numbered: true,
+        items: [
+          "Open the manifest file in any text editor.",
+          "Copy everything from the first sector line (after the # header block) to the end of the file.",
+          "Run SHA-256 on that text. On Windows: certutil -hashfile manifest.txt SHA256. On Mac/Linux: shasum -a 256 manifest.txt.",
+          "Compare the result to the 'manifest digest' value in the header. If they match, the manifest is untampered.",
+        ],
+        callout: {
+          label: "Why this matters",
+          text: "If someone altered even a single character in the manifest — changing one sector hash or adding a line — the manifest digest would no longer match. This is what makes the document tamper-evident, not just a record.",
+          color: "amber",
+        },
+      },
+      {
+        id: "who-needs-this",
+        heading: "Who needs cryptographic verification",
+        paragraphs: [
+          "Most people recovering family photos won't need to export a manifest — the photos speak for themselves. But several situations demand provable file integrity:",
+        ],
+        items: [
+          "Legal evidence — recovered files submitted to courts need chain-of-custody documentation showing the data hasn't been altered since recovery.",
+          "Insurance claims — proving that photos or videos from a damaged disc are authentic, not reconstructed or edited.",
+          "Estate and inheritance — when discs contain the only copy of a deceased family member's photos or documents, beneficiaries may need to prove authenticity.",
+          "Professional archives — libraries, museums, and historical societies that digitise disc-based collections need fixity records for every item.",
+          "Forensic investigations — law enforcement recovering evidence from optical media needs cryptographic proof of integrity.",
+        ],
+      },
+      {
+        id: "archive-tier",
+        heading: "Available on the Archive tier",
+        paragraphs: [
+          "Every Heirvo scan — including the free tier — computes and stores SHA-256 hashes for every recovered sector. The data is always there. The manifest export feature, which lets you save the hashes as a portable plain-text file, is available on the Archive ($99) and Family ($149) tiers.",
+          "This is intentional: the manifest is a professional and legal tool. If you need chain-of-custody records, you're doing work that justifies the Archive tier. If you're recovering family photos for personal use, the free scan and Recover tier have everything you need.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "Does the free scan compute SHA-256 hashes?",
+        a: "Yes. Every Heirvo scan — including free scans — computes and stores SHA-256 hashes for every recovered sector. The hashes are always recorded in the local database. The manifest export feature (saving them as a portable file) requires the Archive or Family tier.",
+      },
+      {
+        q: "Can I verify the manifest without Heirvo?",
+        a: "Yes. The manifest is a plain-text file with standard SHA-256 hashes. You can verify it with any SHA-256 tool — certutil on Windows, shasum on Mac/Linux, or any online SHA-256 calculator. No Heirvo installation is needed to verify a manifest.",
+      },
+      {
+        q: "Is the SHA-256 hash computed on the raw sector or the reconstructed file?",
+        a: "The raw 2,048-byte sector, exactly as the disc drive returned it. This means the hash captures the data before any file-system interpretation — it's the most fundamental proof of what was physically on the disc.",
+      },
+      {
+        q: "What if some sectors couldn't be recovered?",
+        a: "Only successfully read sectors get a hash entry. The manifest header shows both 'disc sectors' (total on the disc) and 'sectors hashed' (successfully recovered). The difference tells you exactly how many sectors were unrecoverable.",
+      },
+      {
+        q: "Is this admissible as legal evidence?",
+        a: "SHA-256 verification is widely accepted in digital forensics and legal proceedings. The manifest follows the same principles as chain-of-custody records used by law enforcement and e-discovery tools. Whether a specific court accepts it depends on jurisdiction and context — consult a legal professional for your case.",
+      },
+    ],
+    cta: {
+      heading: "Every Sector. Every Hash. Every Time.",
+      body: "Heirvo computes SHA-256 hashes during recovery — not after. Download free, scan your disc, and know that every recovered byte has a cryptographic receipt.",
+      primaryLabel: "Download Heirvo Free",
+      primaryHref: "/#download",
+      secondaryLabel: "See all recovery guides",
+      secondaryHref: "/guides",
+    },
+  },
 ];
 
 export default GUIDES;

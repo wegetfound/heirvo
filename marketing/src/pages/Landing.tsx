@@ -1207,7 +1207,7 @@ export default function LandingMerge() {
             <div style={{
               display: "grid",
               gridTemplateColumns: "repeat(3, 1fr)",
-              gridTemplateRows: "auto auto auto",
+              gridTemplateRows: "auto auto auto auto",
               gap: "14px",
             }}>
               {/* Hero tile — 2×2 */}
@@ -1302,6 +1302,26 @@ export default function LandingMerge() {
               }}>
                 <p style={{ fontFamily: SORA, fontWeight: 700, fontSize: "1rem", letterSpacing: "-0.025em", color: C.amber }}>Scan free. Always.</p>
                 <p style={{ fontFamily: SORA, fontSize: "0.8125rem", color: C.textMuted, lineHeight: 1.55 }}>See every recoverable file before you pay a cent. No account required.</p>
+              </div>
+
+              {/* 1×3 — SHA-256 verification */}
+              <div className="bento-tile-lm" style={{
+                gridArea: "4 / 1 / 5 / 4",
+                background: C.pageAlt, border: `1px solid ${C.border}`,
+                borderRadius: "16px", padding: "1.75rem",
+                backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)",
+                display: "flex", alignItems: "center", gap: "1.25rem",
+              }}>
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden style={{ flexShrink: 0 }}>
+                  <rect x="3" y="3" width="18" height="18" rx="3" stroke={C.sepia} strokeWidth="1.4" />
+                  <path d="M8 12h8M8 8h8M8 16h5" stroke={C.sepia} strokeWidth="1.4" strokeLinecap="round" />
+                  <circle cx="18" cy="18" r="4.5" fill={C.pageAlt} stroke={C.sepia} strokeWidth="1.4" />
+                  <path d="M16.5 18l1 1 2-2" stroke={C.sepia} strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                <div>
+                  <p style={{ fontFamily: SORA, fontWeight: 700, fontSize: "1rem", letterSpacing: "-0.025em", color: C.text, marginBottom: "0.25rem" }}>SHA-256 verified. Every sector.</p>
+                  <p style={{ fontFamily: SORA, fontSize: "0.8125rem", color: C.textMuted, lineHeight: 1.55 }}>Every recovered sector is hashed the instant it's read. Export a tamper-evident manifest — cryptographic proof your files are exactly what was on the disc.</p>
+                </div>
               </div>
             </div>
           </div>
