@@ -337,6 +337,13 @@ export default function Watch() {
   const transcriptContainerRef = useRef<HTMLDivElement | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
+  // Reset transcript scroll when filter changes to prevent misaligned virtual scroll
+  useEffect(() => {
+    if (transcriptContainerRef.current) {
+      transcriptContainerRef.current.scrollTop = 0;
+    }
+  }, [filterQ]);
+
   // Normalization timeout (15 minutes). Tracks when isPreparing became true.
   const prepareStartTimeRef = useRef<number | null>(null);
   const [prepareTimedOut, setPrepareTimedOut] = useState(false);

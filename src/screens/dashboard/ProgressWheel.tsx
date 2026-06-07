@@ -180,7 +180,9 @@ export function ProgressWheel({
     : isStarting
     ? "Starting…"
     : isStalled
-    ? `Stalled (${Math.floor((stalledElapsedSecs ?? 0) / 60)}m)`
+    ? stalledElapsedSecs !== null && stalledElapsedSecs !== undefined
+      ? `Stalled (${Math.floor(stalledElapsedSecs / 60)}m)`
+      : "Stalled (checking…)"
     : recoveryDone
     ? "Complete"
     : "Paused";
