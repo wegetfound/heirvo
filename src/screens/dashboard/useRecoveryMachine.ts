@@ -290,10 +290,17 @@ export function useRecoveryMachine(initialSessionId?: string): RecoveryMachineRe
       .replace(/[<>:"/\\|?*]/g, "_")
       .replace(/_+/g, "_")
       .trim() || "Untitled disc";
+    // Suffix the folder with a short slice of the disc fingerprint so two discs
+    // that share a volume label (e.g. both "DVD_VIDEO_RECORDER") never land in the
+    // same Documents\Heirvo\<label> folder and commingle their ISOs. The SAME
+    // physical disc keeps the same fingerprint → same folder, so resume / "recover
+    // another" still target the right image.
+    const fp8 = (disc.fingerprint || "").replace(/[^a-f0-9]/gi, "").slice(0, 8);
+    const folder = fp8 ? `${safeLabel}-${fp8}` : safeLabel;
     (async () => {
       try {
         const docs = await documentDir();
-        const path = await join(docs, "Heirvo", safeLabel);
+        const path = await join(docs, "Heirvo", folder);
         setOutputDir(path);
       } catch { /* leave blank */ }
     })();

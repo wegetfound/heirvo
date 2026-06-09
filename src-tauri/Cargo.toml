@@ -1,6 +1,6 @@
 [package]
 name = "heirvo"
-version = "1.1.0"
+version = "1.2.0"
 description = "Heirvo — desktop application for damaged DVD recovery and video restoration"
 authors = ["Heirvo"]
 edition = "2021"
