@@ -13,11 +13,14 @@
 //! skip-ahead), then one cheap SlowRead to catch marginal sectors, then stop.
 //! No thermal grinding. Designed to complete in minutes to a few hours.
 //!
-//! **Overnight**: patient retry phase for the remaining holes. The engine loops
-//! `pass_plan(Overnight)` until a full cycle recovers 0 new Good sectors, or
-//! [`OVERNIGHT_MAX_CYCLES`] is hit. One cycle = Reverse → ThermalPause → SlowRead
-//! → ThermalPause. Works ONLY on marginal sectors — it cannot recover physically
-//! destroyed data.
+//! **Overnight**: gentle, patient full pass for difficult discs / brownout-prone
+//! drives. One cycle = Triage → Reverse → ThermalPause → SlowRead → ThermalPause,
+//! all paced by a 2 s inter-read floor so a bus-powered drive isn't hammered into
+//! a power-cycle. The leading Triage **block-reads any never-attempted (Unknown)
+//! sectors** — so Overnight can finish a run that was interrupted partway (it no
+//! longer only retries already-Failed sectors). The engine loops the plan until a
+//! full cycle recovers 0 new Good sectors, or [`OVERNIGHT_MAX_CYCLES`] is hit.
+//! Cannot recover physically destroyed data.
 
 use crate::disc::sector::ReadOptions;
 use serde::{Deserialize, Serialize};
@@ -96,20 +99,23 @@ pub const OVERNIGHT_MAX_CYCLES: u32 = 12;
 /// data, then one SlowRead pass catches marginal sectors, then stops.
 /// Best for most discs; completes in minutes to a few hours.
 ///
-/// **Overnight**: patient retry phase for the remaining holes. Intended to run
-/// unattended for many hours. The engine loops the plan returned by
-/// `pass_plan(Overnight)` until convergence or [`OVERNIGHT_MAX_CYCLES`] is hit.
-/// Uses Reverse approach + ThermalPause cool-downs + a 2 s inter-sector floor
-/// to keep bus-powered USB drives alive. Note: recovers MARGINAL sectors only —
-/// it cannot recover physically destroyed data.
+/// **Overnight**: gentle, patient full pass for difficult discs / brownout-prone
+/// drives. Intended to run unattended for many hours. A leading Triage pass
+/// block-reads any never-attempted (Unknown) sectors — so it finishes a recovery
+/// that was interrupted partway — then Reverse + ThermalPause cool-downs + SlowRead
+/// grind the marginal holes. Everything is paced by a 2 s inter-read floor to keep
+/// a bus-powered USB drive alive. The engine loops the plan until convergence or
+/// [`OVERNIGHT_MAX_CYCLES`] is hit. Cannot recover physically destroyed data.
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
 #[serde(rename_all = "lowercase")]
 pub enum RecoveryMode {
     /// Fast "get the easy data" pass. Completes quickly; use first.
     #[default]
     Quick,
-    /// Patient retry phase for remaining holes. Engine loops this plan until
-    /// convergence or [`OVERNIGHT_MAX_CYCLES`] is reached.
+    /// Gentle full pass: paced Triage sweep of never-read sectors + retry of
+    /// marginal holes. Engine loops this plan until convergence or
+    /// [`OVERNIGHT_MAX_CYCLES`] is reached. Best for brownout-prone drives and
+    /// for finishing an interrupted recovery.
     Overnight,
 }
 
@@ -138,10 +144,19 @@ pub fn pass_plan(mode: RecoveryMode) -> Vec<PassStrategy> {
         // Quick: block triage sweeps healthy media fast, then one SlowRead
         // pass catches marginal sectors. Stop there — no thermal grinding.
         RecoveryMode::Quick => vec![PassStrategy::Triage, PassStrategy::SlowRead],
-        // Overnight one cycle: reverse approach (some drives handle this
-        // better), thermal cool-down, slow retry, another cool-down before
-        // the engine decides whether to loop again.
+        // Overnight one cycle. Starts with a GENTLE full sweep: Triage block-reads
+        // the never-attempted (Unknown) sectors in fast 64-sector blocks, but
+        // Overnight's `delay_floor_ms` (2s) spaces the reads out so a brownout-prone
+        // bus-powered drive isn't hammered into a power-cycle — and the device-gone
+        // leap (Triage-only) jumps past dead/unpowered zones instead of stranding the
+        // rest of the disc. THIS is what makes Overnight finish an interrupted
+        // recovery: without the Triage pass, Overnight only retried Failed sectors and
+        // never swept a never-read tail (e.g. a run that dropped at 30%), so the
+        // remaining disc was silently skipped. After the sweep: reverse approach +
+        // thermal cool-downs + slow retry for the marginal holes, then the engine
+        // decides whether to loop again.
         RecoveryMode::Overnight => vec![
+            PassStrategy::Triage,
             PassStrategy::Reverse,
             PassStrategy::ThermalPause,
             PassStrategy::SlowRead,

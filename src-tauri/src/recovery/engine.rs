@@ -551,8 +551,18 @@ impl RecoveryEngine {
         const SLOW_FAIL_THRESHOLD: Duration = Duration::from_secs(4);
         const SLOW_FAILS_TO_ESCAPE: u32 = 2;
         const ESCAPE_BASE_BLOCKS: usize = 64; // ~4 MB first jump, doubling thereafter
+        // After this many bridge-drops (DeviceGone) on the SAME block, Triage stops
+        // re-reading it and leaps past the region. Otherwise a flaky USB-SATA bridge
+        // that keeps power-cycling at one hard spot re-reads the same block forever
+        // and strands the rest of the disc. The skipped band stays Unknown (a
+        // retryable hole), never Failed — so it's honest and recoverable later.
+        const DEVICE_GONE_DROPS_TO_LEAP: u32 = 3;
         let mut consec_fail_blocks: u32 = 0;
         let mut consec_slow_fails: u32 = 0;
+        // Bridge-drop escape tracking (see DEVICE_GONE_DROPS_TO_LEAP).
+        let mut device_gone_streak: u32 = 0;       // drops on the current block
+        let mut device_gone_block: usize = usize::MAX;
+        let mut device_leap_run: u32 = 0;          // consecutive escape-leaps w/o a good read
 
         // Scoped heartbeat: emits progress every 2 seconds from a parallel
         // thread, INDEPENDENT of the block-read loop. This is what fixes the
@@ -627,6 +637,43 @@ impl RecoveryEngine {
                     .any(|r| matches!(r.error, Some(crate::disc::sector::SectorError::DeviceGone)))
                 {
                     if self.wait_for_device() {
+                        // Track repeated drops on the SAME block. A flaky bridge that
+                        // keeps power-cycling at one hard region would otherwise
+                        // re-read this block forever and never advance, stranding the
+                        // rest of the disc. After a few drops at the same spot, leap
+                        // past it (Triage only) so the readable remainder is recovered
+                        // now; the skipped band stays Unknown for a retry pass / better
+                        // hardware. A block the bridge can actually read recovers before
+                        // the streak builds (the success path below resets it).
+                        if i == device_gone_block {
+                            device_gone_streak = device_gone_streak.saturating_add(1);
+                        } else {
+                            device_gone_block = i;
+                            device_gone_streak = 1;
+                        }
+                        if matches!(strategy, PassStrategy::Triage)
+                            && device_gone_streak >= DEVICE_GONE_DROPS_TO_LEAP
+                        {
+                            let remaining = blocks.len().saturating_sub(i + 1);
+                            let safe_max = (remaining / 4).max(1);
+                            // Grow the jump across back-to-back leaps (no good read
+                            // between) so a large dead/unpowered region clears in a few
+                            // probes, then reset once we read clean again.
+                            let pow = device_leap_run.min(20);
+                            let escape = ESCAPE_BASE_BLOCKS
+                                .checked_shl(pow)
+                                .unwrap_or(MAX_SKIP_BLOCKS)
+                                .min(MAX_SKIP_BLOCKS);
+                            let extra = escape.min(safe_max);
+                            tracing::warn!(
+                                "Triage: bridge dropped {device_gone_streak}× at LBA {start} — leaping {extra} blocks past it to keep recovering the rest (region deferred, left Unknown for retry)"
+                            );
+                            i += extra + 1;
+                            device_gone_streak = 0;
+                            device_gone_block = usize::MAX;
+                            device_leap_run = device_leap_run.saturating_add(1);
+                            continue;
+                        }
                         continue; // drive back → re-read same block (i not advanced)
                     }
                     // Cancelled while waiting → stop the pass cleanly.
@@ -734,6 +781,10 @@ impl RecoveryEngine {
                 } else {
                     consec_fail_blocks = 0;
                     consec_slow_fails = 0;
+                    // Read clean again → we've escaped any stuck/unpowered region.
+                    device_gone_streak = 0;
+                    device_gone_block = usize::MAX;
+                    device_leap_run = 0;
                 }
             }
 
