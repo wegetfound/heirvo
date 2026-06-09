@@ -72,7 +72,7 @@ export default function AlbumDetail() {
       <div className="lib-root">
         <div className="lib-container" style={{ padding: "64px 32px" }}>
           <p style={{ color: "var(--lib-muted)" }}>Couldn't load album: {loadErr}</p>
-          <Link to="/library" style={{ color: "var(--lib-amber)" }}>← Back to library</Link>
+          <Link to="/library/browse" style={{ color: "var(--lib-amber)" }}>← Back to library</Link>
         </div>
       </div>
     );

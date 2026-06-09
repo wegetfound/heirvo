@@ -41,7 +41,7 @@ import {
  *   - Quality collapses from 4 CRF tiers to 3 plain-English presets
  *   - Progress shows "about X minutes left" — never frame counts or fps
  */
-export function TranscodePanel() {
+export function TranscodePanel({ initialInput }: { initialInput?: string } = {}) {
   const [status, setStatus] = useState<FfmpegStatus | null>(null);
   const [input, setInput] = useState<string>("");
   const [output, setOutput] = useState<string>("");
@@ -119,19 +119,9 @@ export function TranscodePanel() {
     };
   }, [jobId]);
 
-  // Pick a source file with the native Open dialog, then auto-probe it.
-  const pickInputFile = async () => {
-    const picked = await openDialog({
-      multiple: false,
-      filters: [
-        {
-          name: "Rescued video",
-          extensions: ["vob", "iso", "mp4", "mkv", "avi", "mov", "m2ts", "ts"],
-        },
-        { name: "All files", extensions: ["*"] },
-      ],
-    });
-    if (!picked || Array.isArray(picked)) return;
+  // Load a source path and auto-probe it (shared by the file picker and the
+  // per-disc "Save as MP4" entry that arrives with the disc's path pre-filled).
+  const loadInput = async (picked: string) => {
     setInput(picked);
     setProbe(null);
     setProbing(true);
@@ -149,6 +139,29 @@ export function TranscodePanel() {
       setProbing(false);
     }
   };
+
+  // Pick a source file with the native Open dialog, then auto-probe it.
+  const pickInputFile = async () => {
+    const picked = await openDialog({
+      multiple: false,
+      filters: [
+        {
+          name: "Rescued video",
+          extensions: ["vob", "iso", "mp4", "mkv", "avi", "mov", "m2ts", "ts"],
+        },
+        { name: "All files", extensions: ["*"] },
+      ],
+    });
+    if (!picked || Array.isArray(picked)) return;
+    await loadInput(picked);
+  };
+
+  // When opened from a specific disc ("Save as MP4"), pre-load that file.
+  useEffect(() => {
+    if (initialInput) void loadInput(initialInput);
+    // Only on mount / when the incoming path changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialInput]);
 
   // Save dialog — pick where the MP4 goes.
   const chooseOutput = async (): Promise<string | null> => {

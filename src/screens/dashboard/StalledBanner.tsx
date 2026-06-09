@@ -1,62 +1,41 @@
 import React from "react";
-import { AlertTriangle, RefreshCw, Moon, HardDrive, Pause } from "lucide-react";
+import { Loader2, Moon, HardDrive, Pause } from "lucide-react";
 import type { RecoveryMode } from "@/lib/types";
 
 // Inline styles avoid unused variable warnings. All colors/fonts are set inline.
+//
+// Calm hold, not an alarm. The recovery engine holds its position on a dropped
+// drive and auto-resumes the instant the drive responds (see wait_for_device in
+// the Rust engine), so this banner reassures + offers the GENUINE options —
+// it never runs the old cancel/restart "reconnect" loop.
 
 interface StalledBannerProps {
   stalledElapsedSecs: number | null;
   resumeMode: RecoveryMode;
-  onReconnect: () => Promise<void>;
   onPatientMode: () => Promise<void>;
   onChangeDrive: () => void;
   onPause: () => void;
-  reconnecting: boolean;
   resuming: boolean;
 }
 
 export function StalledBanner({
   stalledElapsedSecs,
   resumeMode,
-  onReconnect,
   onPatientMode,
   onChangeDrive,
   onPause,
-  reconnecting,
   resuming,
 }: StalledBannerProps) {
   const elapsedSecs = stalledElapsedSecs ?? 0;
   const elapsedMin = Math.floor(elapsedSecs / 60);
 
-  // Severity escalation
-  const severity = elapsedSecs < 120 ? "warning" : elapsedSecs < 180 ? "alert" : "critical";
-  const bgColor = severity === "critical"
-    ? "rgba(197, 48, 48, 0.12)"
-    : severity === "alert"
-    ? "rgba(197, 48, 48, 0.08)"
-    : "rgba(180, 136, 26, 0.08)";
-  const borderColor = severity === "critical"
-    ? "rgba(197, 48, 48, 0.35)"
-    : severity === "alert"
-    ? "rgba(197, 48, 48, 0.22)"
-    : "rgba(180, 136, 26, 0.22)";
-  const textColor = severity === "critical"
-    ? "var(--db-red)"
-    : severity === "alert"
-    ? "var(--db-red)"
-    : "var(--db-amber)";
-
-  const headline = severity === "critical"
-    ? "Drive not responding — try a different drive"
-    : severity === "alert"
-    ? "Drive may have stopped responding"
-    : "Drive has gone silent";
-
-  const subline = elapsedMin < 1
-    ? "No successful reads in the last 60 seconds. Check the cable and power."
-    : elapsedMin < 2
-    ? `No successful reads for ${elapsedMin} minute. The drive may have powered down.`
-    : `No successful reads for ${elapsedMin} minutes. The drive has likely stopped.`;
+  // Honest, calm copy that escalates gently in WORDING only (never red alarms).
+  const subline =
+    elapsedMin < 1
+      ? "No reads in the last minute. Cheap USB bridges drop out now and then — we're holding your place and will continue the instant the drive responds."
+      : elapsedMin < 3
+      ? `Still waiting (${elapsedMin} min). Your progress is safe. If the drive doesn't wake up, a different one often gets reading again.`
+      : `Still waiting (${elapsedMin} min). The drive may have powered down — your progress is safe. A different drive usually helps here.`;
 
   const buttonStyle = (disabled = false): React.CSSProperties => ({
     display: "inline-flex",
@@ -71,38 +50,30 @@ export function StalledBanner({
     fontWeight: 600,
     cursor: disabled ? "default" : "pointer",
     opacity: disabled ? 0.5 : 1,
-    border: "1.5px solid transparent",
+    border: "1.5px solid var(--db-border)",
     transition: "transform 120ms ease, background 150ms ease",
     background: "var(--db-surface-2)",
     color: "var(--db-text)",
-    borderColor: "var(--db-border)",
-  });
-
-  const primaryButtonStyle = (disabled = false): React.CSSProperties => ({
-    ...buttonStyle(disabled),
-    background: "var(--db-amber)",
-    color: "#FFF",
-    boxShadow: "0 3px 12px var(--db-amber-glow)",
-    borderColor: "transparent",
   });
 
   return (
     <div
-      role="alert"
+      role="status"
+      aria-live="polite"
       style={{
         borderRadius: 12,
         padding: "16px 18px",
-        background: bgColor,
-        border: `1px solid ${borderColor}`,
+        background: "var(--db-amber-light)",
+        border: "1px solid var(--db-amber-glow)",
         width: "100%",
       }}
     >
-      {/* Header */}
+      {/* Header — calm waiting indicator, not an alert triangle */}
       <div style={{ display: "flex", gap: 10, alignItems: "flex-start", marginBottom: 12 }}>
-        <AlertTriangle size={18} style={{ flexShrink: 0, marginTop: 2, color: textColor }} />
+        <Loader2 size={18} className="animate-spin" style={{ flexShrink: 0, marginTop: 2, color: "var(--db-amber)" }} />
         <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: textColor, marginBottom: 4 }}>
-            {headline}
+          <div style={{ fontSize: 13, fontWeight: 700, color: "var(--db-amber)", marginBottom: 4 }}>
+            Waiting for the drive
           </div>
           <div style={{ fontSize: 12, color: "var(--db-text-muted)", lineHeight: 1.5 }}>
             {subline}
@@ -110,39 +81,21 @@ export function StalledBanner({
         </div>
       </div>
 
-      {/* Action buttons */}
+      {/* Genuine options only — no no-op "reconnect" button. */}
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        {/* Reconnect: primary until 2+ minutes */}
-        {elapsedSecs < 120 && (
-          <button
-            style={primaryButtonStyle(reconnecting || resuming)}
-            onClick={onReconnect}
-            disabled={reconnecting || resuming}
-          >
-            <RefreshCw size={13} />
-            {reconnecting ? "Reconnecting…" : "Reconnect & resume"}
-          </button>
-        )}
-
-        {/* Patient mode: switch to overnight if quick didn't work */}
+        {/* Overnight: offer once a quick pass has waited a bit */}
         {resumeMode === "quick" && elapsedSecs >= 60 && (
-          <button
-            style={buttonStyle(resuming)}
-            onClick={onPatientMode}
-            disabled={resuming}
-          >
+          <button style={buttonStyle(resuming)} onClick={onPatientMode} disabled={resuming}>
             <Moon size={13} />
             Try overnight mode (slower, deeper scan)
           </button>
         )}
 
-        {/* Change drive: prominent when critical */}
-        {severity === "critical" && (
-          <button style={buttonStyle()} onClick={onChangeDrive}>
-            <HardDrive size={13} />
-            Try a different drive
-          </button>
-        )}
+        {/* Try a different drive — always genuinely useful on a flaky bridge */}
+        <button style={buttonStyle()} onClick={onChangeDrive}>
+          <HardDrive size={13} />
+          Try a different drive
+        </button>
 
         {/* Pause: always available */}
         <button style={buttonStyle()} onClick={onPause}>
@@ -150,24 +103,6 @@ export function StalledBanner({
           Pause recovery
         </button>
       </div>
-
-      {/* Info footer */}
-      {severity !== "warning" && (
-        <div
-          style={{
-            fontSize: 11,
-            color: "var(--db-text-faint)",
-            marginTop: 12,
-            paddingTop: 12,
-            borderTop: `1px solid ${borderColor}`,
-            lineHeight: 1.5,
-          }}
-        >
-          {severity === "critical"
-            ? "This drive isn't responding at all. Using a different drive often rescues discs the first drive can't read."
-            : "Different drives have different read tolerances. Switching to a second drive often retrieves data the first drive can't access."}
-        </div>
-      )}
     </div>
   );
 }

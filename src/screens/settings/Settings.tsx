@@ -1,4 +1,5 @@
 ﻿import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { useLicense } from "@/lib/useLicense";
 import { useTheme } from "@/lib/theme";
@@ -170,6 +171,9 @@ export function Settings() {
 
       {/* Vault storage — imported media disk usage */}
       <VaultStoragePanel />
+
+      {/* Storage hygiene — auto-tidy working files */}
+      <AutoTidyPanel />
 
       {/* Transcription model */}
       <TranscriptionModelPanel />
@@ -616,6 +620,79 @@ function AutoPlayPanel() {
   );
 }
 
+// ─── Auto-tidy (storage hygiene) panel ────────────────────────────────────────
+
+function AutoTidyPanel() {
+  const [enabled, setEnabled] = useState<boolean | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+
+  useEffect(() => {
+    ipc.getAutoTidy()
+      .then(setEnabled)
+      .catch(() => { /* non-fatal */ });
+  }, []);
+
+  const toggle = async () => {
+    if (enabled === null) return;
+    const next = !enabled;
+    setEnabled(next); // optimistic
+    setErr(null);
+    try {
+      await ipc.setAutoTidy(next);
+    } catch (e) {
+      setEnabled(!next); // revert
+      setErr(String(e));
+    }
+  };
+
+  if (enabled === null) return null;
+
+  return (
+    <div className="mt-4 rounded-2xl border border-ink-200/70 bg-white/60 p-5">
+      <div className="flex items-start gap-3">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-ink-100">
+          {/* Broom / sweep icon */}
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className="text-ink-600">
+            <path d="M19.4 14.5 12 22l-7.4-7.5" />
+            <path d="M12 22V12" />
+            <path d="m15.5 8.5 3-3a2.1 2.1 0 0 0-3-3l-3 3" />
+            <path d="m9 12 6-6" />
+          </svg>
+        </div>
+        <div className="flex-1 min-w-0">
+          <span className="micro-label">Storage</span>
+          <div className="mt-3 flex items-center justify-between">
+            <div>
+              <p className="text-[13px] font-medium text-ink-800">
+                Tidy up working files automatically
+              </p>
+              <p className="mt-0.5 text-[12px] text-ink-500">
+                After a video is saved, Heirvo removes the leftover VOB working-files it created along the way. Your MP4, the exact-copy .ISO, and any “Original files” you save are always kept.
+              </p>
+              {err && (
+                <p className="mt-1 text-[11px] text-ios-red">{err}</p>
+              )}
+            </div>
+            <button
+              onClick={() => void toggle()}
+              aria-label={enabled ? "Disable auto-tidy" : "Enable auto-tidy"}
+              className="relative ml-4 h-7 w-12 shrink-0 rounded-full transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400"
+              style={{
+                background: enabled ? "#0A84FF" : "#E2DDD6",
+              }}
+            >
+              <span
+                className="absolute top-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-white shadow-sm transition-transform duration-200"
+                style={{ transform: enabled ? "translateX(20px)" : "translateX(2px)" }}
+              />
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Appearance panel ─────────────────────────────────────────────────────────
 
 function AppearancePanel() {
@@ -768,6 +845,7 @@ function SoundPanel() {
 // ─── Diagnostic logs — collapsed under Advanced ───────────────────────────────
 
 function DiagnosticLogsPanel() {
+  const nav = useNavigate();
   const [expanded, setExpanded] = useState(false);
   const [path, setPath] = useState<string | null>(null);
   const [showPath, setShowPath] = useState(false);
@@ -848,6 +926,29 @@ function DiagnosticLogsPanel() {
                 </p>
               )}
               {err && <p className="mt-2 text-[11px] text-ios-red">{err}</p>}
+            </div>
+          </div>
+
+          {/* Browse ISO — moved here from the sidebar; it's a standalone disc
+              utility, not a primary destination. */}
+          <div className="mt-4 flex items-start gap-3 border-t border-ink-200/70 pt-4">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-ink-100">
+              <FileText className="h-4 w-4 text-ink-600" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <span className="micro-label">Browse a disc image</span>
+              <p className="mt-1 text-[13px] leading-relaxed text-ink-700">
+                Open an .ISO or .IMG file to see what&rsquo;s inside, or scan its
+                raw data for recoverable photos and videos when the file list is
+                damaged.
+              </p>
+              <button
+                onClick={() => nav("/iso")}
+                className="mt-3 inline-flex items-center gap-2 rounded-full border border-ink-200 bg-white/80 px-3 py-1.5 text-[12px] font-medium text-ink-700 hover:border-brand-300 hover:text-brand-600 transition-colors"
+              >
+                <FolderOpen className="h-3 w-3" />
+                Browse an ISO file…
+              </button>
             </div>
           </div>
         </div>

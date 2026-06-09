@@ -287,6 +287,69 @@ pub async fn get_sector_map(
     Ok(map.downsample(buckets))
 }
 
+/// Live recovery status the UI can RE-SYNC from, independent of the progress
+/// event stream.
+///
+/// The engine persists its sector map continuously and keeps running even when
+/// the webview remounts or a `recovery:progress` event is missed — the "phantom
+/// mode" where the engine is really at 80% but the UI, which only listened to
+/// events, shows 0%. This command lets the UI read the truth on demand:
+///   1. If the engine is live, return its current stats snapshot (includes the
+///      runtime fields: speed, ETA, stall, drive health).
+///   2. Otherwise reconstruct progress from the persisted sector map, so a
+///      reopened or resumed session shows real coverage immediately. The runtime
+///      fields aren't meaningful without an active read, so they're zero/None;
+///      `good`/`total` drive the percentage the UI needs.
+///
+/// Returns `None` only when neither a live engine nor a persisted map exists
+/// (a brand-new session that has never read a sector).
+#[tauri::command]
+pub async fn get_recovery_status(
+    state: State<'_, AppState>,
+    session_id: String,
+) -> AppResult<Option<crate::recovery::engine::RecoveryStats>> {
+    let id = Uuid::parse_str(&session_id)
+        .map_err(|_| AppError::SessionNotFound(session_id.clone()))?;
+
+    // 1. Live engine — authoritative, with full runtime stats.
+    if let Some(engine) = state.engines.read().get(&id).cloned() {
+        return Ok(Some(engine.current_stats()));
+    }
+
+    // 2. No live engine — reconstruct counts from the persisted sector map.
+    use crate::recovery::engine::{DriveHealthHint, RecoveryStats};
+    use crate::recovery::map::SectorState;
+    let map = match manager::load_sector_map(&state.db, id).await? {
+        Some(m) => m,
+        None => return Ok(None),
+    };
+    let total = map.total();
+    let good = map.count(SectorState::Good);
+    let failed = map.count(SectorState::Failed);
+    let skipped = map.count(SectorState::Skipped);
+    let unknown = total.saturating_sub(good + failed + skipped);
+    Ok(Some(RecoveryStats {
+        good,
+        failed,
+        skipped,
+        unknown,
+        holes_remaining: failed + unknown,
+        total,
+        current_lba: 0,
+        current_pass: 0,
+        pass_strategy: String::new(),
+        speed_sps: 0.0,
+        elapsed_secs: 0,
+        eta_secs: None,
+        drive_health: DriveHealthHint::Unknown,
+        reads_ok: 0,
+        reads_err: 0,
+        idle_secs: None,
+        stalled: false,
+        stall_count: 0,
+    }))
+}
+
 #[derive(Debug, serde::Serialize)]
 pub struct RmapExport {
     pub path: String,

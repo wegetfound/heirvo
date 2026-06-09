@@ -17,6 +17,13 @@ pub enum SectorError {
     Timeout,
     /// Drive reports uncorrectable ECC error.
     Uncorrectable,
+    /// The drive/device itself vanished mid-read — e.g. a USB-SATA bridge
+    /// dropping off the bus, an enclosure power-cycling, or the media being
+    /// ejected. This is NOT a disc defect: the sector was never tested. The
+    /// recovery engine must WAIT for the device to return and re-read, never
+    /// mark these sectors failed or skip past them (doing so corrupts the map
+    /// with damage that doesn't exist).
+    DeviceGone,
     /// Generic / unknown error from underlying I/O.
     Other,
 }

@@ -229,7 +229,28 @@ pub async fn materialize_deliverable(
         return Ok(());
     }
 
-    if let Err(e) = tokio::fs::copy(&source_path, &target_path).await {
+    // Guard: if the source already lives at the target location, there is
+    // nothing to copy. Copying a file onto itself fails with a sharing
+    // violation (os error 32) AND leaves the file locked — which previously
+    // broke playback of recovered ISOs that were saved straight into
+    // Documents\Heirvo. Detect it (canonical paths, falling back to a direct
+    // compare when the target doesn't exist yet) and just record the path.
+    let src_pb = std::path::Path::new(&source_path);
+    let same_file = match (
+        tokio::fs::canonicalize(src_pb).await,
+        tokio::fs::canonicalize(&target_path).await,
+    ) {
+        (Ok(a), Ok(b)) => a == b,
+        _ => src_pb == target_path,
+    };
+
+    if same_file {
+        tracing::info!(
+            "deliverable: disc {} source is already at the deliverable location ({}) — recording without copy",
+            disc_id,
+            target_path.display()
+        );
+    } else if let Err(e) = tokio::fs::copy(&source_path, &target_path).await {
         tracing::warn!(
             "deliverable: copy failed ({} → {}): {}",
             source_path,

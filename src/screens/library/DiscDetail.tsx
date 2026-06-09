@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
-import { ChevronLeft, Play, Download, Share2, Trash2, Images, Music, FileText } from "lucide-react";
+import { ChevronLeft, Play, Download, Share2, Trash2, Images, Music, FileText, Film } from "lucide-react";
 // getDiscById from mockDiscs intentionally NOT imported — DiscDetail only shows real discs.
 import type { Disc } from "./data/types";
 import { GradientArt, gradientCss } from "./components/GradientArt";
@@ -215,7 +215,7 @@ export default function DiscDetail() {
       <div className="lib-root">
         <div className="lib-container" style={{ padding: "64px 32px" }}>
           <p style={{ color: "var(--lib-muted)" }}>Disc not found.</p>
-          <Link to="/library" style={{ color: "var(--lib-amber)" }}>
+          <Link to="/library/browse" style={{ color: "var(--lib-amber)" }}>
             Back to library
           </Link>
         </div>
@@ -458,6 +458,17 @@ export default function DiscDetail() {
                     </>
                   )}
                 </Link>
+                )}
+                {disc.videoPath && disc.mediaType === "video" && (
+                  <button
+                    type="button"
+                    className="lib-btn lib-btn-ghost"
+                    onClick={() => nav("/transcode", { state: { inputPath: disc.videoPath } })}
+                    title="Convert this disc to a standard MP4 you can play on any phone, TV, or computer."
+                  >
+                    <Film size={14} />
+                    Save as MP4
+                  </button>
                 )}
                 <button
                   type="button"

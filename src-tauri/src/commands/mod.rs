@@ -14,5 +14,6 @@ pub mod media;
 pub mod preflight;
 pub mod recovery;
 pub mod session;
+pub mod settings;
 pub mod storage;
 pub mod transcription;

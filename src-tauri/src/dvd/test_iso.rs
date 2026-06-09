@@ -289,6 +289,7 @@ mod tests {
             Some(&map),
             &entries,
             &extract_dir,
+            false,
         )
         .expect("extract");
         assert_eq!(extracted.len(), 3);
@@ -599,6 +600,7 @@ mod tests {
             Some(&map),
             &entries,
             &extract_dir,
+            false,
         )
         .unwrap();
         assert_eq!(extracted.len(), 3);

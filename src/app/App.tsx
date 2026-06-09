@@ -3,16 +3,14 @@ import { TitleBar } from "./TitleBar";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { gsap } from "gsap";
 import {
-  Disc3,
+  Home,
   Clapperboard,
-  History,
-  Download,
-  FileSearch,
+  Send,
   Settings as SettingsIcon,
   ChevronLeft,
   ChevronRight as ChevronRightIcon,
 } from "lucide-react";
-import Home from "@/screens/Home";
+import { openUrl } from "@tauri-apps/plugin-opener";
 import { Dashboard } from "@/screens/dashboard/Dashboard";
 import { SessionHistory } from "@/screens/history/SessionHistory";
 import { Transcode } from "@/screens/transcode/Transcode";
@@ -42,14 +40,47 @@ const DUR = 0.42;
 const W_FULL = 160;   // light persistent / dark revealed
 const W_SLIVER = 44;  // dark receded
 
-const NAV_ITEMS = [
-  { to: "/",          label: "Home",       Icon: Disc3        },
-  { to: "/library",   label: "Memories",   Icon: Clapperboard },
-  { to: "/history",   label: "My Discs",   Icon: History      },
-  { to: "/transcode", label: "Export",     Icon: Download     },
-  { to: "/iso",       label: "Browse ISO", Icon: FileSearch   },
-  { to: "/settings",  label: "Settings",   Icon: SettingsIcon },
-] as const;
+/** Mail-in lab service landing page (same URL used by Settings' mail-in panels). */
+const MAILIN_URL = "https://heirvo.com/recover";
+
+interface NavItemDef {
+  label: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  Icon: React.ComponentType<any>;
+  /** Internal route (rendered as a Link). */
+  to?: string;
+  /** External URL (rendered as a button that opens the browser). */
+  href?: string;
+  /** Active-state predicate for internal items (covers child routes). */
+  match?: (path: string) => boolean;
+}
+
+// Four honest destinations: the recovery front door, everything you've saved,
+// the mail-in lab service, and settings. "Export" and "Browse ISO" moved into
+// context (per-disc action + Settings → Advanced); the cinematic "Memories"
+// room folds into "My Discs". Their routes still exist for deep links.
+const NAV_ITEMS: NavItemDef[] = [
+  {
+    to: "/",
+    label: "Home",
+    Icon: Home,
+    match: (p) => p === "/" || p.startsWith("/recover") || p.startsWith("/session"),
+  },
+  {
+    to: "/library/browse",
+    label: "My Discs",
+    Icon: Clapperboard,
+    match: (p) =>
+      p.startsWith("/library") ||
+      p.startsWith("/disc") ||
+      p.startsWith("/watch") ||
+      p.startsWith("/album") ||
+      p.startsWith("/search") ||
+      p.startsWith("/history"),
+  },
+  { href: MAILIN_URL, label: "Send us", Icon: Send },
+  { to: "/settings", label: "Settings", Icon: SettingsIcon, match: (p) => p.startsWith("/settings") },
+];
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
@@ -303,13 +334,13 @@ export default function App() {
         <Sidebar />
         <main className="flex-1 flex flex-col overflow-hidden">
           <Routes>
-          {/* Recovery screen — optional :id param; owns its full height. */}
+          {/* Recovery screen — default route + optional :id param; owns its full height. */}
+          <Route path="/" element={<Dashboard />} />
           <Route path="/recover/:id?" element={<Dashboard />} />
           {/* Legacy session/:id redirect */}
           <Route path="/session/:id" element={<Dashboard />} />
           {/* All other screens are wrapped in a scrollable container. */}
           <Route element={<ScrollLayout />}>
-            <Route path="/" element={<Home />} />
             <Route path="/preflight" element={<Preflight />} />
             {/* /wizard redirects to /recover for old links / bookmarks */}
             <Route path="/wizard" element={<Navigate to="/recover" replace />} />
@@ -324,7 +355,7 @@ export default function App() {
             <Route path="/disc/:discId" element={<LibraryDiscDetail />} />
             <Route path="/album/:albumId" element={<LibraryAlbumDetail />} />
             <Route path="/iso" element={<IsoBrowser />} />
-            <Route path="*" element={<Home />} />
+            <Route path="*" element={<Navigate to="/recover" replace />} />
           </Route>
         </Routes>
         </main>
@@ -394,7 +425,8 @@ function BrandMark({ size = 26, dark = false }: { size?: number; dark?: boolean 
 // ─── NavItem ──────────────────────────────────────────────────────────────────
 
 interface NavItemProps {
-  to: string;
+  to?: string;
+  href?: string;
   label: string;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   Icon: React.ComponentType<any>;
@@ -403,7 +435,7 @@ interface NavItemProps {
   isSliver: boolean;
 }
 
-function NavItem({ to, label, Icon, active, isDark, isSliver }: NavItemProps) {
+function NavItem({ to, href, label, Icon, active, isDark, isSliver }: NavItemProps) {
   const [hovered, setHovered] = useState(false);
 
   const iconColor = isDark
@@ -450,32 +482,27 @@ function NavItem({ to, label, Icon, active, isDark, isSliver }: NavItemProps) {
     ? "#0A1729"
     : "#5C6B82";
 
-  return (
-    <Link
-      to={to}
-      title={isSliver ? label : undefined}
-      aria-label={label}
-      aria-current={active ? "page" : undefined}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: isSliver ? "center" : "flex-start",
-        gap: 9,
-        width: "100%",
-        padding: isSliver ? "9px 0" : "8px 10px",
-        borderRadius: 10,
-        background: itemBg,
-        border: itemBorder,
-        position: "relative",
-        overflow: "hidden",
-        textDecoration: "none",
-        transition: prefersReducedMotion()
-          ? "none"
-          : `background 0.15s ease, border-color 0.15s ease, padding ${DUR}s ${EASE}`,
-      }}
-    >
+  const sharedStyle: React.CSSProperties = {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: isSliver ? "center" : "flex-start",
+    gap: 9,
+    width: "100%",
+    padding: isSliver ? "9px 0" : "8px 10px",
+    borderRadius: 10,
+    background: itemBg,
+    border: itemBorder,
+    position: "relative",
+    overflow: "hidden",
+    textDecoration: "none",
+    cursor: "pointer",
+    transition: prefersReducedMotion()
+      ? "none"
+      : `background 0.15s ease, border-color 0.15s ease, padding ${DUR}s ${EASE}`,
+  };
+
+  const inner = (
+    <>
       {/* Active indicator bar on left */}
       {active && (
         <span
@@ -525,6 +552,38 @@ function NavItem({ to, label, Icon, active, isDark, isSliver }: NavItemProps) {
       >
         {label}
       </span>
+    </>
+  );
+
+  // External items (e.g. "Send us your disc") open the browser; internal items
+  // are router Links.
+  if (href) {
+    return (
+      <button
+        type="button"
+        title={isSliver ? label : undefined}
+        aria-label={label}
+        onClick={() => { void openUrl(href); }}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        style={{ ...sharedStyle, textAlign: "left", font: "inherit" }}
+      >
+        {inner}
+      </button>
+    );
+  }
+
+  return (
+    <Link
+      to={to ?? "/"}
+      title={isSliver ? label : undefined}
+      aria-label={label}
+      aria-current={active ? "page" : undefined}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={sharedStyle}
+    >
+      {inner}
     </Link>
   );
 }
@@ -536,8 +595,12 @@ function Sidebar() {
   const { status: license } = useLicense();
   const { isDark: themeDark } = useTheme();
 
-  // DARK IMMERSIVE: only the exact /library path (the Memories cinematic room)
-  const isDark = loc.pathname === "/library";
+  // Slim pull-out rail (hover-to-reveal, no manual toggle) — gives the disc-
+  // browsing screens MAXIMUM content space. Applies to My Discs (/library/browse)
+  // and the Memories cinematic room (/library). Every OTHER screen (Home, Send
+  // us, Settings) keeps the regular static sidebar.
+  const isDark =
+    loc.pathname === "/library" || loc.pathname === "/library/browse";
 
   // ── Collapse toggle (light world only) ────────────────────────────────────
   const [collapsed, setCollapsed] = useState(
@@ -833,14 +896,15 @@ function Sidebar() {
         }}
         aria-label="Main navigation"
       >
-        {NAV_ITEMS.map(({ to, label, Icon }) => {
-          const active = to === "/" ? loc.pathname === "/" : loc.pathname.startsWith(to);
+        {NAV_ITEMS.map((item) => {
+          const active = item.match ? item.match(loc.pathname) : false;
           return (
             <NavItem
-              key={to}
-              to={to}
-              label={label}
-              Icon={Icon}
+              key={item.label}
+              to={item.to}
+              href={item.href}
+              label={item.label}
+              Icon={item.Icon}
               active={active}
               isDark={chromeDark}
               isSliver={isIconOnly}

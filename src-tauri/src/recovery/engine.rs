@@ -613,6 +613,27 @@ impl RecoveryEngine {
                 } else {
                     self.reader.read_block(start, count, opts)
                 };
+
+                // Device-gone (USB-SATA bridge dropped off the bus, enclosure
+                // power-cycled, media ejected) is NOT a disc defect. Marking
+                // these sectors Failed — or letting skip-ahead leap past them —
+                // would record damage that never happened, which is exactly how
+                // a flaky bridge corrupts the map. Instead: leave them Unknown,
+                // wait (patiently, Cancel-aware) for the drive to return, then
+                // re-read this SAME block. No map write, no skip-ahead, no
+                // failure accounting.
+                if results
+                    .iter()
+                    .any(|r| matches!(r.error, Some(crate::disc::sector::SectorError::DeviceGone)))
+                {
+                    if self.wait_for_device() {
+                        continue; // drive back → re-read same block (i not advanced)
+                    }
+                    // Cancelled while waiting → stop the pass cleanly.
+                    pass_done.store(true, Ordering::Relaxed);
+                    return;
+                }
+
                 let mut all_failed = !results.is_empty();
                 let mut map = self.map.lock();
                 for r in &results {
@@ -769,7 +790,19 @@ impl RecoveryEngine {
                 map.set(lba, SectorState::Skipped);
             }
         } else {
-            let result = self.reader.read_sector(lba, opts);
+            // Re-read through device disconnects: a vanished bridge means the
+            // sector was never tested, so we wait for the drive and try the
+            // SAME sector again rather than recording a false failure.
+            let result = loop {
+                let r = self.reader.read_sector(lba, opts);
+                if matches!(r.error, Some(crate::disc::sector::SectorError::DeviceGone)) {
+                    if self.wait_for_device() {
+                        continue; // drive back → re-read this sector
+                    }
+                    return false; // cancelled while waiting
+                }
+                break r;
+            };
             let ok = result.is_ok();
             let mut map = self.map.lock();
             if ok {
@@ -798,6 +831,65 @@ impl RecoveryEngine {
     fn checkpoint(&self) {
         if let Some(tx) = &self.checkpoint_tx {
             let _ = tx.send(());
+        }
+    }
+
+    /// Hold recovery while the drive is GONE (disconnected bridge, power-cycled
+    /// enclosure, ejected media) and wait for it to come back, re-opening the
+    /// handle. Returns `true` once the drive is readable again so the caller can
+    /// re-read the same region, or `false` if recovery was Cancelled while
+    /// waiting.
+    ///
+    /// Patient by design: a cheap USB-SATA bridge that fell off the bus usually
+    /// needs the user to power-cycle the enclosure, which can take many seconds.
+    /// We never give up on our own — only Cancel ends the wait, and Pause is
+    /// honored. The map is left untouched (no false failures), and progress keeps
+    /// emitting so the UI shows the hold instead of a frozen screen. `reset()`
+    /// re-opens the handle AND re-applies the drive's recovery-mode IOCTLs, so a
+    /// successful reset is a real signal the device is back, not just present.
+    fn wait_for_device(&self) -> bool {
+        tracing::warn!(
+            "device disconnected — holding recovery and waiting for the drive to return (Cancel to stop)"
+        );
+        // Surface the hold in stats so the UI shows a reconnect affordance
+        // rather than a dead 0%/frozen screen.
+        if !self.in_stall.swap(true, Ordering::Relaxed) {
+            self.stall_episodes.fetch_add(1, Ordering::Relaxed);
+        }
+        let mut attempt: u32 = 0;
+        loop {
+            if self.cancel_flag.load(Ordering::SeqCst) {
+                tracing::info!("wait_for_device: cancelled by user");
+                return false;
+            }
+            while self.pause_flag.load(Ordering::SeqCst) {
+                std::thread::sleep(Duration::from_millis(200));
+                if self.cancel_flag.load(Ordering::SeqCst) {
+                    return false;
+                }
+            }
+            attempt += 1;
+            match self.reader.reset() {
+                Ok(()) => {
+                    // Let a just-reconnected bridge spin up / become ready before
+                    // we re-read, so we don't bounce straight back into a
+                    // NOT-READY disconnect.
+                    std::thread::sleep(Duration::from_millis(1500));
+                    tracing::info!(
+                        "wait_for_device: drive re-opened after {attempt} attempt(s) — resuming recovery"
+                    );
+                    self.in_stall.store(false, Ordering::Relaxed);
+                    return true;
+                }
+                Err(e) => {
+                    if attempt == 1 || attempt % 10 == 0 {
+                        tracing::warn!("wait_for_device: drive still gone (attempt {attempt}): {e}");
+                    }
+                }
+            }
+            // Heartbeat so the UI keeps moving while we hold.
+            self.emit_progress(self.plan.first().copied().unwrap_or(PassStrategy::Triage));
+            std::thread::sleep(Duration::from_secs(2));
         }
     }
 
@@ -938,6 +1030,23 @@ impl RecoveryEngine {
             stalled,
             stall_count,
         }
+    }
+
+    /// Read-only snapshot of the engine's current stats for an on-demand status
+    /// query — e.g. the UI re-syncing after a remount, instead of waiting for the
+    /// next `recovery:progress` event. Mirrors the `emit_progress` payload but
+    /// sends nothing. Picks the strategy for the pass currently in flight
+    /// (`current_pass` is 1-based) so `pass_strategy` matches the live stream.
+    pub fn current_stats(&self) -> RecoveryStats {
+        let pass_num = self.current_pass.load(Ordering::SeqCst);
+        let idx = pass_num.saturating_sub(1) as usize;
+        let strategy = self
+            .plan
+            .get(idx)
+            .copied()
+            .or_else(|| self.plan.first().copied())
+            .unwrap_or(PassStrategy::Triage);
+        self.compute_stats(strategy)
     }
 }
 

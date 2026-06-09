@@ -10,5 +10,6 @@ pub mod imagemagick;
 pub mod imagemagick_install;
 pub mod iso;
 pub mod stream_copy;
+pub mod stream_server;
 pub mod transcode;
 pub mod vob;

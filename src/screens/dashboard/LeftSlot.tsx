@@ -355,6 +355,8 @@ function SaveActions({
   const [storageDrives, setStorageDrives] = useState<StorageDrive[]>([]);
   const [audioToc, setAudioToc] = useState<AudioToc | null>(null);
   const [audioTracks, setAudioTracks] = useState<ExtractedAudioFile[] | null>(null);
+  // Honest "not ready yet" note (replaces greying the whole card out on load).
+  const [hint, setHint] = useState<string | null>(null);
 
   const { status: license, refresh: refreshLicense } = useLicense();
   const navigate = useNavigate();
@@ -365,6 +367,7 @@ function SaveActions({
 
   // Space check
   React.useEffect(() => {
+    if (!sessionId) return;
     let cancelled = false;
     ipc.recoverySpaceCheck(sessionId)
       .then((r) => { if (cancelled) return; setSpaceWarn(r && !r.fits ? { needed: r.needed_bytes, free: r.free_bytes } : null); })
@@ -374,6 +377,7 @@ function SaveActions({
 
   // Audio TOC probe
   React.useEffect(() => {
+    if (!sessionId) return;
     let cancelled = false;
     ipc.readAudioToc(sessionId)
       .then((toc) => { if (!cancelled && toc.tracks.length > 0) setAudioToc(toc); })
@@ -387,7 +391,17 @@ function SaveActions({
   const showVideoSaves = !isAudioCd && (isUnknownDisc || t === "DvdVideo");
   const showFileSaves = !isAudioCd && (isUnknownDisc || t === "Cd" || t === "DvdRom" || t === "DvdAudio");
 
-  const effectiveLock = busy !== null || !saveReady || lock;
+  // Full-color, never greyed-on-load. `blocked` only disables buttons while
+  // ANOTHER save is mid-flight. `ready` means a save can actually run; if it
+  // can't yet (no disc, or read not finished) the button stays clickable and
+  // explains itself via `explainNotReady` instead of being a dead grey control.
+  const hasSession = sessionId !== "";
+  const blocked = busy !== null;
+  const ready = saveReady && hasSession && !lock;
+  const explainNotReady = () =>
+    setHint(hasSession
+      ? "This unlocks the moment the read finishes — your exact copy (.ISO) is savable now."
+      : "Insert a disc and start a recovery — your save options light up the moment it's read.");
 
   const wrap = async (label: string, fn: () => Promise<void>) => {
     setBusy(label);
@@ -463,14 +477,14 @@ function SaveActions({
               </div>
             </div>
             {isAudioCd ? (
-              <button className="btn btn-primary" style={{ flexShrink: 0, whiteSpace: "nowrap" }} disabled={effectiveLock}
-                onClick={() => guardedSave("audio", async () => setAudioTracks(await ipc.extractAudioTracks(sessionId)))}>
+              <button className="btn btn-primary" style={{ flexShrink: 0, whiteSpace: "nowrap" }} disabled={blocked}
+                onClick={() => { if (!ready) { explainNotReady(); return; } guardedSave("audio", async () => setAudioTracks(await ipc.extractAudioTracks(sessionId))); }}>
                 {busy === "audio" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Music className="h-4 w-4" />}
                 Save tracks as WAV
               </button>
             ) : (
-              <button className="btn btn-primary" style={{ flexShrink: 0, whiteSpace: "nowrap" }} disabled={effectiveLock}
-                onClick={() => guardedSave("mp4", async () => { await convertAndEnroll(); })}>
+              <button className="btn btn-primary" style={{ flexShrink: 0, whiteSpace: "nowrap" }} disabled={blocked}
+                onClick={() => { if (!ready) { explainNotReady(); return; } guardedSave("mp4", async () => { await convertAndEnroll(); }); }}>
                 {busy === "mp4" && <Loader2 className="h-4 w-4 animate-spin" />}
                 <FileVideo className="h-4 w-4" />
                 Save as MP4
@@ -560,12 +574,12 @@ function SaveActions({
               <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 4, ...dbText }}>Save your files</div>
               <div style={{ fontSize: 12.5, lineHeight: 1.5, ...dbMuted }}>Your photos, documents, and other files — in a folder. No conversion.</div>
             </div>
-            <button className="btn btn-primary" style={{ flexShrink: 0, whiteSpace: "nowrap" }} disabled={effectiveLock}
-              onClick={() => guardedSave("all-files", async () => {
+            <button className="btn btn-primary" style={{ flexShrink: 0, whiteSpace: "nowrap" }} disabled={blocked}
+              onClick={() => { if (!ready) { explainNotReady(); return; } guardedSave("all-files", async () => {
                 const result = await ipc.extractAllFiles(sessionId);
                 setExtracted(result);
                 ipc.library.rescanDiscForSession(sessionId).catch(() => {});
-              })}>
+              }); }}>
               {busy === "all-files" && <Loader2 className="h-4 w-4 animate-spin" />}
               <Files className="h-4 w-4" /> Save my files
             </button>
@@ -613,16 +627,17 @@ function SaveActions({
                 Play your footage right here and search every spoken word — no purchase needed.
               </div>
             </div>
-            <button type="button" disabled={effectiveLock}
+            <button type="button" disabled={blocked}
               onClick={() => {
                 if (enrolledDiscId) { navigate(`/disc/${enrolledDiscId}`); return; }
+                if (!ready) { explainNotReady(); return; }
                 wrap("watch", async () => {
                   const discId = await ipc.library.rescanDiscForSession(sessionId);
                   if (discId) { setEnrolledDiscId(discId); navigate(`/disc/${discId}`); }
                   else { setError("Couldn't open the preview just yet — give it a moment and try again, or use a Save option."); }
                 });
               }}
-              style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "10px 18px", background: "transparent", border: "1px solid var(--db-border)", borderRadius: 9, fontSize: 13, fontWeight: 500, ...dbText, flexShrink: 0, whiteSpace: "nowrap", cursor: effectiveLock ? "default" : "pointer", opacity: effectiveLock ? 0.5 : 1 }}>
+              style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "10px 18px", background: "transparent", border: "1px solid var(--db-border)", borderRadius: 9, fontSize: 13, fontWeight: 500, ...dbText, flexShrink: 0, whiteSpace: "nowrap", cursor: blocked ? "default" : "pointer", opacity: blocked ? 0.5 : 1 }}>
               {busy === "watch"
                 ? <Loader2 size={13} style={{ animation: "spin 1s linear infinite" }} />
                 : <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3" /></svg>}
@@ -736,6 +751,7 @@ function SaveActions({
         </div>
       </details>
 
+      {hint && <p style={{ fontSize: 12.5, color: "var(--db-amber)", margin: 0, lineHeight: 1.5 }}>{hint}</p>}
       {error && <p style={{ fontSize: 13, color: "var(--db-red)", margin: 0 }}>{error}</p>}
 
       <ProPaywallModal

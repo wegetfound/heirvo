@@ -7,6 +7,7 @@ import type {
   RecoveryPlanBriefing,
   Session,
   RecoveryProgress,
+  RecoveryStats,
   StructureSummary,
   ExtractedFile,
   HealthReport,
@@ -88,6 +89,11 @@ export const ipc = {
     invoke<void>("cancel_recovery", { sessionId }),
   getSectorMap: (sessionId: string, buckets: number) =>
     invoke<number[]>("get_sector_map", { sessionId, buckets }),
+  /** Live recovery progress, re-synced from the engine's persisted truth rather
+   *  than the event stream — returns the live engine's stats if running, else
+   *  reconstructs from the sector map, or null for a never-started session. */
+  getRecoveryStatus: (sessionId: string) =>
+    invoke<RecoveryStats | null>("get_recovery_status", { sessionId }),
   exportRmap: (sessionId: string, outputPath?: string) =>
     invoke<{ path: string; bytes_written: number; run_count: number }>(
       "export_rmap",
@@ -340,11 +346,22 @@ export const ipc = {
       invoke<WhisperModelInfo>("set_whisper_model", { model }),
   },
 
+  // Streaming server
+  /** Returns the base URL of the in-process localhost streaming server,
+   *  e.g. `http://127.0.0.1:51234`. Build stream URLs as
+   *  `${base}/stream?src=${encodeURIComponent(path)}`.
+   *  Returns an empty string if the server failed to start. */
+  getStreamBase: () => invoke<string>("get_stream_base"),
+
   // AutoPlay / disc insertion
   autoplayGetEnabled: () => invoke<boolean>("autoplay_get_enabled"),
   autoplaySetEnabled: (enabled: boolean) =>
     invoke<void>("autoplay_set_enabled", { enabled }),
   getPendingDisc: () => invoke<string | null>("get_pending_disc"),
+
+  // Storage hygiene: auto-tidy the VOB working-files after a video is saved.
+  getAutoTidy: () => invoke<boolean>("get_auto_tidy"),
+  setAutoTidy: (enabled: boolean) => invoke<void>("set_auto_tidy", { enabled }),
 
   // Diagnostics
   exportDiagnosticBundle: (sessionId: string, outputPath?: string) =>

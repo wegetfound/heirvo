@@ -144,7 +144,7 @@ export default function LibraryAll() {
         {/* Breadcrumb */}
         <div style={{ paddingTop: 20, paddingBottom: 8 }}>
           <Link
-            to="/library"
+            to="/library/browse"
             style={{
               display: "inline-flex",
               alignItems: "center",
@@ -235,7 +235,7 @@ export default function LibraryAll() {
             ) : (
               <>
                 No discs yet.{" "}
-                <Link to="/library" style={{ color: "var(--lib-amber)", textDecoration: "none" }}>
+                <Link to="/library/browse" style={{ color: "var(--lib-amber)", textDecoration: "none" }}>
                   Import a video to get started.
                 </Link>
               </>
@@ -304,7 +304,7 @@ export default function LibraryAll() {
           }}
         >
           <div>Heirvo · {discs.length} disc{discs.length !== 1 ? "s" : ""} · backed up locally</div>
-          <Link to="/library" style={{ color: "var(--lib-amber)", textDecoration: "none" }}>
+          <Link to="/library/browse" style={{ color: "var(--lib-amber)", textDecoration: "none" }}>
             ← Back to Library
           </Link>
         </footer>

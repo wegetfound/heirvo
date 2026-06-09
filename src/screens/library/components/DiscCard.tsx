@@ -37,15 +37,23 @@ export function DiscCard({ disc, showStatus = true, showSource = true }: Props) 
   const isAudio = disc.mediaType === "audio";
   const hasThumb = thumbSrc !== null;
 
+  // Hover affordance — the card is a link to the disc, but without a visible
+  // lift users didn't realize it was clickable. Lift + deepen the shadow on
+  // hover (matches the app's inline-style hover pattern).
+  const [hovered, setHovered] = useState(false);
+
   return (
     <Link
       to={`/disc/${disc.id}`}
       className="lib-card"
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
       style={{
         flex: "0 0 auto",
         width: 260,
         scrollSnapAlign: "start",
         cursor: "pointer",
+        transform: hovered ? "translateY(-4px)" : "none",
         transition: "transform .25s ease",
         textDecoration: "none",
         color: "inherit",
@@ -58,7 +66,10 @@ export function DiscCard({ disc, showStatus = true, showSource = true }: Props) 
           width: "100%",
           aspectRatio: "4 / 3",
           borderRadius: 14,
-          boxShadow: "var(--lib-shadow-soft)",
+          boxShadow: hovered
+            ? "0 14px 32px rgba(40,20,10,0.22), 0 4px 10px rgba(40,20,10,0.12)"
+            : "var(--lib-shadow-soft)",
+          transition: "box-shadow .25s ease",
           position: "relative",
           overflow: "hidden",
         }}

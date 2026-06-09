@@ -2,6 +2,7 @@
 
 use crate::error::{AppError, AppResult};
 use crate::media::ffmpeg::{self, FfmpegProgress, ProbeResult};
+use crate::media::stream_server::StreamBase;
 use crate::media::transcode::TranscodeJob;
 use crate::session::manager;
 use crate::state::AppState;
@@ -13,6 +14,15 @@ use std::sync::Arc;
 use tauri::{AppHandle, Emitter, Manager, State};
 use tokio::sync::watch;
 use uuid::Uuid;
+
+/// Return the base URL of the in-process localhost streaming server.
+/// The frontend uses this to build `<base>/stream?src=<encoded-path>` URLs
+/// for in-app playback of recovered MPEG-2 discs.
+/// Returns an empty string if the server failed to start.
+#[tauri::command]
+pub fn get_stream_base(base: State<'_, StreamBase>) -> String {
+    base.0.clone()
+}
 
 #[derive(Debug, Serialize)]
 pub struct IsoResult {
@@ -425,7 +435,7 @@ pub async fn save_as_mp4(
                 let all = crate::dvd::iso9660::list_video_ts(reader.as_ref())
                     .map_err(|e| AppError::DvdStructure(format!("list_video_ts: {e}")))?
                     .ok_or_else(|| AppError::DvdStructure("no VIDEO_TS folder".into()))?;
-                crate::media::vob::extract_files(reader.as_ref(), map.as_ref(), &all, &vob_dir_clone)
+                crate::media::vob::extract_files(reader.as_ref(), map.as_ref(), &all, &vob_dir_clone, true)
                     .map_err(|e| AppError::Media(format!("extract_files: {e}")))?;
                 Ok(())
             }
@@ -478,6 +488,23 @@ pub async fn save_as_mp4(
     let output = PathBuf::from(&session.output_dir).join(format!("{stem}.mp4"));
 
     let result = crate::media::stream_copy::stream_copy_vobs(&app, &vobs, &output).await?;
+
+    // Storage hygiene: if WE extracted the VOB working-files this run (they
+    // weren't already on disk) and the MP4 was written, remove the VIDEO_TS
+    // scratch. Only touches VOB/IFO/BUP inside VIDEO_TS — the .mp4 and the
+    // recovery .iso live in the parent dir and are never touched. Off when the
+    // user has disabled auto-tidy in Settings.
+    if need_extract
+        && result.bytes_written > 0
+        && crate::commands::settings::auto_tidy_enabled(&app)
+    {
+        let reclaimed = crate::media::vob::tidy_video_ts_scratch(&vob_dir);
+        if reclaimed > 0 {
+            tracing::info!(
+                "save_as_mp4: tidied VIDEO_TS scratch — reclaimed {reclaimed} bytes"
+            );
+        }
+    }
 
     // Record output file in DB.
     let now = chrono::Utc::now().timestamp();

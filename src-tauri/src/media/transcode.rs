@@ -335,6 +335,29 @@ pub async fn normalize_for_playback(
     let ffmpeg_bin = ffmpeg::locate_ffmpeg(app)?;
     let ffprobe_bin = ffmpeg::locate_ffprobe(app)?;
 
+    // A raw `.iso` can't be fed to ffmpeg directly: recovered DVD images usually
+    // have a destroyed filesystem (the descriptor sectors were unreadable), so
+    // `-i image.iso` fails with "Invalid data found" and there's no directory to
+    // locate VIDEO_TS/*.VOB. Carve the MPEG-2 program stream out by offset and
+    // read it via the `subfile:` protocol. This is the durable fix for the discs
+    // that previously only survived as ISO because "Save as MP4" gave up here.
+    let is_iso = input
+        .extension()
+        .and_then(|e| e.to_str())
+        .map(|e| e.eq_ignore_ascii_case("iso"))
+        .unwrap_or(false);
+    if is_iso {
+        return normalize_iso(
+            &ffmpeg_bin,
+            &ffprobe_bin,
+            &input,
+            &output,
+            on_progress,
+            cancel,
+        )
+        .await;
+    }
+
     // For DVD VOBs, the real movie is the concatenation of the title VOBs — a
     // single VOB (often the audio-less VIDEO_TS.VOB menu) would re-encode to a
     // silent, partial clip. `ffmpeg_input` is what we feed ffmpeg's `-i`;
@@ -389,5 +412,82 @@ pub async fn normalize_for_playback(
     );
     let args = reencode_args(&ffmpeg_input, &output, probe.interlaced);
     ffmpeg::run_with_progress(&ffmpeg_bin, &args, on_progress, cancel).await?;
+    Ok(NormalizeMode::Reencode)
+}
+
+/// Re-encode a recovered DVD `.iso` to a webview-playable H.264/AAC MP4 by
+/// carving its MPEG-2 program stream — the path for images whose filesystem is
+/// unreadable (the common case for discs that only survived recovery as ISO).
+///
+/// Finds the first pack-start code, reads from there via the `subfile:`
+/// protocol, probes for interlacing, then runs the standard error-tolerant
+/// re-encode. Returns a clear error if no program stream is present (a truly
+/// empty/garbage image) rather than emitting a broken file.
+async fn normalize_iso(
+    ffmpeg_bin: &std::path::Path,
+    ffprobe_bin: &std::path::Path,
+    input: &std::path::Path,
+    output: &std::path::Path,
+    on_progress: Arc<dyn Fn(FfmpegProgress) + Send + Sync>,
+    cancel: Option<tokio::sync::watch::Receiver<bool>>,
+) -> AppResult<NormalizeMode> {
+    let offset = crate::media::iso::find_mpeg_ps_offset(input)
+        .map_err(|e| AppError::Media(format!("scan ISO for program stream: {e}")))?
+        .ok_or_else(|| {
+            AppError::Media(format!(
+                "no MPEG program stream found in {} — the image has no recoverable video payload",
+                input.display()
+            ))
+        })?;
+
+    // Subfile input is used ONLY for the short interlace probe below (a small
+    // read, where seeking is cheap). The full transcode reads via a pipe — see
+    // `run_with_progress_feeding` — because the MPEG-PS demuxer back-seeks
+    // pathologically on a seekable multi-GB image.
+    let probe_input = crate::media::iso::iso_program_stream_input(input, offset)
+        .map_err(|e| AppError::Media(format!("build subfile input: {e}")))?;
+
+    tracing::info!(
+        "normalize_iso: {} → program stream at byte {offset}, piping to ffmpeg",
+        input.display()
+    );
+
+    // Probe the carved stream for interlacing (DVD content is almost always
+    // interlaced NTSC/PAL and needs deinterlacing for clean playback).
+    let interlaced = match ffmpeg::probe_input(ffprobe_bin, &probe_input).await {
+        Ok(p) => {
+            tracing::info!(
+                "normalize_iso: video={} audio={} interlaced={} {}x{}",
+                p.video_codec,
+                p.audio_codec,
+                p.interlaced,
+                p.width,
+                p.height
+            );
+            p.interlaced
+        }
+        // If the probe fails we still attempt the encode — DVD sources are
+        // interlaced by default, so assume true.
+        Err(e) => {
+            tracing::warn!("normalize_iso: probe failed ({e}); assuming interlaced");
+            true
+        }
+    };
+
+    if let Some(parent) = output.parent() {
+        std::fs::create_dir_all(parent)
+            .map_err(|e| AppError::Media(format!("create output dir: {e}")))?;
+    }
+
+    // Transcode by piping the program stream into ffmpeg's stdin (`-i pipe:0`).
+    let args = reencode_args("pipe:0", output, interlaced);
+    ffmpeg::run_with_progress_feeding(
+        ffmpeg_bin,
+        &args,
+        (input.to_path_buf(), offset),
+        on_progress,
+        cancel,
+    )
+    .await?;
     Ok(NormalizeMode::Reencode)
 }

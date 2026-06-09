@@ -86,7 +86,6 @@ export interface ProgressWheelProps {
   noDamage: boolean;
   damaged: number;
   reconnecting: boolean;
-  reconnectElapsed: number;
   resuming: boolean;
   resumeError: string | null;
   resumeMode: RecoveryMode;
@@ -95,7 +94,6 @@ export interface ProgressWheelProps {
   onPause: () => void;
   onResume: () => Promise<void>;       // Resume from paused/stalled
   onCancel: () => void;
-  onReconnect: () => Promise<void>;
   onRecoverAnother: () => void; // Start new recovery session
   doneBannerRef: React.RefObject<HTMLDivElement>;
   stats: RecoveryStats | null;
@@ -103,7 +101,6 @@ export interface ProgressWheelProps {
   recoveryDone: boolean;
   sessionId: string | null;
   stalled?: boolean;
-  stalledElapsedSecs?: number | null;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -117,7 +114,6 @@ export function ProgressWheel({
   noDamage,
   damaged,
   reconnecting,
-  reconnectElapsed,
   resuming,
   resumeError,
   resumeMode,
@@ -126,7 +122,6 @@ export function ProgressWheel({
   onPause,
   onResume,
   onCancel,
-  onReconnect,
   onRecoverAnother,
   doneBannerRef,
   stats,
@@ -134,7 +129,6 @@ export function ProgressWheel({
   recoveryDone,
   sessionId,
   stalled = false,
-  stalledElapsedSecs = null,
 }: ProgressWheelProps) {
   // Wheel geometry: r=68, viewBox 0 0 148 148
   const WHEEL_R = 68;
@@ -171,7 +165,7 @@ export function ProgressWheel({
     : isStarting
     ? "var(--db-amber)"
     : isStalled
-    ? "var(--db-red)"
+    ? "var(--db-amber)" // calm hold, not an alarm — the engine keeps its place
     : idle && !recoveryDone
     ? "var(--db-text-faint)"
     : "var(--db-green)";
@@ -180,9 +174,7 @@ export function ProgressWheel({
     : isStarting
     ? "Starting…"
     : isStalled
-    ? stalledElapsedSecs !== null && stalledElapsedSecs !== undefined
-      ? `Stalled (${Math.floor(stalledElapsedSecs / 60)}m)`
-      : "Stalled (checking…)"
+    ? "Waiting for the drive"
     : recoveryDone
     ? "Complete"
     : "Paused";
@@ -355,14 +347,14 @@ export function ProgressWheel({
             </ActionBtn>
           )}
 
-          {/* Reconnect & resume — show for stalled, suspect health, or idle+progress */}
-          {!recoveryDone && (isStalled || stats?.drive_health === "suspect" || (idle && !recoveryDone && pct > 0)) && (
-            <ActionBtn primary onClick={onReconnect} disabled={reconnecting || resuming} fullWidth>
-              {reconnecting
-                ? <><Loader2 size={13} className="animate-spin" /> Reconnecting… ({reconnectElapsed}s)</>
-                : <><RefreshCw size={13} /> Reconnect &amp; resume</>
-              }
-            </ActionBtn>
+          {/* Calm hold — the engine keeps its place on a dropped drive and
+              auto-resumes when it returns, so there's no cancel/restart "fight".
+              Genuine options (pause, try another drive) live in the StalledBanner. */}
+          {!recoveryDone && isStalled && (
+            <div style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", justifyContent: "center", padding: "10px 14px", borderRadius: 9, background: "var(--db-surface-2)", border: "1px solid var(--db-border)", fontSize: 12.5, color: "var(--db-text-muted)", lineHeight: 1.45 }}>
+              <Loader2 size={13} className="animate-spin" style={{ flexShrink: 0, color: "var(--db-amber)" }} />
+              <span>Waiting for the drive — your place is saved. We&rsquo;ll pick up automatically the moment it responds.</span>
+            </div>
           )}
           {/* Resume controls — hide when stalled */}
           {!recoveryDone && (idle || phase === "ready") && !isStalled && (

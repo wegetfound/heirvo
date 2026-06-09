@@ -139,18 +139,54 @@ pub async fn run_with_progress(
     on_progress: Arc<dyn Fn(FfmpegProgress) + Send + Sync>,
     cancel: Option<tokio::sync::watch::Receiver<bool>>,
 ) -> AppResult<()> {
+    run_with_progress_impl(bin, args, None, on_progress, cancel).await
+}
+
+/// Like [`run_with_progress`], but feeds ffmpeg's stdin by streaming
+/// `feed.0` from byte `feed.1` to EOF (use with `-i pipe:0`). This is how we
+/// transcode a dead-filesystem ISO's MPEG-2 program stream at full speed —
+/// piping is ~20x faster than the seekable `subfile:` protocol because the
+/// demuxer reads linearly instead of back-seeking across the image.
+pub async fn run_with_progress_feeding(
+    bin: &Path,
+    args: &[String],
+    feed: (std::path::PathBuf, u64),
+    on_progress: Arc<dyn Fn(FfmpegProgress) + Send + Sync>,
+    cancel: Option<tokio::sync::watch::Receiver<bool>>,
+) -> AppResult<()> {
+    run_with_progress_impl(bin, args, Some(feed), on_progress, cancel).await
+}
+
+async fn run_with_progress_impl(
+    bin: &Path,
+    args: &[String],
+    feed: Option<(std::path::PathBuf, u64)>,
+    on_progress: Arc<dyn Fn(FfmpegProgress) + Send + Sync>,
+    cancel: Option<tokio::sync::watch::Receiver<bool>>,
+) -> AppResult<()> {
     tracing::info!("ffmpeg {}", args.join(" "));
     let mut cmd = Command::new(bin);
     cmd.no_console();
     cmd.args(args)
         .args(["-progress", "pipe:1", "-nostats"])
-        .stdin(Stdio::null())
+        .stdin(if feed.is_some() {
+            Stdio::piped()
+        } else {
+            Stdio::null()
+        })
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
 
     let mut child: Child = cmd
         .spawn()
         .map_err(|e| AppError::Media(format!("spawn ffmpeg: {e}")))?;
+
+    // If an image feed was requested, stream it into ffmpeg's stdin.
+    if let Some((path, start)) = feed {
+        if let Some(stdin) = child.stdin.take() {
+            crate::media::iso::spawn_image_feeder(path, start, stdin);
+        }
+    }
 
     let stdout = child
         .stdout
@@ -283,7 +319,45 @@ pub async fn probe(bin: &Path, input: &Path) -> AppResult<ProbeResult> {
         )));
     }
 
-    let parsed: serde_json::Value = serde_json::from_slice(&output.stdout)?;
+    parse_probe_json(&output.stdout)
+}
+
+/// Probe an arbitrary ffmpeg input *argument* (not just a plain path) — e.g. a
+/// `subfile,,start,…,:image.iso` pseudo-input used to read the MPEG-2 program
+/// stream out of a dead-filesystem ISO. Adds error-tolerant input flags and a
+/// large analyze/probe window so a damaged or late-starting stream still yields
+/// codec + interlace info.
+pub async fn probe_input(bin: &Path, input_arg: &str) -> AppResult<ProbeResult> {
+    let output = Command::new(bin)
+        .no_console()
+        .args([
+            "-v", "error",
+            "-err_detect", "ignore_err",
+            "-fflags", "+discardcorrupt+genpts",
+            "-analyzeduration", "100M",
+            "-probesize", "100M",
+            "-print_format", "json",
+            "-show_format",
+            "-show_streams",
+            "-i", input_arg,
+        ])
+        .output()
+        .await
+        .map_err(|e| AppError::Media(format!("spawn ffprobe: {e}")))?;
+
+    if !output.status.success() {
+        return Err(AppError::Media(format!(
+            "ffprobe failed: {}",
+            String::from_utf8_lossy(&output.stderr)
+        )));
+    }
+
+    parse_probe_json(&output.stdout)
+}
+
+/// Parse ffprobe `-print_format json` output into a [`ProbeResult`].
+fn parse_probe_json(stdout: &[u8]) -> AppResult<ProbeResult> {
+    let parsed: serde_json::Value = serde_json::from_slice(stdout)?;
     let duration = parsed
         .get("format")
         .and_then(|f| f.get("duration"))

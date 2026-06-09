@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { ipc } from "@/lib/ipc";
 import type {
   RecoveryStats, HealthReport, IsoResult, ExtractedFile, Session,
@@ -48,12 +48,35 @@ const S = {
 
 export function Dashboard() {
   const { id } = useParams<{ id?: string }>();
+  const navigate = useNavigate();
+
+  // ── Re-attach to a live recovery (engine is truth) ────────────────────────
+  // If we land on Home (`/`, no :id) while the engine is still reading a disc,
+  // the wizard would otherwise show "We found your disc / Start" as if nothing
+  // were happening — the classic phantom: engine at 40%, UI says 0%. The engine
+  // never stopped; the Dashboard just lost the session binding when the URL
+  // dropped the id. Ask the engine if a recovery is actively running and, if so,
+  // redirect to its session so all the live-progress machinery rebinds (the
+  // engine-truth poll in useRecoveryMachine then hydrates from the sector map).
+  // Scoped to "recovering" only — a deliberately *paused* session shouldn't yank
+  // the user back off Home.
+  useEffect(() => {
+    if (id) return; // already bound to a session via the URL
+    let cancelled = false;
+    ipc.listSessions()
+      .then((all) => {
+        if (cancelled) return;
+        const active = all.find((s) => s.status === "recovering");
+        if (active) navigate(`/session/${active.id}`, { replace: true });
+      })
+      .catch(() => { /* non-fatal — stay on the wizard */ });
+    return () => { cancelled = true; };
+  }, [id, navigate]);
 
   const {
     state,
     actions,
     resumeError,
-    reconnectElapsed,
     holesAtCompletion,
     realRuntimeMin,
     resumeMode,
@@ -94,7 +117,13 @@ export function Dashboard() {
   const videoNote = realRuntimeMin != null ? ` · about ${realRuntimeMin} min of video` : "";
 
   const headline = recoveryDone
-    ? (savedGb ? `Disc fully recovered — ${savedGb} read` : "Disc fully recovered")
+    ? (pct >= 100
+        ? (savedGb ? `Disc fully recovered — ${savedGb} read` : "Disc fully recovered")
+        : pct >= 75
+        ? (savedGb ? `Recovered ${pct}% — ${savedGb}` : `Recovered ${pct}% of the disc`)
+        : pct > 0
+        ? (savedGb ? `We saved ${pct}% (${savedGb}) — this disc is heavily damaged` : `We saved ${pct}% — this disc is heavily damaged`)
+        : "We weren't able to read this disc")
     : state.phase === "idle" && !state.drive
     ? "Ready when you are."
     : state.phase === "idle" && state.drive
@@ -145,11 +174,13 @@ export function Dashboard() {
     }
   }, [recoveryDone, stats]);
 
-  // Show three boxes in "ready" phase (even without sessionId yet) and during/after recovery
-  const showBottomBlock = sessionId || state.phase === "ready";
-  const bottomBlock = showBottomBlock ? (
-    <SaveExtras sessionId={sessionId ?? ""} session={session} saveReady={saveReady} />
-  ) : null;
+  // Always show the save options (full layout on load) — even before a disc is
+  // inserted. With no session they render full-color but honest: the cards
+  // invite "Insert a disc to begin" and explain on click. Once a recovery runs
+  // they become live.
+  const bottomBlock = (
+    <SaveExtras sessionId={sessionId ?? ""} session={session} saveReady={saveReady} pct={pct} />
+  );
 
   return (
     <div
@@ -196,7 +227,6 @@ export function Dashboard() {
               noDamage={noDamage}
               damaged={damaged}
               reconnecting={reconnecting}
-              reconnectElapsed={reconnectElapsed}
               resuming={resuming}
               resumeError={resumeError}
               resumeMode={resumeMode}
@@ -205,7 +235,6 @@ export function Dashboard() {
               onPause={actions.pause}
               onResume={() => actions.resume(resumeMode)}
               onCancel={actions.cancel}
-              onReconnect={actions.reconnect}
               onRecoverAnother={actions.recoverAnother}
               doneBannerRef={doneBannerRef}
               stats={stats}
@@ -213,7 +242,6 @@ export function Dashboard() {
               recoveryDone={recoveryDone}
               sessionId={sessionId}
               stalled={stalled}
-              stalledElapsedSecs={stalledElapsedSecs}
             />
           }
           bottomBlock={bottomBlock}
@@ -224,14 +252,12 @@ export function Dashboard() {
           <StalledBanner
             stalledElapsedSecs={stalledElapsedSecs}
             resumeMode={resumeMode}
-            onReconnect={actions.reconnect}
             onPatientMode={async () => {
               setResumeMode("overnight");
               await actions.resume("overnight").catch(() => {});
             }}
             onChangeDrive={() => setShowDrivePicker(true)}
             onPause={actions.pause}
-            reconnecting={reconnecting}
             resuming={resuming}
           />
         )}
@@ -307,23 +333,6 @@ export function Dashboard() {
           </div>
         )}
 
-        {/* LOCK HINT STRIP */}
-        {!saveReady && sessionId && (
-          <div style={{
-            display: "flex", alignItems: "flex-start", gap: 10,
-            background: "var(--db-amber-light)", border: "1px solid var(--db-amber-glow)",
-            borderRadius: 14, padding: "12px 18px", fontSize: 12.5, color: "var(--db-amber)",
-          }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 2 }}>
-              <rect x="3" y="11" width="18" height="11" rx="2"/>
-              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-            </svg>
-            <span>
-              Your save options unlock the moment the disc finishes — or press <strong>Cancel</strong> to stop and keep what's recovered so far.
-            </span>
-          </div>
-        )}
-
       </div>
 
       {/* Keyframe animations */}
@@ -350,7 +359,7 @@ export function Dashboard() {
 type RmapExportT = { path: string; bytes_written: number; run_count: number };
 type RmapImportT = { good_sectors: number; failed_sectors: number; skipped_sectors: number; unknown_sectors: number };
 
-function SaveExtras({ sessionId, session, saveReady }: { sessionId: string; session: Session | null; saveReady: boolean }) {
+function SaveExtras({ sessionId, session, saveReady, pct }: { sessionId: string; session: Session | null; saveReady: boolean; pct: number }) {
   const [health, setHealth] = useState<HealthReport | null>(null);
   const [healthHidden, setHealthHidden] = useState(false);
   const [iso, setIso] = useState<IsoResult | null>(null);
@@ -361,6 +370,9 @@ function SaveExtras({ sessionId, session, saveReady }: { sessionId: string; sess
   const [rmapExport, setRmapExport] = useState<RmapExportT | null>(null);
   const [rmapImport, setRmapImport] = useState<RmapImportT | null>(null);
   const [receipt, setReceipt] = useState<{ manifest: string; sector_count: number } | null>(null);
+  // Calm, honest "not ready yet" note shown when a still-locked action is clicked
+  // (replaces the old greyed-out buttons + separate lock-hint strip).
+  const [hint, setHint] = useState<string | null>(null);
 
   const { status: license, refresh: refreshLicense } = useLicense();
   const canSave = license.can_save;
@@ -368,19 +380,51 @@ function SaveExtras({ sessionId, session, saveReady }: { sessionId: string; sess
   const [paywallOpen, setPaywallOpen] = useState(false);
   const pendingSaveRef = useRef<{ label: string; action: () => Promise<void> } | null>(null);
 
-  const lock = busy !== null || !saveReady;
+  // Only block clicks while ANOTHER save is mid-flight — never grey actions out
+  // just because the read isn't finished. Not-yet-ready actions stay full-color
+  // and explain themselves on click (see the cards below).
+  const blocked = busy !== null;
+
+  // ── ISO-first gate ────────────────────────────────────────────────────────
+  // The disc image is written sector-by-sector as the rescue reads it
+  // (image_sink), and `create_iso` serves from that image using the persisted
+  // sector map — it never needs the read pass to be "done". So the exact-copy
+  // (.ISO) action unlocks the moment ANY sectors are recovered: the user can
+  // secure an ISO mid-rescue and top it up across resume sessions, which is the
+  // real-world flow for badly damaged discs (read a little, drive drops, power-
+  // cycle, resume, repeat — the ISO fills in until the whole title is there).
+  // The derived outputs (Original files, Make a new disc) still wait for a
+  // finished read: a partial filesystem extract or a half-written burn is
+  // genuinely broken, not just incomplete.
+  // No disc/recovery yet (cold home load) — show everything full-color, but the
+  // hints invite "Insert a disc to begin" rather than implying a read is running.
+  const hasSession = sessionId !== "";
+  const recovering = !saveReady;
+  const isoReady = saveReady || pct > 0 || (health?.coverage_pct ?? 0) > 0;
+
+  // Hint text for an action that isn't runnable yet.
+  const pendingHintFor = (ready: boolean) =>
+    ready ? undefined : hasSession ? "Ready the moment the read finishes" : "Insert a disc to begin";
+  // Kind explanation shown when a not-ready action is clicked.
+  const explain = (whenRecovering: string) =>
+    setHint(hasSession
+      ? whenRecovering
+      : "Pop in a disc and start a recovery — your save options light up the moment it's read.");
 
   const t = session?.disc_type ?? null;
   const isUnknownDisc = !t || t === "Unknown";
   const showVideoSaves = isUnknownDisc || t === "DvdVideo";
 
   useEffect(() => {
+    // No session yet → nothing to score; leave the health card in its calm
+    // "appears after a recovery" placeholder rather than firing a doomed call.
+    if (!hasSession) return;
     let cancelled = false;
     ipc.healthScore(sessionId)
       .then((h) => { if (!cancelled) setHealth(h); })
       .catch(() => { if (!cancelled) setHealthHidden(true); });
     return () => { cancelled = true; };
-  }, [sessionId]);
+  }, [sessionId, hasSession]);
 
   const wrap = async (label: string, fn: () => Promise<void>) => {
     setBusy(label);
@@ -403,34 +447,48 @@ function SaveExtras({ sessionId, session, saveReady }: { sessionId: string; sess
     <>
       {/* 3-COL ALT GRID */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
-        {/* Exact copy */}
+        {/* Exact copy — ISO-first: savable any time once any sectors are read.
+            Mid-rescue it reframes as "save what we have so far" so the user can
+            secure the bytes now and top the ISO up on later resume passes. */}
         <AltCard
           icon={<Disc3 size={18} />}
-          title="Exact copy of the disc"
-          badge="Instant"
-          desc=".ISO image — a perfect replica of the original disc, ready to mount or burn."
+          title={isoReady && recovering ? "Save what we've recovered" : "Exact copy of the disc"}
+          badge={isoReady && recovering ? `${pct}% so far` : "Instant"}
+          desc={isoReady && recovering
+            ? ".ISO image you can keep right now and top up later — every readable byte so far, safe on your drive."
+            : ".ISO image — a perfect replica of the original disc, ready to mount or burn."}
           loading={busy === "iso"}
-          disabled={lock}
-          onClick={() => guardedSave("iso", async () => {
-            const result = await ipc.createIso(sessionId);
-            setIso(result);
-            ipc.library.rescanDiscForSession(sessionId).catch(() => {});
-          })}
+          blocked={blocked}
+          pendingHint={!isoReady ? (hasSession ? "Ready as soon as the first data is read" : "Insert a disc to begin") : undefined}
+          onClick={() => {
+            if (!isoReady) { explain("As soon as the first sectors are read, you can save a copy here — even mid-rescue."); return; }
+            setHint(null);
+            guardedSave("iso", async () => {
+              const result = await ipc.createIso(sessionId);
+              setIso(result);
+              ipc.library.rescanDiscForSession(sessionId).catch(() => {});
+            });
+          }}
         />
         {/* Original files (video discs) */}
         {showVideoSaves && (
           <AltCard
             icon={<Files size={18} />}
             title="Original files"
-            badge="Instant"
+            badge={saveReady ? "Instant" : undefined}
             desc="A folder with every file exactly as it was on the disc, no conversion."
             loading={busy === "all-files"}
-            disabled={lock}
-            onClick={() => guardedSave("all-files", async () => {
-              const result = await ipc.extractAllFiles(sessionId);
-              setExtracted(result);
-              ipc.library.rescanDiscForSession(sessionId).catch(() => {});
-            })}
+            blocked={blocked}
+            pendingHint={pendingHintFor(saveReady)}
+            onClick={() => {
+              if (!saveReady) { explain("Pulling out the original files needs the whole read to finish first — your exact copy (.ISO) is savable right now."); return; }
+              setHint(null);
+              guardedSave("all-files", async () => {
+                const result = await ipc.extractAllFiles(sessionId);
+                setExtracted(result);
+                ipc.library.rescanDiscForSession(sessionId).catch(() => {});
+              });
+            }}
           />
         )}
         {/* Make a new disc */}
@@ -439,13 +497,24 @@ function SaveExtras({ sessionId, session, saveReady }: { sessionId: string; sess
           title="Make a new disc"
           desc="Burn a backup DVD or CD — a physical copy you can store or give away."
           loading={busy === "burn"}
-          disabled={lock}
-          onClick={() => guardedSave("burn", async () => {
-            await ipc.burnImageToDisc(sessionId);
-            setBurnLaunched(true);
-          })}
+          blocked={blocked}
+          pendingHint={pendingHintFor(saveReady)}
+          onClick={() => {
+            if (!saveReady) { explain("Burning a new disc needs the whole read to finish first — your exact copy (.ISO) is savable right now."); return; }
+            setHint(null);
+            guardedSave("burn", async () => {
+              await ipc.burnImageToDisc(sessionId);
+              setBurnLaunched(true);
+            });
+          }}
         />
       </div>
+
+      {/* Calm, honest note when a not-yet-ready action is clicked (replaces the
+          old greyed-out buttons + separate amber lock strip). */}
+      {hint && (
+        <p style={{ fontSize: 12.5, color: "var(--db-amber)", margin: 0, lineHeight: 1.5 }}>{hint}</p>
+      )}
 
       {burnLaunched && <p style={{ fontSize: 11, color: "var(--db-text-muted)", lineHeight: 1.5 }}>Windows' disc burner is opening — take the original disc out, pop in a blank one, and click <strong>Burn</strong>.</p>}
 
@@ -510,9 +579,16 @@ function SaveExtras({ sessionId, session, saveReady }: { sessionId: string; sess
                 </div>
               )}
             </>
-          ) : (
+          ) : hasSession ? (
             <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, ...dbFaint2 }}>
               <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> Checking…
+            </div>
+          ) : (
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <HealthArc score={0} />
+              <p style={{ fontSize: 12.5, lineHeight: 1.5, ...dbMuted2, margin: 0 }}>
+                A clear read-out of how cleanly your disc was read appears here after a recovery.
+              </p>
             </div>
           )}
         </div>
@@ -607,14 +683,19 @@ function SaveExtras({ sessionId, session, saveReady }: { sessionId: string; sess
   );
 }
 
-/* ─── AltCard ───────────────────────────────────────────────────────── */
-function AltCard({ icon, title, badge, desc, loading, disabled, onClick }: {
+/* ─── AltCard ───────────────────────────────────────────────────────────────
+   Honest, never dead-grey. The card stays full-color and clickable even before
+   it can run; `pendingHint` shows a calm "ready the moment the read finishes"
+   line, and the caller's onClick explains kindly instead of doing nothing.
+   `blocked` (only true while another save is mid-flight) is the one case we
+   gate clicks, with a light dim — not the old greyed-until-done treatment. */
+function AltCard({ icon, title, badge, desc, loading, blocked, pendingHint, onClick }: {
   icon: React.ReactNode; title: string; badge?: string; desc: string;
-  loading?: boolean; disabled?: boolean; onClick: () => void;
+  loading?: boolean; blocked?: boolean; pendingHint?: string; onClick: () => void;
 }) {
   return (
-    <button type="button" disabled={disabled} onClick={onClick}
-      style={{ display: "flex", flexDirection: "column", gap: 7, minHeight: 118, padding: "18px 18px 16px", borderRadius: 14, background: "var(--db-surface)", border: "1px solid var(--db-border)", textAlign: "left", cursor: disabled ? "default" : "pointer", opacity: disabled ? 0.5 : 1, transition: "border-color 150ms ease" }}>
+    <button type="button" disabled={blocked} onClick={onClick}
+      style={{ display: "flex", flexDirection: "column", gap: 7, minHeight: 118, padding: "18px 18px 16px", borderRadius: 14, background: "var(--db-surface)", border: "1px solid var(--db-border)", textAlign: "left", cursor: blocked ? "default" : "pointer", opacity: blocked ? 0.6 : 1, transition: "border-color 150ms ease, opacity 150ms ease" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <span style={{ color: "var(--db-text-faint)" }}>
           {loading ? <Loader2 size={18} style={{ animation: "spin 1s linear infinite" }} /> : icon}
@@ -625,6 +706,11 @@ function AltCard({ icon, title, badge, desc, loading, disabled, onClick }: {
       </div>
       <span style={{ fontSize: 13.5, fontWeight: 600, color: "var(--db-text)" }}>{title}</span>
       <span style={{ fontSize: 12, color: "var(--db-text-faint)", lineHeight: 1.5 }}>{desc}</span>
+      {pendingHint && (
+        <span style={{ marginTop: "auto", display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11, fontWeight: 500, color: "var(--db-amber)" }}>
+          <Loader2 size={11} style={{ animation: "spin 1.4s linear infinite" }} /> {pendingHint}
+        </span>
+      )}
     </button>
   );
 }

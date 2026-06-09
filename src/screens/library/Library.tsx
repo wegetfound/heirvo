@@ -641,7 +641,10 @@ export default function Library() {
               border: "1px solid var(--lib-amber-soft)",
               boxShadow: "var(--lib-shadow-soft)",
               textDecoration: "none",
-              color: "var(--lib-ink)",
+              // Banner surface is always cream, so text is pinned dark in BOTH
+              // themes — the theme vars (--lib-ink etc.) flip to near-white in
+              // dark mode and would vanish on this cream background.
+              color: "#2E2008",
               transition: "transform .2s ease, box-shadow .2s ease",
             }}
             onMouseEnter={(e) => {
@@ -693,7 +696,7 @@ export default function Library() {
                   fontFamily: "var(--lib-sans)",
                   fontSize: 13.5,
                   fontWeight: 600,
-                  color: "var(--lib-ink)",
+                  color: "#2E2008",
                 }}
               >
                 Live: rescuing {activeSession.user_label || activeSession.disc_label || "Untitled disc"}
@@ -702,7 +705,7 @@ export default function Library() {
                 style={{
                   fontFamily: "var(--lib-sans)",
                   fontSize: 12,
-                  color: "var(--lib-muted)",
+                  color: "#7A6F62",
                   marginTop: 2,
                 }}
               >

@@ -26,6 +26,7 @@ pub mod state;
 pub mod transcription;
 pub mod util;
 
+
 use tauri::Manager as _;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 
@@ -111,6 +112,24 @@ pub fn run() {
 
     builder
         .setup(|app| {
+            // ── Start the localhost streaming server ──────────────────────────
+            // Bind early (before DB init) so the port is known immediately and
+            // any startup failure is surfaced at boot, not on first play.
+            let handle_for_stream = app.handle().clone();
+            match media::stream_server::start(handle_for_stream) {
+                Ok(base_url) => {
+                    app.manage(media::stream_server::StreamBase(base_url));
+                }
+                Err(e) => {
+                    // Non-fatal for the app overall — library still works, only
+                    // in-app video playback of MPEG-2 sources is degraded.
+                    tracing::error!("stream_server failed to start: {e}");
+                    // Manage a sentinel so `get_stream_base` returns an empty
+                    // string rather than panicking on a missing state.
+                    app.manage(media::stream_server::StreamBase(String::new()));
+                }
+            }
+
             let handle = app.handle().clone();
             // Block setup until DB is ready so commands always see initialized state.
             tauri::async_runtime::block_on(async move {
@@ -162,6 +181,7 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            commands::media::get_stream_base,
             commands::drive::list_drives,
             commands::drive::check_disc,
             commands::drive::probe_disc_profile,
@@ -175,6 +195,7 @@ pub fn run() {
             commands::recovery::pause_recovery,
             commands::recovery::cancel_recovery,
             commands::recovery::get_sector_map,
+            commands::recovery::get_recovery_status,
             commands::recovery::export_rmap,
             commands::recovery::import_rmap,
             commands::recovery::export_receipt_manifest,
@@ -253,6 +274,8 @@ pub fn run() {
             commands::autoplay::autoplay_get_enabled,
             commands::autoplay::autoplay_set_enabled,
             commands::autoplay::get_pending_disc,
+            commands::settings::get_auto_tidy,
+            commands::settings::set_auto_tidy,
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application")

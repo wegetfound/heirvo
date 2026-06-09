@@ -148,7 +148,10 @@ export function useRecoveryMachine(initialSessionId?: string): RecoveryMachineRe
   const [recoveryDone, setRecoveryDone] = useState(false);
   const [sessionFinished, setSessionFinished] = useState(false);
   const [reconnecting, setReconnecting] = useState(false);
-  const [reconnectElapsed, setReconnectElapsed] = useState(0);
+  // Engine self-heals on a dropped drive (holds position + auto-resumes), so the
+  // UI no longer runs a reconnect countdown — this stays 0 (kept for the state
+  // machine's "stalled" shape and existing consumers).
+  const reconnectElapsed = 0;
   const [holesAtCompletion, setHolesAtCompletion] = useState<number | null>(null);
   const [isOvernightRunning, setIsOvernightRunning] = useState(false);
   const [realRuntimeMin, setRealRuntimeMin] = useState<number | null>(null);
@@ -186,6 +189,23 @@ export function useRecoveryMachine(initialSessionId?: string): RecoveryMachineRe
   // ── Stable probe primitives (prevent stale closure probe cancellation) ─────
   const probeDrivePath = pickedDrive?.path ?? null;
   const probeHasMedia = pickedDrive?.has_media ?? false;
+
+  // ── Adopt the session id from the URL when it changes ──────────────────────
+  // React Router reuses this SAME Dashboard component instance across `/`,
+  // `/recover/:id`, and `/session/:id` (same element, same tree slot), so the
+  // `useState(initialSessionId ?? null)` initializer above only runs once and
+  // never sees a later param change. Without this sync, redirecting into a live
+  // session (the re-attach in Dashboard) updates the URL but leaves `sessionId`
+  // stale at null — the "phantom" pre-session wizard sitting over a running
+  // engine. We adopt a NEW non-null id; we deliberately do NOT clear sessionId
+  // when the param goes absent, so an imperatively-started session
+  // (startAction sets sessionId with no URL param yet) is never wiped.
+  useEffect(() => {
+    if (initialSessionId && initialSessionId !== sessionId) {
+      setSessionId(initialSessionId);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialSessionId]);
 
   // ── Drive list + live updates ──────────────────────────────────────────────
   useEffect(() => {
@@ -315,6 +335,39 @@ export function useRecoveryMachine(initialSessionId?: string): RecoveryMachineRe
     };
   }, [sessionId]);
 
+  // ── Engine-truth poll (UI re-syncs from the sector map, not just events) ────
+  // The recovery engine persists its progress and keeps running even when this
+  // component remounts or a progress event is missed — the "phantom mode" where
+  // the engine is at 80% but an event-only UI is stuck at 0%. So we also PULL
+  // the engine's status on mount and on a short heartbeat: the live engine if
+  // present, else reconstructed from the persisted sector map. `good` only ever
+  // grows within a session, so we merge monotonically — a slightly-stale poll
+  // can never regress a fresh event, and a fresh poll fills the UI the moment it
+  // mounts instead of waiting up to ~2s for the next event.
+  useEffect(() => {
+    if (!sessionId) return;
+    let cancelled = false;
+    let intervalId: ReturnType<typeof setInterval> | null = null;
+
+    const hydrate = () => {
+      ipc.getRecoveryStatus(sessionId)
+        .then((live) => {
+          if (cancelled || !live) return;
+          setStats((prev) => (!prev || live.good >= prev.good ? live : prev));
+          // Once the run is over, the map is stable — stop the heartbeat.
+          if (recoveryDoneRef.current && intervalId !== null) {
+            clearInterval(intervalId);
+            intervalId = null;
+          }
+        })
+        .catch(() => {});
+    };
+
+    hydrate();
+    intervalId = setInterval(hydrate, 1500);
+    return () => { cancelled = true; if (intervalId !== null) clearInterval(intervalId); };
+  }, [sessionId]);
+
   // ── Clock (tick for idle detection) ───────────────────────────────────────
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 1000);
@@ -420,42 +473,24 @@ export function useRecoveryMachine(initialSessionId?: string): RecoveryMachineRe
     }
   }, [sessionId]);
 
+  // ── reconnectResumeInner — intentionally inert ────────────────────────────
+  // The Rust engine self-heals on drive disconnects: it holds its position and
+  // auto-resumes the moment the drive comes back. Cancelling + restarting from
+  // the UI (the old behaviour) races the engine and causes it to fire a
+  // `recovery:complete` event for the Cancelled run — which would flip the UI
+  // to "Complete" prematurely. The stalled state is now surfaced as a calm
+  // informational banner ("Waiting for the drive — your progress is safe").
+  // Manual Pause/Cancel/Resume buttons remain fully functional.
+  // The `onReconnect` prop still exists on ProgressWheel so the stalled-phase
+  // "Reconnect & resume" button can remain in the markup without a wire-up
+  // change; it now calls this no-op, which is the safe default.
   const reconnectResumeInner = useCallback(async () => {
-    if (!sessionId) return;
-    const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
-    setReconnecting(true);
-    setReconnectElapsed(0);
-    setResuming(true);
-    setResumeError(null);
-    try {
-      try { await ipc.cancelRecovery(sessionId); } catch { /* may already be stopped */ }
-      let started = false;
-      const startTs = Date.now();
-      while (Date.now() - startTs < 60_000) {
-        await sleep(1500);
-        setReconnectElapsed(Math.round((Date.now() - startTs) / 1000));
-        try {
-          await ipc.startRecovery(sessionId, resumeModeRef.current);
-          started = true;
-          break;
-        } catch { /* keep waiting */ }
-      }
-      if (!started) {
-        setResumeError("The drive didn't come back within 60 seconds. Unplug it, wait a few seconds, plug it back in, then press Reconnect again.");
-        return;
-      }
-      setLastProgressAt(Date.now());
-      setRecoveryDone(false);
-      setResumeError(null);
-    } catch (e) {
-      setResumeError(String(e));
-    } finally {
-      setReconnecting(false);
-      setResuming(false);
-    }
-  }, [sessionId]);
+    // No-op: engine self-heals. Nothing to do from the UI side.
+  }, []);
 
   // ── Drive-presence watcher ────────────────────────────────────────────────
+  // Kept for drivePresentRef bookkeeping; the old auto-reconnect call has been
+  // removed. The engine self-heals — we no longer cancel+restart from the UI.
   useEffect(() => {
     if (!sessionId) return;
     let cancelled = false;
@@ -464,21 +499,10 @@ export function useRecoveryMachine(initialSessionId?: string): RecoveryMachineRe
       let drvs: DriveInfo[] = [];
       try { drvs = await ipc.listDrives(); } catch { return; }
       if (cancelled) return;
-      const present = drvs.length > 0;
-      const wasAbsent = !drivePresentRef.current;
-      if (wasAbsent && present) {
-        const idle2 = Date.now() - lastProgressAt > 5000;
-        const stalled =
-          !recoveryDoneRef.current &&
-          !reconnectingRef.current &&
-          (statsRef.current?.drive_health === "suspect" ||
-            (idle2 && (statsRef.current?.total ?? 0) > 0));
-        if (stalled) void reconnectResumeInner();
-      }
-      drivePresentRef.current = present;
+      drivePresentRef.current = drvs.length > 0;
     }, 3000);
     return () => { cancelled = true; clearInterval(intervalId); };
-  }, [sessionId, reconnectResumeInner]);
+  }, [sessionId]);
 
   // ── Clear stale errors when done ──────────────────────────────────────────
   useEffect(() => {

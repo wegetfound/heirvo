@@ -110,7 +110,7 @@ pub async fn dvd_runtime_secs(
                 if ifos.is_empty() {
                     return Ok(None);
                 }
-                crate::media::vob::extract_files(&reader, map.as_ref(), &ifos, &video_ts_dir)
+                crate::media::vob::extract_files(&reader, map.as_ref(), &ifos, &video_ts_dir, false)
                     .map_err(|e| AppError::Media(format!("extract IFOs: {e}")))?;
             }
 
@@ -188,7 +188,7 @@ pub async fn extract_vobs(
             } else {
                 all.into_iter().filter(|e| file_names.iter().any(|n| n.eq_ignore_ascii_case(&e.name))).collect()
             };
-            crate::media::vob::extract_files(reader.as_ref(), map.as_ref(), &selected, &output_dir)
+            crate::media::vob::extract_files(reader.as_ref(), map.as_ref(), &selected, &output_dir, false)
                 .map_err(|e| AppError::Media(format!("extract_files: {e}")))
         }
         #[cfg(not(windows))]
@@ -238,7 +238,7 @@ pub async fn extract_all_files(
             )?;
             let all = crate::dvd::iso9660::walk_all_files(reader.as_ref())
                 .map_err(|e| AppError::DvdStructure(format!("walk_all_files: {e}")))?;
-            crate::media::vob::extract_files(reader.as_ref(), map.as_ref(), &all, &output_dir)
+            crate::media::vob::extract_files(reader.as_ref(), map.as_ref(), &all, &output_dir, false)
                 .map_err(|e| AppError::Media(format!("extract_files: {e}")))
         }
         #[cfg(not(windows))]

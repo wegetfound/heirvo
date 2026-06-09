@@ -15,6 +15,21 @@ import { PhotoGalleryView } from "./components/PhotoGallery";
 import type { Disc, TranscriptLine as TLine } from "./data/types";
 import { ipc } from "../../lib/ipc";
 
+/** Browser-safe video codecs WebView2 can decode natively. */
+const BROWSER_SAFE_CODECS = new Set(["h264", "avc", "avc1", "vp8", "vp9", "av1"]);
+
+/** Fetch the stream server base URL once and cache it. */
+let _streamBaseCache: string | null = null;
+async function fetchStreamBase(): Promise<string> {
+  if (_streamBaseCache !== null) return _streamBaseCache;
+  try {
+    _streamBaseCache = await ipc.getStreamBase();
+  } catch {
+    _streamBaseCache = "";
+  }
+  return _streamBaseCache;
+}
+
 // Error type enumeration for better UX messaging
 type MediaErrorType = "file-not-found" | "decode-error" | "unknown";
 
@@ -384,39 +399,130 @@ export default function Watch() {
     setMediaError(false);
   };
 
+  // ── Codec-aware playback routing ────────────────────────────────────────────
+  //
   // A freshly-recovered DVD sets videoPath to the raw ISO/VOB and status
   // "recovering" BEFORE the background normalizer produces a webview-playable
-  // MP4. WebView2 can't decode ISO/VOB, so we must never feed those to <video>.
+  // MP4. WebView2 can't decode ISO/VOB or MPEG-2, so we must never feed those
+  // to <video>.
+  //
+  // We probe the actual video codec via ffprobe instead of relying on the file
+  // extension alone. MPEG-2-in-.mp4 files pass the extension check but fail
+  // WebView2 decoding — probing catches them and routes them through the stream
+  // server instead.
+  //
+  // Codec probe states:
+  //   null     — probe not started / disc not loaded yet
+  //   ""       — probing in flight (treat as "not yet known")
+  //   "h264"   — browser-safe direct play
+  //   "mpeg2video" (etc.) — needs stream server
+  const [detectedCodec, setDetectedCodec] = useState<string | null>(null);
+
+  useEffect(() => {
+    const videoPath = disc?.videoPath;
+    if (!videoPath || isAudio || isDocument || isPhoto) {
+      setDetectedCodec(null);
+      return;
+    }
+
+    // A recovered `.iso` (raw disc image) can't be probed directly — but the
+    // stream server carves its MPEG-2 program stream and transcodes to H.264 on
+    // the fly. Mark it with a non-browser-safe sentinel so `isPlayableFile`
+    // stays false (we never feed a raw ISO to <video>) while the streaming
+    // effect below engages and routes it through the localhost server.
+    if (videoPath.toLowerCase().endsWith(".iso")) {
+      setDetectedCodec("mpeg2video");
+      return;
+    }
+
+    // Mark probe in-flight ("" means "probing").
+    setDetectedCodec("");
+    let cancelled = false;
+    void (async () => {
+      try {
+        const result = await ipc.ffprobeFile(videoPath);
+        if (!cancelled) {
+          setDetectedCodec(result.video_codec.toLowerCase());
+        }
+      } catch {
+        // ffprobe unavailable or file unreadable — treat as unknown codec so
+        // the stream server handles it (safer than silently feeding to webview).
+        if (!cancelled) {
+          setDetectedCodec("unknown");
+        }
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [disc?.videoPath, isAudio, isDocument, isPhoto]);
+
+  // A file is directly playable only when:
+  //   1. The container extension is a browser-friendly format (mp4/m4v/mov/webm), AND
+  //   2. The detected video codec is confirmed browser-safe (h264/vp8/vp9/av1).
+  // While the probe is in-flight (detectedCodec === "") we return false so the
+  // "preparing" state holds and no premature error flashes.
   const isPlayableFile = useMemo(() => {
     const p = (disc?.videoPath ?? "").toLowerCase();
-    return /\.(mp4|m4v|mov|webm)$/.test(p);
-  }, [disc?.videoPath]);
+    const goodContainer = /\.(mp4|m4v|mov|webm)$/.test(p);
+    if (!goodContainer) return false;
+    if (detectedCodec === null || detectedCodec === "") return false; // probe pending
+    return BROWSER_SAFE_CODECS.has(detectedCodec);
+  }, [disc?.videoPath, detectedCodec]);
+
+  // isPreparing covers two sub-cases:
+  //   A. disc.status === "recovering" — recovery engine is still running, no
+  //      output file yet. Show the PreparingCard (old path — nothing to stream).
+  //   B. hasMedia && !isPlayableFile — recovery is done, file exists but is
+  //      MPEG-2 / VOB / ISO / probe still running. Use the streaming server
+  //      (new Stage-1.5 path) or keep the "preparing" card.
   const isPreparing =
     !isAudio && !isDocument && !isPhoto &&
     (disc?.status === "recovering" || (hasMedia && !isPlayableFile));
 
+  // Stage-1.5 streaming: when the video path is non-playable (MPEG-2-in-mp4,
+  // VOB, or a recovered ISO), build a stream URL pointing at the localhost
+  // transcoding server instead of showing the "Getting ready" card. The server
+  // carves an ISO's MPEG-2 program stream (dead filesystem and all) and pipes
+  // it through ffmpeg → H.264, so raw ISOs play here too.
+  const [streamSrc, setStreamSrc] = useState<string | null>(null);
+
+  useEffect(() => {
+    const videoPath = disc?.videoPath ?? "";
+
+    // Engage when there IS a file, it's not H.264/browser-safe, and recovery is
+    // complete (not still writing the file). ISOs are included — the stream
+    // server reads them via the program-stream carve + pipe path.
+    const shouldStream =
+      !isAudio && !isDocument && !isPhoto &&
+      hasMedia && !isPlayableFile &&
+      disc?.status !== "recovering" &&
+      !!videoPath &&
+      detectedCodec !== "" && detectedCodec !== null; // don't stream until probe finishes
+
+    if (!shouldStream) {
+      setStreamSrc(null);
+      return;
+    }
+
+    let cancelled = false;
+    void (async () => {
+      const base = await fetchStreamBase();
+      if (cancelled || !base) return;
+      const url = `${base}/stream?src=${encodeURIComponent(videoPath)}`;
+      setStreamSrc(url);
+    })();
+
+    return () => { cancelled = true; };
+  }, [disc?.videoPath, disc?.status, hasMedia, isPlayableFile, isAudio, isDocument, isPhoto, detectedCodec]);
+
   // Reset the decode-error flag whenever the file changes — otherwise a failed
-  // ISO load would keep showing "can't preview" even after the MP4 is ready.
-  // Also pre-check file existence to differentiate "file missing" from "decode error"
-  // early, before the video element tries to load and confuses the issue.
+  // source load would keep showing "can't preview" even after a new file is ready.
+  // We rely on the video element's onError handler for actual decode/missing errors;
+  // this effect only clears stale state when the path changes.
   useEffect(() => {
     setMediaError(false);
     setMediaErrorType(null);
-
-    // Pre-flight check: if we have a media source, verify the file exists
-    // by trying to resolve it. If convertFileSrc fails or returns null, mark as
-    // file-not-found so users get clear guidance.
-    if (disc?.videoPath && hasMedia && isPlayable && !isPhoto) {
-      // Note: convertFileSrc doesn't validate file existence on disk. We rely on
-      // the video element's onError handler to catch actual missing files when
-      // the browser tries to load them. This is a UX hint, not a guarantee.
-      const p = (disc.videoPath ?? "").toLowerCase();
-      if (!(/\.(mp4|m4v|mov|webm)$/.test(p))) {
-        // File extension is not playable format — will fail at video decode
-        setMediaErrorType("decode-error");
-      }
-    }
-  }, [disc?.videoPath, hasMedia, isPlayable, isPhoto]);
+  }, [disc?.videoPath]);
 
   // Normalization timeout monitor: if isPreparing lasts > 15 minutes, show fallback.
   // Resets whenever isPreparing becomes false (file is ready or error occurred).
@@ -568,7 +674,7 @@ export default function Watch() {
       <div className="lib-root">
         <div className="lib-container" style={{ padding: "64px 32px" }}>
           <p style={{ color: "var(--lib-muted)" }}>Disc not found.</p>
-          <Link to="/library" style={{ color: "var(--lib-amber)" }}>
+          <Link to="/library/browse" style={{ color: "var(--lib-amber)" }}>
             Back to library
           </Link>
         </div>
@@ -704,8 +810,42 @@ export default function Watch() {
                       background: "#000",
                     }}
                   />
+                ) : isPreparing && streamSrc && !mediaError ? (
+                  /* Stage-1 streaming path: VOB/ISO source — transcode via localhost server */
+                  <video
+                    key={streamSrc}
+                    ref={videoRef}
+                    src={streamSrc}
+                    onTimeUpdate={(e) => setCurrentSec(e.currentTarget.currentTime)}
+                    onPlay={() => setPlaying(true)}
+                    onPause={() => setPlaying(false)}
+                    onEnded={() => setPlaying(false)}
+                    onError={(e) => {
+                      const err = e.currentTarget.error;
+                      if (err?.code === 4 || err?.code === 2) {
+                        setMediaErrorType("file-not-found");
+                      } else if (err?.code === 3) {
+                        setMediaErrorType("decode-error");
+                      } else {
+                        setMediaErrorType("unknown");
+                      }
+                      setMediaError(true);
+                      console.warn("[Watch] Stream error:", err?.code, err?.message);
+                    }}
+                    onDoubleClick={toggleFullscreen}
+                    onClick={() => !isFullscreen && setPlaying((p) => !p)}
+                    controls={isFullscreen}
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "contain",
+                      cursor: "pointer",
+                      background: "#000",
+                    }}
+                    playsInline
+                  />
                 ) : isPreparing ? (
-                  /* Recovered ISO/VOB still transcoding to a playable MP4 — never feed it to <video> (WebView2 can't decode it) */
+                  /* Recovery still running (no file yet), or stream URL not loaded yet */
                   <PreparingCard timedOut={prepareTimedOut} onRetry={() => { setPrepareTimedOut(false); prepareStartTimeRef.current = null; }} />
                 ) : hasMedia && !mediaError ? (
                   <video

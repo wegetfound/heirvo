@@ -1,6 +1,12 @@
+import { useLocation } from "react-router-dom";
 import { TranscodePanel } from "./TranscodePanel";
 
 export function Transcode() {
+  // A per-disc "Save as MP4" action navigates here with the disc's file path in
+  // router state so the panel opens pre-filled (skips the file picker).
+  const loc = useLocation();
+  const initialInput = (loc.state as { inputPath?: string } | null)?.inputPath;
+
   return (
     <div className="mx-auto max-w-4xl p-8">
       <h1 className="mb-2 font-display text-[2rem] font-semibold tracking-[-0.02em] text-ink-900">
@@ -10,7 +16,7 @@ export function Transcode() {
         Already rescued a disc? Save it as a standard MP4 file you can play on
         any phone, TV, or computer.
       </p>
-      <TranscodePanel />
+      <TranscodePanel initialInput={initialInput} />
     </div>
   );
 }

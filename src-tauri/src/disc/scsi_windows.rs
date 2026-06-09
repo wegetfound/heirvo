@@ -1324,7 +1324,22 @@ impl SectorReader for ScsiSectorReader {
                 // fires, in which case `e.kind()` is `Other` (because the
                 // windows crate doesn't map 0x80070079 → TimedOut for us).
                 // `is_drive_disconnect_error` catches those exact HRESULTs.
-                if e.kind() == io::ErrorKind::TimedOut || is_drive_disconnect_error(&e) {
+                // Device-gone vs hosed-region are DIFFERENT failures and the
+                // engine must treat them oppositely. A disconnect (bridge fell
+                // off the bus, enclosure power-cycled, media ejected) means the
+                // sector was never tested — report DeviceGone so the engine
+                // waits and re-reads instead of skipping past and marking damage
+                // that isn't real. A true drive-side timeout means this region
+                // really is unreadable — report Timeout so skip-ahead escapes it.
+                if is_drive_disconnect_error(&e) {
+                    tracing::warn!(
+                        "Block read at LBA {start_lba} n={n}: drive disconnected ({e}) — reporting DeviceGone so recovery waits for the drive instead of skipping"
+                    );
+                    return (0..n as u64)
+                        .map(|i| SectorReadResult::err(start_lba + i, SectorError::DeviceGone, 1, elapsed_ms))
+                        .collect();
+                }
+                if e.kind() == io::ErrorKind::TimedOut {
                     tracing::warn!(
                         "Block timeout at LBA {start_lba} n={n} ({e}); skipping per-sector retry — drive is hosed in this region, skip-ahead will jump past"
                     );
