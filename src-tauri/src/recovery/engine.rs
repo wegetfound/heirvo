@@ -579,7 +579,7 @@ impl RecoveryEngine {
         // that keeps power-cycling at one hard spot re-reads the same block forever
         // and strands the rest of the disc. The skipped band stays Unknown (a
         // retryable hole), never Failed — so it's honest and recoverable later.
-        const DEVICE_GONE_DROPS_TO_LEAP: u32 = 3;
+        const DEVICE_GONE_DROPS_TO_LEAP: u32 = 5;
         let mut consec_fail_blocks: u32 = 0;
         let mut consec_slow_fails: u32 = 0;
         // Bridge-drop escape tracking (see DEVICE_GONE_DROPS_TO_LEAP).
@@ -724,6 +724,11 @@ impl RecoveryEngine {
                             device_gone_block = usize::MAX;
                             device_leap_run = device_leap_run.saturating_add(1);
                             consec_good_after_leap = 0;
+                            // Give the bridge breathing room after the stressful
+                            // drop-reconnect-leap cycle. Without this pause, the
+                            // next read fires instantly and a stressed bridge
+                            // cascades into another drop → leap → drop spiral.
+                            std::thread::sleep(Duration::from_secs(3));
                             continue;
                         }
                         continue; // drive back → re-read same block (i not advanced)
@@ -1155,10 +1160,13 @@ impl RecoveryEngine {
             attempt += 1;
             match self.reader.reset() {
                 Ok(()) => {
-                    // Let a just-reconnected bridge spin up / become ready before
+                    // Let a just-reconnected bridge spin up / stabilise before
                     // we re-read, so we don't bounce straight back into a
-                    // NOT-READY disconnect.
-                    std::thread::sleep(Duration::from_millis(1500));
+                    // NOT-READY disconnect. 3s is long enough for cheap
+                    // bus-powered bridges to settle their power rail; shorter
+                    // values (1.5s) caused cascading drop cycles on stressed
+                    // bridges.
+                    std::thread::sleep(Duration::from_secs(3));
                     tracing::info!(
                         "wait_for_device: drive re-opened after {attempt} attempt(s) — resuming recovery"
                     );
