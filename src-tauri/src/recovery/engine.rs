@@ -72,6 +72,10 @@ pub struct RecoveryStats {
     /// How many distinct stall episodes have occurred this run.
     #[serde(default)]
     pub stall_count: u64,
+    /// True while the wall detector's binary probe is scanning ahead past a
+    /// damage zone. UI should show a calm "scanning for more data" message.
+    #[serde(default)]
+    pub wall_probe_active: bool,
 }
 
 fn default_health() -> DriveHealthHint {
@@ -121,6 +125,10 @@ pub struct RecoveryEngine {
     stall_episodes: AtomicU64,
     /// True while currently inside a stall episode (used to count once per episode).
     in_stall: AtomicBool,
+    /// True while the wall detector's binary probe is scanning ahead past a
+    /// damage zone. Surfaced in `RecoveryStats` so the UI can show a calm
+    /// "Damaged section detected — scanning ahead" message.
+    wall_probe_active: AtomicBool,
     progress_tx: Option<mpsc::UnboundedSender<RecoveryProgress>>,
     checkpoint_tx: Option<mpsc::UnboundedSender<()>>,
     /// Receipts are batched here (up to RECEIPT_BATCH_SIZE) then flushed to the
@@ -140,6 +148,20 @@ const STALL_THRESHOLD_SECS: u64 = 60;
 /// Don't arm stall detection until the engine has run this long — covers drive
 /// spin-up so a slow first read never trips the alarm. Spec: 30s.
 const STALL_GRACE_SECS: u64 = 30;
+
+// ── Wall detector constants ──────────────────────────────────────────────────
+// Catches damage zones where scattered readable sectors reset the streak
+// counter, preventing the exponential skip-ahead from escaping. When
+// progress flatlines for WALL_CHECK_INTERVAL seconds, a binary probe scans
+// forward to find the next readable region without crawling through the
+// entire damage zone.
+/// How often to check whether Triage is making progress.
+const WALL_CHECK_INTERVAL: Duration = Duration::from_secs(45);
+/// Fewer than this many new good sectors in one interval ⇒ stuck in a wall.
+const WALL_MIN_PROGRESS: u64 = 10;
+/// Don't arm the wall detector until at least this many blocks have been
+/// processed — prevents false triggers during slow drive spin-up.
+const WALL_MIN_BLOCKS: usize = 50;
 
 impl RecoveryEngine {
     pub fn new(
@@ -165,6 +187,7 @@ impl RecoveryEngine {
             last_success_ms: AtomicU64::new(0),
             stall_episodes: AtomicU64::new(0),
             in_stall: AtomicBool::new(false),
+            wall_probe_active: AtomicBool::new(false),
             progress_tx: None,
             checkpoint_tx: None,
             receipt_batch: Mutex::new(Vec::new()),
@@ -563,6 +586,10 @@ impl RecoveryEngine {
         let mut device_gone_streak: u32 = 0;       // drops on the current block
         let mut device_gone_block: usize = usize::MAX;
         let mut device_leap_run: u32 = 0;          // consecutive escape-leaps w/o a good read
+        // Wall detector: track progress over time to catch damage zones where
+        // scattered readable sectors reset the streak counter.
+        let mut wall_check_good: u64 = self.map.lock().count(SectorState::Good);
+        let mut wall_check_at: Instant = Instant::now();
 
         // Scoped heartbeat: emits progress every 2 seconds from a parallel
         // thread, INDEPENDENT of the block-read loop. This is what fixes the
@@ -785,6 +812,176 @@ impl RecoveryEngine {
                     device_gone_streak = 0;
                     device_gone_block = usize::MAX;
                     device_leap_run = 0;
+                }
+
+                // ── Wall detector ─────────────────────────────────────────
+                // The exponential skip-ahead resets on ANY partially-readable
+                // block. A messy damage zone (most sectors fail, occasional
+                // ones read OK) keeps resetting the streak, so skip-ahead
+                // never reaches the big jump sizes and the engine crawls.
+                //
+                // Fix: measure *overall progress* over time. If good-sector
+                // count barely moves for WALL_CHECK_INTERVAL seconds, we're
+                // stuck. Probe forward in 8 evenly-spaced steps to find the
+                // next readable region, then binary-search between the last
+                // failed probe and the first good probe to pinpoint the edge
+                // of the damage zone. All skipped sectors stay Unknown —
+                // nothing is discarded, everything is retryable later.
+                if emitted >= WALL_MIN_BLOCKS
+                    && wall_check_at.elapsed() >= WALL_CHECK_INTERVAL
+                {
+                    let current_good = self.map.lock().count(SectorState::Good);
+                    let progress = current_good.saturating_sub(wall_check_good);
+
+                    if progress < WALL_MIN_PROGRESS && current_good > 0 {
+                        tracing::warn!(
+                            "Wall detector: only {progress} new good sectors in {:.0}s — \
+                             probing ahead to escape damage zone (LBA {start})",
+                            wall_check_at.elapsed().as_secs_f64(),
+                        );
+                        self.wall_probe_active.store(true, Ordering::Relaxed);
+                        self.emit_progress(strategy);
+
+                        let remaining = blocks.len().saturating_sub(i + 1);
+                        let stride = (remaining / 8).max(1);
+                        let mut last_bad: usize = i;
+                        let mut found_good: Option<usize> = None;
+
+                        // Forward probe: test 8 evenly-spaced points ahead.
+                        'probe: for step in 1..=8u32 {
+                            let probe_i = i + stride * step as usize;
+                            if probe_i >= blocks.len() { break; }
+                            let (probe_lba, _) = blocks[probe_i];
+
+                            // Read one sector at the probe point. Handle
+                            // DeviceGone by waiting for the drive and retrying
+                            // (same resilience as the main read loop).
+                            let result = loop {
+                                let r = self.reader.read_sector(probe_lba, opts);
+                                if matches!(
+                                    r.error,
+                                    Some(crate::disc::sector::SectorError::DeviceGone)
+                                ) {
+                                    if self.wait_for_device() {
+                                        continue;
+                                    }
+                                    break r; // cancelled
+                                }
+                                break r;
+                            };
+                            if self.cancel_flag.load(Ordering::SeqCst) {
+                                break 'probe;
+                            }
+
+                            if result.is_ok() {
+                                // Record the good sector.
+                                let mut map = self.map.lock();
+                                map.set(probe_lba, SectorState::Good);
+                                drop(map);
+                                self.record_read_outcome(true);
+                                if let Some(data) = &result.data {
+                                    self.record_receipt(probe_lba, data);
+                                    if let Some(sink) = &self.image_sink {
+                                        sink.write_sector(probe_lba, data);
+                                    }
+                                }
+                                found_good = Some(probe_i);
+                                tracing::info!(
+                                    "Wall probe: found readable data at LBA {probe_lba} \
+                                     (step {step}/8, ~{pct}% of remaining disc)",
+                                    pct = step * 100 / 8,
+                                );
+                                break;
+                            } else {
+                                last_bad = probe_i;
+                            }
+                        }
+
+                        // Binary search between last_bad and found_good to
+                        // find the exact edge of the damage zone. At most 16
+                        // iterations (~16 single-sector reads) to pinpoint the
+                        // boundary within a handful of blocks.
+                        if let Some(good_i) = found_good {
+                            let mut lo = last_bad;
+                            let mut hi = good_i;
+                            for _ in 0..16 {
+                                if hi - lo <= 1 { break; }
+                                let mid = (lo + hi) / 2;
+                                let (mid_lba, _) = blocks[mid];
+                                let result = loop {
+                                    let r = self.reader.read_sector(mid_lba, opts);
+                                    if matches!(
+                                        r.error,
+                                        Some(crate::disc::sector::SectorError::DeviceGone)
+                                    ) {
+                                        if self.wait_for_device() {
+                                            continue;
+                                        }
+                                        break r;
+                                    }
+                                    break r;
+                                };
+                                if self.cancel_flag.load(Ordering::SeqCst) {
+                                    break;
+                                }
+                                if result.is_ok() {
+                                    let mut map = self.map.lock();
+                                    map.set(mid_lba, SectorState::Good);
+                                    drop(map);
+                                    self.record_read_outcome(true);
+                                    if let Some(data) = &result.data {
+                                        self.record_receipt(mid_lba, data);
+                                        if let Some(sink) = &self.image_sink {
+                                            sink.write_sector(mid_lba, data);
+                                        }
+                                    }
+                                    hi = mid; // edge is closer to the damage
+                                } else {
+                                    lo = mid; // edge is further ahead
+                                }
+                            }
+
+                            tracing::info!(
+                                "Wall probe: damage edge at block {hi} (LBA {}), \
+                                 jumping {skipped} blocks ahead to resume recovery",
+                                blocks[hi].0,
+                                skipped = hi - i,
+                            );
+
+                            // Reset all skip/streak counters.
+                            consec_fail_blocks = 0;
+                            consec_slow_fails = 0;
+                            device_gone_streak = 0;
+                            device_gone_block = usize::MAX;
+                            device_leap_run = 0;
+
+                            self.wall_probe_active.store(false, Ordering::Relaxed);
+
+                            wall_check_good =
+                                self.map.lock().count(SectorState::Good);
+                            wall_check_at = Instant::now();
+
+                            self.emit_progress(strategy);
+                            self.checkpoint();
+
+                            // Jump to the edge; `continue` skips the `i += 1`
+                            // so this block is read on the next iteration.
+                            i = hi;
+                            continue;
+                        } else {
+                            tracing::info!(
+                                "Wall probe: no readable data found ahead — \
+                                 disc may be damaged to the end"
+                            );
+                            self.wall_probe_active.store(false, Ordering::Relaxed);
+                            self.emit_progress(strategy);
+                        }
+                    }
+
+                    // Reset the check window regardless of outcome.
+                    wall_check_good =
+                        self.map.lock().count(SectorState::Good);
+                    wall_check_at = Instant::now();
                 }
             }
 
@@ -1080,6 +1277,7 @@ impl RecoveryEngine {
             idle_secs,
             stalled,
             stall_count,
+            wall_probe_active: self.wall_probe_active.load(Ordering::Relaxed),
         }
     }
 

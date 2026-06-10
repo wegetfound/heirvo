@@ -347,6 +347,7 @@ pub async fn get_recovery_status(
         idle_secs: None,
         stalled: false,
         stall_count: 0,
+        wall_probe_active: false,
     }))
 }
 

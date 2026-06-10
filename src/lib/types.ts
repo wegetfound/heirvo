@@ -261,6 +261,8 @@ export interface RecoveryStats {
   stalled?: boolean;
   /** How many distinct stall episodes have occurred this run. */
   stall_count?: number;
+  /** True while the wall detector is scanning ahead past a damage zone. */
+  wall_probe_active?: boolean;
 }
 
 export interface RecoveryProgress {

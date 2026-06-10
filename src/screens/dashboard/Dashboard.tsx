@@ -168,7 +168,11 @@ export function Dashboard() {
   useEffect(() => {
     if (!recoveryDone || !stats) return;
     pulseIn(doneBannerRef.current);
-    if (minsDamaged(stats) === 0) {
+    // Only celebrate when we actually recovered most of the disc.
+    // In Quick mode, unrecovered sectors stay Unknown (not Failed/Skipped),
+    // so minsDamaged alone would show 0 even on a 2% recovery — fireworks
+    // on a near-empty disc is dishonest. Gate on ≥75% recovered instead.
+    if (pctRecovered(stats) >= 75 && minsDamaged(stats) === 0) {
       const t = window.setTimeout(() => sparkleBurst(doneBannerRef.current, 16), 220);
       return () => window.clearTimeout(t);
     }
@@ -246,6 +250,34 @@ export function Dashboard() {
           }
           bottomBlock={bottomBlock}
         />
+
+        {/* WALL PROBE — engine is scanning past a damage zone */}
+        {stats?.wall_probe_active && (
+          <div
+            role="status"
+            aria-live="polite"
+            style={{
+              borderRadius: 12,
+              padding: "16px 18px",
+              background: "var(--db-surface-2)",
+              border: "1px solid var(--db-border)",
+              width: "100%",
+              marginBottom: 8,
+            }}
+          >
+            <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+              <RefreshCw size={16} className="animate-spin" style={{ color: "var(--db-amber)", flexShrink: 0 }} />
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: "var(--db-text)" }}>
+                  Damaged section detected
+                </div>
+                <div style={{ fontSize: 12, color: "var(--db-text-muted)", marginTop: 2 }}>
+                  Scanning ahead for more of your video — this only takes a moment.
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* STALLED BANNER — recovery appears stuck, show recovery options */}
         {stalled && (
