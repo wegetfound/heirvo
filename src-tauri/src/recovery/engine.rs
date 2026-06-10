@@ -586,6 +586,7 @@ impl RecoveryEngine {
         let mut device_gone_streak: u32 = 0;       // drops on the current block
         let mut device_gone_block: usize = usize::MAX;
         let mut device_leap_run: u32 = 0;          // consecutive escape-leaps w/o a good read
+        let mut consec_good_after_leap: u32 = 0;   // good blocks since last leap (need 5 to reset escalation)
         // Wall detector: track progress over time to catch damage zones where
         // scattered readable sectors reset the streak counter.
         let mut wall_check_good: u64 = self.map.lock().count(SectorState::Good);
@@ -699,6 +700,7 @@ impl RecoveryEngine {
                             device_gone_streak = 0;
                             device_gone_block = usize::MAX;
                             device_leap_run = device_leap_run.saturating_add(1);
+                            consec_good_after_leap = 0;
                             continue;
                         }
                         continue; // drive back → re-read same block (i not advanced)
@@ -808,10 +810,21 @@ impl RecoveryEngine {
                 } else {
                     consec_fail_blocks = 0;
                     consec_slow_fails = 0;
-                    // Read clean again → we've escaped any stuck/unpowered region.
+                    // Read clean again → clear per-block bridge-drop tracking.
                     device_gone_streak = 0;
                     device_gone_block = usize::MAX;
-                    device_leap_run = 0;
+                    // Don't reset device_leap_run on a single good read — a
+                    // flaky bridge that drops every other block would reset the
+                    // escalation and crawl at 64-block leaps forever. Require
+                    // several consecutive good blocks before we believe we've
+                    // truly escaped the troubled region.
+                    if device_leap_run > 0 {
+                        consec_good_after_leap = consec_good_after_leap.saturating_add(1);
+                        if consec_good_after_leap >= 5 {
+                            device_leap_run = 0;
+                            consec_good_after_leap = 0;
+                        }
+                    }
                 }
 
                 // ── Wall detector ─────────────────────────────────────────
