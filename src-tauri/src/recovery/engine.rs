@@ -669,19 +669,19 @@ impl RecoveryEngine {
                         // keeps power-cycling at one hard region would otherwise
                         // re-read this block forever and never advance, stranding the
                         // rest of the disc. After a few drops at the same spot, leap
-                        // past it (Triage only) so the readable remainder is recovered
-                        // now; the skipped band stays Unknown for a retry pass / better
-                        // hardware. A block the bridge can actually read recovers before
-                        // the streak builds (the success path below resets it).
+                        // past it so the readable remainder is recovered now. For
+                        // Triage the skipped band stays Unknown (retryable with better
+                        // hardware); for retry passes (SlowRead etc.) skipped sectors
+                        // are marked Failed since the bridge demonstrably can't sustain
+                        // reads here. A block the bridge can actually read recovers
+                        // before the streak builds (the success path below resets it).
                         if i == device_gone_block {
                             device_gone_streak = device_gone_streak.saturating_add(1);
                         } else {
                             device_gone_block = i;
                             device_gone_streak = 1;
                         }
-                        if matches!(strategy, PassStrategy::Triage)
-                            && device_gone_streak >= DEVICE_GONE_DROPS_TO_LEAP
-                        {
+                        if device_gone_streak >= DEVICE_GONE_DROPS_TO_LEAP {
                             let remaining = blocks.len().saturating_sub(i + 1);
                             let safe_max = (remaining / 4).max(1);
                             // Grow the jump across back-to-back leaps (no good read
@@ -693,9 +693,32 @@ impl RecoveryEngine {
                                 .unwrap_or(MAX_SKIP_BLOCKS)
                                 .min(MAX_SKIP_BLOCKS);
                             let extra = escape.min(safe_max);
-                            tracing::warn!(
-                                "Triage: bridge dropped {device_gone_streak}× at LBA {start} — leaping {extra} blocks past it to keep recovering the rest (region deferred, left Unknown for retry)"
-                            );
+
+                            let is_triage = matches!(strategy, PassStrategy::Triage);
+                            if is_triage {
+                                tracing::warn!(
+                                    "Triage: bridge dropped {device_gone_streak}× at LBA {start} — leaping {extra} blocks past it to keep recovering the rest (region deferred, left Unknown for retry)"
+                                );
+                            } else {
+                                // Retry passes: mark the skipped sectors Failed so
+                                // they don't circle back as Unknown targets forever.
+                                tracing::warn!(
+                                    "{}: bridge dropped {device_gone_streak}× at LBA {start} — leaping {extra} blocks, marking Failed (bridge can't sustain reads here)",
+                                    strategy.name()
+                                );
+                                let mut map = self.map.lock();
+                                // Mark the current block + all skipped blocks Failed.
+                                for j in 0..count as u64 {
+                                    map.set(start + j, SectorState::Failed);
+                                }
+                                for skip_idx in (i + 1)..=(i + extra).min(blocks.len() - 1) {
+                                    let (skip_lba, skip_count) = blocks[skip_idx];
+                                    for j in 0..skip_count as u64 {
+                                        map.set(skip_lba + j, SectorState::Failed);
+                                    }
+                                }
+                            }
+
                             i += extra + 1;
                             device_gone_streak = 0;
                             device_gone_block = usize::MAX;
