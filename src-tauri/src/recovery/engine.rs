@@ -694,30 +694,22 @@ impl RecoveryEngine {
                                 .min(MAX_SKIP_BLOCKS);
                             let extra = escape.min(safe_max);
 
-                            let is_triage = matches!(strategy, PassStrategy::Triage);
-                            if is_triage {
-                                tracing::warn!(
-                                    "Triage: bridge dropped {device_gone_streak}× at LBA {start} — leaping {extra} blocks past it to keep recovering the rest (region deferred, left Unknown for retry)"
-                                );
-                            } else {
-                                // Retry passes: mark the skipped sectors Failed so
-                                // they don't circle back as Unknown targets forever.
-                                tracing::warn!(
-                                    "{}: bridge dropped {device_gone_streak}× at LBA {start} — leaping {extra} blocks, marking Failed (bridge can't sustain reads here)",
-                                    strategy.name()
-                                );
-                                let mut map = self.map.lock();
-                                // Mark the current block + all skipped blocks Failed.
-                                for j in 0..count as u64 {
-                                    map.set(start + j, SectorState::Failed);
-                                }
-                                for skip_idx in (i + 1)..=(i + extra).min(blocks.len() - 1) {
-                                    let (skip_lba, skip_count) = blocks[skip_idx];
-                                    for j in 0..skip_count as u64 {
-                                        map.set(skip_lba + j, SectorState::Failed);
-                                    }
-                                }
-                            }
+                            // ALL passes: the leapt-over sectors were never
+                            // attempted — they keep their current map state
+                            // (Unknown stays Unknown, Failed stays Failed).
+                            // The old behaviour marked them Failed in retry
+                            // passes "so they don't circle back", but the
+                            // drops are correlated with the BRIDGE's state
+                            // (it just power-cycled repeatedly), not with the
+                            // leapt-over disc region — recording them Failed
+                            // wrote damage that doesn't exist into the map,
+                            // the health score, and the exported rmap. The
+                            // pass's target list was computed at pass start,
+                            // so nothing circles back within this pass anyway.
+                            tracing::warn!(
+                                "{}: bridge dropped {device_gone_streak}× at LBA {start} — leaping {extra} blocks past it (region deferred, map untouched)",
+                                strategy.name()
+                            );
 
                             i += extra + 1;
                             device_gone_streak = 0;
@@ -752,7 +744,25 @@ impl RecoveryEngine {
                             }
                         }
                     } else {
-                        map.set(r.lba, SectorState::Failed);
+                        // Only a genuine media verdict marks the map. Timeouts,
+                        // hardware/not-ready trouble, and unclassified errors
+                        // cluster around every bridge drop and drive stall —
+                        // recording them as Failed paints phantom damage on
+                        // flaky hardware. Those sectors keep their current
+                        // state (Unknown → retried by a later pass; Failed
+                        // stays Failed). The failure streak / skip-ahead logic
+                        // below still sees the block as failed, so dead-zone
+                        // escape behaviour is unchanged.
+                        if matches!(
+                            r.error,
+                            Some(
+                                crate::disc::sector::SectorError::MediumError
+                                    | crate::disc::sector::SectorError::Uncorrectable
+                                    | crate::disc::sector::SectorError::IllegalRequest
+                            )
+                        ) {
+                            map.set(r.lba, SectorState::Failed);
+                        }
                         self.record_read_outcome(false);
                     }
                 }
@@ -760,6 +770,29 @@ impl RecoveryEngine {
             };
 
             let read_elapsed = read_started.elapsed();
+
+            // Bridge-drop bookkeeping for ALL passes: any block with at least
+            // one good read is evidence the bridge is sustaining reads again.
+            // This used to live inside the Triage-only branch below, which
+            // meant retry passes (SlowRead/Reverse) could never de-escalate
+            // their leap size — a bridge that dropped every few sectors made
+            // leaps grow monotonically 64→…→2048 for the rest of the pass.
+            if !block_failed_entirely {
+                device_gone_streak = 0;
+                device_gone_block = usize::MAX;
+                // Don't reset device_leap_run on a single good read — a flaky
+                // bridge that drops every other block would reset the
+                // escalation and crawl at 64-block leaps forever. Require
+                // several consecutive good blocks before we believe we've
+                // truly escaped the troubled region.
+                if device_leap_run > 0 {
+                    consec_good_after_leap = consec_good_after_leap.saturating_add(1);
+                    if consec_good_after_leap >= 5 {
+                        device_leap_run = 0;
+                        consec_good_after_leap = 0;
+                    }
+                }
+            }
 
             // Skip-ahead heuristic for forward passes only. Exponential growth:
             // streak 2  → skip 1   block
@@ -838,21 +871,8 @@ impl RecoveryEngine {
                 } else {
                     consec_fail_blocks = 0;
                     consec_slow_fails = 0;
-                    // Read clean again → clear per-block bridge-drop tracking.
-                    device_gone_streak = 0;
-                    device_gone_block = usize::MAX;
-                    // Don't reset device_leap_run on a single good read — a
-                    // flaky bridge that drops every other block would reset the
-                    // escalation and crawl at 64-block leaps forever. Require
-                    // several consecutive good blocks before we believe we've
-                    // truly escaped the troubled region.
-                    if device_leap_run > 0 {
-                        consec_good_after_leap = consec_good_after_leap.saturating_add(1);
-                        if consec_good_after_leap >= 5 {
-                            device_leap_run = 0;
-                            consec_good_after_leap = 0;
-                        }
-                    }
+                    // (Bridge-drop / leap de-escalation bookkeeping happens
+                    // strategy-independently above, before this branch.)
                 }
 
                 // ── Wall detector ─────────────────────────────────────────
@@ -1096,7 +1116,17 @@ impl RecoveryEngine {
             let mut map = self.map.lock();
             if ok {
                 map.set(lba, SectorState::Good);
-            } else {
+            } else if matches!(
+                result.error,
+                Some(
+                    crate::disc::sector::SectorError::MediumError
+                        | crate::disc::sector::SectorError::Uncorrectable
+                        | crate::disc::sector::SectorError::IllegalRequest
+                )
+            ) {
+                // Genuine media verdict only. Timeouts and drive-state errors
+                // (the post-bridge-drop signature) leave the sector's current
+                // state untouched — never recorded as disc damage.
                 map.set(lba, SectorState::Failed);
             }
             drop(map);
@@ -1628,8 +1658,12 @@ mod tests {
         assert_eq!(sum, TOTAL);
     }
 
-    /// Timeout sectors: the engine records them as Failed and moves on without
-    /// hanging. Surrounding sectors must be recovered as Good.
+    /// Timeout sectors: timeouts are drive-state evidence, NOT media verdicts —
+    /// on cheap USB bridges they cluster around every drop/stall, and recording
+    /// them as Failed painted phantom damage across the map. They must stay
+    /// Unknown (retryable with better hardware), never silently Good, and the
+    /// engine must move past them without hanging. Surrounding sectors must be
+    /// recovered as Good.
     #[test]
     fn timeout_sectors_recorded_failed_no_hang() {
         use crate::disc::mock::MockSectorBehavior;
@@ -1650,20 +1684,23 @@ mod tests {
         engine.run();
         let map = engine.snapshot_map();
 
-        // Timeout sectors must end up Failed (not silently Good or Unknown).
+        // Timeout sectors stay Unknown — attempted but never given a media
+        // verdict. Marking them Failed would write damage that may not exist
+        // (the post-bridge-drop signature) into the map, health score, and rmap.
         for lba in 40..45 {
             assert_eq!(
                 map.get(lba),
-                SectorState::Failed,
-                "timeout sector {lba} should be Failed"
+                SectorState::Unknown,
+                "timeout sector {lba} should stay Unknown (drive-state, not media verdict)"
             );
         }
         // Surrounding sectors must be Good.
         assert_eq!(map.get(39), SectorState::Good, "sector before timeout window");
         assert_eq!(map.get(45), SectorState::Good, "sector after timeout window");
 
-        // No sector left Unknown.
-        assert_eq!(map.count(SectorState::Unknown), 0);
+        // Exactly the timeout window remains Unknown.
+        assert_eq!(map.count(SectorState::Unknown), 5);
+        assert_eq!(map.count(SectorState::Failed), 0);
 
         // Counter integrity.
         let sum = map.count(SectorState::Good)

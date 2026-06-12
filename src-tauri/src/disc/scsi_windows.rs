@@ -167,6 +167,8 @@ const SENSE_KEY_NOT_READY: u8 = 0x02;
 const SENSE_KEY_MEDIUM_ERROR: u8 = 0x03;
 const SENSE_KEY_HARDWARE_ERROR: u8 = 0x04;
 const SENSE_KEY_ILLEGAL_REQUEST: u8 = 0x05;
+const SENSE_KEY_UNIT_ATTENTION: u8 = 0x06;
+const SENSE_KEY_ABORTED_COMMAND: u8 = 0x0B;
 
 #[repr(C)]
 #[derive(Default)]
@@ -446,11 +448,14 @@ pub fn has_media(drive: &DriveHandle) -> bool {
     match scsi_passthrough(drive, &cdb, &mut empty, SCSI_IOCTL_DATA_IN, 2) {
         // GOOD status → ready, media present.
         Ok((0, _)) => true,
-        // Check condition — decode fixed-format sense (byte 2 low nibble = sense
-        // key, byte 12 = ASC). NOT READY (0x02) + ASC 0x3A = MEDIUM NOT PRESENT
+        // Check condition — NOT READY (0x02) + ASC 0x3A = MEDIUM NOT PRESENT
         // is the only "no disc" verdict; becoming-ready (0x04), unit attention,
         // etc. all mean the disc IS there, just not ready this instant.
-        Ok((_, sense)) => !((sense[2] & 0x0F) == 0x02 && sense[12] == 0x3A),
+        // parse_sense handles both fixed- and descriptor-format sense data.
+        Ok((_, sense)) => {
+            let (key, asc, _) = parse_sense(&sense);
+            !(key == 0x02 && asc == 0x3A)
+        }
         // Couldn't reach the drive (timeout / vanished). Report no media this
         // tick; the watcher's hysteresis absorbs a one-off blip.
         Err(_) => false,
@@ -732,21 +737,64 @@ fn scsi_passthrough_resilient(
     Err(first_err)
 }
 
-/// Map a SCSI sense buffer to our internal `SectorError`.
-fn sense_to_error(sense: &[u8; 32]) -> SectorError {
-    if sense[0] == 0 {
-        return SectorError::Other;
-    }
-    let key = sense[2] & 0x0F;
-    match key {
-        SENSE_KEY_NO_SENSE => SectorError::Other,
-        SENSE_KEY_NOT_READY => SectorError::HardwareError,
-        SENSE_KEY_MEDIUM_ERROR => SectorError::MediumError,
-        SENSE_KEY_HARDWARE_ERROR => SectorError::HardwareError,
-        SENSE_KEY_ILLEGAL_REQUEST => SectorError::IllegalRequest,
-        _ => SectorError::Other,
+/// Extract (sense key, ASC, ASCQ) from a sense buffer, handling BOTH formats.
+/// Fixed format (response code 0x70/0x71) puts key/ASC/ASCQ at bytes 2/12/13;
+/// descriptor format (0x72/0x73 — returned by some USB bridges and newer
+/// drives) puts them at bytes 1/2/3. Reading descriptor sense with fixed
+/// offsets yields garbage classification.
+fn parse_sense(sense: &[u8; 32]) -> (u8, u8, u8) {
+    match sense[0] & 0x7F {
+        0x72 | 0x73 => (sense[1] & 0x0F, sense[2], sense[3]),
+        _ => (sense[2] & 0x0F, sense[12], sense[13]),
     }
 }
+
+/// How a CHECK CONDITION should be handled — not every sense code is a verdict
+/// about the disc. On cheap USB bridges the most common sense data after a
+/// drop/reset is UNIT ATTENTION ("power on or reset occurred") and NOT READY
+/// ("becoming ready") — recording those as sector failures paints phantom
+/// damage across the map after every reconnect.
+enum SenseClass {
+    /// Drive-state transient (unit attention after reset, aborted command,
+    /// spinning up). Retry the same command after a short wait — the sector
+    /// was never actually tested against the medium.
+    Transient,
+    /// Medium/device absent (NOT READY + MEDIUM NOT PRESENT). Treated as
+    /// device-gone: the engine holds and waits, never records damage.
+    MediaAbsent,
+    /// A real verdict to classify and (possibly) record.
+    Final(SectorError),
+}
+
+fn classify_sense(sense: &[u8; 32]) -> SenseClass {
+    if sense[0] == 0 {
+        return SenseClass::Final(SectorError::Other);
+    }
+    let (key, asc, _ascq) = parse_sense(sense);
+    match key {
+        SENSE_KEY_NO_SENSE => SenseClass::Final(SectorError::Other),
+        // NOT READY: 04/xx = becoming ready / spin-up (wait and retry);
+        // 3A/xx = medium not present (ejected, or transient during USB
+        // re-enumeration) — device-gone semantics either way. Other ASCs
+        // are also drive-state, not disc damage: stay patient.
+        SENSE_KEY_NOT_READY => match asc {
+            0x3A => SenseClass::MediaAbsent,
+            _ => SenseClass::Transient,
+        },
+        SENSE_KEY_MEDIUM_ERROR => SenseClass::Final(SectorError::MediumError),
+        SENSE_KEY_HARDWARE_ERROR => SenseClass::Final(SectorError::HardwareError),
+        SENSE_KEY_ILLEGAL_REQUEST => SenseClass::Final(SectorError::IllegalRequest),
+        // The drive's first command after ANY reset/reconnect/media event
+        // returns UNIT ATTENTION. It means "my state changed", never "this
+        // sector is bad". Always retry.
+        SENSE_KEY_UNIT_ATTENTION => SenseClass::Transient,
+        // ABORTED COMMAND is the routine result of our own watchdog's
+        // CancelIoEx, or a bus reset mid-command. The sector was not tested.
+        SENSE_KEY_ABORTED_COMMAND => SenseClass::Transient,
+        _ => SenseClass::Final(SectorError::Other),
+    }
+}
+
 
 /// Configure the drive for damaged-media recovery reads.
 ///
@@ -1164,28 +1212,76 @@ fn fast_sector_fallback(
     count: u32,
     block_timeout_secs: u32,
 ) -> Vec<SectorReadResult> {
-    // Cap at 2s per sector — enough for the drive to respond if it's going to,
-    // short enough that a frozen drive doesn't block the engine for minutes.
-    let timeout = block_timeout_secs.min(2).max(1);
-    (0..count as u64)
-        .map(|i| {
-            let lba = start_lba + i;
-            let cdb = build_read10_cdb(lba as u32, 1);
-            let mut buf = vec![0u8; DVD_SECTOR_SIZE];
-            let started = Instant::now();
-            match scsi_passthrough(drive, &cdb, &mut buf, SCSI_IOCTL_DATA_IN, timeout) {
-                Ok((0, _)) => {
-                    SectorReadResult::ok(lba, buf, started.elapsed().as_millis() as u32)
-                }
-                Ok((_, sense)) => {
-                    SectorReadResult::err(lba, sense_to_error(&sense), 1, started.elapsed().as_millis() as u32)
-                }
-                Err(_) => {
-                    SectorReadResult::err(lba, SectorError::Timeout, 1, started.elapsed().as_millis() as u32)
-                }
+    // 6s per-sector ceiling. The previous 2s cap was a bridge-killer: when an
+    // SPTI TimeOutValue expires, storport resets the device to reclaim the
+    // IRP, and cheap USB-ATAPI bridges fall off the bus when reset. A drive
+    // working a marginal sector routinely needs 3-6s (more when the firmware
+    // fast-fail MODE SELECT was refused, which is common on USB bridges) — so
+    // the 2s cap was converting recoverable sectors into device drops. The
+    // host watchdog still bounds true hangs.
+    let timeout = block_timeout_secs.clamp(1, 6);
+    let mut out: Vec<SectorReadResult> = Vec::with_capacity(count as usize);
+    let mut i: u64 = 0;
+    // Bounded patience for transient sense (UNIT ATTENTION after a reset,
+    // spin-up) — these are drive states, not sector verdicts.
+    let mut transient_waits: u8 = 0;
+    const MAX_TRANSIENT_WAITS: u8 = 5;
+
+    // Helper: the device is gone (or never settles) — report DeviceGone for
+    // the current and ALL remaining sectors so the engine's wait-for-device
+    // machinery takes over. These sectors were never tested; recording them
+    // as Timeout/MediumError would paint phantom damage on every bridge drop.
+    let abandon_as_device_gone = |out: &mut Vec<SectorReadResult>, from: u64, elapsed_ms: u32| {
+        for j in from..count as u64 {
+            out.push(SectorReadResult::err(start_lba + j, SectorError::DeviceGone, 1, elapsed_ms));
+        }
+    };
+
+    while i < count as u64 {
+        let lba = start_lba + i;
+        let cdb = build_read10_cdb(lba as u32, 1);
+        let mut buf = vec![0u8; DVD_SECTOR_SIZE];
+        let started = Instant::now();
+        match scsi_passthrough(drive, &cdb, &mut buf, SCSI_IOCTL_DATA_IN, timeout) {
+            Ok((0, _)) => {
+                out.push(SectorReadResult::ok(lba, buf, started.elapsed().as_millis() as u32));
+                transient_waits = 0;
+                i += 1;
             }
-        })
-        .collect()
+            Ok((_, sense)) => match classify_sense(&sense) {
+                SenseClass::Transient => {
+                    transient_waits += 1;
+                    if transient_waits > MAX_TRANSIENT_WAITS {
+                        // Drive keeps resetting under fallback load — back off
+                        // entirely and let the engine wait for it to settle.
+                        abandon_as_device_gone(&mut out, i, started.elapsed().as_millis() as u32);
+                        return out;
+                    }
+                    std::thread::sleep(std::time::Duration::from_secs(1));
+                    // retry same sector (i not advanced)
+                }
+                SenseClass::MediaAbsent => {
+                    abandon_as_device_gone(&mut out, i, started.elapsed().as_millis() as u32);
+                    return out;
+                }
+                SenseClass::Final(e) => {
+                    out.push(SectorReadResult::err(lba, e, 1, started.elapsed().as_millis() as u32));
+                    transient_waits = 0;
+                    i += 1;
+                }
+            },
+            Err(e) => {
+                if is_drive_disconnect_error(&e) {
+                    abandon_as_device_gone(&mut out, i, started.elapsed().as_millis() as u32);
+                    return out;
+                }
+                out.push(SectorReadResult::err(lba, SectorError::Timeout, 1, started.elapsed().as_millis() as u32));
+                transient_waits = 0;
+                i += 1;
+            }
+        }
+    }
+    out
 }
 
 pub struct ScsiSectorReader {
@@ -1235,32 +1331,78 @@ impl SectorReader for ScsiSectorReader {
         // attempt) — avoids repeated mutex acquisitions in the hot path.
         let cancel = Arc::clone(&*self.cancel_flag.lock());
 
-        for attempt in 0..=opts.retries {
-            attempts = attempt + 1;
+        // Transient drive states (UNIT ATTENTION after reset, ABORTED COMMAND
+        // from our own watchdog, NOT READY while spinning up) get their own
+        // bounded retry budget SEPARATE from opts.retries. Triage runs with
+        // retries: 0 — without this, the first read after every bridge
+        // reconnect (always UNIT ATTENTION) would be recorded as a failed
+        // sector, painting phantom damage across the map on flaky hardware.
+        const MAX_TRANSIENT_RETRIES: u8 = 12; // ~12 s of spin-up patience
+        let mut transient_attempts: u8 = 0;
+
+        loop {
+            if cancel.load(Ordering::SeqCst) {
+                break;
+            }
             match scsi_passthrough_resilient(&self.drive, &cdb, &mut buf, SCSI_IOCTL_DATA_IN, timeout_secs, Some(&cancel)) {
                 Ok((status, sense)) => {
                     if status == 0 {
                         let elapsed = started.elapsed().as_millis() as u32;
                         return SectorReadResult::ok(lba, buf, elapsed);
                     }
-                    last_err = sense_to_error(&sense);
-                    if matches!(last_err, SectorError::IllegalRequest) {
-                        break;
+                    match classify_sense(&sense) {
+                        SenseClass::Transient => {
+                            transient_attempts += 1;
+                            if transient_attempts > MAX_TRANSIENT_RETRIES {
+                                // The drive never settled — that's drive
+                                // trouble, not disc damage.
+                                last_err = SectorError::HardwareError;
+                                break;
+                            }
+                            let (key, asc, ascq) = parse_sense(&sense);
+                            tracing::debug!(
+                                "LBA {lba}: transient sense {key:#x}/{asc:#02x}/{ascq:#02x} — waiting 1s and retrying ({transient_attempts}/{MAX_TRANSIENT_RETRIES})"
+                            );
+                            std::thread::sleep(std::time::Duration::from_secs(1));
+                            continue; // does NOT consume a media retry
+                        }
+                        SenseClass::MediaAbsent => {
+                            // Ejected, or device re-enumerating after a drop.
+                            // Engine-level wait_for_device takes over.
+                            last_err = SectorError::DeviceGone;
+                            break;
+                        }
+                        SenseClass::Final(e) => {
+                            last_err = e;
+                            attempts += 1;
+                            if matches!(e, SectorError::IllegalRequest) || attempts > opts.retries {
+                                break;
+                            }
+                        }
                     }
                 }
                 Err(e) => {
                     tracing::debug!("SCSI passthrough I/O error at LBA {lba}: {e}");
-                    last_err = if e.kind() == io::ErrorKind::TimedOut {
+                    last_err = if is_drive_disconnect_error(&e) {
+                        SectorError::DeviceGone
+                    } else if e.kind() == io::ErrorKind::TimedOut {
                         SectorError::Timeout
                     } else {
                         SectorError::Other
                     };
+                    if matches!(last_err, SectorError::DeviceGone) {
+                        break; // engine waits for the device; never a retry here
+                    }
+                    attempts += 1;
+                    if attempts > opts.retries {
+                        break;
+                    }
                 }
             }
         }
 
         let elapsed = started.elapsed().as_millis() as u32;
-        SectorReadResult::err(lba, last_err, attempts, elapsed)
+        SectorReadResult::err(lba, last_err, attempts.max(1), elapsed)
     }
 
     fn read_block(&self, start_lba: u64, count: u32, opts: ReadOptions) -> Vec<SectorReadResult> {
