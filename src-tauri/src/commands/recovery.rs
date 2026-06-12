@@ -553,13 +553,37 @@ pub async fn recovery_space_check(
     Ok(SpaceCheck { needed_bytes, free_bytes, fits })
 }
 
-/// Free bytes available on the volume that contains `path`. Returns 0 on any
-/// failure (callers treat 0/!fits as "warn, but don't block").
+/// Free bytes available on the volume that will contain `path`.
+///
+/// The session output dir usually does NOT exist yet when this runs (it's
+/// created by the image sink at first write), and `GetDiskFreeSpaceExW`
+/// fails on non-existent paths. Measuring only the literal path therefore
+/// returned 0 — which the UI rendered as a scary (and wrong) "only 0 MB is
+/// free here" warning on every brand-new session. Walk up to the nearest
+/// EXISTING ancestor (worst case the drive root, which always exists) and
+/// measure the volume there. Returns 0 only if every ancestor fails
+/// (callers treat 0/!fits as "warn, but don't block").
 #[cfg(windows)]
 fn free_bytes_for_path(path: &str) -> u64 {
+    let mut probe = Some(std::path::Path::new(path));
+    while let Some(p) = probe {
+        if p.exists() {
+            let free = free_bytes_for_existing_dir(p);
+            if free > 0 {
+                return free;
+            }
+        }
+        probe = p.parent();
+    }
+    0
+}
+
+#[cfg(windows)]
+fn free_bytes_for_existing_dir(path: &std::path::Path) -> u64 {
     use std::os::windows::ffi::OsStrExt;
     // GetDiskFreeSpaceExW accepts a directory path; it resolves to that volume.
-    let wide: Vec<u16> = std::ffi::OsStr::new(path)
+    let wide: Vec<u16> = path
+        .as_os_str()
         .encode_wide()
         .chain(std::iter::once(0))
         .collect();
