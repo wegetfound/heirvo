@@ -2,12 +2,17 @@ import React, { useMemo } from "react";
 import { Search, X } from "lucide-react";
 import type { Disc } from "../data/types";
 
+// NOTE: only use CSS variables that exist in index.css (--lib-surface,
+// --lib-line, --lib-ink, --lib-muted, --lib-amber, --lib-amber-soft, fonts).
+// An earlier version referenced undefined vars (--lib-surface-light etc.) and
+// a hardcoded white background — which rendered as a jarring unthemed box in
+// dark mode.
 const S = {
-  container: { display: "flex", flexDirection: "column" as const, gap: 12, padding: "16px", background: "var(--lib-surface-light)", borderRadius: 12, marginBottom: 16 },
-  searchBox: { display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", background: "white", border: "1px solid var(--lib-border-light)", borderRadius: 8, fontSize: 14 },
-  searchInput: { flex: 1, border: "none", background: "none", outline: "none", fontFamily: "inherit", fontSize: "inherit" },
+  container: { display: "flex", flexDirection: "column" as const, gap: 12, padding: "14px 16px", background: "var(--lib-surface)", border: "1px solid var(--lib-line)", borderRadius: 12, marginBottom: 16, boxShadow: "var(--lib-shadow-soft)" },
+  searchBox: { display: "flex", alignItems: "center", gap: 8, padding: "9px 13px", background: "transparent", border: "1px solid var(--lib-line)", borderRadius: 8, fontSize: 13.5, fontFamily: "var(--lib-sans)" },
+  searchInput: { flex: 1, border: "none", background: "none", outline: "none", fontFamily: "inherit", fontSize: "inherit", color: "var(--lib-ink)" },
   facetsRow: { display: "flex", flexWrap: "wrap" as const, gap: 8 },
-  facetLabel: { fontSize: 11, fontWeight: 600, color: "var(--lib-text-muted)", textTransform: "uppercase" as const, letterSpacing: "0.5px" },
+  facetLabel: { fontSize: 11, fontWeight: 600, color: "var(--lib-muted)", textTransform: "uppercase" as const, letterSpacing: "0.5px", fontFamily: "var(--lib-sans)" },
   facetChips: { display: "flex", flexWrap: "wrap" as const, gap: 6 },
   chip: (active: boolean) => ({
     display: "inline-flex",
@@ -17,13 +22,14 @@ const S = {
     borderRadius: 16,
     fontSize: 12,
     fontWeight: 500,
+    fontFamily: "var(--lib-sans)",
     cursor: "pointer",
     transition: "all 150ms ease",
-    background: active ? "var(--lib-accent)" : "var(--lib-surface)",
-    color: active ? "white" : "var(--lib-text-muted)",
-    border: `1px solid ${active ? "var(--lib-accent)" : "var(--lib-border-light)"}`,
+    background: active ? "var(--lib-amber)" : "transparent",
+    color: active ? "#FFF8EE" : "var(--lib-muted)",
+    border: `1px solid ${active ? "var(--lib-amber)" : "var(--lib-line)"}`,
   } as React.CSSProperties),
-  resultCount: { fontSize: 12, color: "var(--lib-text-muted)", fontStyle: "italic" as const },
+  resultCount: { fontSize: 12, color: "var(--lib-muted)", fontStyle: "italic" as const, fontFamily: "var(--lib-sans)" },
 };
 
 interface DiscMetadataFilterProps {
@@ -96,10 +102,10 @@ export function DiscMetadataFilter({ discs, onFilterChange }: DiscMetadataFilter
     <div style={S.container as React.CSSProperties}>
       {/* Search box */}
       <div style={S.searchBox as React.CSSProperties}>
-        <Search size={16} color="var(--lib-text-muted)" />
+        <Search size={16} color="var(--lib-muted)" />
         <input
           type="text"
-          placeholder="Search by title or location…"
+          placeholder="Filter by title or location…"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           style={S.searchInput as React.CSSProperties}
@@ -110,7 +116,7 @@ export function DiscMetadataFilter({ discs, onFilterChange }: DiscMetadataFilter
             style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}
             aria-label="Clear search"
           >
-            <X size={16} color="var(--lib-text-muted)" />
+            <X size={16} color="var(--lib-muted)" />
           </button>
         )}
       </div>
@@ -164,7 +170,7 @@ export function DiscMetadataFilter({ discs, onFilterChange }: DiscMetadataFilter
               background: "none",
               border: "none",
               cursor: "pointer",
-              color: "var(--lib-accent)",
+              color: "var(--lib-amber)",
               fontSize: 12,
               fontWeight: 500,
               textDecoration: "underline",

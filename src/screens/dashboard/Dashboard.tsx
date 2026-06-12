@@ -149,7 +149,11 @@ export function Dashboard() {
       ? `Every readable byte is safe${videoNote}. Now choose how you'd like to keep it.`
       : "Every readable byte is safe. Now choose how you'd like to keep it.")
     : state.phase === "idle" && !state.drive
-    ? "Insert your disc and click Start — we'll begin reading right away."
+    ? (drives.length === 0
+        // No drive on the bus — telling the user to "click Start" here pointed
+        // at a button that doesn't exist. First step is plugging in a drive.
+        ? "Plug in your CD or DVD drive — we'll spot it the moment it's connected."
+        : "Insert your disc — we'll begin reading right away.")
     : state.phase === "idle" && state.drive
     ? "Pop in your disc — we'll spot it and start right away."
     : state.phase === "discovering"

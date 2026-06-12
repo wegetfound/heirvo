@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Search, Activity, ArrowRight, Upload } from "lucide-react";
+import { Search, Activity, ArrowRight, Upload, Disc3 } from "lucide-react";
 // mockDiscs intentionally NOT imported here — Library only shows real recovered discs.
 import type { Disc } from "./data/types";
 import { HeroFeatured } from "./components/HeroFeatured";
@@ -19,6 +19,15 @@ export default function Library() {
   const [nextCursor, setNextCursor] = useState<number | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
   const [activeSession, setActiveSession] = useState<Session | null>(null);
+  // Real app version from the Tauri shell — always matches the installed
+  // binary, never a stale hardcoded string.
+  const [appVersion, setAppVersion] = useState<string | null>(null);
+  useEffect(() => {
+    import("@tauri-apps/api/app")
+      .then((m) => m.getVersion())
+      .then(setAppVersion)
+      .catch(() => {/* dev mode without Tauri shell */});
+  }, []);
 
   // Page size for the first load and each "Load more" click. 60 covers
   // ~3-4 rails of 15-20 cards each, which is what the rail composition
@@ -609,22 +618,28 @@ export default function Library() {
           </button>
         </div>
 
-        <form onSubmit={submit} className="lib-search-form">
-          <Search size={16} className="lib-search-icon" />
-          <input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder='Search every spoken word…  try "birthday"'
-            className="lib-search-input"
-          />
-        </form>
+        {/* Search + filters only make sense once there's something to search.
+            On a fresh library they'd just be dead controls above an empty page. */}
+        {discs.length > 0 && (
+          <>
+            <form onSubmit={submit} className="lib-search-form">
+              <Search size={16} className="lib-search-icon" />
+              <input
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder='Search every spoken word…  try "birthday"'
+                className="lib-search-input"
+              />
+            </form>
 
-        {/* Metadata filter (title, people, topics) - only shown on "all" tab */}
-        {filter === "all" && (
-          <DiscMetadataFilter
-            discs={discs}
-            onFilterChange={setMetadataFilteredDiscs}
-          />
+            {/* Metadata filter (title, people, topics) - only shown on "all" tab */}
+            {filter === "all" && (
+              <DiscMetadataFilter
+                discs={discs}
+                onFilterChange={setMetadataFilteredDiscs}
+              />
+            )}
+          </>
         )}
 
         {activeSession && (
@@ -665,16 +680,20 @@ export default function Library() {
                 flexShrink: 0,
               }}
             >
-              <span
-                style={{
-                  position: "absolute",
-                  inset: 0,
-                  borderRadius: "50%",
-                  background: "var(--lib-amber)",
-                  opacity: 0.55,
-                  animation: "lib-ping 1.6s cubic-bezier(0,0,.2,1) infinite",
-                }}
-              />
+              {/* Ping animation only while actually reading — a pulsing "live"
+                  dot over a paused session contradicts itself. */}
+              {activeSession.status !== "paused" && (
+                <span
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    borderRadius: "50%",
+                    background: "var(--lib-amber)",
+                    opacity: 0.55,
+                    animation: "lib-ping 1.6s cubic-bezier(0,0,.2,1) infinite",
+                  }}
+                />
+              )}
               <span
                 style={{
                   position: "relative",
@@ -683,6 +702,7 @@ export default function Library() {
                   height: 10,
                   borderRadius: "50%",
                   background: "var(--lib-amber)",
+                  opacity: activeSession.status === "paused" ? 0.5 : 1,
                 }}
               />
             </span>
@@ -699,7 +719,8 @@ export default function Library() {
                   color: "#2E2008",
                 }}
               >
-                Live: rescuing {activeSession.user_label || activeSession.disc_label || "Untitled disc"}
+                {activeSession.status === "paused" ? "Paused: " : "Live: rescuing "}
+                {activeSession.user_label || activeSession.disc_label || "Untitled disc"}
               </div>
               <div
                 style={{
@@ -710,7 +731,7 @@ export default function Library() {
                 }}
               >
                 {activeSession.status === "paused"
-                  ? "Paused — click to resume"
+                  ? "Your place is saved — click to resume the rescue"
                   : "Reading sector by sector — open the scan to watch progress"}
               </div>
             </div>
@@ -738,49 +759,64 @@ export default function Library() {
         )}
 
         {/* ── Filter tabs: cuts a mixed vault down to one media type ─── */}
-        <FilterTabs
-          filter={filter}
-          setFilter={(k) => { exitSelectMode(); setFilter(k); }}
-          counts={counts}
-          selectMode={selectMode}
-          onToggleSelectMode={toggleSelectMode}
-          showSelectToggle={filter !== "all" && filter !== "albums"}
-        />
+        {discs.length > 0 && (
+          <FilterTabs
+            filter={filter}
+            setFilter={(k) => { exitSelectMode(); setFilter(k); }}
+            counts={counts}
+            selectMode={selectMode}
+            onToggleSelectMode={toggleSelectMode}
+            showSelectToggle={filter !== "all" && filter !== "albums"}
+          />
+        )}
 
         {filter === "albums" ? (
           <AlbumGrid albums={albums} />
         ) : filter === "all" ? (
-          <>
-            {featured && <HeroFeatured disc={featured} />}
+          discs.length === 0 ? (
+            <EmptyLibrary />
+          ) : (
+            <>
+              {featured && <HeroFeatured disc={featured} />}
 
-            <DiscRail
-              title="Recently recovered"
-              sub={recentlyRecovered.length > 0 ? `${recentlyRecovered.length} disc${recentlyRecovered.length === 1 ? "" : "s"} recovered` : "From the last 30 days"}
-              discs={recentlyRecovered}
-              seeAllHref="/library/all?title=Recently+recovered&filter=recent"
-            />
-            <DiscRail
-              title="On this day in your archive"
-              sub="May 16 across the years — birthdays, beaches, backyards"
-              discs={onThisDay}
-              showStatus={false}
-              seeAllHref="/library/all?title=On+this+day&filter=on-this-day"
-            />
-            <DiscRail
-              title="Family birthdays"
-              sub='Curated automatically from cake, candles & "happy birthday" detected in audio'
-              discs={birthdays}
-              showStatus={false}
-              seeAllHref="/library/all?title=Family+birthdays&filter=birthdays"
-            />
-            <DiscRail
-              title="Trips & vacations"
-              sub="Places you went, road songs you sang in the back seat"
-              discs={trips}
-              showStatus={false}
-              seeAllHref="/library/all?title=Trips+%26+vacations&filter=trips"
-            />
-          </>
+              <DiscRail
+                title="Recently recovered"
+                sub={recentlyRecovered.length > 0 ? `${recentlyRecovered.length} disc${recentlyRecovered.length === 1 ? "" : "s"} recovered` : "From the last 30 days"}
+                discs={recentlyRecovered}
+                seeAllHref="/library/all?title=Recently+recovered&filter=recent"
+              />
+              {/* Curated rails only render once they have something to show —
+                  a page of empty section headings reads as a rendering bug,
+                  not an invitation. */}
+              {onThisDay.length > 0 && (
+                <DiscRail
+                  title="On this day in your archive"
+                  sub={`${new Date().toLocaleDateString("en-US", { month: "long", day: "numeric" })} across the years`}
+                  discs={onThisDay}
+                  showStatus={false}
+                  seeAllHref="/library/all?title=On+this+day&filter=on-this-day"
+                />
+              )}
+              {birthdays.length > 0 && (
+                <DiscRail
+                  title="Family birthdays"
+                  sub='Curated automatically from cake, candles & "happy birthday" detected in audio'
+                  discs={birthdays}
+                  showStatus={false}
+                  seeAllHref="/library/all?title=Family+birthdays&filter=birthdays"
+                />
+              )}
+              {trips.length > 0 && (
+                <DiscRail
+                  title="Trips & vacations"
+                  sub="Places you went, road songs you sang in the back seat"
+                  discs={trips}
+                  showStatus={false}
+                  seeAllHref="/library/all?title=Trips+%26+vacations&filter=trips"
+                />
+              )}
+            </>
+          )
         ) : (
           <FilteredGrid
             discs={filteredDiscs}
@@ -834,8 +870,8 @@ export default function Library() {
             justifyContent: "space-between",
           }}
         >
-          <div>Heirvo · {discs.length} discs in your library · backed up locally</div>
-          <div>v0.9 preview</div>
+          <div>Heirvo · {discs.length} disc{discs.length === 1 ? "" : "s"} in your library · backed up locally</div>
+          <div>{appVersion ? `v${appVersion}` : ""}</div>
         </footer>
       </div>
 
@@ -1246,6 +1282,99 @@ export default function Library() {
 
 /* ─── Filter tabs ─────────────────────────────────────────────────────────── */
 type FilterKind = "all" | "albums" | "imported" | "video" | "audio" | "photo" | "disc";
+
+/** Warm first-run state for an empty library — one clear invitation instead of
+ *  a page of empty section headings (which reads as a rendering bug). */
+function EmptyLibrary() {
+  return (
+    <div
+      style={{
+        marginTop: 48,
+        borderRadius: 24,
+        border: "1px solid var(--lib-line)",
+        background: "var(--lib-surface)",
+        boxShadow: "var(--lib-shadow-soft)",
+        padding: "72px 48px",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        textAlign: "center",
+      }}
+    >
+      <div
+        style={{
+          width: 72,
+          height: 72,
+          borderRadius: 28,
+          background: "var(--lib-amber-soft, rgba(194,116,31,0.12))",
+          color: "var(--lib-amber)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          marginBottom: 24,
+        }}
+      >
+        <Disc3 size={32} />
+      </div>
+      <h2
+        style={{
+          fontFamily: "var(--lib-serif)",
+          fontWeight: 500,
+          fontSize: 30,
+          letterSpacing: "-0.015em",
+          margin: 0,
+          color: "var(--lib-ink)",
+          textWrap: "balance",
+        } as React.CSSProperties}
+      >
+        Your memories will live here.
+      </h2>
+      <p
+        style={{
+          fontFamily: "var(--lib-sans)",
+          fontSize: 15,
+          lineHeight: 1.6,
+          color: "var(--lib-muted)",
+          maxWidth: 440,
+          margin: "14px 0 32px",
+        }}
+      >
+        Rescue your first disc and it appears in this library — playable,
+        searchable by every spoken word, and organized into albums,
+        birthdays, and trips automatically.
+      </p>
+      <Link
+        to="/"
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 8,
+          padding: "12px 24px",
+          borderRadius: 12,
+          background: "var(--lib-amber)",
+          color: "#FFF8EE",
+          fontFamily: "var(--lib-sans)",
+          fontSize: 14.5,
+          fontWeight: 600,
+          textDecoration: "none",
+        }}
+      >
+        Rescue your first disc
+        <ArrowRight size={15} />
+      </Link>
+      <p
+        style={{
+          fontFamily: "var(--lib-sans)",
+          fontSize: 12.5,
+          color: "var(--lib-muted)",
+          marginTop: 18,
+        }}
+      >
+        Already have video files? Use <strong>Import media</strong> above — drag &amp; drop works too.
+      </p>
+    </div>
+  );
+}
 
 function FilterTabs({
   filter,

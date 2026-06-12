@@ -19,8 +19,12 @@ export function RecoveryLayout({
   saveReady: boolean;
   bottomBlock: React.ReactNode;
 }) {
+  // Dim visually but stay CLICKABLE: the cards inside are designed to explain
+  // themselves on click ("ready the moment the read finishes" / "insert a disc
+  // to begin"). pointerEvents: "none" here used to make the entire left column
+  // dead to clicks, silently defeating that design.
   const dimStyle: React.CSSProperties = !saveReady
-    ? { opacity: 0.4, filter: "saturate(0.65)", pointerEvents: "none", transition: "opacity 0.4s ease, filter 0.4s ease" }
+    ? { opacity: 0.55, filter: "saturate(0.7)", transition: "opacity 0.4s ease, filter 0.4s ease" }
     : { opacity: 1, filter: "none", transition: "opacity 0.4s ease, filter 0.4s ease" };
 
   return (
