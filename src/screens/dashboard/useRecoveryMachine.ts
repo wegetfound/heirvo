@@ -95,6 +95,27 @@ export interface RecoveryMachineResult {
   stallCount: number;
 }
 
+// ─── Shallow compare for RecoveryStats (avoids re-renders on identical polls) ─
+function statsEqual(a: RecoveryStats | null, b: RecoveryStats | null): boolean {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  return (
+    a.good === b.good &&
+    a.failed === b.failed &&
+    a.skipped === b.skipped &&
+    a.unknown === b.unknown &&
+    a.total === b.total &&
+    a.stalled === b.stalled &&
+    a.idle_secs === b.idle_secs &&
+    a.reads_ok === b.reads_ok &&
+    a.reads_err === b.reads_err &&
+    a.drive_health === b.drive_health &&
+    a.wall_probe_active === b.wall_probe_active &&
+    a.eta_secs === b.eta_secs &&
+    a.stall_count === b.stall_count
+  );
+}
+
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
 /**
@@ -311,7 +332,7 @@ export function useRecoveryMachine(initialSessionId?: string): RecoveryMachineRe
     if (!sessionId) return;
     const onProgress = events.onProgress((p) => {
       if (p.session_id === sessionId) {
-        setStats(p.stats);
+        setStats((prev) => statsEqual(prev, p.stats) ? prev : p.stats);
         setLastProgressAt(Date.now());
       }
     });
@@ -360,8 +381,11 @@ export function useRecoveryMachine(initialSessionId?: string): RecoveryMachineRe
       ipc.getRecoveryStatus(sessionId)
         .then((live) => {
           if (cancelled || !live) return;
-          setStats((prev) => (!prev || live.good >= prev.good ? live : prev));
-          // Once the run is over, the map is stable — stop the heartbeat.
+          setStats((prev) => {
+            if (!prev) return live;
+            if (live.good < prev.good) return prev;
+            return statsEqual(prev, live) ? prev : live;
+          });
           if (recoveryDoneRef.current && intervalId !== null) {
             clearInterval(intervalId);
             intervalId = null;
@@ -393,7 +417,7 @@ export function useRecoveryMachine(initialSessionId?: string): RecoveryMachineRe
           if (cancelled) return;
           const s = all.find((x) => x.id === sessionId);
           if (!s) return;
-          setSession(s);
+          setSession((prev) => prev && prev.status === s.status && prev.output_dir === s.output_dir ? prev : s);
           if (s.status === "completed" || s.status === "cancelled" || s.status === "failed") {
             setSessionFinished(true);
             if (s.status === "completed") setRecoveryDone(true);
@@ -662,104 +686,23 @@ export function useRecoveryMachine(initialSessionId?: string): RecoveryMachineRe
     try { await ipc.changeDrive(sessionId, path); } catch { /* pass errors to callers */ }
   }, [sessionId]);
 
-  const recoverAnotherAction = useCallback(async () => {
-    // Power-loss recovery: three-phase design for maximum stability.
-    // Handles the scenario where power fails mid-recovery. On reconnection,
-    // we verify it's the SAME disc before resuming, or start fresh if swapped.
-    // This prevents partial recovery data corruption from mixed discs.
-
-    try {
-      // Phase 1: Stabilize
-      // Wait 50ms for USB transients to settle. Some drives emit spurious bus
-      // events during power recovery; this grace period avoids false positives.
-      await new Promise(resolve => setTimeout(resolve, 50));
-
-      // Phase 2: Verify drive is back online
-      // If user had a drive before and lost power, they're reconnecting now.
-      // Ensure at least one drive is visible before proceeding.
-      const currentDrives = await ipc.listDrives().catch(() => []);
-      if (currentDrives.length === 0) {
-        setResumeError("Drive not detected. Unplug the drive, wait a few seconds, then plug it back in and try again.");
-        return;
-      }
-
-      // Phase 3: Verify it's the SAME disc (prevent cross-disc recovery data loss)
-      // If user has an active session, we check: is it still the same disc?
-      // Same UUID → resume recovery. Different UUID or missing → start fresh.
-      if (sessionId && discFingerprintRef.current) {
-        try {
-          const firstDrive = currentDrives[0];
-          // 15s timeout matches the initial probe timeout. If the drive hangs here,
-          // it's likely unresponsive and the user should try reconnecting it.
-          const DISC_CHECK_TIMEOUT_MS = 15_000;
-          let timer: ReturnType<typeof setTimeout> | undefined;
-          const timeout = new Promise<never>((_, reject) => {
-            timer = setTimeout(
-              () => reject(new Error("Disc verification timed out. Drive may be unresponsive.")),
-              DISC_CHECK_TIMEOUT_MS,
-            );
-          });
-          const currentDisc = await Promise.race([ipc.checkDisc(firstDrive.path), timeout]).catch(() => null);
-          if (timer) clearTimeout(timer);
-
-          if (!currentDisc) {
-            setResumeError("Disc no longer readable. Try cleaning it or using a different drive.");
-            return;
-          }
-
-          // Critical: compare disc fingerprints (stable UUID from disc metadata)
-          // If different, the user swapped discs. We CANNOT resume the old session
-          // because the file IDs won't match and we'll corrupt the output.
-          const fingerprintChanged = currentDisc.fingerprint !== discFingerprintRef.current.uuid;
-          if (fingerprintChanged) {
-            setResumeError("You inserted a different disc than before. We'll start a fresh scan for this one.");
-            forceFreshSession.current = true;
-            setSessionId(null);
-            setSession(null);
-            setStats(null);
-            discFingerprintRef.current = null;
-            return;
-          }
-
-          // Same disc fingerprint → safe to resume the existing session
-          // We're picking up where we left off before the power loss.
-          setResumeError(null);
-          setResuming(true);
-          try {
-            await ipc.startRecovery(sessionId, resumeModeRef.current);
-            try { localStorage.setItem(`mode:${sessionId}`, resumeModeRef.current); } catch { /* ignore */ }
-            setLastProgressAt(Date.now());
-          } catch (e) {
-            setResumeError(String(e));
-          } finally {
-            setResuming(false);
-          }
-          return;
-        } catch (err) {
-          setResumeError("We couldn't read the disc right now. Try ejecting it, waiting a moment, then reinserting it.");
-          return;
-        }
-      }
-
-      // No prior session or fingerprint: reset to idle for fresh start.
-      // User is starting a new recovery, not resuming after power loss.
-      forceFreshSession.current = true;
-      setSessionId(null);
-      setSession(null);
-      setStats(null);
-      setRecoveryDone(false);
-      setSessionFinished(false);
-      setResumeError(null);
-      setHolesAtCompletion(null);
-      setIsOvernightRunning(false);
-      setPickedDrive(null);
-      setDisc(null);
-      setProbeError(null);
-      discFingerprintRef.current = null;
-    } catch (err) {
-      setResumeError(`Power recovery failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
-    }
-  }, [sessionId]);
+  const recoverAnotherAction = useCallback(() => {
+    forceFreshSession.current = true;
+    setSessionId(null);
+    setSession(null);
+    setStats(null);
+    setRecoveryDone(false);
+    setSessionFinished(false);
+    setResumeError(null);
+    setHolesAtCompletion(null);
+    setIsOvernightRunning(false);
+    setPickedDrive(null);
+    setDisc(null);
+    setOutputDir("");
+    setProbeError(null);
+    discFingerprintRef.current = null;
+    navigate("/", { replace: true });
+  }, [navigate]);
 
   // ── Derive phase ──────────────────────────────────────────────────────────
   // Stall detection now feeds in via engineStalled (from stats.stalled).
