@@ -223,6 +223,22 @@ export function useRecoveryMachine(initialSessionId?: string): RecoveryMachineRe
   // (startAction sets sessionId with no URL param yet) is never wiped.
   useEffect(() => {
     if (initialSessionId && initialSessionId !== sessionId) {
+      // Switching to a DIFFERENT session via the URL (Session History, deep
+      // link). Clear every piece of per-session state alongside the id — the
+      // same Dashboard instance is reused, so without this the new session
+      // renders under the OLD session's stats and completion flags. Worst
+      // case: the engine-truth poll's monotonic merge (`live.good >=
+      // prev.good`) rejects the new session's real (lower) numbers forever,
+      // displaying session A's progress on session B's screen.
+      setSession(null);
+      setStats(null);
+      setRecoveryDone(false);
+      setSessionFinished(false);
+      setHolesAtCompletion(null);
+      setResumeError(null);
+      setIsOvernightRunning(false);
+      setRealRuntimeMin(null);
+      setLastProgressAt(Date.now());
       setSessionId(initialSessionId);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -418,9 +434,18 @@ export function useRecoveryMachine(initialSessionId?: string): RecoveryMachineRe
           const s = all.find((x) => x.id === sessionId);
           if (!s) return;
           setSession((prev) => prev && prev.status === s.status && prev.output_dir === s.output_dir ? prev : s);
-          if (s.status === "completed" || s.status === "cancelled" || s.status === "failed") {
+          if (s.status === "completed" || s.status === "cancelled") {
+            // Completed and cancelled both land on the save screen — for a
+            // cancel that's honest ("every readable byte is safe, choose how
+            // to keep it") rather than pretending nothing happened.
             setSessionFinished(true);
             if (s.status === "completed") setRecoveryDone(true);
+            if (intervalId !== null) { clearInterval(intervalId); intervalId = null; }
+          } else if (s.status === "failed") {
+            // A FAILED rescue must not render the completion celebration.
+            // Surface a calm error with a Resume path instead — the engine
+            // can restart a failed session from its persisted map.
+            setResumeError((prev) => prev ?? "This rescue stopped unexpectedly. Click Resume to pick up where it left off — everything already recovered is safe.");
             if (intervalId !== null) { clearInterval(intervalId); intervalId = null; }
           }
         })
