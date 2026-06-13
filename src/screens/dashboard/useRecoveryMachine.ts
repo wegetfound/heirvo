@@ -708,7 +708,10 @@ export function useRecoveryMachine(initialSessionId?: string): RecoveryMachineRe
 
   const changeDriveAction = useCallback(async (path: string) => {
     if (!sessionId) return;
-    try { await ipc.changeDrive(sessionId, path); } catch { /* pass errors to callers */ }
+    // Errors propagate to the caller — the old `catch {}` here swallowed
+    // them, so the drive-switch UI showed "Switched!" even when the backend
+    // refused (e.g. wrong disc in the new drive, or RecoveryInProgress).
+    await ipc.changeDrive(sessionId, path);
   }, [sessionId]);
 
   const recoverAnotherAction = useCallback(() => {

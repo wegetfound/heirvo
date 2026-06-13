@@ -244,6 +244,7 @@ export function Dashboard() {
               onResume={() => actions.resume(resumeMode)}
               onCancel={actions.cancel}
               onRecoverAnother={actions.recoverAnother}
+              onRetry={actions.retry}
               doneBannerRef={doneBannerRef}
               stats={stats}
               idle={idle}
@@ -351,8 +352,18 @@ export function Dashboard() {
                         onClick={async () => {
                           try {
                             await actions.changeDrive(d.path);
-                            setDriveSwitchMsg(`Switched to ${label || d.letter}. Click Resume to retry.`);
                             setShowDrivePicker(false);
+                            if (!recoveryDone) {
+                              // Auto-resume on the new drive. The stalled state
+                              // has no Resume button (by design — the engine
+                              // normally self-heals), so telling the user to
+                              // "click Resume" pointed at nothing.
+                              setDriveSwitchMsg(`Switched to ${label || d.letter} — resuming…`);
+                              await actions.resume(resumeMode);
+                              setDriveSwitchMsg(null);
+                            } else {
+                              setDriveSwitchMsg(`Switched to ${label || d.letter}.`);
+                            }
                           } catch (e) { setDriveSwitchMsg(String(e)); }
                         }}
                         style={{ width: "100%", textAlign: "left", background: "none", border: "none", cursor: "pointer", padding: "8px 10px", borderRadius: 8, fontSize: 13, ...S.text, display: "flex", justifyContent: "space-between" }}

@@ -95,6 +95,7 @@ export interface ProgressWheelProps {
   onResume: () => Promise<void>;       // Resume from paused/stalled
   onCancel: () => void;
   onRecoverAnother: () => void; // Start new recovery session
+  onRetry?: () => void; // Re-probe an unreadable disc
   doneBannerRef: React.RefObject<HTMLDivElement>;
   stats: RecoveryStats | null;
   idle: boolean;
@@ -123,6 +124,7 @@ export function ProgressWheel({
   onResume,
   onCancel,
   onRecoverAnother,
+  onRetry,
   doneBannerRef,
   stats,
   idle,
@@ -387,12 +389,26 @@ export function ProgressWheel({
               <Pause size={13} /> Pause
             </ActionBtn>
           )}
-          {/* Cancel — show for ready phase and when not idle+active */}
-          {!recoveryDone && (phase === "ready" || !idle) && !isStalled && (
+          {/* Cancel — available in ready, active, AND stalled states. A user
+              whose drive died permanently must not be trapped on the waiting
+              screen with no way out (progress stays checkpointed and the
+              session remains resumable after cancel). */}
+          {!recoveryDone && (phase === "ready" || !idle || isStalled) && (
             <ActionBtn danger onClick={onCancel} fullWidth>
               <X size={12} /> Cancel
             </ActionBtn>
           )}
+        </div>
+      )}
+
+      {/* Unreadable disc — give the user the retry the probe deserves.
+          Slim drives routinely fail the FIRST probe while spinning up; before
+          this button the only retry path was physically ejecting the disc. */}
+      {phase === "unreadable" && onRetry && (
+        <div style={{ width: "100%", maxWidth: 300 }}>
+          <ActionBtn primary onClick={onRetry} fullWidth>
+            <RefreshCw size={13} /> Try reading it again
+          </ActionBtn>
         </div>
       )}
 

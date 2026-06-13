@@ -1,7 +1,7 @@
 //! Session lifecycle commands.
 
 use crate::error::{AppError, AppResult};
-use crate::session::manager::{self, Session};
+use crate::session::manager::{self, Session, SessionStatus};
 use crate::state::AppState;
 use serde::Deserialize;
 use tauri::State;
@@ -97,9 +97,27 @@ pub async fn rename_session(
     manager::rename(&state.db, id, Some(&label)).await
 }
 
-/// Change the drive path on a paused / completed session. Useful when the
-/// user wants to retry failed sectors with a different (more capable) drive.
-/// Refuses if a recovery is currently running on this session.
+/// Change the drive path on a session so the rescue can continue on a
+/// different (more capable, or simply alive) drive.
+///
+/// Two field-driven behaviours beyond the naive "update the DB row":
+///
+/// 1. **Live engines are handed off, not refused.** The UI offers "Try a
+///    different drive" precisely when the engine is STALLED waiting for a
+///    dead drive — and this command used to return RecoveryInProgress in
+///    that state, making the button silently do nothing. Now: cancel the
+///    live engine, wait (bounded) for its run loop to exit and checkpoint
+///    the map, then switch. The caller resumes afterwards and the engine
+///    picks up from the persisted map.
+///
+/// 2. **The new drive must hold the SAME disc.** The fingerprint check only
+///    ran at session creation; switching drives with a different disc
+///    inserted would resume writing the new disc's sectors into the old
+///    session's ISO — silent cross-disc corruption. We re-read the PVD on
+///    the new drive and verify identity before switching. Damaged discs
+///    whose PVD can't be read are allowed through (blocking would forbid
+///    drive-switching for exactly the discs that need it most) — but a
+///    *definite* mismatch is a hard error.
 #[tauri::command]
 pub async fn change_drive(
     state: State<'_, AppState>,
@@ -108,17 +126,133 @@ pub async fn change_drive(
 ) -> AppResult<Session> {
     let id = Uuid::parse_str(&session_id)
         .map_err(|_| AppError::SessionNotFound(session_id.clone()))?;
-    if state.engines.read().contains_key(&id) {
-        return Err(AppError::RecoveryInProgress(session_id));
-    }
     // Validate the drive path. Accepted forms (Windows):
     //   \\.\X:      (device path, standard optical/HDD)
     //   \\.\PhysicalDriveN
     //   X:\         or   X:   (drive-root form, also used for optical drives)
     // Anything else (including arbitrary UNC paths like \\attacker\share) is rejected.
     validate_drive_path(&new_drive_path)?;
+    let session = manager::get(&state.db, id).await?;
+
+    // ── 1. Hand off a live engine ─────────────────────────────────────────
+    let live = state.engines.write().remove(&id);
+    if let Some(engine) = live {
+        tracing::info!("change_drive: cancelling live engine for session {id} before drive switch");
+        engine.cancel();
+        // The run loop observes the cancel flag within ~2 s even inside the
+        // wait-for-device hold. Its finalizer persists the sector map and
+        // flips the session status off `Recovering` — poll that as the
+        // "safe to proceed" signal so the resume that follows can't race a
+        // half-dead engine. Bounded at 10 s; on timeout we proceed anyway
+        // (the old engine holds the OLD drive's handle, not the new one).
+        for _ in 0..50 {
+            let s = manager::get(&state.db, id).await?;
+            if s.status != SessionStatus::Recovering {
+                break;
+            }
+            tokio::time::sleep(std::time::Duration::from_millis(200)).await;
+        }
+    }
+
+    // ── 2. Verify the new drive holds the same disc ───────────────────────
+    // The probe does blocking SCSI I/O with spin-up sleeps — keep it off the
+    // async executor.
+    {
+        let session_for_probe = session.clone();
+        let path_for_probe = new_drive_path.clone();
+        tokio::task::spawn_blocking(move || verify_same_disc(&session_for_probe, &path_for_probe))
+            .await
+            .map_err(|e| AppError::Internal(format!("disc verification task failed: {e}")))??;
+    }
+
     manager::update_drive_path(&state.db, id, &new_drive_path).await?;
     manager::get(&state.db, id).await
+}
+
+/// Best-effort disc-identity check for `change_drive`. Hard-errors ONLY on a
+/// definite mismatch (both fingerprints readable and different). Unreadable
+/// PVDs, missing session fingerprints, and probe failures all pass — with a
+/// warning log — because damaged discs are the product's core use case.
+#[cfg(windows)]
+fn verify_same_disc(session: &Session, new_drive_path: &str) -> AppResult<()> {
+    use crate::disc::sector::{ReadOptions, SectorReader};
+
+    let expected = session.disc_fingerprint.as_str();
+    if expected.is_empty() {
+        tracing::warn!(
+            "change_drive: session has no disc fingerprint — cannot verify disc identity, allowing switch"
+        );
+        return Ok(());
+    }
+
+    // Audio CDs use a TOC-shaped fingerprint; verify via TOC.
+    if expected.starts_with("audio-cd:") {
+        match crate::disc::audio_cd::read_toc(new_drive_path) {
+            Ok(toc) if !toc.tracks.is_empty() => {
+                let last_end = toc
+                    .tracks
+                    .last()
+                    .map(|t| t.end_lba as u64)
+                    .unwrap_or(toc.lead_out_lba as u64);
+                let candidate = format!("audio-cd:{}-{}", toc.tracks.len(), last_end);
+                if candidate != expected {
+                    return Err(AppError::Internal(
+                        "The disc in that drive isn't the same disc this rescue was working on. Insert the original disc, or start a new rescue for this one.".into(),
+                    ));
+                }
+                Ok(())
+            }
+            _ => {
+                tracing::warn!("change_drive: TOC unreadable on new drive — allowing switch unverified");
+                Ok(())
+            }
+        }
+    } else {
+        // Data disc: re-read the PVD (sector 16) on the new drive and recompute
+        // the fingerprint. Crucially we hash with the SESSION's recorded
+        // total_sectors, not the new reader's capacity — different drives can
+        // report slightly different capacities for the same disc, and using the
+        // new capacity would false-flag a legitimate switch.
+        let reader = match crate::disc::scsi_windows::ScsiSectorReader::open(new_drive_path) {
+            Ok(r) => r,
+            Err(e) => {
+                tracing::warn!("change_drive: cannot open {new_drive_path} for verification ({e}) — allowing switch unverified");
+                return Ok(());
+            }
+        };
+        let opts = ReadOptions { retries: 2, slow_mode: false, timeout_ms: 10_000 };
+        let mut result = reader.read_sector(16, opts);
+        // Spin-up grace: slim drives routinely fail the first PVD read.
+        let mut attempts = 0;
+        while !result.is_ok() && attempts < 5 {
+            std::thread::sleep(std::time::Duration::from_millis(800));
+            result = reader.read_sector(16, opts);
+            attempts += 1;
+        }
+        match result.data {
+            Some(pvd) => {
+                let candidate =
+                    crate::session::manager::fingerprint_disc(&pvd, session.total_sectors);
+                if candidate != expected {
+                    return Err(AppError::Internal(
+                        "The disc in that drive isn't the same disc this rescue was working on. Insert the original disc, or start a new rescue for this one.".into(),
+                    ));
+                }
+                Ok(())
+            }
+            None => {
+                tracing::warn!(
+                    "change_drive: PVD unreadable on new drive (damaged disc?) — allowing switch unverified"
+                );
+                Ok(())
+            }
+        }
+    }
+}
+
+#[cfg(not(windows))]
+fn verify_same_disc(_session: &Session, _new_drive_path: &str) -> AppResult<()> {
+    Ok(())
 }
 
 /// Accept only well-formed Windows drive/device paths. Rejects anything
