@@ -152,5 +152,5 @@ If a Heirvo-default placeholder shows: the BMP wiring in `tauri.conf.json` didn'
 1. `git push origin main`
 2. `git push origin v1.0.0 v1.1.0`
 3. Create the GitHub release using the text in `docs/RELEASE_v1.1.0.md`
-4. Update `VITE_DOWNLOAD_URL` in Vercel → v1.1.0 installer asset URL
-5. `cd marketing && npx vercel --prod`
+4. Update `VITE_DOWNLOAD_URL` in Cloudflare Pages → v1.1.0 installer asset URL
+5. `cd marketing && npm run build && npx wrangler pages deploy dist`

@@ -9,6 +9,7 @@
  */
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { useMeta } from "../lib/useMeta";
 
 import Concept1_TheLastRead from "../components/hero-concepts/Concept1_TheLastRead";
 import Concept2_Resurfacing from "../components/hero-concepts/Concept2_Resurfacing";
@@ -155,6 +156,14 @@ const btnStyle: React.CSSProperties = {
 };
 
 export default function HeroLab() {
+  // Internal design-review page — must not be indexed.
+  useMeta(
+    "Hero Lab — Internal Review",
+    "Internal side-by-side review of hero animation concepts.",
+    "https://heirvo.com/hero-lab",
+    "noindex, nofollow"
+  );
+
   return (
     <div style={{ background: C.page, minHeight: "100vh", color: C.text, fontFamily: SORA }}>
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,400&family=Sora:wght@400;600&family=JetBrains+Mono:wght@400&display=swap');`}</style>

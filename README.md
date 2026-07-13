@@ -53,7 +53,7 @@ Heirvo/
 │   ├── installer-sidebar.bmp
 │   └── tauri.conf.json
 │
-├── marketing/              Marketing site → heirvo.com (deployed via Vercel)
+├── marketing/              Marketing site → heirvo.com (deployed via Cloudflare Pages)
 │   ├── src/pages/          LandingMin1, RecoverH, Download, Activate, etc.
 │   ├── src/components/     Nav, Footer, sections, etc.
 │   └── public/assets/      Hero images, social-share images
@@ -91,16 +91,17 @@ npm run tauri build
 
 ## Marketing site
 
-The marketing site is in `marketing/` and deploys to [heirvo.com](https://heirvo.com) via Vercel.
+The marketing site is in `marketing/` and deploys to [heirvo.com](https://heirvo.com) via Cloudflare Pages.
 
 ```powershell
 cd marketing
 npm install
 npm run dev      # local preview at http://localhost:5173
-vercel --prod    # deploy to production (heirvo.com)
+npm run build    # outputs to dist/
+npx wrangler pages deploy dist   # deploy to production (heirvo.com)
 ```
 
-Required env vars (set in Vercel dashboard + `marketing/.env`):
+Required env vars (set in Cloudflare Pages dashboard + `marketing/.env`):
 - `VITE_FORMSPREE_ID` — Mail-in order form endpoint
 - `VITE_STRIPE_INTAKE_URL` — $19.99 mail-in intake fee payment link
 - `VITE_LS_CHECKOUT_URL` — Lemon Squeezy checkout URL for **Heirvo Recover** ($59)

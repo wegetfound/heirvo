@@ -49,8 +49,8 @@ Tauri v2 desktop app. Vite + React 18 frontend, Rust backend.
 - `src-tauri/resources/whisper/` — whisper-cli.exe + ggml-base.en.bin + DLLs
 
 ### The marketing site (`marketing/`)
-Separate React/Vite app deployed to heirvo.com via Vercel.
-- **Deploy:** `vercel --prod --cwd "D:\WeGetFound\brands\heirvo\marketing"`
+Separate React/Vite app deployed to heirvo.com via Cloudflare Pages.
+- **Deploy:** `cd marketing && npx wrangler pages deploy dist` (build output is `dist/`)
 - Entry route: `marketing/src/pages/Landing.tsx` (the live homepage)
 - Other pages: Download, Activate, Gift, Guides, Labs, Support, legal pages
 

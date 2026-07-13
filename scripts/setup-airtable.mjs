@@ -12,7 +12,7 @@
  *   AIRTABLE_PAT=patXXX AIRTABLE_WORKSPACE_ID=wspXXX node scripts/setup-airtable.mjs
  *
  * Output:
- *   Prints your BASE_ID. Copy it to VITE_AIRTABLE_BASE_ID in marketing/.env + Vercel.
+ *   Prints your BASE_ID. Copy it to VITE_AIRTABLE_BASE_ID in marketing/.env + Cloudflare Pages.
  *   Then create a second PAT scoped to data.records:write on that base only for the form.
  */
 
@@ -177,7 +177,7 @@ async function main() {
   console.log(`  Jobs table:      ${jobsTable.id}`);
   console.log(`
 Next steps:
-  1. Add to marketing/.env and Vercel dashboard:
+  1. Add to marketing/.env and Cloudflare Pages dashboard:
        VITE_AIRTABLE_BASE_ID=${base.id}
   2. Create a second PAT scoped ONLY to data.records:write on base ${base.id}
        (this is the one that goes in VITE_AIRTABLE_PAT — write-only keeps it safe in the bundle)

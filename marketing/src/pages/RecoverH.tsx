@@ -6,6 +6,7 @@ import { SplitText } from "gsap/SplitText";
 import { CustomEase } from "gsap/CustomEase";
 import { Nav } from "../components/Nav";
 import { Footer } from "../components/Footer";
+import { useMeta } from "../lib/useMeta";
 import {
   staggerReveal,
   magneticHover,
@@ -242,6 +243,12 @@ function FaqItem({ question, answer }: { question: string; answer: string }) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function RecoverH() {
+  useMeta(
+    "Mail-In DVD & CD Recovery Service — Send Us Your Disc",
+    "Can't or won't DIY? Send your scratched, damaged, or unreadable discs to the Heirvo mail-in recovery service. We recover home-video DVDs, photo CDs, and Blu-rays and return your memories.",
+    "https://heirvo.com/recover"
+  );
+
   // ── Form state ───────────────────────────────────────────────────────────────
   const [discTypes, setDiscTypes] = useState<string[]>([]);
   const [discQty,   setDiscQty]   = useState<number>(1);

@@ -3,7 +3,7 @@ dist
 dist-ssr
 *.local
 
-# Env files — never commit. Set live values in Vercel/CI dashboards.
+# Env files — never commit. Set live values in the CI/dashboard.
 .env
 .env.*
 !.env.example

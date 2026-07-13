@@ -25,6 +25,7 @@ import { SplitText } from "gsap/SplitText";
 import { CustomEase } from "gsap/CustomEase";
 import { Nav } from "../components/Nav";
 import { Footer } from "../components/Footer";
+import { useMeta } from "../lib/useMeta";
 import Concept2_Resurfacing from "../components/hero-concepts/Concept2_Resurfacing";
 
 gsap.registerPlugin(ScrollTrigger, SplitText, CustomEase);
@@ -71,6 +72,68 @@ const SORA     = '"Sora", ui-sans-serif, system-ui, sans-serif';
 const GARAMOND = '"Cormorant Garamond", "Georgia", serif';
 const MONO     = '"JetBrains Mono", "Fira Code", ui-monospace, monospace';
 
+// ─── Hero ambient video backdrop ──────────────────────────────────────────────
+// Full-bleed cinematic loop ("light through the disc") behind the hero copy.
+// Behaviour contract:
+//   - invisible until the video can actually play (no poster flash, no broken
+//     rectangle if /assets/hero-loop.* isn't deployed yet — fails silent),
+//   - honours prefers-reduced-motion by showing the still poster instead,
+//   - two scrim gradients keep the left-column copy at full contrast and fade
+//     the bottom edge into the page background so the section blends cleanly.
+function HeroVideoBg() {
+  const [canPlay, setCanPlay] = useState(false);
+  const [posterOk, setPosterOk] = useState(true);
+  const [reduced, setReduced] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    setReduced(mq.matches);
+    const fn = (e: MediaQueryListEvent) => setReduced(e.matches);
+    mq.addEventListener("change", fn);
+    return () => mq.removeEventListener("change", fn);
+  }, []);
+
+  return (
+    <div aria-hidden style={{ position: "absolute", inset: 0, overflow: "hidden", zIndex: 0, pointerEvents: "none" }}>
+      {!reduced ? (
+        <video
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="metadata"
+          onCanPlay={() => setCanPlay(true)}
+          style={{
+            width: "100%", height: "100%", objectFit: "cover",
+            opacity: canPlay ? 0.45 : 0,
+            transition: "opacity 1.6s ease",
+          }}
+        >
+          <source src="/assets/hero-loop.webm" type="video/webm" />
+          <source src="/assets/hero-loop.mp4" type="video/mp4" />
+        </video>
+      ) : posterOk ? (
+        <img
+          src="/assets/hero-loop-poster.jpg"
+          alt=""
+          onError={() => setPosterOk(false)}
+          style={{ width: "100%", height: "100%", objectFit: "cover", opacity: 0.4 }}
+        />
+      ) : null}
+      {/* Copy-side scrim: keeps the left column readable over the video */}
+      <div style={{
+        position: "absolute", inset: 0,
+        background: `linear-gradient(90deg, ${C.page}F5 0%, ${C.page}D9 40%, ${C.page}73 72%, ${C.page}A6 100%)`,
+      }} />
+      {/* Edge fades: blend top (under nav) and bottom into the page bg */}
+      <div style={{
+        position: "absolute", inset: 0,
+        background: `linear-gradient(180deg, ${C.page}B3 0%, transparent 28%, transparent 60%, ${C.page} 97%)`,
+      }} />
+    </div>
+  );
+}
+
 // ─── Terminal log lines for product demo (from B) ────────────────────────────
 // ─── FAQ data ─────────────────────────────────────────────────────────────────
 const FAQS = [
@@ -97,6 +160,16 @@ const FAQS = [
 ];
 
 // ─── JSON-LD ─────────────────────────────────────────────────────────────────
+const FAQ_SCHEMA = JSON.stringify({
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": FAQS.map(f => ({
+    "@type": "Question",
+    "name": f.q,
+    "acceptedAnswer": { "@type": "Answer", "text": f.a },
+  })),
+});
+
 const SOFTWARE_SCHEMA = JSON.stringify({
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
@@ -429,6 +502,12 @@ function DividerLm({ label, divRef }: { label: string; divRef: React.RefObject<H
 
 // ─── Main component ───────────────────────────────────────────────────────────
 export default function LandingMerge() {
+  useMeta(
+    "Heirvo — Family Memory Vault & DVD/CD Recovery for Windows",
+    "Rescue scratched DVDs, photo CDs, and Blu-rays — then build a searchable family memory vault for your home videos, audio, and photos. Free to scan. From $59 one-time. No subscription.",
+    "https://heirvo.com/"
+  );
+
   const pageRef         = useRef<HTMLDivElement>(null);
   const wrapperRef      = useRef<HTMLDivElement>(null);
   const heroRef         = useRef<HTMLElement>(null);
@@ -650,6 +729,7 @@ export default function LandingMerge() {
     <div ref={pageRef} className="lm-page">
       <style>{PAGE_STYLES}</style>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: SOFTWARE_SCHEMA }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: FAQ_SCHEMA }} />
 
       {/* Grain overlay */}
       <div aria-hidden style={{
@@ -676,6 +756,10 @@ export default function LandingMerge() {
         {/* ═══════════════════════════════════════════════════════════════════
             01 — HERO: identity-first (C) + animated scan demo (B)
         ═══════════════════════════════════════════════════════════════════ */}
+        {/* Hero outer: hosts the full-bleed ambient video (edge to edge) while
+            the inner grid keeps its 1300px column layout */}
+        <div style={{ position: "relative" }}>
+          <HeroVideoBg />
         <section
           ref={heroRef}
           style={{
@@ -688,6 +772,8 @@ export default function LandingMerge() {
             gridTemplateColumns: "1.05fr 0.95fr",
             gap: "clamp(2rem, 4vw, 4rem)",
             alignItems: "center",
+            position: "relative",
+            zIndex: 1,
           }}
           className="mobile-stack-lm"
         >
@@ -841,6 +927,7 @@ export default function LandingMerge() {
             </p>
           </div>
         </section>
+        </div>
 
         {/* ── Divider 1 ──────────────────────────────────────────────────────── */}
         <DividerLm label="DVD · CD · Blu-ray · Kodak Photo CD" divRef={div1Ref} />

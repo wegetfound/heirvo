@@ -60,7 +60,7 @@ Public 1.0 launch. Three-tier pricing live, full payment flow active, profession
 - **`/gift` page** — gift-buyer landing page for Heirvo as a present.
 - **Organization JSON-LD** on homepage — entity trust signals for AIO citation rate.
 - **IndexNow integration** — Bing/Yandex instant-indexing key at `/a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4.txt`.
-- **CSP headers** — `vercel.json` (marketing) and Tauri webview both lock down content sources. Marketing form has invisible honeypot + 1.5s min-fill-time anti-spam.
+- **CSP headers** — `wrangler.toml` (marketing, via Cloudflare Pages) and Tauri webview both lock down content sources. Marketing form has invisible honeypot + 1.5s min-fill-time anti-spam.
 
 ### Changed
 - **New professional app icon** — replaces the old kintsugi-disc placeholder. Multi-size ICO (16/32/48/128/256). Built via Pillow for proper RC-compatible format.
@@ -78,7 +78,7 @@ Public 1.0 launch. Three-tier pricing live, full payment flow active, profession
 ### Project hygiene
 - **GitHub release v1.0.0** with refreshed installer (new icon + header BMP).
 - **Cleaned `src-tauri/icons/`** — 56 file deletions across `ios/`, `android/`, `Square*Logo.png`, `StoreLogo.png`, `icon.icns`, `README.txt`.
-- All three `VITE_LS_*` env vars now live in Vercel; "Coming soon" placeholders gone from `/download`.
+- All three `VITE_LS_*` env vars now live in Cloudflare Pages; "Coming soon" placeholders gone from `/download`.
 
 ---
 
@@ -104,7 +104,7 @@ First public release. Recovery engine, transcode pipeline, marketing site, and m
 - **FFmpeg auto-download fallback** — switched primary URL to gyan.dev (stable filename); secondary fallback now resolves real GitHub asset name via Releases API and triggers on HTTP 4xx/5xx (not just transport errors).
 - **Transcode form styling** — inputs and dropdowns no longer render unreadable dark-on-dark on the light theme.
 - **iOS Safari marketing site freeze** — `sessionStorage` calls wrapped in try/catch (Private Mode throws `SecurityError`); `LoadSequence` overlay has 3s safety timeout to release `body.overflow` on stalled clip-path animations.
-- **Marketing build** — replaced `useRef<HTMLBlockquoteElement>` with `useRef<HTMLQuoteElement>` (TypeScript build error blocking Vercel deploys).
+- **Marketing build** — replaced `useRef<HTMLBlockquoteElement>` with `useRef<HTMLQuoteElement>` (TypeScript build error blocking production deploys).
 - **Bundle resources** — explicit file paths for `ffmpeg.exe` + `ffprobe.exe` in `tauri.conf.json` (the `resources/ffmpeg/*` glob wasn't picking up `.exe` files in NSIS bundles).
 
 ### Project hygiene

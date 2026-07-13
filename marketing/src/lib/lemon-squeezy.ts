@@ -7,7 +7,7 @@
  * 2. In your local environment, set:
  *      VITE_LS_CHECKOUT_URL="https://heirvo.lemonsqueezy.com/checkout/buy/<uuid>"
  *    (e.g. in `marketing/.env.local`). The same variable should be set in the
- *    Vercel/host environment for production deploys.
+ *    Cloudflare Pages / host environment for production deploys.
  * 3. If `VITE_LS_CHECKOUT_URL` still contains the placeholder string
  *    "replace-me", `isLemonSqueezyConfigured()` returns false and the Buy
  *    button on the marketing site should disable itself / show a fallback

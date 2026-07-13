@@ -8,7 +8,12 @@
     <meta name="keywords" content="DVD recovery software, photo CD recovery, damaged disc recovery, recover files from scratched DVD, CD recovery Windows, Blu-ray recovery, recover home videos, recover photos from CD, sector by sector recovery, disc rescue software, Kodak Photo CD recovery, optical disc recovery" />
     <meta name="author" content="Heirvo" />
     <meta name="theme-color" content="#0A84FF" />
-    <link rel="canonical" href="https://heirvo.com/" />
+    <!-- NOTE: No static canonical here on purpose. This SPA shell is served for
+         EVERY route, so a hardcoded canonical would wrongly point every page at
+         the homepage (the cause of 61 "Alternate page with proper canonical tag"
+         entries in GSC). The live canonical is set per-route at runtime by
+         src/lib/useMeta.ts. Pages without useMeta fall back to self-canonical
+         via the same hook. -->
 
     <!-- Google Search Console verification -->
     <meta name="google-site-verification" content="3OQF-quPeY7aHEHboa51avpTFwNcUpO9W6rb5n--Plg" />
